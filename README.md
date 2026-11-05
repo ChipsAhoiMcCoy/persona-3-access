@@ -51,8 +51,8 @@ The game's own controls work as usual (keyboard or controller). The mod adds the
 - Shift+Right bracket / Shift+Left bracket: Next / previous category of points of interest, read from its nearest
 - Apostrophe: Walk to the selected point of interest (press again, or any movement key, to stop)
 - Shift+Apostrophe: Party: each member's level, HP and SP
-- Semicolon: Beacon toward the selected point of interest on or off (also in the mod settings)
-- Shift+Semicolon: Describe the area: how the place around you looks (see below)
+- Semicolon: Describe the area: how the place around you looks (see below)
+- Shift+Semicolon: Beacon toward the selected point of interest on or off (also in the mod settings)
 
 ### On a controller
 
@@ -103,7 +103,7 @@ once, to `%LOCALAPPDATA%\P3RAccess\settings.ini`. The menu plays the game's own 
 (the camp menu's), the cursor on each move, and a sound on each value change.
 
 - Wall tones: on, off
-- Beacon: off, on (also Semicolon): a beep from the direction of the path to the selected point of interest
+- Beacon: off, on (also Shift+Semicolon): a beep from the direction of the path to the selected point of interest
 - Nearby chimes: on, off: the chime when an exit, person or thing comes within 8 m
 - Shadow alerts: on, off: the Shadow pulse and the back-turned / facing-you cues in Tartarus
 - 3D sound for headphones: on, off: the beacon, the nearby chimes and the Shadow cues come from where their source is, ahead, behind, above or below (Steam Audio's HRTF; far sounds are also a little duller). Off pans them left and right only, as before
@@ -183,7 +183,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   interaction prompt when you can use something ("Go to: Head to the Dorm"; over a Social Link partner also their
   arcana and rank, "Talk: Kenji Tomochika, Magician, rank MAX"), item notices with every item and its count ("Got
   Bead times 3, 500 yen"), wall tones, points of interest (people by name), auto-walk and beacon.
-- Describe the area (Shift+Semicolon, or both triggers and B): a written description of where you stand, as the
+- Describe the area (Semicolon, or both triggers and B): a written description of where you stand, as the
   game shows it now: every area of the town, the school, the dorm (each floor), Yakushima, Kyoto, the full-moon
   operations, Tartarus (each block) and Episode Aigis' Abyss of Time. Outdoors it follows the time of day and the
   season (cherry blossoms in April, autumn leaves, bare winter trees); the Dark Hour, Christmas in Paulownia Mall and
