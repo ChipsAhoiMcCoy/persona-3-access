@@ -1,0 +1,5 @@
+#file Movie_VP9/Anim/MS_Event_Main_140_030_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_140_030_M_Movi_VP9.MS_Event_Main_140_030_M_Movi_VP9
+#id 6
+0.600	2.385	00.mp3	An old man in a white coat, holding a pipe.
+53.350	1.540	01.mp3	Tartarus, before the moon.

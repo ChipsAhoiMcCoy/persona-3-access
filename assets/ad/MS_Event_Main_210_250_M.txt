@@ -1,0 +1,19 @@
+#file Movie_VP9/Anim/MS_Event_Main_210_250_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_210_250_M_Movi_VP9.MS_Event_Main_210_250_M_Movi_VP9
+#id 15
+0.300	2.929	00.mp3	The tower's peak points up at the giant eye in the sky.
+4.000	2.282	01.mp3	On the tower's top, the group lies scattered.
+26.400	1.816	02.mp3	The hero floats up toward the eye.
+52.300	1.372	03.mp3	He drifts into its pupil.
+54.000	1.865	04.mp3	The eye's red rim fills the sky.
+56.850	1.817	05.mp3	In darkness, the hero stands.
+58.900	1.417	06.mp3	Blue streaks rush past.
+60.600	2.917	07.mp3	He drifts through a storm of colour toward a blinding light.
+65.900	2.601	08.mp3	He soars on, stretched out, through rushing light.
+71.400	1.336	09.mp3	Everything turns white.
+73.000	2.234	10.mp3	A glowing egg of light rests on cracked stone.
+75.900	1.949	11.mp3	He dives toward it, arms raised.
+79.000	2.083	12.mp3	His shoes step across the glowing ground.
+83.000	3.064	13.mp3	Wings of crackling blue light spread on either side of him.
+87.000	2.122	14.mp3	His face, calm. He looks straight ahead.
+90.600	0.815	15.mp3	White light.

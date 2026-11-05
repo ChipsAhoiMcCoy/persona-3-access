@@ -1,0 +1,25 @@
+{
+ "movie": "MS_Event_Main_300_010_M",
+ "title": "Sparring in the red hall",
+ "cues": [
+  {"at": 0.3,   "text": "A glowing green clock face. Its hands close on twelve."},
+  {"at": 6.8,   "text": "The clock fades into a full moon."},
+  {"at": 8.9,   "text": "The moon becomes frames on a strip of film."},
+  {"at": 18.5,  "text": "Aigis stands in a vast red hall."},
+  {"at": 21.0,  "text": "A masked fighter lunges at Ken."},
+  {"at": 22.9,  "text": "Ken blocks. Akihiko raises his fists."},
+  {"at": 27.7,  "text": "Aigis leaps and kicks at Akihiko."},
+  {"at": 30.4,  "text": "He blocks with his arm."},
+  {"at": 32.0,  "text": "She vaults over him, upside down."},
+  {"at": 35.0,  "text": "A spiked gauntlet."},
+  {"at": 37.8,  "text": "She lands and aims her finger guns."},
+  {"at": 41.0,  "text": "She fires."},
+  {"at": 44.5,  "text": "Ken spins his spear and plants it."},
+  {"at": 47.6,  "text": "The masked fighter waits, sword at her side."},
+  {"at": 50.3,  "text": "Her mask is shaped like butterfly wings."},
+  {"at": 53.2,  "text": "Fuuka, eyes closed, in a headset."},
+  {"at": 56.65, "text": "Ken raises his Evoker."},
+  {"at": 58.4,  "text": "So does Akihiko. Light shatters."},
+  {"at": 86.8,  "text": "The golden key fades away."}
+ ]
+}

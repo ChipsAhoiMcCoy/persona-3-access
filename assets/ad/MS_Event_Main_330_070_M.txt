@@ -1,0 +1,23 @@
+#file Astrea/Movie_VP9/Anim/MS_Event_Main_330_070_M_Movi_VP9.usm
+#asset /Game/Astrea/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_330_070_M_Movi_VP9.MS_Event_Main_330_070_M_Movi_VP9
+#id 76
+0.300	3.559	00.mp3	Daytime. The old brick dormitory stands among newer buildings.
+4.300	2.222	01.mp3	Two black cars wait at the curb out front.
+7.900	1.866	02.mp3	Sneakers step down the front stairs.
+10.000	2.088	03.mp3	Small hands grip a green tote bag.
+14.850	2.662	04.mp3	Akihiko, in a white coat, looks up at the dorm.
+17.750	1.514	05.mp3	Mitsuru, arms folded.
+19.500	1.999	06.mp3	Long black boots walk down the steps.
+21.750	1.283	07.mp3	Koromaru runs by.
+23.400	3.153	08.mp3	In the dim lobby, Aigis stands alone at the open door.
+27.900	1.708	09.mp3	She looks back into the empty room.
+30.600	2.890	10.mp3	She shuts the door. In her hand, an old brass key.
+35.200	1.587	11.mp3	Outside, she studies the key.
+37.600	1.290	12.mp3	She locks the front door.
+41.800	2.006	13.mp3	She stands a moment at the tall doors.
+44.600	3.526	14.mp3	From above, she walks down the steps, then looks back up at the building.
+83.900	1.356	15.mp3	Aigis's eyes widen.
+85.700	1.786	16.mp3	Junpei grins, beside Ken.
+89.200	3.740	17.mp3	Mitsuru, Akihiko and Fuuka wait. Koromaru pants happily.
+93.250	1.626	18.mp3	Yukari holds out her hand.
+100.550	3.763	19.mp3	Aigis lays her hand in Yukari's. White light fills the picture.

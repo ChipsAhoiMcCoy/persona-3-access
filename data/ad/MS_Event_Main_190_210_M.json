@@ -1,0 +1,26 @@
+{
+ "movie": "MS_Event_Main_190_210_M",
+ "title": "Arriving in Kyoto",
+ "cues": [
+  {
+   "at": 0.2,
+   "text": "A sleek white bullet train stands at a sunlit platform."
+  },
+  {
+   "at": 3.7,
+   "text": "A vast hall of steel and glass."
+  },
+  {
+   "at": 6.3,
+   "text": "Students crowd a giant staircase."
+  },
+  {
+   "at": 29.6,
+   "text": "Yukari stands among the students in the station."
+  },
+  {
+   "at": 32.8,
+   "text": "Nearby, Mitsuru, Aigis and Fuuka wait together."
+  }
+ ]
+}

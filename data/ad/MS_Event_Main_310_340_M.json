@@ -1,0 +1,22 @@
+{
+ "movie": "MS_Event_Main_310_340_M",
+ "title": "The figure turns to butterflies",
+ "cues": [
+  {"at": 0.2,   "text": "A golden chamber. The team stands on its patterned floor."},
+  {"at": 4.7,   "text": "A dark silhouette rises before them, hunched over."},
+  {"at": 11.4,  "text": "It lifts a hand. It has the hero's face, its eyes glowing red."},
+  {"at": 16.2,  "text": "The face turns pale blue, like a mask."},
+  {"at": 21.6,  "text": "Blue light spreads up its arm, and it breaks apart into glowing dust."},
+  {"at": 25.8,  "text": "Blue butterfly wings."},
+  {"at": 28.0,  "text": "The light climbs its whole body. Butterflies circle it."},
+  {"at": 33.8,  "text": "The red eyes close."},
+  {"at": 39.4,  "text": "Wrapped in blue flame, the figure stands still."},
+  {"at": 42.2,  "text": "Aigis reaches out her hand."},
+  {"at": 46.9,  "text": "Her eyes widen."},
+  {"at": 49.0,  "text": "The figure is gone. Blue butterflies drift up into the golden light."},
+  {"at": 54.45, "text": "Koromaru, Junpei, Ken and Fuuka watch."},
+  {"at": 60.35, "text": "Yukari, Mitsuru, Akihiko."},
+  {"at": 63.2,  "text": "Aigis lowers her hand. A blue butterfly rises past her."},
+  {"at": 67.2,  "text": "It flutters away into the golden light, and fades."}
+ ]
+}

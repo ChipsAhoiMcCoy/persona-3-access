@@ -1,0 +1,10 @@
+{
+ "movie": "MS_Event_Main_140_140_M",
+ "title": "Ferry to the island",
+ "cues": [
+  {"at": 0.3, "text": "A white ferry cuts across a bright blue sea."},
+  {"at": 25.0, "text": "Mitsuru, arms folded."},
+  {"at": 29.1, "text": "Yukari gazes out to sea, her hair in the wind."},
+  {"at": 32.0, "text": "The ferry sails on toward a hilly island."}
+ ]
+}

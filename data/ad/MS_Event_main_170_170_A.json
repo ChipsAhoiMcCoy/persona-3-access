@@ -1,0 +1,32 @@
+{
+ "movie": "MS_Event_main_170_170_A",
+ "title": "Shinjiro takes the bullet",
+ "cues": [
+  {"at": 0.3,    "text": "Behind a chain-link fence, in green moonlight, Takaya aims a revolver at Ken."},
+  {"at": 9.7,    "text": "Shinjiro throws himself in front of Ken. The bullet tears into his back."},
+  {"at": 15.0,   "text": "Blood drops hang in the air. Ken stares."},
+  {"at": 18.3,   "text": "Ken's hand reaches for the wound in Shinjiro's back."},
+  {"at": 21.7,   "text": "Takaya keeps the gun raised."},
+  {"at": 26.45,  "text": "Shinjiro collapses. Takaya stands over him."},
+  {"at": 41.35,  "text": "The rest of S.E.E.S. run in."},
+  {"at": 50.4,   "text": "Takaya turns and walks off into the dark."},
+  {"at": 53.6,   "text": "Akihiko runs to him."},
+  {"at": 64.2,   "text": "The team gathers around Shinjiro. Fuuka kneels by Ken."},
+  {"at": 68.0,   "text": "Koromaru nuzzles Shinjiro's hand."},
+  {"at": 73.3,   "text": "Shinjiro looks up at Ken."},
+  {"at": 97.2,   "text": "Blood runs from his mouth."},
+  {"at": 106.0,  "text": "His eyes half close."},
+  {"at": 112.65, "text": "Mitsuru lowers her eyes."},
+  {"at": 115.0,  "text": "Shinjiro rests his hand on Koromaru's head."},
+  {"at": 118.3,  "text": "Akihiko cradles him."},
+  {"at": 126.95, "text": "Akihiko grips his hand."},
+  {"at": 132.4,  "text": "His eyes close. His hand slips and falls."},
+  {"at": 136.6,  "text": "Silent faces: the hero, Aigis, Junpei."},
+  {"at": 139.8,  "text": "Akihiko bows his head."},
+  {"at": 141.5,  "text": "Shinjiro's head falls against Akihiko's chest."},
+  {"at": 147.8,  "text": "Tears roll down Ken's cheeks."},
+  {"at": 150.0,  "text": "He falls forward onto his hands."},
+  {"at": 165.8,  "text": "A full moon hangs between the dark buildings."},
+  {"at": 168.8,  "text": "The green glow fades away."}
+ ]
+}

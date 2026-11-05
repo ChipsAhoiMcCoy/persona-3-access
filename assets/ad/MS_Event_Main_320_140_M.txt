@@ -1,0 +1,14 @@
+#file Astrea/Movie_VP9/Anim/MS_Event_Main_320_140_M_Movi_VP9.usm
+#asset /Game/Astrea/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_320_140_M_Movi_VP9.MS_Event_Main_320_140_M_Movi_VP9
+#id 75
+0.900	3.099	00.mp3	Through golden clouds, a huge black hand rises.
+5.850	3.793	01.mp3	A giant black arm claws up the golden door. The team backs away.
+11.850	4.222	02.mp3	A colossal creature rears up, a skull with red eyes and huge teeth.
+16.400	1.619	03.mp3	It reaches for the stone figure.
+70.700	1.949	04.mp3	The skull looms over a line of fire.
+72.950	1.116	05.mp3	It claws at the door.
+91.450	1.065	06.mp3	The team scatters.
+93.250	1.722	07.mp3	Gold drips from the skull's teeth.
+95.600	0.846	08.mp3	It rears up.
+99.450	1.259	09.mp3	Its red eyes blaze.
+103.500	3.319	10.mp3	The team faces it: one dark body with two skull heads.

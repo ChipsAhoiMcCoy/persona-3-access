@@ -1,0 +1,29 @@
+#file Movie_VP9/Anim/MS_Event_Main_100_010_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_100_010_M_Movi_VP9.MS_Event_Main_100_010_M_Movi_VP9
+#id 0
+0.500	4.563	00.mp3	A sunny seaside promenade. A boy in a black school uniform walks alone.
+7.000	1.734	01.mp3	The hero settles his headphones.
+9.500	3.467	02.mp3	He scrolls his music player to a song: Full Moon Full Life.
+15.500	4.140	03.mp3	In stark blue and white, he walks down a back alley, hands in his pockets.
+24.600	1.347	04.mp3	Blue butterflies swirl.
+28.000	2.153	05.mp3	A city of blue blocks, from far above.
+33.000	2.031	06.mp3	A schoolgirl leaps from a tall building.
+36.500	3.051	07.mp3	A girl in a pink cardigan puts on lipstick at a mirror.
+42.000	1.870	08.mp3	A young man in a black cap grins.
+45.000	3.591	09.mp3	A red-haired girl races a motorcycle down an empty highway.
+49.000	2.476	10.mp3	On a train, three boys sit apart, silent.
+52.300	3.741	11.mp3	The sky turns green. A giant clock looms over red water.
+56.500	2.670	12.mp3	A boy on a sofa raises a pistol to his head.
+60.000	3.005	13.mp3	In a blue room, a man bows by a framed contract.
+65.000	5.492	14.mp3	One by one, young fighters put pistols to their heads. Huge spirits burst out behind them.
+74.000	4.120	15.mp3	Red shrine gates line a stone stairway. A white dog sits at the top.
+79.200	3.174	16.mp3	On a rooftop, a girl stands alone by a wind turbine.
+82.700	2.237	17.mp3	A long-haired man at a wall of monitors.
+85.300	3.913	18.mp3	The hero falls past a huge yellow moon. A winged shadow fills it.
+90.200	3.096	19.mp3	The moon thins to a crescent. Red drips into a pool.
+94.000	3.947	20.mp3	A red-haired girl with a machine body kneels. Cards scatter around her.
+99.000	1.548	21.mp3	A mechanical eye closes.
+101.600	2.038	22.mp3	A robot girl in a glowing capsule.
+104.000	2.672	23.mp3	Smiling faces flash by, and a white dog.
+109.000	3.450	24.mp3	The hero stands tall, the silhouettes of friends behind him.
+113.000	1.798	25.mp3	Title: Persona 3 Reload.

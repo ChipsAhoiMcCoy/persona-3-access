@@ -1,0 +1,32 @@
+#file Astrea/Movie_VP9/Anim/MS_Event_Main_300_060_M_Movi_VP9.usm
+#asset /Game/Astrea/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_300_060_M_Movi_VP9.MS_Event_Main_300_060_M_Movi_VP9
+#id 72
+9.200	1.284	00.mp3	Her mask glows red.
+13.700	2.971	01.mp3	Purple light erupts around Metis, axe in hand.
+17.000	1.879	02.mp3	Shards swirl around her like wings.
+21.800	2.874	03.mp3	Metis swings. Aigis is thrown against the wall.
+27.700	2.050	04.mp3	Mitsuru, Junpei and Ken look on.
+31.800	1.838	05.mp3	Aigis winces, one eye shut.
+33.900	1.556	06.mp3	Metis turns toward Ken.
+53.500	1.807	07.mp3	Junpei and Koromaru charge.
+56.000	1.439	08.mp3	They all rush at Metis.
+57.800	2.818	09.mp3	In white light, the hero stands with his back turned.
+65.500	1.940	10.mp3	Blue light bursts from Aigis's chest.
+69.200	1.396	11.mp3	The light floods the lounge.
+71.000	1.409	12.mp3	A helmeted face shatters.
+72.900	2.762	13.mp3	Aigis spreads her arms in a column of blue light.
+76.800	1.799	14.mp3	A new figure takes shape around her.
+79.800	2.855	15.mp3	White hair, one glowing red eye, a pink scarf.
+83.100	2.418	16.mp3	Aigis stands calm beside her new Persona.
+91.800	3.034	17.mp3	Ken huddles on the floor. Aigis faces Metis.
+95.100	1.819	18.mp3	Her Persona draws back its fist.
+97.200	1.230	19.mp3	It strikes Metis.
+99.000	1.477	20.mp3	Lightning crackles over her.
+101.200	1.154	21.mp3	Metis staggers.
+103.100	1.198	22.mp3	She stands in the rubble.
+106.500	1.579	23.mp3	Sparks crawl over her armor.
+108.400	1.440	24.mp3	The glow in her mask fades.
+114.800	1.146	25.mp3	Her mask opens.
+119.600	2.233	26.mp3	Beneath it, a girl's face with red eyes.
+122.800	1.586	27.mp3	Aigis's eyes dim to grey.
+124.600	2.359	28.mp3	Junpei and Mitsuru stand in the wreckage.

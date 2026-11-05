@@ -1,0 +1,27 @@
+{
+ "movie": "MS_Astrea_EndCredits_BG",
+ "title": "Episode Aigis ending credits",
+ "cues": [
+  {"at": 3.2,   "text": "In flat shades of blue, Aigis walks along a railing past city buildings. The credits roll."},
+  {"at": 19.5,  "text": "A large drawing of Fuuka's face appears beside her, then scenes from the story."},
+  {"at": 37.5,  "text": "Koromaru."},
+  {"at": 45.0,  "text": "The team gathers in a lamplit square."},
+  {"at": 55.6,  "text": "Ken."},
+  {"at": 63.5,  "text": "A policeman rests a hand on a small boy's shoulder."},
+  {"at": 73.6,  "text": "Akihiko."},
+  {"at": 91.6,  "text": "Junpei, in a cap, grinning."},
+  {"at": 110.3, "text": "Mitsuru, her long hair blowing."},
+  {"at": 128.6, "text": "Yukari."},
+  {"at": 146.6, "text": "Metis."},
+  {"at": 154.0, "text": "In a clip, Metis and Aigis stand face to face, and light bursts around them."},
+  {"at": 165.0, "text": "Aigis walks on alone."},
+  {"at": 195.0, "text": "Now she walks a seaside promenade. Wind turbines turn on the far shore."},
+  {"at": 232.0, "text": "She lifts a hand to her ear, then walks on."},
+  {"at": 309.5, "text": "A school bag swings in her hand."},
+  {"at": 368.0, "text": "She raises a hand to her ear again."},
+  {"at": 398.0, "text": "A tall iron fence, cherry blossoms pink behind it."},
+  {"at": 407.5, "text": "She stops by an arched gate and looks up."},
+  {"at": 414.5, "text": "She holds out a palm to the falling petals."},
+  {"at": 421.5, "text": "She turns back, and the picture fades to blue, then black."}
+ ]
+}

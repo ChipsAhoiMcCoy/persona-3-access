@@ -1,0 +1,44 @@
+#file Movie_VP9/Event/MS_Event_main_220_040_A_Movi0_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Event/MS_Event_main_220_040_A_Movi0_VP9.MS_Event_main_220_040_A_Movi0_VP9
+#id 64
+0.500	3.653	00.mp3	Cherry trees in full bloom fill the grounds inside the school gate.
+7.300	3.910	01.mp3	Looking up past the iron gate, petals blow across a bright blue sky.
+12.200	3.117	02.mp3	A gloved hand reaches up into the sky, fingers spread.
+16.300	2.265	03.mp3	It closes slowly around a falling petal.
+19.900	5.445	04.mp3	On the rooftop, Aigis stands at the railing, arm raised. Wind turbines turn behind her.
+30.400	3.325	05.mp3	Eyes closed, she brings her hand down, cupped around the petal.
+35.000	2.236	06.mp3	She opens her eyes and lowers her arm.
+45.600	2.736	07.mp3	The hero rests his head in her lap, looking up at her.
+54.800	1.439	08.mp3	Her eyes shine with tears.
+56.600	1.387	09.mp3	Blossoms crowd a branch.
+58.800	2.856	10.mp3	Wind turbines turn by the bay, the city beyond.
+85.000	1.141	11.mp3	She lifts her gaze.
+113.400	2.129	12.mp3	Under the stars, she grips her Evoker.
+139.500	1.233	13.mp3	Her hand on her chest.
+159.900	1.584	14.mp3	Her hand settles over his.
+183.600	1.325	15.mp3	The hero looks up at her.
+189.000	3.060	16.mp3	He raises his hand to her face and wipes away a tear.
+193.000	1.890	17.mp3	She holds his hand against her cheek.
+204.800	2.035	18.mp3	The two, alone on the rooftop bench.
+209.900	1.059	19.mp3	She turns her head.
+242.000	1.436	20.mp3	The hero's eyelids droop.
+243.800	3.699	21.mp3	Petals stream across the sky above the school gate's iron spikes.
+247.900	1.914	22.mp3	Cherry trees frame the school building.
+251.200	3.397	23.mp3	The front of the school, between the gateposts, under falling petals.
+259.300	1.018	24.mp3	His eyes close.
+269.600	3.479	25.mp3	From behind: Aigis on the bench, the hero's head in her lap.
+273.600	2.054	26.mp3	City towers beyond solar panels.
+276.400	1.263	27.mp3	Blossoms, close up.
+282.100	2.505	28.mp3	Seen from below, her face blurs and tilts.
+285.000	3.318	29.mp3	Darkness closes in from the edges, until all is black.
+290.000	4.011	30.mp3	A glowing blue butterfly flutters across the dark, trailing sparkles.
+294.400	0.969	31.mp3	It drifts away.
+296.400	3.711	32.mp3	Light returns. Far across the rooftop, the two sit on the bench.
+309.100	2.300	33.mp3	Close on her face. She smiles softly.
+313.200	1.842	34.mp3	Her gloved hand rests over his.
+317.200	3.112	35.mp3	A stairwell. Bright light pours through the doors at the top.
+321.300	1.218	36.mp3	Aigis turns her head.
+323.000	5.880	37.mp3	In the doorway stand Mitsuru, Yukari, Akihiko, Junpei and Fuuka, with Ken and Koromaru.
+329.100	2.162	38.mp3	Ken holds Koromaru up in his arms.
+331.700	2.014	39.mp3	Aigis watches them, her face calm.
+337.600	1.454	40.mp3	The picture fades to white.

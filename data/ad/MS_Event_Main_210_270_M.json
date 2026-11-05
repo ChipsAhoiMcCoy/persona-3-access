@@ -1,0 +1,17 @@
+{
+ "movie": "MS_Event_Main_210_270_M",
+ "title": "The tower fades",
+ "cues": [
+  {"at": 15.0,  "text": "The tower stands dark against the green sky, the yellow moon above it."},
+  {"at": 22.0,  "text": "The sky turns blue. Light pours over the tower."},
+  {"at": 25.3,  "text": "Its walls crumble into white light, piece by piece."},
+  {"at": 32.4,  "text": "Beneath it, a school courtyard appears."},
+  {"at": 35.0, "text": "Akihiko watches."},
+  {"at": 37.7,  "text": "The tower, dark."},
+  {"at": 46.6,  "text": "Light rises from the tower's top and scatters."},
+  {"at": 53.8,  "text": "The school entrance, empty."},
+  {"at": 55.9,  "text": "The hero stands alone at the doors."},
+  {"at": 60.7,  "text": "A full moon."},
+  {"at": 62.0,  "text": "From high above, Aigis, alone on the paving."}
+ ]
+}

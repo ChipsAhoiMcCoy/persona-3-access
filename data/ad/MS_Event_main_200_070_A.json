@@ -1,0 +1,17 @@
+{
+ "movie": "MS_Event_main_200_070_A",
+ "title": "Chidori's sacrifice",
+ "cues": [
+  {"at": 0.3, "text": "Chidori kneels beside Junpei, lying still."},
+  {"at": 3.6, "text": "Behind her, a ghostly Persona rises. Her glowing hand rests on his bloody chest."},
+  {"at": 9.6, "text": "The team watches in silence. Fuuka clasps her hands."},
+  {"at": 13.1, "text": "Golden sparks drift around Chidori. Yukari, Mitsuru and Ken look on."},
+  {"at": 41.55, "text": "Chidori smiles sadly."},
+  {"at": 45.6, "text": "Chidori has fallen into his arms. Junpei holds her as the team gathers close."},
+  {"at": 70.3, "text": "Her head rests on his chest."},
+  {"at": 118.6, "text": "Tears fill Junpei's eyes."},
+  {"at": 134.55, "text": "A memory: Chidori sketching."},
+  {"at": 141.2, "text": "Chidori lies limp in his arms. Junpei bows his head. A tear falls."},
+  {"at": 151.4, "text": "A thin crescent moon hangs in the green sky."}
+ ]
+}

@@ -1,0 +1,267 @@
+#include "settings.h"
+#include "audio.h"
+#include "core/graph_builder.h"
+#include "core/navigator.h"
+#include "core/strings.h"
+#include "devserver.h"
+#include "hooks.h"
+#include "input.h"
+#include "keys.h"
+#include "log.h"
+#include "mod.h"
+#include "speech.h"
+#include "voice.h"
+#include "walltones.h"
+#include <windows.h>
+#include <xinput.h>
+#include <algorithm>
+#include <cstdio>
+#include <format>
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace p3a::settings {
+enum class Unit { Toggle, Meters, Percent, Ms, Choice };
+struct Def { const char* key; const char* name; Unit unit; std::vector<int> values; int def; std::vector<const char*> labels = {}; };
+// One row per Id, in its order: what the file calls it, what the menu says, the values it cycles through.
+static const Def kDefs[Count] = {
+  {"wall_tones", strings::kSetWallTones, Unit::Toggle, {0, 1}, 1},
+  {"beacon", strings::kSetBeacon, Unit::Toggle, {0, 1}, 0},                 // toward the selected point of interest
+  {"nearby_chimes", strings::kSetNearbyChimes, Unit::Toggle, {0, 1}, 1},
+  {"shadow_alerts", strings::kSetShadowAlerts, Unit::Toggle, {0, 1}, 1},
+  {"hrtf", strings::kSetHrtf, Unit::Toggle, {0, 1}, 1},                    // the positional cues through Steam Audio
+  {"behind_pitch", strings::kSetBehindPitch, Unit::Toggle, {0, 1}, 1},
+  {"poi_range", strings::kSetPoiRange, Unit::Meters, {20, 40, 60, 100, 150}, 60},
+  {"master_volume", strings::kSetMasterVolume, Unit::Percent, {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, 100},
+  {"sound_volume", strings::kSetSoundVolume, Unit::Percent, {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, 60},   // the Cues bus
+  {"wall_volume", strings::kSetWallVolume, Unit::Percent, {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, 100},
+  {"trigger_delay", strings::kSetTriggerDelay, Unit::Ms, {0, 100, 150, 250}, 150},
+  {"entry_hints", strings::kSetEntryHints, Unit::Toggle, {0, 1}, 0},
+  {"voiced_lines", strings::kSetVoicedLines, Unit::Choice, {VoicedSilent, VoicedName, VoicedRead}, VoicedSilent,
+   {strings::kVoicedRead, strings::kVoicedName, strings::kVoicedSilent}},
+  {"voice_end_sound", strings::kSetVoiceEndSound, Unit::Choice, {EndNext, EndPage, EndMessage, EndCursor, EndOff}, EndNext,
+   {strings::kEndNext, strings::kEndPage, strings::kEndMessage, strings::kEndCursor, strings::kOff}},
+  {"subtitles", strings::kSetSubtitles, Unit::Toggle, {0, 1}, 0},                  // the screen reader reads a cutscene's subtitles (msg.cpp)
+  {"audio_description", strings::kSetAudioDescription, Unit::Toggle, {0, 1}, 1},   // the narrator in story movies (ad.cpp)
+  {"description_volume", strings::kSetDescriptionVolume, Unit::Percent, {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, 100},
+};
+static int g_value[Count] = {};   // load() fills it from kDefs, then the file
+
+int get(Id id) { return id >= 0 && id < Count ? g_value[id] : 0; }
+
+static std::wstring file() {
+  std::wstring p = log::path();
+  p = p.substr(0, p.find_last_of(L'\\') + 1);
+  // Dev launches (unfocused) keep their own file: tests never change the player's settings.
+  return p + (env_flag(L"P3A_NOFOCUS") ? L"settings-dev.ini" : L"settings.ini");
+}
+
+static void save() {
+  FILE* f = _wfopen(file().c_str(), L"w");
+  if (!f) { log::write("settings: cannot write the file"); return; }
+  for (int i = 0; i < Count; ++i) fprintf(f, "%s=%d\n", kDefs[i].key, g_value[i]);
+  fclose(f);
+}
+
+static void apply(Id id) {
+  if (id == WallTones && !env_flag(L"P3A_NOWALLTONES")) walltones::set_enabled(g_value[id] != 0);
+  if (id == MasterVolume) audio::set_master_volume(g_value[id] / 100.0f);
+  if (id == SoundVolume) audio::set_bus_volume(audio::Bus::Cues, g_value[id] / 100.0f);
+  if (id == WallVolume) audio::set_bus_volume(audio::Bus::Walls, g_value[id] / 100.0f);
+  if (id == DescriptionVolume) audio::set_bus_volume(audio::Bus::Narration, g_value[id] / 100.0f);
+  if (id == Hrtf) audio::set_hrtf(g_value[id] != 0);
+}
+
+void set(Id id, int value) {
+  if (id < 0 || id >= Count) return;
+  g_value[id] = value;
+  apply(id);
+  save();
+}
+
+static void load() {
+  for (int i = 0; i < Count; ++i) g_value[i] = kDefs[i].def;
+  if (FILE* f = _wfopen(file().c_str(), L"r")) {
+    char line[256];
+    while (fgets(line, sizeof line, f)) {
+      char key[128]; int v;
+      if (sscanf(line, " %127[^= ] = %d", key, &v) != 2) continue;
+      for (int i = 0; i < Count; ++i)   // a value the option does not offer (a hand edit) keeps the default
+        if (kDefs[i].key == std::string_view(key) && std::ranges::find(kDefs[i].values, v) != kDefs[i].values.end()) g_value[i] = v;
+    }
+    fclose(f);
+  }
+  for (int i = 0; i < Count; ++i) apply((Id)i);
+}
+
+static std::string label(Id id) {
+  int v = g_value[id];
+  switch (kDefs[id].unit) {
+    case Unit::Toggle: return v ? strings::kOn : strings::kOff;
+    case Unit::Meters: return std::format("{} {}", v, strings::kMetersUnit);
+    case Unit::Percent: return std::format("{} {}", v, strings::kPercent);
+    case Unit::Choice: return v >= 0 && v < (int)kDefs[id].labels.size() ? kDefs[id].labels[v] : std::to_string(v);
+    default: return v ? std::format("{} {}", v, strings::kMilliseconds) : std::string(strings::kOff);
+  }
+}
+
+// ---- the menu, on core/navigator like every bespoke menu: one item per option, then "Mod keys" (reads the mod's
+// keys). The navigator owns focus, positions, edges and type-ahead (letters jump to an option by name); Left/Right
+// adjust the focused option (on_adjust), Space/Enter steps it on. It plays the game's own menu sounds (the camp menu's
+// open, close, cursor and confirm cues; Config's option cue on a change). Keys reach it through keys::set_modal. ----
+static bool g_open = false;
+
+static void change(Id id, int delta) {
+  const auto& vals = kDefs[id].values;
+  int at = 0;
+  for (size_t i = 0; i < vals.size(); ++i) if (vals[i] == g_value[id]) at = (int)i;
+  int n = (int)vals.size();
+  // Space (0) steps forward and wraps; left and right stop at the ends.
+  int next = delta == 0 ? (at + 1) % n : std::clamp(at + delta, 0, n - 1);
+  if (next == at) return;   // state_text says the value again
+  set(id, vals[next]);
+  if (id == VoiceEndSound && g_value[id] != EndNext) voice::play_end_sound();   // a preview, in place of the menu's sound
+  else voice::play_system_sound(voice::CueOption);   // the game's Config plays it on every value change (FUN_141391c40)
+}
+
+struct Menu : ui::Screen {
+  std::string_view key() const override { return "mod_settings"; }
+  std::string screen_name() const override { return strings::kModSettings; }
+  bool wrap() const override { return true; }
+  void build(ui::GraphBuilder& b) override {
+    namespace k = ui::announcement_kinds;
+    b.begin_stop("options");
+    for (int i = 0; i < Count; ++i) {
+      Id id = (Id)i;
+      auto v = std::make_shared<ui::NodeVtable>();
+      v->announcements = {ui::NodeAnnouncement([id] { return std::string(kDefs[id].name); }, false, k::kLabel),
+                          ui::NodeAnnouncement([id] { return label(id); }, true, k::kValue)};
+      v->on_adjust = [id](int sign, bool) { change(id, sign); };
+      v->on_activate = [id] { change(id, 0); };
+      v->state_text = [id] { return label(id); };
+      b.add_item(ui::ControlId::structural(kDefs[i].key), v);
+    }
+    auto v = std::make_shared<ui::NodeVtable>();
+    v->announcements = {ui::NodeAnnouncement([] { return std::string(strings::kModKeys); }, false, k::kLabel)};
+    v->on_activate = [] { voice::play_system_sound(voice::CueDecide); speech::speak(keys::help(), true); };
+    b.add_item(ui::ControlId::structural("mod_keys"), v);
+  }
+};
+static Menu g_menu;
+static int g_frame = 0;
+static ui::GraphNavigator& nav() {
+  static ui::GraphNavigator n(ui::NavigatorHost{[](std::string_view t, bool interrupt) { speech::speak(t, interrupt); },
+                                                [] { voice::play_system_sound(voice::CueCursor); },
+                                                [] { return g_open; }, [] { return g_frame; }, {}});
+  return n;
+}
+
+// One key through the navigator, then its pull (the navigator rebuilds and announces in ensure_focus).
+static void action(std::string_view a) { g_frame += 100; nav().on_action(a); nav().ensure_focus(); }
+// Up / Down while a type-ahead search is active walk its results (the navigator reads them as held keys, once per
+// change of direction): one press, then the release. With no search they do nothing and the action moves.
+static void arrow(std::string_view a, bool up) {
+  ui::TypeaheadInput in;
+  in.up_held = up; in.down_held = !up;
+  nav().tick_typeahead(in);
+  nav().tick_typeahead(ui::TypeaheadInput{});
+  action(a);
+}
+static void typed(char16_t c) {
+  char16_t buf[1] = {c};
+  ui::TypeaheadInput in;
+  in.typed = std::u16string_view(buf, 1);
+  g_frame += 100;
+  nav().tick_typeahead(in);
+  nav().ensure_focus();
+}
+
+static void on_key(uint32_t vk, bool repeat) {
+  using namespace ui::ui_actions;
+  switch (vk) {
+    case VK_UP: arrow(Up, true); break;
+    case VK_DOWN: arrow(Down, false); break;
+    case VK_LEFT: action(Left); break;
+    case VK_RIGHT: action(Right); break;
+    case VK_HOME: action(Home); break;
+    case VK_END: action(End); break;
+    case VK_SPACE: case VK_RETURN: if (!repeat) action(Activate); break;
+    case VK_ESCAPE: case VK_BACK: case VK_F2: if (!repeat) close(); break;
+    case VK_F1: if (!repeat) speech::speak(strings::kModSettingsKeys(), true); break;
+    default:
+      if ((vk >= 'A' && vk <= 'Z') || (vk >= '0' && vk <= '9')) typed((char16_t)(vk >= 'A' && vk <= 'Z' ? vk - 'A' + 'a' : vk));
+      break;
+  }
+}
+
+static void on_pad(uint16_t button, bool repeat) {
+  using namespace ui::ui_actions;
+  switch (button) {
+    case XINPUT_GAMEPAD_DPAD_UP: arrow(Up, true); break;
+    case XINPUT_GAMEPAD_DPAD_DOWN: arrow(Down, false); break;
+    case XINPUT_GAMEPAD_DPAD_LEFT: action(Left); break;
+    case XINPUT_GAMEPAD_DPAD_RIGHT: action(Right); break;
+    case XINPUT_GAMEPAD_A: if (!repeat) action(Activate); break;
+    case XINPUT_GAMEPAD_B: case XINPUT_GAMEPAD_BACK: if (!repeat) close(); break;
+    case XINPUT_GAMEPAD_START: if (!repeat) speech::speak(strings::kModSettingsKeys(), true); break;
+    default: break;
+  }
+}
+
+void open() {
+  if (g_open) return;
+  g_open = true;
+  keys::set_modal(on_key, on_pad);
+  input::set_modal(true);
+  voice::play_system_sound(voice::CueMenuOpen);
+  // Every opening starts on the first option: a fresh state, the title, then the focused item (queued after it).
+  nav().screen_closed(&g_menu);
+  // The type-ahead starts fresh: a search left from the last opening is dropped, and the navigator's first look at a
+  // screen (which drops a search and takes no letter) is had here, not on the player's first letter.
+  nav().attach(nullptr);
+  nav().tick_typeahead(ui::TypeaheadInput{});
+  nav().attach(&g_menu);
+  g_frame += 100;
+  nav().settle_silently();   // the focus is read after the title
+  nav().tick_typeahead(ui::TypeaheadInput{});
+  speech::speak(strings::kModSettings, true);
+  nav().announce_current();
+}
+
+void close() {
+  if (!g_open) return;
+  g_open = false;
+  keys::set_modal(nullptr, nullptr);
+  input::set_modal(false);
+  voice::play_system_sound(voice::CueMenuClose);
+  speech::speak(strings::kModSettingsClosed, true);
+}
+
+static std::string focused_key() {
+  auto f = nav().focused_id();
+  return f && f->structural_key().is_string() ? f->structural_key().text() : std::string();
+}
+
+void install() {
+  load();
+  std::wstring f = file();
+  log::writef("settings: loaded {}", log::utf8(std::u16string(f.begin(), f.end())));
+  dev::route("/settings", [](const dev::Request& r, int&) {
+    // /settings?set=poi_range&v=40 | ?open=1 | ?close=1
+    auto out = std::make_shared<std::string>("timeout\n");
+    std::string key = dev::arg(r, "set");
+    int v = (int)dev::arg_int(r, "v", 0);
+    bool op = dev::has(r, "open"), cl = dev::has(r, "close");
+    hooks::run_on_game_thread([=] {
+      for (int i = 0; i < Count; ++i) if (!key.empty() && key == kDefs[i].key) set((Id)i, v);
+      if (op) open();
+      if (cl) close();
+      std::string s = std::format("open={} focus={}\n", g_open, focused_key());
+      for (int i = 0; i < Count; ++i) s += std::format("{}={} ({})\n", kDefs[i].key, g_value[i], label((Id)i));
+      *out = s;
+    });
+    return *out;
+  }, "?set=key&v=N ?open=1 ?close=1 the mod's settings");
+}
+}  // namespace p3a::settings

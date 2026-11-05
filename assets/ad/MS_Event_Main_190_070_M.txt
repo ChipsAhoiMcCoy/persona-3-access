@@ -1,0 +1,7 @@
+#file Movie_VP9/Anim/MS_Event_Main_190_070_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_190_070_M_Movi_VP9.MS_Event_Main_190_070_M_Movi_VP9
+#id 10
+0.200	3.580	00.mp3	Under a green sky, Tartarus rises into churning clouds.
+4.900	2.519	01.mp3	At its top, Junpei hangs chained to a cross.
+7.900	2.661	02.mp3	Beside him, two girls hang limp, and then the hero.
+11.000	2.252	03.mp3	A row of crosses, one for each of them.

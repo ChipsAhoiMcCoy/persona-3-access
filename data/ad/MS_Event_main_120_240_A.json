@@ -1,0 +1,19 @@
+{
+ "movie": "MS_Event_main_120_240_A",
+ "title": "Fuuka awakens",
+ "cues": [
+  {"at": 0.2, "text": "Fuuka puts a pistol to her temple and fires."},
+  {"at": 3.6, "text": "Light bursts out."},
+  {"at": 5.9, "text": "Natsuki clutches her head. Junpei stares."},
+  {"at": 10.2, "text": "A blue storm swirls up."},
+  {"at": 12.5, "text": "Akihiko, Mitsuru, Junpei, the hero and Yukari brace."},
+  {"at": 16.7, "text": "A pale spirit hurls light at a huge armored Shadow."},
+  {"at": 21.2, "text": "Its sword and its limp arm lie on the floor."},
+  {"at": 24.2, "text": "Natsuki, in tears, looks up."},
+  {"at": 27.0, "text": "The hero looks up into the light."},
+  {"at": 29.0, "text": "A tall figure rises atop a glass dome, arms spread."},
+  {"at": 33.0, "text": "Inside the dome, Fuuka and Natsuki stand together."},
+  {"at": 36.5, "text": "Light ripples over Fuuka's face."},
+  {"at": 40.5, "text": "Her eyes open, glowing blue."}
+ ]
+}

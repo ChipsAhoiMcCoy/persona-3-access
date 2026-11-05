@@ -1,0 +1,18 @@
+{
+ "movie": "MS_Event_Main_210_210_M",
+ "title": "The moon breaks open",
+ "cues": [
+  {"at": 0.3,   "text": "A green sky. A winged figure rises toward the moon."},
+  {"at": 4.1,   "text": "The moon turns black."},
+  {"at": 7.9,   "text": "Red cracks spread across its face."},
+  {"at": 13.9,  "text": "It breaks apart into jagged rock."},
+  {"at": 19.8,  "text": "Inside, a vast red eye opens."},
+  {"at": 23.2,  "text": "Far below, the group stands, looking up."},
+  {"at": 26.0,  "text": "The winged figure flies into the glare."},
+  {"at": 56.1,  "text": "The town below. Coffins stand in the streets, beside pools of blood."},
+  {"at": 60.9,  "text": "The coffins burst into flame."},
+  {"at": 62.9,  "text": "Now people stand in their place."},
+  {"at": 119.5, "text": "The glowing tower looms over the dark city."},
+  {"at": 122.2, "text": "A beam joins the tower's peak to the sky. Red water below."}
+ ]
+}

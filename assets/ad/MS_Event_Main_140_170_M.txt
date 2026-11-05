@@ -1,0 +1,6 @@
+#file Movie_VP9/Anim/MS_Event_Main_140_170_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_140_170_M_Movi_VP9.MS_Event_Main_140_170_M_Movi_VP9
+#id 8
+2.800	3.757	00.mp3	A sunny beach. Yukari steps out of the trees in a pink bikini.
+10.100	1.897	01.mp3	Akihiko has joined the boys.
+58.650	1.696	02.mp3	Mitsuru, in a white bikini.

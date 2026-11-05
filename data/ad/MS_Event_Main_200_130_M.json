@@ -1,0 +1,26 @@
+{
+ "movie": "MS_Event_Main_200_130_M",
+ "title": "Aigis remembers the bridge",
+ "cues": [
+  {"at": 0.3, "text": "Under a green sky, Aigis stands on a bridge."},
+  {"at": 3.8, "text": "Blue wings of light burst from her back."},
+  {"at": 6.6, "text": "Down the road stands Ryoji, in a yellow scarf."},
+  {"at": 10.5, "text": "Aigis's eyes narrow."},
+  {"at": 13.5, "text": "In grey, she dives from the sky at a dark, cloaked figure."},
+  {"at": 17.4, "text": "Fire bursts. Everything goes white."},
+  {"at": 60.2, "text": "Sparks fly as she is thrown back."},
+  {"at": 62.5, "text": "A cloaked figure with a white skull mask stands on the bridge."},
+  {"at": 66.2, "text": "Aigis flips in mid-air, eyes locked on it."},
+  {"at": 69.0, "text": "Rockets flare. She slams into the figure with a red blade of light."},
+  {"at": 73.2, "text": "Smoke billows. The masked figure looms through it."},
+  {"at": 97.6, "text": "A beam of light strikes the middle of the bridge."},
+  {"at": 115.85, "text": "A flash. Aigis's eyes glow blue."},
+  {"at": 118.9, "text": "She staggers, shedding sparks of light."},
+  {"at": 134.4, "text": "Her Persona appears, a towering armoured figure."},
+  {"at": 137.7, "text": "Light explodes."},
+  {"at": 154.9, "text": "Smoke rises from Aigis."},
+  {"at": 157.0, "text": "One eye glows red. Sparks crackle across her chest."},
+  {"at": 164.7, "text": "Lightning crackles over her."},
+  {"at": 168.2, "text": "Warnings flash red. A figure in her sights: Unknown."}
+ ]
+}

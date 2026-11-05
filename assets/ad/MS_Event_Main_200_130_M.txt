@@ -1,0 +1,23 @@
+#file Movie_VP9/Anim/MS_Event_Main_200_130_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_200_130_M_Movi_VP9.MS_Event_Main_200_130_M_Movi_VP9
+#id 13
+0.300	2.665	00.mp3	Under a green sky, Aigis stands on a bridge.
+3.800	1.933	01.mp3	Blue wings of light burst from her back.
+6.600	2.795	02.mp3	Down the road stands Ryoji, in a yellow scarf.
+10.500	1.269	03.mp3	Aigis's eyes narrow.
+13.500	3.269	04.mp3	In grey, she dives from the sky at a dark, cloaked figure.
+17.400	2.169	05.mp3	Fire bursts. Everything goes white.
+60.200	1.798	06.mp3	Sparks fly as she is thrown back.
+62.500	3.220	07.mp3	A cloaked figure with a white skull mask stands on the bridge.
+66.200	2.440	08.mp3	Aigis flips in mid-air, eyes locked on it.
+69.000	3.779	09.mp3	Rockets flare. She slams into the figure with a red blade of light.
+73.200	2.716	10.mp3	Smoke billows. The masked figure looms through it.
+97.600	2.217	11.mp3	A beam of light strikes the middle of the bridge.
+115.850	2.141	12.mp3	A flash. Aigis's eyes glow blue.
+118.900	2.088	13.mp3	She staggers, shedding sparks of light.
+134.400	2.764	14.mp3	Her Persona appears, a towering armoured figure.
+137.700	1.029	15.mp3	Light explodes.
+154.900	1.556	16.mp3	Smoke rises from Aigis.
+157.000	3.175	17.mp3	One eye glows red. Sparks crackle across her chest.
+164.700	1.477	18.mp3	Lightning crackles over her.
+168.200	3.272	19.mp3	Warnings flash red. A figure in her sights: Unknown.

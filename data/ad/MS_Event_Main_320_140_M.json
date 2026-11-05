@@ -1,0 +1,17 @@
+{
+ "movie": "MS_Event_Main_320_140_M",
+ "title": "The creature at the door",
+ "cues": [
+  {"at": 0.9,   "text": "Through golden clouds, a huge black hand rises."},
+  {"at": 5.85,  "text": "A giant black arm claws up the golden door. The team backs away."},
+  {"at": 11.85, "text": "A colossal creature rears up, a skull with red eyes and huge teeth."},
+  {"at": 16.4,  "text": "It reaches for the stone figure."},
+  {"at": 70.7,  "text": "The skull looms over a line of fire."},
+  {"at": 72.95, "text": "It claws at the door."},
+  {"at": 91.45, "text": "The team scatters."},
+  {"at": 93.25, "text": "Gold drips from the skull's teeth."},
+  {"at": 95.6,  "text": "It rears up."},
+  {"at": 99.45, "text": "Its red eyes blaze."},
+  {"at": 103.5, "text": "The team faces it: one dark body with two skull heads."}
+ ]
+}

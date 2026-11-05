@@ -1,0 +1,3 @@
+#file Movie_VP9/Anim/MS_Event_Main_190_140_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_190_140_M_Movi_VP9.MS_Event_Main_190_140_M_Movi_VP9
+#id 11

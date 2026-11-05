@@ -1,0 +1,23 @@
+{
+ "movie": "MS_Event_Extr_410_040_M",
+ "title": "S.E.E.S. march together",
+ "cues": [
+  {"at": 0.3,   "text": "A great golden clock, bathed in white light."},
+  {"at": 3.4,   "text": "Dark pillars rise."},
+  {"at": 5.2,   "text": "From behind, the hero and his friends walk toward a bright opening."},
+  {"at": 10.65, "text": "Akihiko lowers his gloved fist and walks on."},
+  {"at": 15.0,  "text": "Mitsuru glances back, then turns away."},
+  {"at": 19.9,  "text": "Boots stride across a blue carpet."},
+  {"at": 22.0,  "text": "Junpei tips his cap."},
+  {"at": 25.9,  "text": "Carved bull heads glint on a pillar."},
+  {"at": 29.5,  "text": "Fuuka touches her headset, then follows the others."},
+  {"at": 33.2,  "text": "They march between the pillars."},
+  {"at": 37.5,  "text": "Yukari tugs her jacket straight, arrows on her back."},
+  {"at": 41.65, "text": "Red S.E.E.S. armbands, one after another."},
+  {"at": 45.0,  "text": "The hero stands still, looking up."},
+  {"at": 50.8,  "text": "He turns toward a wall of light."},
+  {"at": 54.4,  "text": "A huge golden clock gleams."},
+  {"at": 56.9,  "text": "The team walks forward side by side."},
+  {"at": 59.4,  "text": "Mitsuru, Fuuka, Yukari, the hero, Junpei and Akihiko."}
+ ]
+}

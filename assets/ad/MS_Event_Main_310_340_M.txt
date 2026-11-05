@@ -1,0 +1,19 @@
+#file Astrea/Movie_VP9/Anim/MS_Event_Main_310_340_M_Movi_VP9.usm
+#asset /Game/Astrea/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_310_340_M_Movi_VP9.MS_Event_Main_310_340_M_Movi_VP9
+#id 73
+0.200	3.158	00.mp3	A golden chamber. The team stands on its patterned floor.
+4.700	2.829	01.mp3	A dark silhouette rises before them, hunched over.
+11.400	3.918	02.mp3	It lifts a hand. It has the hero's face, its eyes glowing red.
+16.200	2.210	03.mp3	The face turns pale blue, like a mask.
+21.600	3.824	04.mp3	Blue light spreads up its arm, and it breaks apart into glowing dust.
+25.800	1.319	05.mp3	Blue butterfly wings.
+28.000	3.102	06.mp3	The light climbs its whole body. Butterflies circle it.
+33.800	1.186	07.mp3	The red eyes close.
+39.400	2.407	08.mp3	Wrapped in blue flame, the figure stands still.
+42.200	1.529	09.mp3	Aigis reaches out her hand.
+46.900	1.027	10.mp3	Her eyes widen.
+49.000	3.828	11.mp3	The figure is gone. Blue butterflies drift up into the golden light.
+54.450	2.517	12.mp3	Koromaru, Junpei, Ken and Fuuka watch.
+60.350	1.947	13.mp3	Yukari, Mitsuru, Akihiko.
+63.200	3.634	14.mp3	Aigis lowers her hand. A blue butterfly rises past her.
+67.200	2.753	15.mp3	It flutters away into the golden light, and fades.

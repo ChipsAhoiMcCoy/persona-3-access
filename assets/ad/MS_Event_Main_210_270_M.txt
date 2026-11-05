@@ -1,0 +1,14 @@
+#file Movie_VP9/Anim/MS_Event_Main_210_270_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_210_270_M_Movi_VP9.MS_Event_Main_210_270_M_Movi_VP9
+#id 16
+15.000	3.895	00.mp3	The tower stands dark against the green sky, the yellow moon above it.
+22.000	2.822	01.mp3	The sky turns blue. Light pours over the tower.
+25.300	2.858	02.mp3	Its walls crumble into white light, piece by piece.
+32.400	2.065	03.mp3	Beneath it, a school courtyard appears.
+35.000	1.366	04.mp3	Akihiko watches.
+37.700	0.994	05.mp3	The tower, dark.
+46.600	2.427	06.mp3	Light rises from the tower's top and scatters.
+53.800	1.394	07.mp3	The school entrance, empty.
+55.900	1.923	08.mp3	The hero stands alone at the doors.
+60.700	0.850	09.mp3	A full moon.
+62.000	2.635	10.mp3	From high above, Aigis, alone on the paving.

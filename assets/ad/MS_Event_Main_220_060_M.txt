@@ -1,0 +1,12 @@
+#file Movie_VP9/Anim/MS_Event_Main_220_060_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_220_060_M_Movi_VP9.MS_Event_Main_220_060_M_Movi_VP9
+#id 19
+0.300	3.347	00.mp3	Hand-drawn now. A sunlit rooftop, seen from high above.
+4.400	1.870	01.mp3	Two figures on a bench far below.
+7.000	2.331	02.mp3	Wind turbines turn against a bright sky.
+10.900	3.010	03.mp3	Across the rooftop, the friends wait at the open door.
+20.700	1.795	04.mp3	Aigis turns to them and smiles.
+24.900	5.113	05.mp3	On the bench, the hero leans against Aigis, eyes closed. Her hand rests on his shoulder.
+30.800	3.544	06.mp3	His face is calm, a faint smile. Petals drift past.
+35.500	1.454	07.mp3	The picture fades to white.
+39.600	1.225	08.mp3	In the corner: Fin.

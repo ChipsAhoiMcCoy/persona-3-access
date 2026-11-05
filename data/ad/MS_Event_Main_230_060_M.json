@@ -1,0 +1,42 @@
+{
+ "movie": "MS_Event_Main_230_060_M",
+ "title": "Ending: graduation",
+ "cues": [
+  {
+   "at": 0.3,
+   "text": "Hand-drawn. A sign at the school gate: Graduation Ceremony."
+  },
+  {
+   "at": 4.5,
+   "text": "Akihiko walks past chatting girls."
+  },
+  {
+   "at": 6.9,
+   "text": "Mitsuru walks under the cherry trees."
+  },
+  {
+   "at": 9.2,
+   "text": "A mirror ball spins."
+  },
+  {
+   "at": 11.0,
+   "text": "In a karaoke room, Yukari sings into a microphone."
+  },
+  {
+   "at": 15.1,
+   "text": "Junpei lounges on a couch, phone to his ear, laughing."
+  },
+  {
+   "at": 19.0,
+   "text": "The hero sits apart, eyes on a glowing screen."
+  },
+  {
+   "at": 22.5,
+   "text": "The three of them in the room. The colour drains to grey."
+  },
+  {
+   "at": 26.3,
+   "text": "The screen reads: The End."
+  }
+ ]
+}

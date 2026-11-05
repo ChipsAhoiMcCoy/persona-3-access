@@ -1,0 +1,22 @@
+{
+ "movie": "MS_Event_Main_190_070_M",
+ "title": "Bound atop Tartarus",
+ "cues": [
+  {
+   "at": 0.2,
+   "text": "Under a green sky, Tartarus rises into churning clouds."
+  },
+  {
+   "at": 4.9,
+   "text": "At its top, Junpei hangs chained to a cross."
+  },
+  {
+   "at": 7.9,
+   "text": "Beside him, two girls hang limp, and then the hero."
+  },
+  {
+   "at": 11.0,
+   "text": "A row of crosses, one for each of them."
+  }
+ ]
+}

@@ -1,0 +1,12 @@
+{
+ "movie": "MS_Event_Main_330_080_M",
+ "title": "Aigis on the rooftop",
+ "cues": [
+  {"at": 0.6,   "text": "A rooftop on a bright day. Aigis stands alone at the railing. Wind turbines turn beyond."},
+  {"at": 6.5,   "text": "The wind tugs at her skirt."},
+  {"at": 8.6,   "text": "She holds a hand to her ear and gazes up at the sky."},
+  {"at": 13.8,  "text": "She closes her eyes."},
+  {"at": 15.3,  "text": "Cherry blossom petals swirl past, up into the sunlit sky."},
+  {"at": 19.5,  "text": "The picture fades to white."}
+ ]
+}

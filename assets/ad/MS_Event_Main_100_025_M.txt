@@ -1,0 +1,8 @@
+#file Movie_VP9/Anim/MS_Event_Main_100_025_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_100_025_M_Movi_VP9.MS_Event_Main_100_025_M_Movi_VP9
+#id 21
+0.300	1.579	00.mp3	A blue butterfly in the dark.
+2.900	5.850	01.mp3	Words appear. Time waits for no one. All are equal in its flow, all lives borne to their ends.
+9.000	2.837	02.mp3	You, who would protect the glimmer of the finite future.
+12.900	3.732	03.mp3	You have a single year. Go forth, and live in the time given to you.
+18.200	5.372	04.mp3	Even in these halcyon days of repose, let your heart guide you, and never stray from its path.

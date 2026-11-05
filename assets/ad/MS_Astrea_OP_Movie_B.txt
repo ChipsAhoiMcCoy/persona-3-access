@@ -1,0 +1,33 @@
+#file Astrea/Movie_VP9/Anim/MS_Astrea_OP_Movie_B_Movi_VP9.usm
+#asset /Game/L10N/en/Astrea/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Astrea_OP_Movie_Movi_VP9.MS_Astrea_OP_Movie_Movi_VP9
+#id 70
+2.000	2.471	00.mp3	A glowing blue butterfly flutters in the dark.
+6.300	4.311	01.mp3	The hero stands in a doorway of light, at the end of a field of red flowers.
+12.000	2.096	02.mp3	Aigis's eye, a tear running down.
+14.300	3.245	03.mp3	A dim, green-lit lab. A figure sits in a machine.
+18.200	1.491	04.mp3	Aigis turns and looks back.
+23.200	2.425	05.mp3	Glowing tarot cards drift past her friends.
+26.400	3.575	06.mp3	Yukari, Junpei, Akihiko, Mitsuru, Ken, Koromaru.
+31.900	2.000	07.mp3	Fuuka, as glass shatters around her.
+34.200	1.900	08.mp3	A pale desert of countless doors.
+36.400	1.287	09.mp3	Aigis runs among them.
+38.400	1.810	10.mp3	A red butterfly mask glows.
+40.700	1.635	11.mp3	A key falls through grey sky.
+42.600	3.549	12.mp3	Aigis sinks into red water, eyes closed. Then they open.
+48.000	2.347	13.mp3	The hero drifts upside down through blue water.
+50.900	2.651	14.mp3	The two sink apart, his water blue, hers red.
+55.000	1.661	15.mp3	Her hand reaches for his face.
+58.000	2.453	16.mp3	His face turns white and bursts into spray.
+62.600	1.523	17.mp3	Her hand grasps at nothing.
+65.200	2.439	18.mp3	An Evoker sinks, his face reflected in it.
+68.600	3.417	19.mp3	A phone and earphones drift past, his picture on its screen.
+74.000	2.344	20.mp3	A dark round hall with a sealed golden gate.
+77.000	2.518	21.mp3	Aigis's hands open around a golden key.
+79.800	2.582	22.mp3	A floor of carved faces, flooded with light.
+84.100	1.808	23.mp3	Akihiko and Ken stand ready.
+86.200	2.472	24.mp3	Koromaru, Junpei, Yukari, Mitsuru.
+89.200	2.720	25.mp3	A figure in a red mask drags a long blade.
+93.200	2.393	26.mp3	Aigis's Persona rises behind her.
+97.000	2.014	27.mp3	The blue butterfly by Aigis's face.
+99.600	3.148	28.mp3	The title: Persona 3 Reload. Episode Aigis.
+104.200	1.691	29.mp3	A pink petal settles on white.

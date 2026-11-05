@@ -1,0 +1,24 @@
+#file Astrea/Movie_VP9/Anim/MS_Astrea_EndCredits_BG_Movi_VP9.usm
+#asset /Game/Astrea/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Astrea_EndCredits_BG_Movi_VP9.MS_Astrea_EndCredits_BG_Movi_VP9
+#id 78
+3.200	5.350	00.mp3	In flat shades of blue, Aigis walks along a railing past city buildings. The credits roll.
+19.500	4.438	01.mp3	A large drawing of Fuuka's face appears beside her, then scenes from the story.
+37.500	0.823	02.mp3	Koromaru.
+45.000	1.862	03.mp3	The team gathers in a lamplit square.
+55.600	0.524	04.mp3	Ken.
+63.500	2.976	05.mp3	A policeman rests a hand on a small boy's shoulder.
+73.600	0.896	06.mp3	Akihiko.
+91.600	1.659	07.mp3	Junpei, in a cap, grinning.
+110.300	1.820	08.mp3	Mitsuru, her long hair blowing.
+128.600	0.754	09.mp3	Yukari.
+146.600	0.758	10.mp3	Metis.
+154.000	4.518	11.mp3	In a clip, Metis and Aigis stand face to face, and light bursts around them.
+165.000	1.331	12.mp3	Aigis walks on alone.
+195.000	4.253	13.mp3	Now she walks a seaside promenade. Wind turbines turn on the far shore.
+232.000	2.444	14.mp3	She lifts a hand to her ear, then walks on.
+309.500	1.747	15.mp3	A school bag swings in her hand.
+368.000	1.874	16.mp3	She raises a hand to her ear again.
+398.000	3.056	17.mp3	A tall iron fence, cherry blossoms pink behind it.
+407.500	2.200	18.mp3	She stops by an arched gate and looks up.
+414.500	2.117	19.mp3	She holds out a palm to the falling petals.
+421.500	3.159	20.mp3	She turns back, and the picture fades to blue, then black.

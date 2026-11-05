@@ -1,0 +1,9 @@
+#file Astrea/Movie_VP9/Anim/MS_Event_Main_330_080_M_Movi_VP9.usm
+#asset /Game/Astrea/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_330_080_M_Movi_VP9.MS_Event_Main_330_080_M_Movi_VP9
+#id 77
+0.600	5.633	00.mp3	A rooftop on a bright day. Aigis stands alone at the railing. Wind turbines turn beyond.
+6.500	1.491	01.mp3	The wind tugs at her skirt.
+8.600	2.949	02.mp3	She holds a hand to her ear and gazes up at the sky.
+13.800	1.248	03.mp3	She closes her eyes.
+15.300	3.603	04.mp3	Cherry blossom petals swirl past, up into the sunlit sky.
+19.500	1.454	05.mp3	The picture fades to white.

@@ -1,0 +1,14 @@
+{
+ "movie": "MS_Event_main_190_270_C",
+ "title": "Kyoto photos",
+ "cues": [
+  {
+   "at": 0.1,
+   "text": "Yukari and Mitsuru in kimonos under a red parasol."
+  },
+  {
+   "at": 4.0,
+   "text": "The whole group poses before a golden temple."
+  }
+ ]
+}

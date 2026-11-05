@@ -1,0 +1,7 @@
+#file Movie_VP9/Anim/MS_Event_Main_100_090_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_100_090_M_Movi_VP9.MS_Event_Main_100_090_M_Movi_VP9
+#id 2
+0.100	1.974	00.mp3	A monorail glides above the town.
+31.000	3.334	01.mp3	The monorail crosses open sea toward an island city.
+34.600	1.835	02.mp3	Students walk a brick path to school.
+44.300	2.018	03.mp3	Yukari strides through the school gates.

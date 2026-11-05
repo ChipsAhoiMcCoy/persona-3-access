@@ -1,0 +1,29 @@
+{
+ "movie": "MS_Event_Main_100_030_M_Movi_VP9",
+ "title": "Arrival in town",
+ "note": "Cue times are movie seconds (the Mana clock). Each cue must end before its gap does (build/ad/<id>.gaps.json).",
+ "cues": [
+  {"at": 0.9,   "text": "A huge sun sinks behind golden clouds."},
+  {"at": 5.0,   "text": "From high above, a city crosswalk. People stream across, their long shadows stretching in the evening light."},
+  {"at": 14.8,  "text": "Tall buildings glow orange along a wide street at sunset."},
+  {"at": 18.2,  "text": "Crowds wait in a shadowed plaza, chatting and checking their phones."},
+  {"at": 22.2,  "text": "People line up outside a bright café."},
+  {"at": 24.8,  "text": "A slim teenage boy in a black school uniform walks through the crowd, earphones in."},
+  {"at": 30.6,  "text": "He passes a group crouched on the pavement, and keeps walking."},
+  {"at": 34.1,  "text": "Three young men gaze up at a glass tower."},
+  {"at": 37.4,  "text": "Elsewhere, a schoolgirl stands alone by a door."},
+  {"at": 48.0,  "text": "A gun at her temple."},
+  {"at": 58.0,  "text": "She drops the gun and sinks to her knees."},
+  {"at": 72.9,  "text": "In darkness, a glowing blue butterfly drifts."},
+  {"at": 88.62,  "text": "The boy walks out across the empty station."},
+  {"at": 91.1,  "text": "A full moon shines through the glass roof."},
+  {"at": 93.5,  "text": "He crosses the hall to the ticket gates and steps through."},
+  {"at": 98.8,  "text": "A station clock. Both hands point to twelve."},
+  {"at": 102.6, "text": "The lights die. The whole station turns a sickly green."},
+  {"at": 109.8, "text": "The moon looms, huge and yellow, in a green sky."},
+  {"at": 113.6, "text": "The boy looks around. His face doesn't change."},
+  {"at": 116.8, "text": "He climbs the stairs out of the station."},
+  {"at": 120.6, "text": "Outside, the square is silent. Dark pools of blood stain the pavement."},
+  {"at": 127.6, "text": "He stands still, looking ahead, as the picture fades."}
+ ]
+}

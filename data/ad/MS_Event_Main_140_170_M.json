@@ -1,0 +1,9 @@
+{
+ "movie": "MS_Event_Main_140_170_M",
+ "title": "Swimsuits at the beach",
+ "cues": [
+  {"at": 2.8,   "text": "A sunny beach. Yukari steps out of the trees in a pink bikini."},
+  {"at": 10.1,  "text": "Akihiko has joined the boys."},
+  {"at": 58.65, "text": "Mitsuru, in a white bikini."}
+ ]
+}

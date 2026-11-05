@@ -1,0 +1,11 @@
+{
+ "movie": "MS_Event_Main_220_030_M",
+ "title": "Mitsuru's graduation speech",
+ "cues": [
+  {"at": 1.35,  "text": "A packed school auditorium, hung with red and white bunting."},
+  {"at": 4.75,  "text": "Mitsuru reads a speech at the microphone."},
+  {"at": 16.7,  "text": "Yukari, in her seat."},
+  {"at": 63.9,  "text": "Mitsuru steps away from the microphone and hurries off the stage."},
+  {"at": 80.5,  "text": "They run out into the light."}
+ ]
+}

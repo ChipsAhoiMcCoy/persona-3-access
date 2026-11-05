@@ -1,0 +1,29 @@
+#file Movie_VP9/Event/MS_Event_main_170_170_A_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Event/MS_Event_main_170_170_A_Movi_VP9.MS_Event_main_170_170_A_Movi_VP9
+#id 61
+0.300	4.579	00.mp3	Behind a chain-link fence, in green moonlight, Takaya aims a revolver at Ken.
+9.700	4.221	01.mp3	Shinjiro throws himself in front of Ken. The bullet tears into his back.
+15.000	2.435	02.mp3	Blood drops hang in the air. Ken stares.
+18.300	3.053	03.mp3	Ken's hand reaches for the wound in Shinjiro's back.
+21.700	1.657	04.mp3	Takaya keeps the gun raised.
+26.450	2.979	05.mp3	Shinjiro collapses. Takaya stands over him.
+41.350	2.110	06.mp3	The rest of S.E.E.S. run in.
+50.400	2.381	07.mp3	Takaya turns and walks off into the dark.
+53.600	1.444	08.mp3	Akihiko runs to him.
+64.200	3.468	09.mp3	The team gathers around Shinjiro. Fuuka kneels by Ken.
+68.000	2.051	10.mp3	Koromaru nuzzles Shinjiro's hand.
+73.300	1.523	11.mp3	Shinjiro looks up at Ken.
+97.200	1.368	12.mp3	Blood runs from his mouth.
+106.000	1.214	13.mp3	His eyes half close.
+112.650	1.390	14.mp3	Mitsuru lowers her eyes.
+115.000	2.680	15.mp3	Shinjiro rests his hand on Koromaru's head.
+118.300	1.471	16.mp3	Akihiko cradles him.
+126.950	1.574	17.mp3	Akihiko grips his hand.
+132.400	2.627	18.mp3	His eyes close. His hand slips and falls.
+136.600	2.821	19.mp3	Silent faces: the hero, Aigis, Junpei.
+139.800	1.481	20.mp3	Akihiko bows his head.
+141.500	3.079	21.mp3	Shinjiro's head falls against Akihiko's chest.
+147.800	1.586	22.mp3	Tears roll down Ken's cheeks.
+150.000	1.670	23.mp3	He falls forward onto his hands.
+165.800	2.454	24.mp3	A full moon hangs between the dark buildings.
+168.800	1.508	25.mp3	The green glow fades away.

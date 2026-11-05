@@ -1,0 +1,18 @@
+{
+ "movie": "MS_Event_Main_110_070_M",
+ "title": "Tartarus rises",
+ "cues": [
+  {"at": 0.1, "text": "Night. A phone reads 11:59."},
+  {"at": 2.9, "text": "Outside the gates, Akihiko, Yukari and Junpei wait."},
+  {"at": 6.6, "text": "Through the bars, the school sits dark."},
+  {"at": 9.0, "text": "With them, the hero and Mitsuru."},
+  {"at": 12.0, "text": "Everything turns green. The school's windows twist and multiply."},
+  {"at": 17.8, "text": "The building stretches up into a green sky."},
+  {"at": 21.4, "text": "Junpei gapes."},
+  {"at": 25.4, "text": "Huge blocks of stone tilt and rise. A glowing clock face splits."},
+  {"at": 30.9, "text": "Mitsuru glances back."},
+  {"at": 32.6, "text": "The tower climbs, glowing clocks in its walls."},
+  {"at": 39.6, "text": "Its stacked walls rise past the clouds."},
+  {"at": 42.2, "text": "At the top, a crescent moon."}
+ ]
+}

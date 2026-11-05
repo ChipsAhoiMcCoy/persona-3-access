@@ -1,0 +1,4 @@
+#file Movie_VP9/Anim/MS_Event_Main_140_210_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_140_210_M_Movi_VP9.MS_Event_Main_140_210_M_Movi_VP9
+#id 9
+0.100	1.730	00.mp3	A projector glows in the dark.

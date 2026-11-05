@@ -1,0 +1,12 @@
+#file Movie_VP9/Anim/MS_Event_Main_230_060_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_230_060_M_Movi_VP9.MS_Event_Main_230_060_M_Movi_VP9
+#id 18
+0.300	3.878	00.mp3	Hand-drawn. A sign at the school gate: Graduation Ceremony.
+4.500	2.129	01.mp3	Akihiko walks past chatting girls.
+6.900	1.921	02.mp3	Mitsuru walks under the cherry trees.
+9.200	1.215	03.mp3	A mirror ball spins.
+11.000	3.151	04.mp3	In a karaoke room, Yukari sings into a microphone.
+15.100	3.281	05.mp3	Junpei lounges on a couch, phone to his ear, laughing.
+19.000	2.763	06.mp3	The hero sits apart, eyes on a glowing screen.
+22.500	2.996	07.mp3	The three of them in the room. The colour drains to grey.
+26.300	1.593	08.mp3	The screen reads: The End.

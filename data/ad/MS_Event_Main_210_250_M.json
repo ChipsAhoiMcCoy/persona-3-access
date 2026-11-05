@@ -1,0 +1,22 @@
+{
+ "movie": "MS_Event_Main_210_250_M",
+ "title": "The hero rises to the eye",
+ "cues": [
+  {"at": 0.3,   "text": "The tower's peak points up at the giant eye in the sky."},
+  {"at": 4.0,   "text": "On the tower's top, the group lies scattered."},
+  {"at": 26.4,  "text": "The hero floats up toward the eye."},
+  {"at": 52.3,  "text": "He drifts into its pupil."},
+  {"at": 54.0,  "text": "The eye's red rim fills the sky."},
+  {"at": 56.85, "text": "In darkness, the hero stands."},
+  {"at": 58.9,  "text": "Blue streaks rush past."},
+  {"at": 60.6,  "text": "He drifts through a storm of colour toward a blinding light."},
+  {"at": 65.9,  "text": "He soars on, stretched out, through rushing light."},
+  {"at": 71.4,  "text": "Everything turns white."},
+  {"at": 73.0,  "text": "A glowing egg of light rests on cracked stone."},
+  {"at": 75.9,  "text": "He dives toward it, arms raised."},
+  {"at": 79.0,  "text": "His shoes step across the glowing ground."},
+  {"at": 83.0,  "text": "Wings of crackling blue light spread on either side of him."},
+  {"at": 87.0,  "text": "His face, calm. He looks straight ahead."},
+  {"at": 90.6,  "text": "White light."}
+ ]
+}

@@ -1,0 +1,14 @@
+#file Movie_VP9/Event/MS_Event_main_200_070_A_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Event/MS_Event_main_200_070_A_Movi_VP9.MS_Event_main_200_070_A_Movi_VP9
+#id 63
+0.300	2.624	00.mp3	Chidori kneels beside Junpei, lying still.
+3.600	4.985	01.mp3	Behind her, a ghostly Persona rises. Her glowing hand rests on his bloody chest.
+9.600	3.162	02.mp3	The team watches in silence. Fuuka clasps her hands.
+13.100	4.463	03.mp3	Golden sparks drift around Chidori. Yukari, Mitsuru and Ken look on.
+41.550	1.467	04.mp3	Chidori smiles sadly.
+45.600	4.731	05.mp3	Chidori has fallen into his arms. Junpei holds her as the team gathers close.
+70.300	1.498	06.mp3	Her head rests on his chest.
+118.600	1.579	07.mp3	Tears fill Junpei's eyes.
+134.550	1.806	08.mp3	A memory: Chidori sketching.
+141.200	4.437	09.mp3	Chidori lies limp in his arms. Junpei bows his head. A tear falls.
+151.400	2.607	10.mp3	A thin crescent moon hangs in the green sky.

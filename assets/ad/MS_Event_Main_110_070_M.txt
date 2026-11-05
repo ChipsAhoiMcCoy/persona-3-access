@@ -1,0 +1,15 @@
+#file Movie_VP9/Anim/MS_Event_Main_110_070_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_110_070_M_Movi_VP9.MS_Event_Main_110_070_M_Movi_VP9
+#id 3
+0.100	2.464	00.mp3	Night. A phone reads 11:59.
+2.900	3.477	01.mp3	Outside the gates, Akihiko, Yukari and Junpei wait.
+6.600	2.031	02.mp3	Through the bars, the school sits dark.
+9.000	1.844	03.mp3	With them, the hero and Mitsuru.
+12.000	3.769	04.mp3	Everything turns green. The school's windows twist and multiply.
+17.800	2.179	05.mp3	The building stretches up into a green sky.
+21.400	1.053	06.mp3	Junpei gapes.
+25.400	4.144	07.mp3	Huge blocks of stone tilt and rise. A glowing clock face splits.
+30.900	1.363	08.mp3	Mitsuru glances back.
+32.600	2.594	09.mp3	The tower climbs, glowing clocks in its walls.
+39.600	2.155	10.mp3	Its stacked walls rise past the clouds.
+42.200	1.537	11.mp3	At the top, a crescent moon.

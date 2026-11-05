@@ -1,0 +1,5 @@
+#file Movie_VP9/Event/MS_Event_main_190_270_C_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Event/MS_Event_main_190_270_C_Movi_VP9.MS_Event_main_190_270_C_Movi_VP9
+#id 51
+0.100	3.567	00.mp3	Yukari and Mitsuru in kimonos under a red parasol.
+4.000	2.335	01.mp3	The whole group poses before a golden temple.

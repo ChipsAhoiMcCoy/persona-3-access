@@ -1,0 +1,10 @@
+{
+ "movie": "MS_Event_Main_130_140_M",
+ "title": "Yukari in the shower",
+ "cues": [
+  {"at": 0.1, "text": "A jacket with a red armband hangs on a hook."},
+  {"at": 3.2, "text": "Bare feet in a steamy shower."},
+  {"at": 5.0, "text": "Clothes in a basket."},
+  {"at": 16.2, "text": "Yukari glances back."}
+ ]
+}

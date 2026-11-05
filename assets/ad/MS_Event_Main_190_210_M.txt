@@ -1,0 +1,8 @@
+#file Movie_VP9/Anim/MS_Event_Main_190_210_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_190_210_M_Movi_VP9.MS_Event_Main_190_210_M_Movi_VP9
+#id 12
+0.200	3.134	00.mp3	A sleek white bullet train stands at a sunlit platform.
+3.700	1.788	01.mp3	A vast hall of steel and glass.
+6.300	1.853	02.mp3	Students crowd a giant staircase.
+29.600	2.609	03.mp3	Yukari stands among the students in the station.
+32.800	2.904	04.mp3	Nearby, Mitsuru, Aigis and Fuuka wait together.

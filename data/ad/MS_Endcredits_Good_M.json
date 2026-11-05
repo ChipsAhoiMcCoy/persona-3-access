@@ -1,0 +1,30 @@
+{
+ "movie": "MS_Endcredits_Good_M",
+ "title": "Ending credits",
+ "cues": [
+  {"at": 1.0,    "text": "Deep underwater. Light ripples on the surface far above."},
+  {"at": 6.0,    "text": "The credits roll."},
+  {"at": 10.0,   "text": "A glowing figure sinks slowly, head first, into the deep."},
+  {"at": 20.5,   "text": "Yukari's face fades in beside it, looking back over her shoulder."},
+  {"at": 28.0,   "text": "She turns away, eyes closed."},
+  {"at": 35.5,   "text": "Inside her outline, a young girl with a school bag."},
+  {"at": 41.5,   "text": "Junpei appears, grinning, a hand at his cap."},
+  {"at": 53.0,   "text": "Faint pictures flicker inside his outline."},
+  {"at": 64.0,   "text": "A man with a mustache, then Mitsuru."},
+  {"at": 70.0,   "text": "Mitsuru's face, calm, her hair over one eye."},
+  {"at": 80.0,   "text": "She turns away."},
+  {"at": 93.5,   "text": "Akihiko appears, smiling."},
+  {"at": 110.0,  "text": "Inside his outline, a girl with long wavy hair."},
+  {"at": 120.0,  "text": "Fuuka appears, smiling softly."},
+  {"at": 134.0,  "text": "Inside her outline, two girls in school uniforms."},
+  {"at": 144.0,  "text": "Ken appears, smiling, in a hooded jacket."},
+  {"at": 158.5,  "text": "Inside his outline, a small boy stands alone."},
+  {"at": 165.0,  "text": "Koromaru appears, mouth open, ears up."},
+  {"at": 189.0,  "text": "A large eye fills his outline."},
+  {"at": 196.5,  "text": "Shinjiro appears, head bowed, a hand on his cap."},
+  {"at": 212.5,  "text": "Aigis appears, gazing out."},
+  {"at": 235.5,  "text": "Inside her outline, a boy in a dark school uniform stands by some steps."},
+  {"at": 243.0,  "text": "The pictures fade. Only the glowing figure is left, sinking into darkness."},
+  {"at": 300.0,  "text": "It fades to black."}
+ ]
+}

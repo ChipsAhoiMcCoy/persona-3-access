@@ -1,0 +1,13 @@
+#file Astrea/Movie_VP9/Anim/MS_Event_Main_320_120_M_Movi_VP9.usm
+#asset /Game/Astrea/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_320_120_M_Movi_VP9.MS_Event_Main_320_120_M_Movi_VP9
+#id 74
+2.250	1.415	00.mp3	Aigis, among the stars.
+5.600	3.894	01.mp3	The team floats behind her. The hero, eyes closed, grips his collar.
+9.900	2.192	02.mp3	He reaches up into a blazing white light.
+18.300	2.084	03.mp3	A tangled black shape shrinks to a speck.
+20.900	2.106	04.mp3	A small white figure in a black doorway.
+23.300	3.239	05.mp3	A stone figure, arms spread, wrapped in barbed wire.
+26.900	2.988	06.mp3	At a golden door painted with eyes, the team looks up.
+35.100	2.037	07.mp3	Shafts of light fall on the stone figure.
+38.400	2.392	08.mp3	Its stone face is the hero's, head bowed.
+43.000	1.169	09.mp3	The picture darkens.

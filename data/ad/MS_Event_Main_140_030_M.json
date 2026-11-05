@@ -1,0 +1,8 @@
+{
+ "movie": "MS_Event_Main_140_030_M",
+ "title": "Mitsuru tells the story of the accident",
+ "cues": [
+  {"at": 0.6, "text": "An old man in a white coat, holding a pipe."},
+  {"at": 53.35, "text": "Tartarus, before the moon."}
+ ]
+}

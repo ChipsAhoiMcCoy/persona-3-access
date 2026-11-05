@@ -1,0 +1,42 @@
+{
+ "movie": "MS_Event_Main_220_060_M",
+ "title": "Ending: the rooftop",
+ "cues": [
+  {
+   "at": 0.3,
+   "text": "Hand-drawn now. A sunlit rooftop, seen from high above."
+  },
+  {
+   "at": 4.4,
+   "text": "Two figures on a bench far below."
+  },
+  {
+   "at": 7.0,
+   "text": "Wind turbines turn against a bright sky."
+  },
+  {
+   "at": 10.9,
+   "text": "Across the rooftop, the friends wait at the open door."
+  },
+  {
+   "at": 20.7,
+   "text": "Aigis turns to them and smiles."
+  },
+  {
+   "at": 24.9,
+   "text": "On the bench, the hero leans against Aigis, eyes closed. Her hand rests on his shoulder."
+  },
+  {
+   "at": 30.8,
+   "text": "His face is calm, a faint smile. Petals drift past."
+  },
+  {
+   "at": 35.5,
+   "text": "The picture fades to white."
+  },
+  {
+   "at": 39.6,
+   "text": "In the corner: Fin."
+  }
+ ]
+}

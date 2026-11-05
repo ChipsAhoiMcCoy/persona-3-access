@@ -1,0 +1,7 @@
+#file Movie_VP9/Anim/MS_Event_Main_130_140_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_130_140_M_Movi_VP9.MS_Event_Main_130_140_M_Movi_VP9
+#id 5
+0.100	2.538	00.mp3	A jacket with a red armband hangs on a hook.
+3.200	1.500	01.mp3	Bare feet in a steamy shower.
+5.000	1.215	02.mp3	Clothes in a basket.
+16.200	1.453	03.mp3	Yukari glances back.

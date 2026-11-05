@@ -1,0 +1,26 @@
+{
+ "movie": "MS_Event_Main_330_070_M",
+ "title": "Leaving the dorm",
+ "cues": [
+  {"at": 0.3,   "text": "Daytime. The old brick dormitory stands among newer buildings."},
+  {"at": 4.3,   "text": "Two black cars wait at the curb out front."},
+  {"at": 7.9,   "text": "Sneakers step down the front stairs."},
+  {"at": 10.0,  "text": "Small hands grip a green tote bag."},
+  {"at": 14.85, "text": "Akihiko, in a white coat, looks up at the dorm."},
+  {"at": 17.75, "text": "Mitsuru, arms folded."},
+  {"at": 19.5,  "text": "Long black boots walk down the steps."},
+  {"at": 21.75, "text": "Koromaru runs by."},
+  {"at": 23.4,  "text": "In the dim lobby, Aigis stands alone at the open door."},
+  {"at": 27.9,  "text": "She looks back into the empty room."},
+  {"at": 30.6,  "text": "She shuts the door. In her hand, an old brass key."},
+  {"at": 35.2,  "text": "Outside, she studies the key."},
+  {"at": 37.6,  "text": "She locks the front door."},
+  {"at": 41.8,  "text": "She stands a moment at the tall doors."},
+  {"at": 44.6,  "text": "From above, she walks down the steps, then looks back up at the building."},
+  {"at": 83.9,  "text": "Aigis's eyes widen."},
+  {"at": 85.7,  "text": "Junpei grins, beside Ken."},
+  {"at": 89.2,  "text": "Mitsuru, Akihiko and Fuuka wait. Koromaru pants happily."},
+  {"at": 93.25, "text": "Yukari holds out her hand."},
+  {"at": 100.55, "text": "Aigis lays her hand in Yukari's. White light fills the picture."}
+ ]
+}

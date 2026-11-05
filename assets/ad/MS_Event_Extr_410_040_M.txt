@@ -1,0 +1,20 @@
+#file Movie_VP9/Anim/MS_Event_Extr_410_040_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Extr_410_040_M_Movi_VP9.MS_Event_Extr_410_040_M_Movi_VP9
+#id 4
+0.300	2.583	00.mp3	A great golden clock, bathed in white light.
+3.400	1.251	01.mp3	Dark pillars rise.
+5.200	3.842	02.mp3	From behind, the hero and his friends walk toward a bright opening.
+10.650	2.878	03.mp3	Akihiko lowers his gloved fist and walks on.
+15.000	2.262	04.mp3	Mitsuru glances back, then turns away.
+19.900	1.855	05.mp3	Boots stride across a blue carpet.
+22.000	1.350	06.mp3	Junpei tips his cap.
+25.900	1.827	07.mp3	Carved bull heads glint on a pillar.
+29.500	2.822	08.mp3	Fuuka touches her headset, then follows the others.
+33.200	1.534	09.mp3	They march between the pillars.
+37.500	3.015	10.mp3	Yukari tugs her jacket straight, arrows on her back.
+41.650	3.010	11.mp3	Red S.E.E.S. armbands, one after another.
+45.000	1.995	12.mp3	The hero stands still, looking up.
+50.800	1.670	13.mp3	He turns toward a wall of light.
+54.400	1.753	14.mp3	A huge golden clock gleams.
+56.900	1.992	15.mp3	The team walks forward side by side.
+59.400	3.662	16.mp3	Mitsuru, Fuuka, Yukari, the hero, Junpei and Akihiko.

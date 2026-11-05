@@ -1,0 +1,16 @@
+{
+ "movie": "MS_Event_Main_320_120_M",
+ "title": "The Great Seal",
+ "cues": [
+  {"at": 2.25,  "text": "Aigis, among the stars."},
+  {"at": 5.6,   "text": "The team floats behind her. The hero, eyes closed, grips his collar."},
+  {"at": 9.9,   "text": "He reaches up into a blazing white light."},
+  {"at": 18.3,  "text": "A tangled black shape shrinks to a speck."},
+  {"at": 20.9,  "text": "A small white figure in a black doorway."},
+  {"at": 23.3,  "text": "A stone figure, arms spread, wrapped in barbed wire."},
+  {"at": 26.9,  "text": "At a golden door painted with eyes, the team looks up."},
+  {"at": 35.1,  "text": "Shafts of light fall on the stone figure."},
+  {"at": 38.4,  "text": "Its stone face is the hero's, head bowed."},
+  {"at": 43.0,  "text": "The picture darkens."}
+ ]
+}

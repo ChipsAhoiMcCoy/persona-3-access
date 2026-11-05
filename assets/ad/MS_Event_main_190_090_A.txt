@@ -1,0 +1,25 @@
+#file Movie_VP9/Event/MS_Event_main_190_090_A_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Event/MS_Event_main_190_090_A_Movi_VP9.MS_Event_main_190_090_A_Movi_VP9
+#id 62
+0.000	3.887	00.mp3	Atop Tartarus, Ikutsuki aims a pistol at Mitsuru's father.
+5.450	4.974	01.mp3	Chained to crosses: Akihiko, the hero, Junpei, Fuuka, Yukari and Mitsuru.
+11.000	1.481	02.mp3	The two men fire at once.
+16.300	2.949	03.mp3	Mitsuru's father doubles over, bleeding onto his gun.
+36.700	1.204	04.mp3	Aigis stands alone.
+47.500	2.777	05.mp3	Aigis's targeting sight locks onto each of them.
+54.800	2.960	06.mp3	Her raised hand shakes as the sights sweep across them.
+58.500	0.702	07.mp3	The hero.
+63.150	2.436	08.mp3	Memories flash: the dorm, the beach, school.
+69.000	2.952	09.mp3	She turns her fingertip guns away from them and fires.
+72.900	2.845	10.mp3	The chains break. Mitsuru lands on the cracked floor.
+76.600	1.471	11.mp3	Akihiko drops free.
+89.470	1.520	12.mp3	Koromaru, with the remote.
+93.400	2.963	13.mp3	From above, the freed team closes in on Ikutsuki.
+113.100	2.054	14.mp3	The whole team stares at him, silent.
+116.600	2.982	15.mp3	Ikutsuki doubles over. Blood drips onto the floor.
+141.600	1.189	16.mp3	He steps to the edge.
+148.100	2.075	17.mp3	Grinning, he tips backward off the edge.
+150.800	2.180	18.mp3	He falls into the dark until he is gone.
+155.000	1.377	19.mp3	The team stands in shock.
+156.900	2.215	20.mp3	Mitsuru kneels beside her fallen father.
+159.600	2.121	21.mp3	Tears on her face. Her eyes close.

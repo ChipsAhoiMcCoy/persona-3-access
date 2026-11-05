@@ -1,0 +1,14 @@
+LIBRARY dsound
+EXPORTS
+  DirectSoundCreate             = P_DirectSoundCreate             @1
+  DirectSoundEnumerateA         = P_DirectSoundEnumerateA         @2
+  DirectSoundEnumerateW         = P_DirectSoundEnumerateW         @3
+  DllCanUnloadNow               = P_DllCanUnloadNow               @4 PRIVATE
+  DllGetClassObject             = P_DllGetClassObject             @5 PRIVATE
+  DirectSoundCaptureCreate      = P_DirectSoundCaptureCreate      @6
+  DirectSoundCaptureEnumerateA  = P_DirectSoundCaptureEnumerateA  @7
+  DirectSoundCaptureEnumerateW  = P_DirectSoundCaptureEnumerateW  @8
+  GetDeviceID                   = P_GetDeviceID                   @9
+  DirectSoundFullDuplexCreate   = P_DirectSoundFullDuplexCreate   @10
+  DirectSoundCreate8            = P_DirectSoundCreate8            @11
+  DirectSoundCaptureCreate8     = P_DirectSoundCaptureCreate8     @12

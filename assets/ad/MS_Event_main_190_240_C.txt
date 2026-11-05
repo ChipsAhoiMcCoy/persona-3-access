@@ -1,0 +1,5 @@
+#file Movie_VP9/Event/MS_Event_main_190_240_C_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Event/MS_Event_main_190_240_C_Movi_VP9.MS_Event_main_190_240_C_Movi_VP9
+#id 50
+0.100	3.658	00.mp3	Ryoji leaps over Junpei at a temple as the hero watches.
+4.100	2.148	01.mp3	Aigis and Fuuka in a souvenir shop.

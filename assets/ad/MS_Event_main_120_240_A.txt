@@ -1,0 +1,16 @@
+#file Movie_VP9/Event/MS_Event_main_120_240_A_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Event/MS_Event_main_120_240_A_Movi_VP9.MS_Event_main_120_240_A_Movi_VP9
+#id 67
+0.200	2.468	00.mp3	Fuuka puts a pistol to her temple and fires.
+3.600	1.125	01.mp3	Light bursts out.
+5.900	2.616	02.mp3	Natsuki clutches her head. Junpei stares.
+10.200	1.436	03.mp3	A blue storm swirls up.
+12.500	3.726	04.mp3	Akihiko, Mitsuru, Junpei, the hero and Yukari brace.
+16.700	3.059	05.mp3	A pale spirit hurls light at a huge armored Shadow.
+21.200	2.407	06.mp3	Its sword and its limp arm lie on the floor.
+24.200	1.719	07.mp3	Natsuki, in tears, looks up.
+27.000	1.666	08.mp3	The hero looks up into the light.
+29.000	3.143	09.mp3	A tall figure rises atop a glass dome, arms spread.
+33.000	2.823	10.mp3	Inside the dome, Fuuka and Natsuki stand together.
+36.500	1.717	11.mp3	Light ripples over Fuuka's face.
+40.500	1.711	12.mp3	Her eyes open, glowing blue.

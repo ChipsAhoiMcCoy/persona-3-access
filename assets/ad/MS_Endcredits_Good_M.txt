@@ -1,0 +1,27 @@
+#file Movie_VP9/Anim/MS_Endcredits_Good_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Endcredits_Good_M_Movi_VP9.MS_Endcredits_Good_M_Movi_VP9
+#id 20
+1.000	3.284	00.mp3	Deep underwater. Light ripples on the surface far above.
+6.000	0.937	01.mp3	The credits roll.
+10.000	3.136	02.mp3	A glowing figure sinks slowly, head first, into the deep.
+20.500	3.642	03.mp3	Yukari's face fades in beside it, looking back over her shoulder.
+28.000	1.800	04.mp3	She turns away, eyes closed.
+35.500	2.821	05.mp3	Inside her outline, a young girl with a school bag.
+41.500	2.489	06.mp3	Junpei appears, grinning, a hand at his cap.
+53.000	2.196	07.mp3	Faint pictures flicker inside his outline.
+64.000	1.985	08.mp3	A man with a mustache, then Mitsuru.
+70.000	2.528	09.mp3	Mitsuru's face, calm, her hair over one eye.
+80.000	0.950	10.mp3	She turns away.
+93.500	1.715	11.mp3	Akihiko appears, smiling.
+110.000	2.837	12.mp3	Inside his outline, a girl with long wavy hair.
+120.000	1.881	13.mp3	Fuuka appears, smiling softly.
+134.000	3.052	14.mp3	Inside her outline, two girls in school uniforms.
+144.000	2.435	15.mp3	Ken appears, smiling, in a hooded jacket.
+158.500	2.881	16.mp3	Inside his outline, a small boy stands alone.
+165.000	2.600	17.mp3	Koromaru appears, mouth open, ears up.
+189.000	1.770	18.mp3	A large eye fills his outline.
+196.500	3.061	19.mp3	Shinjiro appears, head bowed, a hand on his cap.
+212.500	1.651	20.mp3	Aigis appears, gazing out.
+235.500	4.545	21.mp3	Inside her outline, a boy in a dark school uniform stands by some steps.
+243.000	4.425	22.mp3	The pictures fade. Only the glowing figure is left, sinking into darkness.
+300.000	1.124	23.mp3	It fades to black.

@@ -1,0 +1,7 @@
+#file Movie_VP9/Anim/MS_Event_Main_140_140_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_140_140_M_Movi_VP9.MS_Event_Main_140_140_M_Movi_VP9
+#id 7
+0.300	2.386	00.mp3	A white ferry cuts across a bright blue sea.
+25.000	1.514	01.mp3	Mitsuru, arms folded.
+29.100	2.619	02.mp3	Yukari gazes out to sea, her hair in the wind.
+32.000	2.243	03.mp3	The ferry sails on toward a hilly island.

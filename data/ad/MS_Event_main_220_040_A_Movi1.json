@@ -1,0 +1,42 @@
+{
+ "movie": "MS_Event_main_220_040_A_Movi1",
+ "title": "On the rooftop, part 1",
+ "cues": [
+  {
+   "at": 0.3,
+   "text": "A sunny school rooftop. The hero lies on a bench, his head in Aigis's lap. She wipes a tear away."
+  },
+  {
+   "at": 16.0,
+   "text": "Wind turbines turn beyond the fence."
+  },
+  {
+   "at": 21.6,
+   "text": "Aigis looks up, startled."
+  },
+  {
+   "at": 53.1,
+   "text": "The hero gazes up at her, eyes half closed."
+  },
+  {
+   "at": 56.2,
+   "text": "Cherry petals drift across a bright sky above the school."
+  },
+  {
+   "at": 62.1,
+   "text": "The school's front entrance, framed by cherry trees in full bloom."
+  },
+  {
+   "at": 70.6,
+   "text": "His eyelids droop."
+  },
+  {
+   "at": 80.7,
+   "text": "From behind, Aigis sits on the bench, the hero lying beside her. Solar panels beyond."
+  },
+  {
+   "at": 87.6,
+   "text": "Cherry blossoms, up close."
+  }
+ ]
+}

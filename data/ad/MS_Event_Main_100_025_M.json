@@ -1,0 +1,11 @@
+{
+ "movie": "MS_Event_Main_100_025_M",
+ "title": "Time waits for no one",
+ "cues": [
+  {"at": 0.3,  "text": "A blue butterfly in the dark."},
+  {"at": 2.9,  "text": "Words appear. Time waits for no one. All are equal in its flow, all lives borne to their ends."},
+  {"at": 9.0,  "text": "You, who would protect the glimmer of the finite future."},
+  {"at": 12.9, "text": "You have a single year. Go forth, and live in the time given to you."},
+  {"at": 18.2, "text": "Even in these halcyon days of repose, let your heart guide you, and never stray from its path."}
+ ]
+}

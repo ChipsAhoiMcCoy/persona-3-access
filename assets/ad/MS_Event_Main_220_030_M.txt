@@ -1,0 +1,8 @@
+#file Movie_VP9/Anim/MS_Event_Main_220_030_M_Movi_VP9.usm
+#asset /Game/Xrd777/Movies/MediaFrameWork/MediaPlayer/MovieSource_VP9/Anim/MS_Event_Main_220_030_M_Movi_VP9.MS_Event_Main_220_030_M_Movi_VP9
+#id 17
+1.350	3.200	00.mp3	A packed school auditorium, hung with red and white bunting.
+4.750	2.305	01.mp3	Mitsuru reads a speech at the microphone.
+16.700	1.377	02.mp3	Yukari, in her seat.
+63.900	3.581	03.mp3	Mitsuru steps away from the microphone and hurries off the stage.
+80.500	1.422	04.mp3	They run out into the light.

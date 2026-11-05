@@ -1,0 +1,10 @@
+{
+ "movie": "MS_Event_Main_100_090_M",
+ "title": "Monorail to school",
+ "cues": [
+  {"at": 0.1, "text": "A monorail glides above the town."},
+  {"at": 31.0, "text": "The monorail crosses open sea toward an island city."},
+  {"at": 34.6, "text": "Students walk a brick path to school."},
+  {"at": 44.3, "text": "Yukari strides through the school gates."}
+ ]
+}
