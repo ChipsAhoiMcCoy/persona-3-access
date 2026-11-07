@@ -29,8 +29,6 @@ These reached the code but have not been seen working in the game, because no te
 - The Persona status page in battle (F on a skill list) was not checked again after the page was reworked.
 - The audio description text was checked by automated timing and transcript checks, not by a person watching every movie.
 - This Release build. Development used a slightly different build type, so the packaged zip is its own test.
-- Moving the battle target with the D-pad, and letting go of the triggers while holding it, because no real controller was used for that test.
-- A line of party chatter with no voice being read. None came up in testing.
 - The menu animation wait in a simple shop opened by the story.
 - Screen readers other than the ones used day to day. Please say which one you use when you report a problem.
 
