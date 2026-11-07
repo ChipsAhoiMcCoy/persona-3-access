@@ -44,6 +44,10 @@ class ShopScreen : public MenuScreen {
   }
   uint8_t* s() { return (uint8_t*)shop(); }
   int state() { return s() ? *(int32_t*)(s() + 0x294) : -1; }
+  // The shop's virtual at `off` (a class that does not care answers the neutral value). FUN_14140aa10 runs no state's
+  // input until +0x648 says so (the item shop: its five panel animations ended); the simple shop's +0x748 / +0x750 hold
+  // state 7 (its opening timer, the Buy panel closing, FUN_1413f2110) and +0x760 state 10 (the panel's timer, FUN_1413f0950).
+  bool vcall(int off) { uint8_t* o = s(); return o && (*(bool (***)(void*))o)[off / 8](o); }
   bool antique() { UObject* o = shop(); return o && is_a(o, "FclAntiqueShop"); }
   static bool list_state(int st) { return st == 7 || st == 0x11 || st == 0x13 || st == 0x14; }
   static bool yes_no(int st) { return st == 10 || st == 0xC || st == 0xD || st == 0x17 || st == 0x18; }
@@ -156,6 +160,9 @@ class ShopScreen : public MenuScreen {
 
  public:
   ShopScreen() {
+    top_.ready = [this] { return vcall(0x648); };
+    list_.ready = [this] { return vcall(0x648) && (state() != 7 || (!vcall(0x748) && !vcall(0x750))); };
+    yn_.ready = [this] { return vcall(0x648) && (state() != 10 || !vcall(0x760)); };
     top_.set = [this](int i) { return write_rows(0x2C8, i, s() ? *(int32_t*)(s() + 0x2C0) : 0, 0); };
     list_.set = [this](int i) { return write_rows(0x2F8, i, s() ? *(int32_t*)(s() + 0x2F0) : 0, u16(0x2FC)); };
     fuse_.set = [this](int i) { return write_rows(0x318, i, s() ? *(int32_t*)(s() + 0x310) : 0, u16(0x31C)); };

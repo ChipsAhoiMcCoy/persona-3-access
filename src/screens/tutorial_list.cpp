@@ -21,8 +21,9 @@ using namespace ue;
 // {0, 3, 2, 1, 4}[t]. The cursor is the ListCursor at +0x280 (10 rows, wraps); after a move the game calls
 // exe+0x1558500(this) (sound, draw push), which a write calls too.
 // The table loads asynchronously after the actor is made (FUN_141551550, once the handle at +0x350 has loaded): it
-// sizes the category array (+0x340) to 5, fills every category and sets +0x27D in the same call. Before that every tab
-// reads as empty, so the screen waits for it ("no tutorials" was said on opening, 2026-11-01).
+// sizes the category array (+0x340) to 5 and fills every category. Before that every tab reads as empty, and the first
+// tab still read empty two frames after +0x340 was set, so the screen waits for +0x27D too ("no tutorials" was said on
+// opening, 2026-11-01 and 2026-11-06).
 class TutorialListScreen : public MenuScreen {
   Finder ui_{"UITutorial"};
   uint8_t* u() { return (uint8_t*)ui_.get(); }
@@ -39,6 +40,11 @@ class TutorialListScreen : public MenuScreen {
   Mirror& list_ = mirror("tutorials", [this] { uint8_t* p = u(); return p && p[0x27D] && !p[0x27E] ? ListCursor(p + 0x280).index() : -1; });
  public:
   TutorialListScreen() {
+    // FUN_1415536c0: its confirm and cancel wait for the open timer +0x334 (frames * 1/20 s), moves only for +0x27D.
+    list_.ready = [this] {
+      uint8_t* p = u();
+      return p && *(float*)(p + 0x334) >= ((int (*)(void*))(scan::exe_base() + 0x12e13b0))(*(void**)(p + 0x3A8)) * 0.05f;
+    };
     list_.set = [this](int i) {
       uint8_t* p = u();
       if (!p || !ListCursor(p + 0x280).set(i)) return false;
@@ -50,7 +56,7 @@ class TutorialListScreen : public MenuScreen {
   int priority() const override { return 17; }
   // Up while its actor lives (made on open, destroyed on close); a tutorial opened from it is a message window.
   bool active() override { return loaded() && !msg::current().open; }
-  bool loaded() { uint8_t* p = u(); return p && *(uint8_t**)(p + 0x338) && *(int32_t*)(p + 0x340) == 5; }
+  bool loaded() { uint8_t* p = u(); return p && p[0x27D] && *(uint8_t**)(p + 0x338) && *(int32_t*)(p + 0x340) == 5; }
   bool holds_keys() override { uint8_t* p = u(); return p && p[0x27D] && !p[0x27E]; }
   std::string title() override { return strings::kTutorials; }
   void on_enter() override { screens::set_keys(strings::kTutorialListKeys); }

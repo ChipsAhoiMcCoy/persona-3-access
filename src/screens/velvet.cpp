@@ -82,10 +82,10 @@ class VelvetScreen : public MenuScreen {
     uintptr_t b = scan::exe_base();
     if (push_draw) {
       if (UObject* d = draw_.get()) ((void (*)(void*, int, int))(b + 0x1586b50))(d, *(int32_t*)(list + 0x28), *(int32_t*)(list + 0x24));
+      cursor_sound();
     } else {
-      cb()[0x40A] = 1;   // steps 12 and 13 refresh themselves (the seen flag, the materials panel)
+      cb()[0x40A] = 1;   // steps 12 and 13 refresh themselves (the seen flag, the materials panel, the sound)
     }
-    cursor_sound();
     return true;
   }
   void build_lists(ui::GraphBuilder& b, int st);
@@ -108,8 +108,11 @@ class VelvetScreen : public MenuScreen {
       return ((bool (*)(void*, void*, int))(scan::exe_base() + 0x1586a30))(r, nullptr, i);
     };
     // The method: the cursor, the sound (0x25F) and the card (exe+0x1586b40(draw, row)), as UICombine's step 2 moves
-    // it; not while its sub-dialog is pending (+0x1E4).
-    method_.ready = [this] { return step() == 2 && i32(cb(), 0x1E4) == -1; };
+    // it; not while its sub-dialog is pending (+0x1E4), and only with the draw idle, what its confirm waits for (FUN_141574cd0).
+    method_.ready = [this] {
+      auto* d = (uint8_t*)draw_.get();
+      return step() == 2 && i32(cb(), 0x1E4) == -1 && d && !d[0x2F9] && !d[0x2FA];
+    };
     method_.set = [this](int i) {
       uint8_t* c = cb();
       UObject* d = draw_.get();
@@ -119,7 +122,13 @@ class VelvetScreen : public MenuScreen {
       return true;
     };
     // Inheritance: six rows shown over +0x478 entries; exe+0x14c9c70(status, top, row) writes them and restarts the
-    // draw's slide, after the sound, as the sequence's own move does.
+    // draw's slide, after the sound, as the sequence's own move does. The sequence (status +0x520) reads confirm, cancel
+    // and moves only at its +0x30 == 1 (0 builds, 2 Igor's question, 3 done; FUN_141516980).
+    inherit_.ready = [this] {
+      auto* p = (uint8_t*)ps_.get();
+      auto* seq = p ? *(uint8_t**)(p + 0x520) : nullptr;
+      return seq && seq[0x30] == 1;
+    };
     inherit_.set = [this](int i) {
       uint8_t* p = (uint8_t*)ps_.get();
       if (!p || scene() != 4 || step() != 6) return false;
@@ -138,10 +147,19 @@ class VelvetScreen : public MenuScreen {
     regist_list_.keep_edges = book_list_.keep_edges = true;   // Left / Right walk a row's details (add_walk)
     regist_list_.set = [this](int i) { uint8_t* r = (uint8_t*)regist_.get(); return r && i32(r, 0x34) == 3 && write_list(r + 0xA4, i, true); };
     list_.keep_edges = true;   // Left / Right walk the row's Persona or result (add_walk), never the game's paging
+    // FUN_141574cd0: Special takes nothing while a dialog is pending (+0x1E4), Search only stops for 0x24; the fusion
+    // lists have no gate.
+    list_.ready = [this] {
+      int st = step(), pending = i32(cb(), 0x1E4);
+      return st == 12 ? pending == -1 : st == 13 ? pending != 0x24 : true;
+    };
     list_.set = [this](int i) { int st = step(); return cb() && write_list(cb() + 0x84, i, st == 3 || st == 4); };
     // The compendium's own move also pushes the row's summon price to the money panel: DAT_1456b6bfc = price, then
     // exe+0x15a4590(draw, 0, -price), the draw being the room's (UIVelvetRoomDraw; the move's code reaches it through
     // the owner at book +0x40, +0x60). Without it the panel kept the old row's price after a jump.
+    // The room runs the book's tick only in its state 9 (FUN_1415a8300); a cancel leaves +0x34 at 1 and Scene at 5 until
+    // the draw has left, so cursor() alone would keep taking moves as it closes.
+    book_list_.ready = [this] { return i32(room_.get(), 0x294) == 9; };
     book_list_.set = [this](int i) {
       uint8_t* b = (uint8_t*)book_.get();
       if (!b || !write_list(b + 0x58, i, true)) return false;

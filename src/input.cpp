@@ -14,9 +14,10 @@
 #include <atomic>
 #include <map>
 #include <intrin.h>
+#include <cstdlib>
 
 namespace p3a::input {
-struct Step { uint32_t mask; float lx, ly; unsigned hold_ms, gap_ms; };
+struct Step { uint32_t mask; float lx, ly; unsigned hold_ms, gap_ms; float ry = 0; };
 static std::mutex g_mu;
 static std::deque<Step> g_queue;
 static uint64_t g_step_start = 0;   // when the front step began (0 = not started)
@@ -45,15 +46,15 @@ static uint32_t name_mask(std::string_view n) {
 }
 
 // The current synthetic state, advancing the queue by wall-clock time.
-static void synth(uint32_t& mask, float& lx, float& ly) {
+static void synth(uint32_t& mask, float& lx, float& ly, float& ry) {
   std::lock_guard lk(g_mu);
-  mask = g_latched; lx = ly = 0;
+  mask = g_latched; lx = ly = ry = 0;
   uint64_t now = GetTickCount64();
   while (!g_queue.empty()) {
     Step& s = g_queue.front();
     if (!g_step_start) g_step_start = now;
     uint64_t t = now - g_step_start;
-    if (t < s.hold_ms) { mask |= s.mask; lx = s.lx; ly = s.ly; return; }
+    if (t < s.hold_ms) { mask |= s.mask; lx = s.lx; ly = s.ly; ry = s.ry; return; }
     if (t < (uint64_t)s.hold_ms + s.gap_ms) return;
     g_queue.pop_front();
     g_step_start = 0;
@@ -84,6 +85,10 @@ static std::atomic<bool> g_claim_taps{false};
 static std::atomic<int> g_tap{0};
 void claim_trigger_taps(bool on) { g_claim_taps = on; if (!on) g_tap = 0; }
 int take_trigger_tap() { return g_tap.exchange(0); }
+static std::atomic<bool> g_claim_rstick{false};
+static std::atomic<int> g_rflick{0};
+void claim_right_stick(bool on) { g_claim_rstick = on; if (!on) g_rflick = 0; }
+int take_right_flick() { return g_rflick.exchange(0); }
 void set_modal(bool on) { g_modal = on; }
 bool modal() { return g_modal; }
 static void layer_event(uint16_t button, bool repeat) { std::lock_guard lk(g_layer_mu); g_layer_events.push_back({button, repeat}); }
@@ -165,7 +170,7 @@ static DWORD WINAPI get_state_hook(DWORD user, XINPUT_STATE* st) {
   }
   DWORD r = g_get_state(user, st);
   if (user > 3) return r;
-  uint32_t mask = 0; float lx = 0, ly = 0;
+  uint32_t mask = 0; float lx = 0, ly = 0, ry = 0;
   if (user == 0) {
     ++g_polls;
     g_real_connected = r == ERROR_SUCCESS;
@@ -175,9 +180,9 @@ static DWORD WINAPI get_state_hook(DWORD user, XINPUT_STATE* st) {
     } else {
       g_real_buttons = 0;
     }
-    synth(mask, lx, ly);
+    synth(mask, lx, ly, ry);
   }
-  bool active = mask || lx || ly;
+  bool active = mask || lx || ly || ry;
   if (r != ERROR_SUCCESS) {
     if (user != 0 || (!g_vpad && !active)) { g_layer[user] = Layer{}; return r; }
     ZeroMemory(st, sizeof *st);
@@ -189,6 +194,20 @@ static DWORD WINAPI get_state_hook(DWORD user, XINPUT_STATE* st) {
     if (mask & 0x10000) st->Gamepad.bLeftTrigger = 255;
     if (mask & 0x20000) st->Gamepad.bRightTrigger = 255;
     if (lx || ly) { st->Gamepad.sThumbLX = (SHORT)(lx * 32767); st->Gamepad.sThumbLY = (SHORT)(ly * 32767); }
+    if (ry) st->Gamepad.sThumbRY = (SHORT)(ry * 32767);
+  }
+  if (user == 0) {
+    // A flick: past 20000 and more up or down than sideways; it counts again once back under 10000.
+    static bool flicked = false;
+    int y = st->Gamepad.sThumbRY, x = st->Gamepad.sThumbRX;
+    if (flicked && std::abs(y) < 10000) flicked = false;
+    if (g_claim_rstick) {
+      if (!flicked && std::abs(y) > 20000 && std::abs(y) > std::abs(x)) {
+        flicked = true;
+        if (!g_layer_open) g_rflick = y > 0 ? 1 : -1;
+      }
+      st->Gamepad.sThumbRX = st->Gamepad.sThumbRY = 0;
+    }
   }
   layer_filter(g_layer[user], st->Gamepad);
   bool open = false;
@@ -274,7 +293,8 @@ static void poll_pad() {
     const XINPUT_GAMEPAD& g = st.Gamepad;
     // Buttons, triggers and stick directions past a deadzone: resting stick noise is not a press.
     uint32_t s = g.wButtons | (g.bLeftTrigger > 64) << 16 | (g.bRightTrigger > 64) << 17 | (g.sThumbLX > 16000) << 18 |
-                 (g.sThumbLX < -16000) << 19 | (g.sThumbLY > 16000) << 20 | (g.sThumbLY < -16000) << 21;
+                 (g.sThumbLX < -16000) << 19 | (g.sThumbLY > 16000) << 20 | (g.sThumbLY < -16000) << 21 |
+                 (g.sThumbRY > 16000) << 22 | (g.sThumbRY < -16000) << 23;
     if (s & ~prev[i]) g_pad_ms = now;
     prev[i] = s;
     g_pad_seen = true;
@@ -462,6 +482,11 @@ bool install() {
       std::string v = dev::arg(r, "stick"); size_t c = v.find(',');
       stick((float)atof(v.substr(0, c).c_str()), c == std::string::npos ? 0.f : (float)atof(v.substr(c + 1).c_str()), (unsigned)dev::arg_int(r, "ms", 500));
     }
+    // ?rstick=y&ms= the right stick up (1) or down (-1), for the battle's details.
+    if (dev::has(r, "rstick")) {
+      std::lock_guard lk(g_mu);
+      g_queue.push_back(Step{0, 0, 0, (unsigned)dev::arg_int(r, "ms", 200), 60, (float)atof(dev::arg(r, "rstick").c_str())});
+    }
     if (dev::has(r, "wait")) { for (int i = 0; i < 300 && busy(); ++i) Sleep(20); }
     // ?poll=ms polls slot 0 through the hook every 10 ms, as the game does while focused (the dev game runs
     // unfocused, where Unreal polls no pad): drives the mod layer; reports what the game would have seen last.
@@ -497,6 +522,12 @@ bool install() {
         p = q + 1;
       }
       for (uint32_t vk : vks) post_key(vk, true);
+      // ?held=N: N auto-repeats, as Windows sends for a key held down.
+      for (int n = (int)dev::arg_int(r, "held", 0); n > 0; --n) {
+        Sleep(30);
+        for (uint32_t vk : vks)
+          PostMessageW(hooks::game_window(), WM_KEYDOWN, vk, 1 | (MapVirtualKeyW(vk, MAPVK_VK_TO_VSC) << 16) | (1u << 30));
+      }
       Sleep(ms);
       for (uint32_t vk : vks) post_key(vk, false);
       Sleep(ms + 30);

@@ -168,8 +168,10 @@ static std::string g_ffwd_line, g_ffwd_text;
 
 // cue: the window waits for a key after this page (dialogue and thoughts; not system notices, tutorials or the
 // navigator's and subtitles' windows, which go on by themselves).
-// In battle the windows that go on by themselves (the navigator's support lines, the party's remarks:
-// BMD_BtlSupport*) talk over what matters: they go to the log unspoken (the player's call, 2026-11-01).
+// The windows that go on by themselves in battle (the navigator's support lines, the party's remarks: BMD_BtlSupport*)
+// and the party's voiced chatter in the field (MsgAssist, BMD_FldSupport_DungeonTalk_*) talk over what matters: they go
+// to the log unspoken (the player's calls, 2026-11-01 for battle, 2026-11-06 for the field: "Thebel, floor 4" and "Junpei,
+// HP 1 of 106" were cut off). A field line the game does not voice is still read. The Reaper's warning is voiced too: the user is content with the voice.
 static bool g_hush = false;
 // Whether the game will voice a page: its BMD data (FCurrentBmdPage +0x20) opens with message functions, FE then a byte
 // F0 | (1 + argument count), the function (table << 5 | index) and two bytes per argument; a voiced page has table 3
@@ -177,7 +179,9 @@ static bool g_hush = false;
 // 1-3), an unvoiced one none, or the same function with 3 (Akihiko's everyday lines; measured 2026-11-03). Arguments are
 // stored plus one per byte (01 01 is 0): a cue of 0 has no voice (the contract's "Did I spell that correctly?",
 // FE F7 61 02 01 01 01 01 01 01 01..., where the Mysterious Boy's lines count 02, 03, ...; 2026-11-03).
-static bool declares_voice(void* page) {
+// The field's support talk (MsgAssist) opens with the same function and another first argument (FE F7 61 03 ..): `any`
+// takes any first argument, so that a line of chatter with a cue counts as voiced (2026-11-06).
+static bool declares_voice(void* page, bool any = false) {
   bool v = false;
   guarded([&] {
     uint8_t* d = page ? *(uint8_t**)((uint8_t*)page + 0x20) : nullptr;
@@ -186,7 +190,7 @@ static bool declares_voice(void* page) {
       uint8_t f = d[i + 1];
       int argc = (f & 0x0F) - 1;
       if ((f & 0xF0) != 0xF0 || argc < 0) return;
-      if (d[i + 2] == 0x61 && argc >= 4 && d[i + 3] == 0x02 && d[i + 4] == 0x01) { v = d[i + 9] != 0x01 || d[i + 10] != 0x01; return; }
+      if (d[i + 2] == 0x61 && argc >= 4 && (any || (d[i + 3] == 0x02 && d[i + 4] == 0x01))) { v = d[i + 9] != 0x01 || d[i + 10] != 0x01; return; }
       i += 3 + argc * 2;
     }
   });
@@ -257,7 +261,7 @@ void tick() {
   bool in_battle = watch::get(battle) != nullptr;
   std::map<UObject*, Seen> next;
   Current cur;
-  bool wait_showing = false, choosing = false;
+  bool wait_showing = false, pending_showing = false, choosing = false;
   UObject* sel_now = nullptr;
   void* cur_page = nullptr;
   for (int i = 0; i < procs->num; ++i) {
@@ -285,7 +289,7 @@ void tick() {
         if (!own_pace) cur.blocking = true;
         // Hushed lines still reach the log. Cutscene subtitles are read only if the player turned them on.
         bool subtitle = ic == "MsgSubtitles" || ic == "MsgMindSubtitles";
-        g_hush = (own_pace && in_battle) || (subtitle && !settings::on(settings::Subtitles));
+        g_hush = (ic == "MsgAssist" && declares_voice(page, true)) || (own_pace && in_battle) || (subtitle && !settings::on(settings::Subtitles));
         bool cue = cur.blocking && cur.kind != "System" && cur.kind != "Tutorial";
         if (who.empty() && cur.kind == "Mind") who = strings::kThinking;   // a thought bubble with no speaker line
         cur.speaker = who;
@@ -320,7 +324,7 @@ void tick() {
           if (cur.kind != "System" || !just_said(line)) {   // dialogue may repeat a line ("...") on purpose
             ++g_pages_spoken;
             say_dialogue(line, named ? who : std::string(), cur.kind, page, cue);
-            g_last_speaker = who;
+            if (!g_hush) g_last_speaker = who;   // an unspoken line named nobody: the next line still names its speaker
             s.spoken_ms = GetTickCount64();
             remember(cur.kind, hinted(who.empty() ? text : who + ": " + text));   // the log always names the speaker
             log_if_icons((uintptr_t)page, text);
@@ -389,6 +393,7 @@ void tick() {
         // laid out, and marking it seen then silenced it for good (the dorm arrival thought, 2026-10-27).
         s.page = page; s.speaker = speaker; s.tut_page = tut_page;
         if (page == g_wait_page) wait_showing = true;   // after this page's own say_dialogue, which may arm it
+        if (page == g_pending.page) pending_showing = true;
       }
     }
     // The window closed (its proc's state +0x30 at 7 closing / 8 closed, or no item): what it said is forgotten. A
@@ -426,6 +431,9 @@ void tick() {
     next[proc] = s;
   }
   for (auto& [proc, old] : g_seen) if (old.sel_obj && !next.count(proc)) remember("Choice", old.chosen);
+  // The page left the screen before a voice began: the next voice (the party's chatter, which replaces no pending page) is
+  // not its own.
+  if (!pending_showing) g_pending.active = false;
   g_seen.swap(next);
   // The notice or conversation is over (no window, no window to follow): its last line, speaker run and titles end.
   bool session = cur.open || session_open();
@@ -486,13 +494,33 @@ Current current() { std::lock_guard lk(g_mu); return g_current; }
 // (state 1, a frame later) or leaves the list. Script-owned procs with no window sit at state 0 (a shop's, the field's
 // passers-by), and a menu's prompt proc stays at 8 without the flag once its choice is made (the camp's "Return to the
 // title screen?"). Measured 2026-11-03: the 6/8 evening event, leaving a shop, the camp's System prompts.
-bool session_open() {
+static bool between_windows(UObject* p) {
+  return is_live(p) && *(int32_t*)((uint8_t*)p + 0x30) == 8 && (*(uint32_t*)((uint8_t*)p + 0x2C) & 0x8);
+}
+static TArray<UObject*>* proc_list() {
   UObject* m = manager();
-  auto* procs = m ? field<TArray<UObject*>>(m, "ProcList") : nullptr;
+  return m ? field<TArray<UObject*>>(m, "ProcList") : nullptr;
+}
+bool session_open() {
+  auto* procs = proc_list();
   if (!procs) return false;
-  for (int i = 0; i < procs->num; ++i) {
+  for (int i = 0; i < procs->num; ++i) if (between_windows(procs->data[i])) return true;
+  return false;
+}
+// A proc already between windows when a window opens is another session's: a story line before a battle leaves its proc
+// there for the whole fight (seen 2026-11-06: the victory page under a level-up's notice waited for a key).
+static std::vector<ue::WeakObj> g_other_sessions;
+void window_opened() {
+  g_other_sessions.clear();
+  auto* procs = proc_list();
+  for (int i = 0; procs && i < procs->num; ++i)
+    if (between_windows(procs->data[i])) g_other_sessions.push_back(ue::WeakObj::of(procs->data[i]));
+}
+bool window_session_open() {
+  auto* procs = proc_list();
+  for (int i = 0; procs && i < procs->num; ++i) {
     UObject* p = procs->data[i];
-    if (is_live(p) && *(int32_t*)((uint8_t*)p + 0x30) == 8 && (*(uint32_t*)((uint8_t*)p + 0x2C) & 0x8)) return true;
+    if (between_windows(p) && std::find(g_other_sessions.begin(), g_other_sessions.end(), ue::WeakObj::of(p)) == g_other_sessions.end()) return true;
   }
   return false;
 }

@@ -15,6 +15,8 @@ void tick();   // game thread
 struct Current { bool open = false, blocking = false, voice_done = false; std::string speaker, text; std::vector<std::string> choices; int choice = -1; std::string kind; };
 Current current();
 bool session_open();   // a notice or conversation is still under way (another window may follow; game thread)
+void window_opened();         // a window came up over a screen: procs already between windows are not its session
+bool window_session_open();   // session_open for that window's session alone
 ue::UObject* sel_item();   // the choice list up now (USelItem), or null (game thread)
 void repeat();   // speak the current page again
 // The player pressed confirm or cancel (Enter, Space, Escape, Backspace; A, B): over a blocking message window the

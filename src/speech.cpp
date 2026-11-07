@@ -1,5 +1,6 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks; zlib, see LICENSES/. This is not the original software.
 #include "speech.h"
+#include <atomic>
 #include "log.h"
 #include "core/text_clean.h"
 #include <windows.h>
@@ -50,7 +51,10 @@ bool init() {
 
 const char* backend_name() { return g_backend ? prism_backend_name(g_backend) : "(none)"; }
 
+static std::atomic<uint64_t> g_count{0};
+uint64_t count() { return g_count; }
 void speak(std::string_view utf8, bool interrupt) {
+  ++g_count;
   std::string s = core::tidy_joins(utf8);   // no ".," where the mod joined a position or a description on
   log::writef("[speak{}] {}", interrupt ? "!" : "", s);
   g_history.push(s);

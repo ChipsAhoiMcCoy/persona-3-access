@@ -19,6 +19,13 @@ void forget_battle_start();
 namespace p3a::ue { struct UObject; }
 namespace p3a::screens {
 ue::UObject* shuffle_ui();
+// The details of who is in focus in a battle (battle_menus.cpp): the right stick up and down, Ctrl+Up and Ctrl+Down.
+namespace battle_details {
+bool in_focus();     // someone is in focus and no message window is over it
+void step(int dir);  // +1 the next line, -1 the previous, and read it
+void frame();        // every mod tick: claims the stick while someone is in focus and reads its flicks
+void install();
+}  // namespace battle_details
 // The victory screen's UI (the result phase's ABtlResultUIBase) and its EBtlResultState (-1 without one); Shuffle Time
 // comes before it, so a result state of 1 or more ends the deal (battle_result.cpp).
 ue::UObject* result_ui();

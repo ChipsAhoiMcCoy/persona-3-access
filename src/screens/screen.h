@@ -25,6 +25,9 @@ class Screen {
   // A message window over this screen is one page of its own (a Dictionary term), never the first of a chain of
   // notices: once it closes, re-enter at once instead of waiting 700 ms for another window.
   virtual bool own_messages() { return false; }
+  // The screen itself opens another window after this one (the victory screen's notices come one at a time from its
+  // own state machine, not one message session): it stays quiet between them.
+  virtual bool window_coming() { return false; }
   // Whether Escape is Back / Cancel here (the game's C, pressed for it; menu.cpp): every bespoke menu, and a battle
   // prompt. False where C is a command (the battle wheel's Guard) or Escape is the game's own.
   virtual bool escape_is_back() { return false; }

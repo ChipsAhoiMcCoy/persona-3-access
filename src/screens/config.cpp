@@ -12,6 +12,7 @@
 #include "log.h"
 #include "msg.h"
 #include "speech.h"
+#include "ue/scan.h"
 #include <algorithm>
 #include <format>
 #include <vector>
@@ -60,9 +61,18 @@ class ConfigScreen : public MenuScreen {
   Mirror& list_ = mirror("cfg", [this] {
     UObject* d = draw();
     if (!d || call_bool(d, "IsBGMMode")) return -1;
-    int c = call_int(d, "GetListTopIndex") + call_int(d, "GetCursorIndex");
+    // The cursor itself, not the draw's copy: entering a tab, the copy still held the tab list's row a frame or two
+    // on, and the new list was read from that row first ("Shadow Quality, 3 of 6", then "Graphics Quality, 1 of 6").
+    // While the state and the rows disagree (5 the tab list, 6 a tab) the rows are the last list's: no cursor yet.
+    auto* a = (uint8_t*)cfg_.get();
+    int st = a ? *(int32_t*)(a + 0x294) : 0;
+    uint8_t* lc = a ? *(uint8_t**)(a + 0x3D0) : nullptr;
+    if (!lc || (st == 5) != tabs_) return -1;
+    int c = ListCursor(lc).index();
     return c >= 0 && c < (int)rows_.size() ? c : -1;
   });
+  int state_seen_ = -1;          // the state last tick...
+  bool state_settled_ = false;   // ...and whether the game has run a tick in it
   uint8_t* bgm_dialog() {
     auto* c = (uint8_t*)cfg_.get();
     int st = c ? *(int32_t*)(c + 0x294) : 0;
@@ -154,6 +164,19 @@ class ConfigScreen : public MenuScreen {
       cursor_sound();
       return true;
     };
+    // FUN_1413bc540: states 5 and 6 read keys once the key-help's timer (+0xD58: +0x34 past +0x38, 0.55 s from entering
+    // the state) has run, and state 6 once its open timer +0x3B8 has too (or +0x345).
+    list_.ready = [this] {
+      auto* c = (uint8_t*)cfg_.get();
+      int st = c ? *(int32_t*)(c + 0x294) : 0;
+      uint8_t* k = c ? *(uint8_t**)(c + 0xD58) : nullptr;
+      // The timer is reset by the game's first tick in a state: on the frame a state appears it still holds the last one's.
+      if ((st != 5 && st != 6) || !state_settled_ || !k || *(float*)(k + 0x34) <= *(float*)(k + 0x38)) return false;
+      uintptr_t base = scan::exe_base();
+      uint8_t* game = ((uint8_t * (*)())(base + 0x122ac90))();
+      int frames = ((int (*)(void*))(base + 0x12e13b0))(*(void**)(game + 0x308A0));
+      return st == 5 || c[0x345] || *(float*)(c + 0x3B8) >= frames * (1.f / 30);
+    };
     list_.set = [this](int i) {
       UObject* c = cfg_.get();
       uint8_t* lc = c ? *(uint8_t**)((uint8_t*)c + 0x3D0) : nullptr;
@@ -183,8 +206,14 @@ class ConfigScreen : public MenuScreen {
   void on_enter() override {
     screens::set_keys([this] { return std::string(bgm_mode() ? strings::kBgmKeys() : tabs_ ? strings::kConfigTabKeys() : strings::kConfigKeys()); });
     rows_.clear();
+    state_seen_ = -1;
+    state_settled_ = false;
   }
   void on_tick() override {
+    auto* cs = (uint8_t*)cfg_.get();
+    int st = cs ? *(int32_t*)(cs + 0x294) : 0;
+    state_settled_ = st == state_seen_;
+    state_seen_ = st;
     UObject* d = draw();
     if (!d) return;
     if (call_bool(d, "IsBGMMode")) return;
@@ -214,10 +243,13 @@ class ConfigScreen : public MenuScreen {
     b.begin_stop(list_key_);
     for (int i = 0; i < (int)rows_.size(); ++i) {
       if (!rows_[i].ok) continue;
-      auto v = game_item(list_, i, [this, i] { return i < (int)rows_.size() ? rows_[i].title : std::string(); },
-                         [this, i] { return i < (int)rows_.size() ? desc(rows_[i]) : std::string(); });
-      if (!tabs_) v->announcements.push_back(ui::NodeAnnouncement([this, i] { return i < (int)rows_.size() ? rows_[i].value : std::string(); }, true, ui::announcement_kinds::kValue));
-      describe_with(v, [this, i] { return i < (int)rows_.size() ? desc(rows_[i]) : std::string(); });
+      // Each line is of this list: once the rows are another's (read before the focus has moved), a row of the list
+      // left says nothing, or its live parts read the new rows out ("off", a description) over the landing.
+      auto of_list = [this, key = list_key_, i] { return key == list_key_ && i < (int)rows_.size(); };
+      auto v = game_item(list_, i, [this, i, of_list] { return of_list() ? rows_[i].title : std::string(); },
+                         [this, i, of_list] { return of_list() ? desc(rows_[i]) : std::string(); });
+      if (!tabs_) v->announcements.push_back(ui::NodeAnnouncement([this, i, of_list] { return of_list() ? rows_[i].value : std::string(); }, true, ui::announcement_kinds::kValue));
+      describe_with(v, [this, i, of_list] { return of_list() ? desc(rows_[i]) : std::string(); });
       b.add_item(slot(list_key_, i), v);
     }
     if (int c = list_.cursor(); c >= 0) b.set_start(slot(list_key_, c));

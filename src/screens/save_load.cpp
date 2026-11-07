@@ -22,6 +22,13 @@ class SaveLoadScreen : public MenuScreen {
   int slot_seen_ = -1;
  public:
   SaveLoadScreen() {
+    // AUISaveLoad +0x348 is its state: 3 once the opening has played; +0x350 the list is set up (FUN_141533eb0). Rewind
+    // (BootMode 3) has a state of its own, not read here: it takes moves as it did.
+    list_.ready = [this] {
+      if (draw_.get() && rewind()) return true;
+      auto* a = (uint8_t*)actor_.get();
+      return a && *(int32_t*)(a + 0x348) == 3 && a[0x350];
+    };
     list_.set = [this](int i) {
       auto* a = (uint8_t*)actor_.get();
       ListCursor lc(a ? a + 0x298 : nullptr);

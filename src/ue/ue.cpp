@@ -1,4 +1,5 @@
 #include "ue/ue.h"
+#include <cstdlib>
 #include "ue/scan.h"
 #include "hooks.h"
 #include "log.h"
@@ -493,7 +494,13 @@ static void pe_hook(UObject* o, UFunction* f, void* params) {
   if (hooks::on_game_thread() && hooks::ms_since_tick() > 250) hooks::pump();
   g_pe_orig(o, f, params);
 }
+static const volatile bool* g_exit_flag = nullptr;
 bool install_hooks() {
+  // RequestEngineExit (its callers pass "Win RequestExit", "ConsoleCtrl RequestExit"): mov byte ptr [GIsRequestingExit], 1
+  // after a call. The one match or nothing: a wrong flag would stop the mod.
+  if (uintptr_t a = scan::find_unique("48 83 EC 28 B1 01 E8 ?? ?? ?? ?? C6 05 ?? ?? ?? ?? 01 48 83 C4 28 C3"))
+    g_exit_flag = (const volatile bool*)(scan::rip(a + 13) + 1);   // the instruction ends one byte after its rel32
+  log::writef("ue: GIsRequestingExit={:#x}", g_exit_flag ? (uintptr_t)g_exit_flag - scan::exe_base() : 0);
   g_pe_orig = g_pe;
   return hooks::attach((void**)&g_pe_orig, (void*)&pe_hook, "UObject::ProcessEvent");
 }
@@ -536,6 +543,12 @@ bool init() {
   log::writef("ue: ready, {} objects, first='{}', ProcessEvent=exe+{:#x}", num_objects(), full_name(o0), pe - base);
   return true;
 }
+bool known_build() {
+  static const bool known = scan::exe_timestamp() == kKnownBuild && !getenv("P3A_UNSUPPORTED");   // the env var: dev, to test it
+  return known;
+}
+bool exit_requested() { return g_exit_flag && *g_exit_flag; }
+
 bool ready() { return g_ready; }
 std::string status() { return std::format("ue ready={} objects={} world={}", g_ready, num_objects(), full_name(gworld())); }
 }  // namespace p3a::ue

@@ -68,6 +68,12 @@ class SkillLearnScreen : public MenuScreen {
   // highlight slide. It refuses slots 9 / 10 when they are not offered and any slot while a popup is up.
   SkillLearnScreen() {
     slots_.keep_edges = true;   // the game's rows wrap between the two columns
+    // The select handler refuses on the sequence's virtual +0x280 (the Forget popup, FUN_1414f76d0): moves wait it out.
+    slots_.ready = [this] {
+      UObject* p = ps_.get();
+      UObject* seq = p ? get<UObject*>(p, "Sequence_") : nullptr;
+      return seq && !(*(bool (***)(void*))seq)[0x280 / 8](seq);
+    };
     slots_.set = [this](int i) {
       UObject* p = ps_.get();
       return p && ((bool (*)(void*, void*, int))(scan::exe_base() + 0x14c8cb0))(p, nullptr, i);
@@ -80,13 +86,15 @@ class SkillLearnScreen : public MenuScreen {
     UObject* p = ps_.get();
     return p && !persona::status_page_up(p) && learning(p) && persona::shown_status();   // Sequence_ clears on close
   }
-  std::string title() override {
+  std::string learn_line() {
     UObject* p = ps_.get();
     const uint8_t* e = persona::shown_status();
     int sid = p ? new_skill(p) : 0;
     if (!e || !sid) return {};
     return std::format("{}: {} {}", persona::name(*(uint16_t*)(e + 2)), strings::kLearnSkill, persona::skill_name(sid));
   }
+  // Before the first press the line says it.
+  std::string title() override { return slots_.cursor() < 0 ? std::string() : learn_line(); }
   void on_enter() override {
     UObject* p = ps_.get();
     const uint8_t* e = persona::shown_status();
@@ -109,7 +117,18 @@ class SkillLearnScreen : public MenuScreen {
     }
   }
   void build(ui::GraphBuilder& b) override {
-    if (slots_.cursor() < 0) return;   // learned: nothing to choose
+    if (slots_.cursor() < 0) {
+      // A card's page before its first press has no cursor yet, and with no line the menu never opened: the page said
+      // nothing (2026-11-06). Its press is the game's. Learned: nothing to choose.
+      std::string l = learn_line();
+      if (l.empty()) return;
+      b.begin_stop("card");
+      int sid = new_skill(ps_.get());
+      auto v = item([l] { return l; });
+      describe_with(v, [sid] { return persona::skill_help(sid); });
+      b.add_item(ui::ControlId::structural("card"), v);
+      return;
+    }
     b.begin_stop("slots");
     UObject* p = ps_.get();
     int sid = new_skill(p);

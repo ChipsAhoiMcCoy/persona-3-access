@@ -7,12 +7,16 @@
 // R items, C guard, A and D change target (measured 2026-10-27 on the 4/9 rooftop battle).
 // The wheel is played with the game's own keys (the player's call, 2026-11-01: no command list); F1 names the open
 // ones. Left and right step BP_BtlGuiComponent_C.EnemyList (sorted live targets; "Target Index" + 1 mod its length,
-// On Select Next Target): a target's position there is its "1 of 2".
+// On Select Next Target): a target's position there is its "1 of 2". The game clears IsCreateEnemyList as the wheel
+// opens a turn and builds the turn's list on its next tick, setting it again: until then EnemyList is the last turn's,
+// empty on a battle's first.
 #include "screens/screen.h"
 #include "screens/util.h"
 #include "screens/battle.h"
 #include "screens/battle_words.h"
 #include "core/strings.h"
+#include "input.h"
+#include "keys.h"
 #include "msg.h"
 #include "party.h"
 #include "persona.h"
@@ -20,6 +24,7 @@
 #include "textcap.h"
 #include "core/text_clean.h"
 #include <windows.h>
+#include <xinput.h>
 #include <format>
 #include <cstring>
 #include <map>
@@ -50,7 +55,7 @@ class BattleScreen : public Screen {
   Finder gui_{"BtlGuiStateManager"}, top_{"BP_BtlTopUI_C"}, tmgr_{"BP_BtlTargetManager_C"}, guicomp_{"BP_BtlGuiComponent_C"};
   int state_ = -1;
   WeakObj actor_, target_, last_actor_;
-  const void* list_ = nullptr;   // the EnemyList target_ was read from (its storage: a new turn builds a new one)
+  bool turn_due_ = false;   // the wheel opened a turn whose line is not said yet: it waits for the turn's list
   BtlWords w_;   // the battle database's words and numbers
   // An enemy on the wheel with its place among the targets left and right go through.
   std::string target_line(UObject* t) {
@@ -100,7 +105,7 @@ class BattleScreen : public Screen {
     std::string s;
     for (auto& c : kCmds)
       if (open(c)) s += (s.empty() ? "" : ", ") + std::string((*c.key)());
-    return s + ". " + strings::kChangeTargetKeys();
+    return s + ". " + strings::kChangeTargetKeys() + " " + strings::kDetailKeys();
   }
   UObject* main_character() { UObject* m = tmgr_.get(); return m ? get<UObject*>(m, "MainCharacter") : nullptr; }
   UObject* cursor_target() {
@@ -115,13 +120,13 @@ class BattleScreen : public Screen {
   Finder core_{"BtlCoreComponent"};
   struct Unit { std::string name; int hp; bool enemy; uint32_t status = 0; };
   bool downed_since_turn_ = false;
-  // EBtlDataBadStatus bits the game tracks per unit: 1 charm .. 8 poison, 13 down (GetBadStatus).
+  // EBtlDataBadStatus bits the game tracks per unit: 0 dizzy, 1 charm .. 8 poison, 13 down (GetBadStatus).
   uint32_t status_of(UObject* u) {
     UObject* d = w_.db();
     UFunction* f = d ? find_function(class_of(d), "GetBadStatus") : nullptr;
     if (!f) return 0;
     uint32_t bits = 0;
-    for (int t : {1, 2, 3, 4, 5, 6, 7, 8, 13}) {
+    for (int t : {0, 1, 2, 3, 4, 5, 6, 7, 8, 13}) {
       Params p(f);
       p.set<UObject*>("Actor", u);
       p.set<int32_t>("Type", t);
@@ -132,23 +137,60 @@ class BattleScreen : public Screen {
   }
   std::map<WeakObj::Key, Unit> units_;
   std::string banner_;
-  WeakObj banner_action_;   // the action the banner was said for: the same words for a new action are said again
+  WeakObj banner_action_;     // whose action it was up under
+  bool banner_gone_ = true;   // none drawn since banner_: the same words now are a new banner
+  // Who the player just picked a skill, item or Guard for: that member's next banner is what the player chose, and is
+  // not said (the user's call, 2026-11-05: any member the player commands). Whatever a member does of their own accord
+  // is said: nothing is picked on the wheel (Rush), for a member on orders or an ailment (no wheel), or once anyone else acts.
+  WeakObj picked_;
+  // The one unit an action hits (ABtlActor.GetActionTargets), null for none or several.
+  UObject* attacked(UObject* action) {
+    UFunction* f = action ? find_function(class_of(action), "GetActionTargets") : nullptr;
+    if (!f) return nullptr;
+    Params p(f);
+    if (!call(action, p)) return nullptr;
+    auto* a = p.at<TArray<UObject*>>("ReturnValue");
+    if (!a || !a->data) return nullptr;
+    UObject* one = a->num == 1 ? a->data[0] : nullptr;
+    msg::game_free(a->data);
+    a->data = nullptr;
+    return one;
+  }
+  void say_banner(UObject* actor, const std::string& b) {
+    if (actor && WeakObj::of(actor) == picked_) { picked_ = {}; return; }
+    std::string who = actor ? w_.unit_name(actor) : "";
+    speech::speak(who.empty() ? b : std::format("{}: {}", who, b), false);
+  }
   void watch() {
     UObject* core = core_.get();
     if (!core) return;
+    int st = gui_state();
+    if (st == 1) picked_ = {};
+    else if (st == 2 || st == 3 || st == 4 || st == 7 || st == 11) picked_ = WeakObj::of(main_character());
     // The action banner (only while no battle menu is up: menus draw names in the same band).
     std::string b;
     UObject* phase = get<UObject*>(core, "CurrentPhase");
-    if (gui_state() == 0 && !(phase && is_a(phase, "BtlPhaseResult")))   // results draw names in that band too
+    if (st == 0 && !(phase && is_a(phase, "BtlPhaseResult")))   // results draw names in that band too
     for (auto& t : textcap::snapshot(200))
       if (t.source == 2 && t.y > 95 && t.y < 115 && t.x > 300 && t.x < 700 && (t.color & 0xff) == 0xff && core::has_words(t.text)) { b = t.text; break; }
     UObject* action_now = get<UObject*>(core, "CurrentAction");
-    if (!b.empty() && (b != banner_ || !(WeakObj::of(action_now) == banner_action_))) {
-      UObject* actor = action_now;
-      std::string who = actor ? w_.unit_name(actor) : "";
-      speech::speak(who.empty() ? b : std::format("{}: {}", who, b), false);
+    if (st == 0 && action_now && !(WeakObj::of(action_now) == picked_)) picked_ = {};
+    if (b.empty()) {
+      banner_gone_ = true;
+    } else {
+      // GetActionType (EBtlCommandType): 0 nothing chosen yet, so the same words are the last action's, still up as the
+      // next unit's turn begins ("Merciless Maya: Guard", 2026-11-06).
+      int type = action_now ? call_ret<uint8_t>(action_now, "GetActionType") : 0;
+      if (b != banner_ || banner_gone_ || (!(WeakObj::of(action_now) == banner_action_) && type != 0)) {
+        banner_ = b;
+        banner_action_ = WeakObj::of(action_now);
+        // 1 a plain attack has no banner, and a skill's is its own name: anything else is a passive of the one attacked
+        // (a counter: "High Counter" came under the attacker's name, 2026-11-06).
+        bool theirs = type != 1 && (type != 2 || w_.skill_name(call_ret<int32_t>(action_now, "GetSkillID")) == b);
+        say_banner(theirs ? action_now : attacked(action_now), b);
+      }
+      banner_gone_ = false;
     }
-    if (!b.empty()) { banner_ = b; banner_action_ = WeakObj::of(action_now); }
     // HP changes and defeats.
     std::map<WeakObj::Key, Unit> next;
     std::vector<std::string> defeated;
@@ -179,7 +221,7 @@ class BattleScreen : public Screen {
         }
         if (it != units_.end()) {
           uint32_t gained = cur.status & ~it->second.status;
-          for (int t = 1; t <= 13; ++t)
+          for (int t = 0; t <= 13; ++t)
             if (gained & (1u << t)) {
               speech::speak(std::format("{} {}", cur.name, strings::kBadStatus[t]), false);
               if (t == 13 && cur.enemy) downed_since_turn_ = true;
@@ -207,8 +249,6 @@ class BattleScreen : public Screen {
     UObject* t = wheel_target();
     actor_ = WeakObj::of(a);
     target_ = WeakObj::of(t);
-    auto* l = enemy_list();
-    list_ = l ? l->data : nullptr;
     std::string s = std::format("{}. {}", w_.unit_name(a), w_.hp_sp(a));
     // The Theurgy gauge (GetUnitTP / GetUnitMaxTP): full means the Theurgy command is open.
     int tp = w_.unit_int("GetUnitTP", a), max_tp = w_.unit_int("GetUnitMaxTP", a);
@@ -218,10 +258,30 @@ class BattleScreen : public Screen {
   }
 
   // TOP: whose turn it is and the target (said from background(): the command list is the menu in front).
-  void top_tick(bool entering) {
+  // Left or right pressed since the last tick (the keys and the D-pad), read every tick so that a press from another
+  // list or from the field is never taken for one on the wheel.
+  uint32_t target_keys_seen_ = 0;
+  uint16_t target_pad_was_ = 0;
+  bool target_press() {
+    uint32_t n = 0;
+    for (uint32_t vk : {(uint32_t)VK_LEFT, (uint32_t)VK_RIGHT, (uint32_t)'A', (uint32_t)'D'}) n += keys::movement_presses(vk);
+    uint16_t pad = input::real_buttons() & (XINPUT_GAMEPAD_DPAD_LEFT | XINPUT_GAMEPAD_DPAD_RIGHT);
+    // A press made in the mod layer stays held as its button when the triggers let go: it was never one on the wheel.
+    bool pressed = n != target_keys_seen_ || (!input::layer_open() && (pad & ~target_pad_was_));
+    target_keys_seen_ = n;
+    target_pad_was_ = pad;
+    return pressed;
+  }
+  void top_tick(bool entering, bool target_pressed) {
     UObject* a = main_character();
+    if (entering || (a && a != actor_.resolve())) turn_due_ = true;
+    // The turn's target and its place are read from the turn's list. The line said before it was built had no "1 of 2"
+    // on a battle's first turn, and the list appearing under it swallowed the player's first move (2026-11-05).
+    UObject* g = guicomp_.get();
+    if (!g || !get_bool(g, "IsCreateEnemyList")) return;
     UObject* t = wheel_target();
-    if (a && (entering || a != actor_.resolve())) {   // no acting member (between turns): nothing to say yet
+    if (a && turn_due_) {   // no acting member (between turns): nothing to say yet
+      turn_due_ = false;
       // The same member acting again right after knocking an enemy down: the game's "1 More".
       bool again = a && a == last_actor_.resolve() && downed_since_turn_;
       // After a 1 More the wheel shows Shift (B) once it is unlocked (BP_BtlTopUI_C "Shift" is 1 then, but it
@@ -235,12 +295,14 @@ class BattleScreen : public Screen {
     }
     else if (t && t != target_.resolve()) {
       // The player moved the target: said at once, with its place (two of the same Shadow at the same health read
-      // alike otherwise). A new list (the turn's own, built as it opens) is taken silently: the turn line said it.
+      // alike otherwise).
       target_ = WeakObj::of(t);
+      speech::speak(target_line(t), true);
+    }
+    else if (t && target_pressed && screens::current() == this && !msg::current().blocking && !input::modal()) {
+      // The last enemy left: the game's cursor has nowhere to go, so the press is answered with who it is still on.
       auto* l = enemy_list();
-      const void* now_list = l ? l->data : nullptr;
-      if (now_list == list_) speech::speak(target_line(t), true);
-      list_ = now_list;
+      if (l && l->num == 1) speech::speak(target_line(t), false);   // the focus did not move: nothing is cut off
     }
   }
   int bg_state_ = -1;
@@ -258,6 +320,7 @@ class BattleScreen : public Screen {
   void enter() override { state_ = -1; }
   // Results are watched for as long as a battle exists, not only while a menu is up: the last blow ends the menus.
   void background() override {
+    bool target_pressed = target_press();
     UObject* core = core_.get();
     if (!core) { units_.clear(); forget_battle_start(); downed_since_turn_ = false; last_actor_ = {}; return; }
     watch();
@@ -267,7 +330,8 @@ class BattleScreen : public Screen {
     bool entering = st != bg_state_ && bg_state_ != 13;
     bg_state_ = st;
     if (entering) prompt_said_ = false;
-    if (st == 1) top_tick(entering);
+    if (st == 1) top_tick(entering, target_pressed);
+    else turn_due_ = false;
   }
   void tick() override {
     int st = gui_state();
@@ -301,7 +365,7 @@ class BattleScreen : public Screen {
         break;
       case 8: {   // Analyze: the target's name, level, health and the affinities found so far; A and D move it
         UObject* t = cursor_target();
-        if (entering) screens::set_keys(strings::kAnalyzeKeys);
+        if (entering) screens::set_keys([] { return std::string(strings::kAnalyzeKeys()) + " " + strings::kDetailKeys(); });
         if (!t || (!entering && t == target_.resolve())) break;
         target_ = WeakObj::of(t);
         std::string s = std::format("{}, {} {}", w_.enemy(t), strings::kLevel, w_.unit_int("GetUnitLevel", t));

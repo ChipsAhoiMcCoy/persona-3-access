@@ -30,7 +30,9 @@
 #include "ue/routes.h"
 #include "ue/scan.h"
 #include "ue/ue.h"
+#include "core/strings.h"
 #include <windows.h>
+#include <utility>
 #include <thread>
 #include <memory>
 
@@ -49,6 +51,13 @@ static Section g_sections[] = {
 static uint64_t g_perf_ticks = 0;
 static void tick() {
   static LARGE_INTEGER qpf = [] { LARGE_INTEGER f; QueryPerformanceFrequency(&f); return f; }();
+  // The game is quitting: it wipes its data and frees its objects while the message pump still runs. Read on, the mod
+  // said "April 1" and every Social Link reversed on the way out, then faulted scanning the dead object array (2026-11-06).
+  if (ue::exit_requested()) {
+    static bool said = false;
+    if (!std::exchange(said, true)) log::write("mod: the game is quitting, the tick stops");
+    return;
+  }
   for (auto& s : g_sections) {
     LARGE_INTEGER t0, t1;
     QueryPerformanceCounter(&t0);
@@ -129,6 +138,7 @@ void init(bool speech_ok) {
   g_ue_up = true;
   hooks::set_tick_callback(&tick);
   speech::speak(speech_ok ? "Persona 3 Access loaded" : "Persona 3 Access loaded, no speech backend", false);
+  if (!ue::known_build()) speech::speak(strings::kUnsupportedBuild, false);
 }
 void shutdown() {
   if (!g_ue_up) return;

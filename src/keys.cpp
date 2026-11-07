@@ -5,6 +5,7 @@
 #include "log.h"
 #include "msg.h"
 #include "seh.h"
+#include "ue/ue.h"
 #include <windows.h>
 #include <xinput.h>
 #include <format>
@@ -56,6 +57,8 @@ static bool g_movement[256];
 static std::atomic<uint64_t> g_game_key_ms{0};
 uint64_t game_key_ms() { return g_game_key_ms; }
 static ULONGLONG g_movement_at[256];   // the last down or auto-repeat of each held movement key
+static uint32_t g_movement_presses[256];
+uint32_t movement_presses(uint32_t vk) { return g_movement_presses[vk & 0xFF]; }
 static bool is_movement(uint32_t vk) { return vk == 'W' || vk == 'A' || vk == 'S' || vk == 'D' || vk == VK_UP || vk == VK_DOWN || vk == VK_LEFT || vk == VK_RIGHT; }
 // A held key auto-repeats (after the first ~0.5 s): one silent for over a second lost its key-up (focus changes,
 // 2026-10-28: a stuck flag stopped every walk at once), so it no longer counts as held.
@@ -70,6 +73,7 @@ bool movement_key_down() {
 constexpr LPARAM kSyntheticMark = 0x01000000;   // bit 24 = extended-key flag; the navigator's keys are never extended
 
 static bool filter(UINT msg, WPARAM w, LPARAM l) {
+  if (ue::exit_requested()) return false;   // the game is quitting: no mod key reads what it is taking down
   uint32_t vk = (uint32_t)w & 0xFF;
   // A key the mod pressed for the game (a menu stepping the game's cursor to its focus): the game's, untouched.
   if ((msg == WM_KEYDOWN || msg == WM_KEYUP) && (l & 0xFFFF) == input::kInjectedRepeat) return false;
@@ -77,6 +81,7 @@ static bool filter(UINT msg, WPARAM w, LPARAM l) {
   if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
     if (is_movement(vk) && !synthetic) {
       if (!g_movement[vk]) log::writef("keys: movement key {:#x} down (lParam {:#x})", vk, (uint64_t)l);
+      if (!(l & (1 << 30))) ++g_movement_presses[vk];
       g_movement[vk] = true; g_movement_at[vk] = GetTickCount64();
     }
     bool repeat = (l & (1 << 30)) != 0;

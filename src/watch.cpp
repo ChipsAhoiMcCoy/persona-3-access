@@ -44,6 +44,7 @@ struct Stub {
 static_assert(offsetof(Stub, fn) == 0x30 && offsetof(Stub, inflight) == 0x38 && offsetof(Stub, notify) == 0x50);
 Stub* g_stub;
 std::atomic<bool> g_active{false};
+std::atomic<bool> g_array_gone{false};   // the game shut its object array down: nothing to find or scan any more
 
 void put_rel32(uint8_t* at, const uint8_t* next, const volatile void* target) {
   int32_t r = (int32_t)((const uint8_t*)target - next);
@@ -100,6 +101,7 @@ void leave_list() {
 // 2026-10-28).
 void on_shutdown(void*) {
   g_active = false;
+  g_array_gone = true;
   leave_list();
 }
 
@@ -211,7 +213,7 @@ int want(std::string_view class_name, bool all) {
 
 UObject* get(int id) {
   std::lock_guard lk(reg().mu);
-  if (id < 0 || id >= (int)reg().wants.size()) return nullptr;
+  if (g_array_gone || ue::exit_requested() || id < 0 || id >= (int)reg().wants.size()) return nullptr;
   Want& w = reg().wants[id];
   UObject* found = nullptr;
   if (g_active) {
@@ -239,7 +241,7 @@ UObject* get(int id) {
 std::vector<UObject*> all(int id) {
   std::vector<UObject*> out;
   std::lock_guard lk(reg().mu);
-  if (id < 0 || id >= (int)reg().wants.size()) return out;
+  if (g_array_gone || ue::exit_requested() || id < 0 || id >= (int)reg().wants.size()) return out;
   Want& w = reg().wants[id];
   if (!g_active) {   // no listener: the old full scan
     for (UObject* o : find_all(w.name)) out.push_back(o);

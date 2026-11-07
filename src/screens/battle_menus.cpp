@@ -21,9 +21,14 @@
 #include "core/strings.h"
 #include "items.h"
 #include "persona.h"
+#include "devserver.h"
+#include "input.h"
 #include "msg.h"
+#include "seh.h"
 #include "speech.h"
+#include "ue/scan.h"
 #include <windows.h>
+#include <algorithm>
 #include <format>
 
 namespace p3a::screens {
@@ -61,7 +66,7 @@ class BattleList : public MenuScreen {
   BattleList(int state, const char* cls, const strings::Hint& keys = strings::kListKeys) : state_(state), list_(cls), keys_(keys) {}
  public:
   int priority() const override { return 26; }
-  void on_enter() override { screens::set_keys(keys_); }
+  void on_enter() override { screens::set_keys([this] { return std::string(keys_()) + " " + strings::kDetailKeys(); }); }
   bool active() override { return gui_state() == state_ && list_.get() != nullptr; }
 };
 
@@ -419,6 +424,110 @@ class BattleSurvey : public BattleList {
     if (int c = m_.cursor(); c >= 0) b.set_start(slot("survey", c));
   }
 };
+
+// The details of whoever is in focus (the Say the Spire model): the right stick up and down, or Ctrl+Up and Ctrl+Down,
+// walk the lines of BtlWords::details from the top, the unit's name: down goes on, up goes back (the user's call,
+// 2026-11-05); each read is fresh, and landing on someone starts at their top again. Who is in focus is the game's own
+// cursor in each state; a list of the acting member's own (skills, items) reads them. A flick is one line. The stick is
+// hidden from the game only while someone is in focus; no battle Blueprint reads it.
+namespace {
+BtlWords& buffer_words() { static BtlWords w; return w; }
+Finder& target_list() { static Finder f{"BP_BtlTargetSelect_C"}; return f; }
+Finder& survey_list() { static Finder f{"BP_BtlTacticsCheck_C"}; return f; }
+Finder& shift_list() { static Finder f{"BP_BtlGuiShiftSelect_C"}; return f; }
+Finder& tactics_list() { static Finder f{"BP_BtlStrategyInstruct_C"}; return f; }
+Finder& target_mgr() { static Finder f{"BP_BtlTargetManager_C"}; return f; }
+Finder& gui_comp() { static Finder f{"BP_BtlGuiComponent_C"}; return f; }
+UObject* at(UObject* o, const char* list, const char* index) {
+  auto* l = o ? field<TArray<UObject*>>(o, list) : nullptr;
+  int32_t* i = o ? field<int32_t>(o, index) : nullptr;
+  return l && i && *i >= 0 && *i < l->num ? l->data[*i] : nullptr;
+}
+UObject* focused_unit() {
+  int st = gui_state();
+  if (!st) return nullptr;
+  UObject* m = target_mgr().get();
+  UObject* acting = m ? get<UObject*>(m, "MainCharacter") : nullptr;
+  auto cursor_target = [&]() -> UObject* {
+    auto* a = m ? field<TArray<UObject*>>(m, "CursorTargets") : nullptr;
+    return a && a->num > 0 ? a->data[0] : nullptr;
+  };
+  switch (st) {
+    case 1: {   // the wheel: the target left and right change
+      UObject* t = at(gui_comp().get(), "EnemyList", "Target Index");
+      return t ? t : cursor_target();
+    }
+    case 2: case 3: case 7: return acting;
+    case 4: return at(target_list().get(), "targetList", "TargetIndex");
+    case 6: return at(survey_list().get(), "CursorList", "TargetIndex");
+    case 8: return cursor_target();
+    case 9: return at(shift_list().get(), "PlayerList", "TargetIndex");
+    case 10: {
+      UObject* s = tactics_list().get();
+      auto* cur = s ? field<TArray<int32_t>>(s, "CursorIndex") : nullptr;
+      if (!s || get<int32_t>(s, "inputState") != 1 || !cur || cur->num < 2) return acting;
+      auto* party = field<TArray<UObject*>>(s, "PlayerList");
+      int k = cur->data[1] - 1;   // item 0 is everyone
+      return party && k >= 0 && k < party->num ? party->data[k] : acting;
+    }
+    default: return nullptr;
+  }
+}
+WeakObj g_detail_unit;
+int g_detail_line = 0;
+void detail_landing(UObject* u) {
+  WeakObj w = WeakObj::of(u);
+  if (!(w == g_detail_unit)) { g_detail_unit = w; g_detail_line = 0; }
+}
+std::string detail_step(int dir) {
+  UObject* u = focused_unit();
+  if (!u) return {};
+  detail_landing(u);
+  auto lines = buffer_words().details(u);
+  if (lines.empty()) return {};
+  g_detail_line = std::clamp(g_detail_line + dir, 0, (int)lines.size() - 1);
+  return lines[g_detail_line];
+}
+}  // namespace
+
+namespace battle_details {
+bool in_focus() { bool on = false; guarded([&] { on = focused_unit() != nullptr; }); return on && !msg::current().blocking; }
+void step(int dir) {
+  std::string l;
+  guarded([&] { l = detail_step(dir); });
+  if (!l.empty()) speech::speak(l, true);
+}
+void frame() {
+  guarded([] { detail_landing(focused_unit()); });
+  bool on = in_focus() && !input::modal();
+  input::claim_right_stick(on);
+  if (int d = input::take_right_flick(); d && on) step(-d);   // a flick up is +1: back toward the top
+}
+void install() {
+  dev::route("/battle/details", [](const dev::Request& r, int&) {
+    int d = (int)dev::arg_int(r, "step", 0);
+    int give = (int)dev::arg_int(r, "ailment", -1);
+    return dev::on_game([d, give] {
+      std::string out;
+      guarded([&] {
+        UObject* u = focused_unit();
+        // ?ailment=N: type N on the focused unit by the game's own route: its flag (SetBadStatus) and then the turn
+        // counters the battle gives it (FUN_140fe2ef0(actor, bit), +0x38E and +0x3A6), for testing what a skill would do.
+        if (give >= 0 && give < 12 && u) {
+          UObject* db = buffer_words().db();
+          UFunction* f = db ? find_function(class_of(db), "SetBadStatus") : nullptr;
+          if (f) { Params p(f); p.set<UObject*>("Actor", u); p.set<int32_t>("Type", give); call(db, p); }
+          ((void (*)(void*, uint32_t))(scan::exe_base() + 0xfe2ef0))(u, 1u << give);
+        }
+        if (d) step(d);
+        if (u) for (auto& l : buffer_words().details(u)) out += l + "\n";
+        out += std::format("line {}\n", g_detail_line);
+      });
+      return out;
+    });
+  }, "?step=1|-1 ?ailment=N the focused battle unit's detail lines (what the right stick reads)");
+}
+}  // namespace battle_details
 
 std::unique_ptr<Screen> make_battle_survey() { return std::make_unique<BattleSurvey>(); }
 std::unique_ptr<Screen> make_battle_skills() { return std::make_unique<BattleSkills>(); }

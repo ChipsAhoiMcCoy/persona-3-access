@@ -31,4 +31,5 @@ void set_menu(MenuKey key);
 // True while a mod-owned key is physically down (the game's own keys are not tracked).
 bool movement_key_down();   // W/A/S/D or the arrow keys, from the real keyboard: cancels auto-walk
 uint64_t game_key_ms();     // when the player last pressed a key the game gets (not a mod key), or 0
+uint32_t movement_presses(uint32_t vk);   // how many times that movement key has been pressed (no auto-repeats)
 }  // namespace p3a::keys

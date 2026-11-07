@@ -73,6 +73,8 @@ class GraphNavigator {
   void announce_current();
   // Seat focus without a word (the landing counts as spoken): a screen whose entry something else announces.
   void settle_silently();
+  // The focused node's live parts take their next values as a fresh baseline: nothing is said until they change again.
+  void forget_live() { live_key_.reset(); }
   // Move focus to a node by id when it exists in a render (one retry frame for content appearing).
   // interrupt: the landing interrupts speech (the game moved its cursor on its own: a player's move, not an entry).
   void focus_node(const ControlId& id, bool announce = true, bool interrupt = false);

@@ -93,6 +93,7 @@ inline constexpr const char* kRankUp = "up to rank";
 inline constexpr const char* kStatUp = "up";
 inline constexpr const char* kStatsUp = "Stats up.";
 inline constexpr Hint kSpaceContinues{"Space continues.", "A continues."};
+inline constexpr Hint kResultKeys{"The up and down arrows go through the results, Space continues.", "The D-pad goes through the results, A continues."};
 // Battle
 inline constexpr const char* kBattle = "Battle";
 inline constexpr const char* kHP = "HP";
@@ -115,8 +116,20 @@ inline constexpr const char* kYen = "yen";
 inline constexpr const char* kLevelUp = "Level up!";
 inline constexpr const char* kResultPersona = "Persona";   // the hero's level-up page: "Persona Nekomata, level 7"
 // EBtlDataBadStatus 0..13
-inline constexpr const char* kBadStatus[] = {"", "is charmed", "is distressed", "panics", "is afraid", "is enraged", "is frozen", "is shocked",
+inline constexpr const char* kBadStatus[] = {"is dizzy", "is charmed", "is distressed", "panics", "is afraid", "is enraged", "is frozen", "is shocked",
                                             "is poisoned", "", "", "", "", "is down"};
+// A unit's ailments as they stand (EBtlDataBadStatus; empty = not said): on focus and in the details.
+inline constexpr const char* kAilments[] = {"Dizzy", "Charmed", "Distressed", "Panicked", "Afraid", "Enraged", "Frozen", "Shocked",
+                                            "Poisoned", "Orgia Mode", "Overheated", "Time bomb", "", "Downed"};
+inline constexpr const char* kNoAilments = "No ailments";
+inline constexpr const char* kNoEffects = "No buffs or debuffs";
+inline constexpr const char* kGuarding = "Guarding";
+inline constexpr const char* kUpTo = "up to";
+inline constexpr const char* kTurn = "turn";
+inline constexpr const char* kTurns = "turns";
+inline constexpr const char* kPersonaWord = "Persona";
+inline constexpr const char* kTheurgyCharge = "Theurgy gauge";
+inline constexpr Hint kDetailKeys{"Control and the up and down arrows read the details of who is in focus.", "The right stick, up and down, reads the details of who is in focus."};
 inline constexpr const char* kOneMore = "1 More!";
 inline constexpr const char* kPersonaStatus = "Persona status";
 inline constexpr const char* kLearnSkill = "Learn";
@@ -135,7 +148,6 @@ inline constexpr const char* kPersonaOverstock = "Persona overstock. Choose a Pe
 inline constexpr const char* kGain = "Gain";                   // the overstock list's new Persona: "Gain: Apsaras, ..."
 inline constexpr Hint kOverstockKeys{"Up and down arrows choose a Persona, Space releases it, F shows its stats.",
                                      "Up and down choose a Persona, A releases it, the Persona button shows its stats."};
-inline constexpr const char* kMaxHpSp = "max HP {}, max SP {}";
 inline constexpr Hint kSkillKeys{"Space confirms, Q and E change Persona, F Persona stats, Escape back.", "A confirms, LB and RB change Persona, X Persona stats, B back."};
 inline constexpr Hint kKeyAttack{"Space attack", "A attack"};
 inline constexpr Hint kKeySkills{"E skills", "Y skills"};
@@ -363,6 +375,7 @@ inline constexpr const char* kConfig = "Config";
 inline constexpr const char* kOn = "on";
 inline constexpr const char* kOff = "off";
 inline constexpr const char* kUnavailable = "unavailable";
+inline constexpr const char* kUnsupportedBuild = "This copy of Persona 3 Reload is not the version Persona 3 Access was made for, such as the demo or an older update. To keep the game from freezing, menus are not read. Messages and the field still are.";
 inline constexpr Hint kConfigTabKeys{"Up and down arrows choose, Space opens, Escape back. F2 opens the mod's settings.", "Up and down choose, A opens, B back. Both triggers and View open the mod's settings."};
 inline constexpr Hint kBgmKeys{"Up and down arrows choose, Space sets it, F plays it, Escape back.", "Up and down choose, A sets it, X plays it, B back."};
 inline constexpr Hint kConfigKeys{"Up and down arrows choose, left and right arrows change, Space saves changes, H restores defaults, Escape back. F2 opens the mod's settings.", "Up and down choose, left and right change, A saves changes, Menu button restores defaults, B back. Both triggers and View open the mod's settings."};
@@ -374,6 +387,13 @@ inline constexpr const char* kNoParty = "No party";
 inline constexpr const char* kTownInfo = "Places here";
 inline constexpr const char* kTheurgy = "Theurgy";
 inline constexpr const char* kBuffs[] = {"attack up", "attack down", "defense up", "defense down", "agility up", "agility down"};
+inline constexpr const char* kCharged = "Charged";
+inline constexpr const char* kConcentrating = "Concentrating";
+inline constexpr const char* kPhysicalShield = "Physical attacks reflected";
+inline constexpr const char* kMagicShield = "Magic attacks reflected";
+inline constexpr const char* kAilmentsDoubled = "Ailments land more easily";
+inline constexpr const char* kWalls[] = {"Fire resisted", "Ice resisted", "Electricity resisted", "Wind resisted"};
+inline constexpr const char* kBreaks[] = {"Fire resistance broken", "Ice resistance broken", "Wind resistance broken", "Electricity resistance broken"};
 inline constexpr Hint kTheurgyReady{"Theurgy ready, T", "Theurgy ready, RT"};
 inline constexpr const char* kLog = "Log";
 inline constexpr const char* kRequests = "Elizabeth's requests";

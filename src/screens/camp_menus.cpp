@@ -73,6 +73,16 @@ void panel_to(uint8_t* panel, int row, uint8_t* menu) {
   *(int32_t*)(panel + 8) = row;
   fn<void (*)(void*, int, void*, char)>(0x1307760)(panel, 0, *(void**)(menu + 0x30), 0);
 }
+// The key-help bar's layout: a message to UI type 6 (UIKeyHelpDraw) through the contact manager, as the game's moves send it.
+void key_help(int layout) {
+  void* ui = fn<void* (*)()>(0x134dce0)();
+  if (!ui) return;
+  alignas(16) uint8_t req[0x80] = {};
+  fn<void (*)(void*)>(0xfe6f30)(req);
+  *(int32_t*)(req + 0x24) = 10;
+  fn<void (*)(void*, int, int, void*)>(0x1352d20)(ui, 6, layout, req);
+  for (int off : {0x60, 0x50}) if (void* p = *(void**)(req + off)) fn<void (*)(void*)>(0x174d4b0)(p);
+}
 }  // namespace
 
 // ---------------------------------------------------------------- Item
@@ -96,6 +106,8 @@ class CampItem : public MenuScreen {
   }
  public:
   CampItem() {
+    // The state's open timer (FUN_141325240 case 3, what its confirm waits for; the same frames as the Persona list's).
+    list_.ready = [this] { uint8_t* o = m(); return state() == 3 && *(float*)(o + 0x40) >= fn<int (*)(void*)>(0x12e13b0)(*(void**)(o + 0x30)) * (1.f / 30); };
     // The list's move helper (FUN_141322900(menu, row, 1)): the sound, the NEW mark of the item left (+0x17c; +0x178
     // is the index the tick saw) cleared, the bar's slide.
     list_.set = [this](int i) {
@@ -207,7 +219,8 @@ class CampSkill : public MenuScreen {
     list_.set = [this](int i) { return state() == 4 && write_cursor(ListCursor(m() + 0x84), i, *(uint8_t**)(m() + 0x100), 0x133c620); };
     // The member's move (FUN_14133efb0 case 3): the sound, the party panel, that member's skills rebuilt
     // (FUN_141337140) and the skill cursor reset to the top (FUN_1410bec60).
-    who_.ready = [this] { return state() == 3 && sys(); };
+    // The open timer +0x44 (FUN_14133efb0 case 3, what its confirm waits for).
+    who_.ready = [this] { uint8_t* o = m(); return state() == 3 && sys() && *(float*)(o + 0x44) >= fn<int (*)(void*)>(0x12e13b0)(*(void**)(o + 0x30)) * (1.f / 30); };
     who_.set = [this](int i) {
       uint8_t* o = m();
       uint8_t* s = sys();
@@ -317,6 +330,8 @@ class CampEquip : public MenuScreen {
   // Each list's move as FUN_141309010 makes it (draw = +0x280, the party panel = sys +0x58).
   CampEquip() {
     // The member: the panel, the sound, and the worn gear shown for them (FUN_141304660).
+    // The open timer +0x40 (FUN_141309010 case 3, what its confirm waits for).
+    who_.ready = [this] { uint8_t* o = m(); return state() == 3 && *(float*)(o + 0x40) >= fn<int (*)(void*)>(0x12e13b0)(*(void**)(o + 0x30)) * (1.f / 30); };
     who_.set = [this](int i) {
       uint8_t* o = m();
       uint8_t* s = sys();
@@ -329,10 +344,11 @@ class CampEquip : public MenuScreen {
       fn<void (*)(void*, int)>(0x1304660)(o, fn<int (*)(void*, int)>(0x131b070)(s, lc.index()));
       return true;
     };
-    // The slot: the sound and the slot bar's slide (FUN_1413051f0).
+    // The slot: member 6's key hints (the weapon slot has its own layout), the sound and the slot bar's slide (FUN_1413051f0).
     slot_.set = [this](int i) {
       uint8_t* o = m();
       if (state() != 5 || !ListCursor(o + 0x80).set(i)) return false;
+      if (member() == 6) key_help(i != 0 ? 5 : 6);
       cursor_sound();
       fn<void (*)(void*, int, char)>(0x13051f0)(*(void**)(o + 0x280), row_of(o + 0x80), 0);
       return true;
@@ -351,12 +367,12 @@ class CampEquip : public MenuScreen {
       fn<void (*)(void*, uint32_t*, int)>(0x131aec0)(s, e, old);
       bool down = i > old;
       if (st == 8) {
-        fn<void (*)(void*, int, int, uint32_t)>(0x1305b50)(draw, down ? 1 : 0, 2, e[0]);
+        fn<void (*)(void*, int, int, uint32_t)>(0x1305b50)(draw, down ? 0 : 1, 2, e[0]);
         fn<void (*)(void*, int, int, char)>(0x1306b40)(draw, row_of(o + 0xBC), 0, 0);
       }
       if (fn<bool (*)(uint16_t)>(0x11ef120)((uint16_t)e[0])) fn<void (*)(uint16_t)>(0x11ef620)((uint16_t)e[0]);
       cursor_sound();
-      if (st == 0xB) fn<void (*)(void*)>(down ? 0x1304fc0 : 0x1304f50)(draw);
+      if (st == 0xB) fn<void (*)(void*)>(down ? 0x1304f50 : 0x1304fc0)(draw);
       return true;
     };
   }
@@ -526,7 +542,13 @@ class CampStats : public MenuScreen {
  public:
   CampStats() {
     // The party list's move in one call (FUN_141352af0): the sound, the panel, the member shown, the camera.
-    list_.ready = [this] { int md = mode(); return (md == 1 || md == 3) && input_on(); };
+    // Opening (mode 1) also waits for the scene's open timer +0x344 (FUN_141350110, what its confirm waits for).
+    list_.ready = [this] {
+      int md = mode();
+      if ((md != 1 && md != 3) || !input_on()) return false;
+      uint8_t* u = ui();
+      return md == 3 || *(float*)(u + 0x344) >= fn<int (*)(void*)>(0x12e13b0)(*(void**)(u + 0x330)) * (1.f / 30);
+    };
     list_.set = [this](int i) {
       uint8_t* u = ui();
       int md = mode();
@@ -825,6 +847,12 @@ class CampSystem : public MenuScreen {
  public:
   // The draw reads the cursor every frame; the move adds its row copy (+0xA0), the help line's fade and the sound.
   CampSystem() {
+    // FUN_14135b890 case 4: the open timer +0x5C and the UI layer's input (FUN_1412d5f60), what its confirm waits for.
+    list_.ready = [this] {
+      uint8_t* o = m();
+      return o && *(float*)(o + 0x5C) >= fn<int (*)(void*)>(0x12e13b0)(*(void**)(o + 0x30)) * (1.f / 30) &&
+             fn<bool (*)(void*)>(0x12d5f60)(*(void**)(fn<uint8_t* (*)()>(0x122ac90)() + 0x308A0));
+    };
     list_.set = [this](int i) {
       uint8_t* o = m();
       if (!o || !ListCursor(o + 0x64).set(i)) return false;

@@ -7,6 +7,7 @@
 #include "msg.h"
 #include "party.h"
 #include "persona.h"
+#include "speech.h"
 #include <windows.h>
 #include <xinput.h>
 #include <cstring>
@@ -37,6 +38,9 @@ int result_state(UObject* ui) { return ui ? get<uint8_t>(ui, "State") : -1; }
 // (id, count, name), GetAllyLevelupParam (unit id, level, risen), GetPersonaLevelupParam (id, level, name),
 // GetHeroInfo / GetHeroHumanLvupParam. Nothing is read from drawn text (the item names used to be caught off
 // FontDrawEx as they slid in, the level-ups by matching drawn names).
+// Each thing on a page is a line of its own: said in turn as it comes up, and there to go back to with the arrows (the
+// user's call, 2026-11-05). The level-ups slide in by themselves, so a section the game adds queues after what is being
+// said and leaves the focus where the player is; only a new page or the player's press moves it.
 // A press goes on (InputButton): taken only while isAvailableKeyHelpButton is on and isStarttingKeyhelpOut off (the OK
 // key help is up); one made before that is held until the game takes it, so each page is said as soon as it is up.
 class BattleResultScreen : public MenuScreen {
@@ -70,27 +74,25 @@ class BattleResultScreen : public MenuScreen {
   }
   static std::string take(uint8_t* at) { return msg::take_fstring(*(FString*)at); }
 
-  // The summary, one line: the level-ups slide in over it a second or two later by themselves, and the focus going to
-  // them left the items unsaid when they were lines of their own (2026-11-02).
+  // The summary: the EXP, the money and each item found.
   std::vector<std::string> top(UObject* ui) {
     UObject* v = view_.get();
-    std::string s = std::format("{} {}", v ? get<int64_t>(v, "Exp") : 0, strings::kExp);
-    if (int64_t m = v ? get<int64_t>(v, "money") : 0) s += std::format(". {} {}", m, strings::kYen);
+    std::vector<std::string> out{std::format("{} {}", v ? get<int64_t>(v, "Exp") : 0, strings::kExp)};
+    if (int64_t m = v ? get<int64_t>(v, "money") : 0) out.push_back(std::format("{} {}", m, strings::kYen));
     int n = 0;
     auto items = array_of(ui, "GetItemParams", 0x18, n);
-    std::string got;
     for (int i = 0; i < n; ++i) {
       uint8_t* e = items.data() + i * 0x18;
       int id = *(int32_t*)e, num = *(int32_t*)(e + 4);
       std::string name = take(e + 8);
       if (name.empty()) name = items::name_of(id);
       if (name.empty()) continue;
-      got += (got.empty() ? "" : ", ") + (num > 1 ? std::format("{} x{}", name, num) : name);
+      out.push_back(num > 1 ? std::format("{} {} x{}", strings::kGot, name, num) : std::format("{} {}", strings::kGot, name));
     }
-    s += got.empty() ? std::format(". {}", strings::kNoItems) : std::format(". {} {}", strings::kGot, got);
-    return {s};
+    return out;
   }
-  // The members who rose (the hero's own page follows when the hero did).
+  // The members who rose (the hero's own page follows when the hero did). Their new maximums are not known yet: the
+  // save data takes a member's level after the results (it still held "max HP 153" under "level 12", 2026-11-05).
   std::vector<std::string> allies(UObject* ui) {
     std::vector<std::string> out;
     int n = 0;
@@ -102,10 +104,7 @@ class BattleResultScreen : public MenuScreen {
       if (!e[8] || id <= 1 || id >= 32) continue;
       std::string name = !g_party_name[id].empty() ? g_party_name[id] : party::name(id);
       if (name.empty()) continue;
-      std::string s = std::format("{} {}, {} {}", strings::kLevelUp, name, strings::kLevel, level);
-      party::Member m;
-      if (party::member(id, m) && m.max_hp > 0) s += ", " + std::format(strings::kMaxHpSp, m.max_hp, m.max_sp);
-      out.push_back(s);
+      out.push_back(std::format("{} {}, {} {}", strings::kLevelUp, name, strings::kLevel, level));
     }
     return out;
   }
@@ -166,13 +165,43 @@ class BattleResultScreen : public MenuScreen {
       if (const uint8_t* e = party::persona_entry(unit); e && *(uint16_t*)(e + 2) == id) return e;
     return nullptr;
   }
+  // What a status page is up for (the game's "NEW SKILL!!"): `now` holds a skill `was` did not.
+  static std::string learned_line(const uint8_t* now, const uint8_t* was) {
+    std::string learned;
+    for (int i = 0; now && i < 8; ++i) {
+      uint16_t sid = *(uint16_t*)(now + 0xC + i * 2);
+      bool had = false;
+      for (int j = 0; j < 8; ++j) had |= *(uint16_t*)(was + 0xC + j * 2) == sid;
+      if (sid && !had) learned += (learned.empty() ? "" : ", ") + persona::skill_name(sid);
+    }
+    return learned.empty() ? learned : std::format("{} {}", strings::kLearned, learned);
+  }
+  // A status page coming up: the level, then what it animates, the skill learned and the stats that rose. The rest of
+  // the page is for the arrows.
+  static void say_status(const uint8_t* now, const uint8_t* was) {
+    const uint8_t* e = now ? now : was;
+    speech::speak(std::format("{} {}", strings::kLevelUp, persona::describe(*(uint16_t*)(e + 2), *(uint16_t*)(e + 4))), true);
+    if (!now) return;
+    if (std::string l = learned_line(now, was); !l.empty()) speech::speak(l, false);
+    for (int i = 0; i < 5; ++i) {
+      int v = persona::stat_total(now, i), up = v - persona::stat_total(was, i);
+      if (up > 0) speech::speak(std::format("{} {}, {} {}", strings::kStatNames[i], v, strings::kUp, up), false);
+    }
+  }
   static ui::ControlId line_id(const std::string& key, int i) { return ui::ControlId::structural(std::format("res.{}.{}", key, i)); }
-  // A section the game added: the focus goes to its first line, said after what is being said unless the player's
-  // press brought it.
-  void add(const std::string& key, std::vector<std::string> lines, bool first) {
+  bool has(const std::string& key) const {
+    for (auto& sec : page_) if (sec.key == key) return true;
+    return false;
+  }
+  // A section the game added: its lines in turn, after what is being said unless the player's press brought it.
+  void add(const std::string& key, std::vector<std::string> lines) {
     if (lines.empty()) return;
+    bool go_there = page_.empty() || pressed_;
+    bool cut = pressed_;
+    for (auto& l : lines) { speech::speak(l, cut); cut = false; }
     page_.push_back({key, std::move(lines)});
-    if (!first) focus(line_id(key, 0), pressed_);
+    if (go_there) focus_quietly(line_id(key, 0));
+    pressed_ = false;
   }
 
  public:
@@ -185,34 +214,48 @@ class BattleResultScreen : public MenuScreen {
     return s >= 1 && s <= 4 && view_.get();
   }
   std::string title() override { return strings::kVictory; }
-  void on_enter() override { screens::set_keys(state_ == 7 ? strings::kLevelUpKeys : strings::kSpaceContinues); }
+  bool opening_interrupts() override { return false; }
+  bool announce_entry() override { return state_ == 7; }   // a status page, back from a window: the line in focus
+  // The hero's stock-up notices ("Update Stockup": two windows, then ResultStockType back to 0 and the key help).
+  bool window_coming() override { UObject* ui = result_ui(); return ui && get<uint8_t>(ui, "ResultStockType") != 0; }
+  void on_enter() override {
+    screens::set_keys(state_ == 7 ? strings::kLevelUpKeys : strings::kResultKeys);
+    if (state_ == 7) return;
+    // Back from a message window over the page, which cut its reading off (the hero's level-up notices, a second into
+    // the page): the page again.
+    bool cut = true;
+    for (auto& sec : page_)
+      for (auto& l : sec.lines) { speech::speak(l, cut); cut = false; }
+  }
   // Tartarus keeps its battle core between fights, so the levels each battle starts from are forgotten here, not
   // when the core goes ("level up to 6" after every later victory, 2026-10-27).
   void on_leave() override {
-    if (!active()) { forget_battle_start(); state_ = -1; persona_ = 0; armed_ = -1; page_.clear(); }
+    if (!active()) { forget_battle_start(); state_ = -1; persona_ = 0; armed_ = -1; pressed_ = false; page_.clear(); }
   }
   void on_tick() override {
     UObject* ui = result_ui();
     int s = result_state(ui);
     if (s != state_) {
-      bool first = state_ < 0;
       log::writef("result: state {} -> {}", state_, s);
-      if (s == 1 || s == 4 || first) page_.clear();
-      if (s == 1) add("top", top(ui), first);
-      else if (s == 2) add("allies", allies(ui), first);
-      else if (s == 3) add("personas", personas(ui), first);
-      else if (s == 4) add("hero", hero(ui), first);
+      if (s == 1 || s == 4) page_.clear();
+      // A state first seen late (a message window was over the screen) brings the sections before it.
+      if (s >= 1 && s <= 3 && !has("top")) add("top", top(ui));
+      if ((s == 2 || s == 3) && !has("allies")) add("allies", allies(ui));
+      if (s == 3) add("personas", personas(ui));
+      if (s == 4) add("hero", hero(ui));
       state_ = s;
       armed_ = -1;
       persona_ = 0;
       pressed_ = false;
-      screens::set_keys(s == 7 ? strings::kLevelUpKeys : strings::kSpaceContinues);
+      screens::set_keys(s == 7 ? strings::kLevelUpKeys : strings::kResultKeys);
     }
     if (s == 7) {
-      const uint8_t* e = persona_page(ui);
-      int id = e && settled(live_entry(*(uint16_t*)(e + 2)), e) ? *(uint16_t*)(e + 2) : 0;
-      if (id && id != persona_) {
-        focus(ui::ControlId::structural(std::format("ps.{}.name", id)));
+      const uint8_t* was = persona_page(ui);
+      int id = was ? *(uint16_t*)(was + 2) : 0;
+      const uint8_t* now = id ? live_entry(id) : nullptr;
+      if (id && id != persona_ && settled(now, was)) {
+        focus_quietly(ui::ControlId::structural(std::format("ps.{}.name", id)));
+        say_status(now, was);
         persona_ = id;
       }
     }
@@ -229,16 +272,7 @@ class BattleResultScreen : public MenuScreen {
       if (const uint8_t* was = persona_page(ui)) {
         const uint8_t* now = live_entry(*(uint16_t*)(was + 2));
         if (!settled(now, was)) return;
-        // What the page is up for (the game's "NEW SKILL!!"), under the name.
-        std::string learned;
-        for (int i = 0; now && i < 8; ++i) {
-          uint16_t sid = *(uint16_t*)(now + 0xC + i * 2);
-          bool had = false;
-          for (int j = 0; j < 8; ++j) had |= *(uint16_t*)(was + 0xC + j * 2) == sid;
-          if (sid && !had) learned += (learned.empty() ? "" : ", ") + persona::skill_name(sid);
-        }
-        if (!learned.empty()) learned = std::format("{} {}", strings::kLearned, learned);
-        build_status_page(b, now ? now : was, strings::kLevelUp, learned, now ? was : nullptr, nullptr, {});
+        build_status_page(b, now ? now : was, strings::kLevelUp, learned_line(now, was), now ? was : nullptr, nullptr, {});
       }
       return;
     }
@@ -246,6 +280,7 @@ class BattleResultScreen : public MenuScreen {
     auto go_on = [this] {
       UObject* u = result_ui();
       if (!u) return;
+      speech::stop();   // a pad's press stops nothing by itself: the rest of the page is not read into what comes next
       pressed_ = true;
       if (takes_press(u)) press();
       else armed_ = result_state(u);
@@ -256,7 +291,7 @@ class BattleResultScreen : public MenuScreen {
         std::string t = sec.lines[i];
         b.add_item(line_id(sec.key, i), item([t] { return t; }, go_on));
       }
-    b.set_start(line_id(page_.back().key, 0));
+    b.set_start(line_id(page_.front().key, 0));
   }
 };
 

@@ -9,6 +9,7 @@
 #include "speech.h"
 #include "world.h"
 #include "core/strings.h"
+#include "ue/ue.h"
 #include <algorithm>
 #include <cstring>
 #include <format>
@@ -87,17 +88,20 @@ std::string perf(bool reset) {
 }
 
 void tick() {
+  // Another build of the game: every screen reads or drives it by fixed offsets, so none runs; the keys stay the game's.
+  // Messages and the field (signatures and reflection) go on.
+  if (!ue::known_build()) return;
   // A message window (system notice, dialogue, a choice) is modal over whatever screen is under it: the screen goes
   // quiet, and when the window closes the screen is entered again so the player hears where they are.
   // Back-to-back notices leave a gap of a few frames between windows, in which the message session stays open
-  // (msg::session_open): the screen comes back once it has closed, or at once when the player presses a key or a pad
+  // (msg::window_session_open): the screen comes back once it has closed, or at once when the player presses a key or a pad
   // button after the window closed (moving through the menu after cancelling a prompt went unread, 2026-10-28).
   for (auto& s : g_screens) if (!guarded([&] { s->background(); })) log::writef("screens: {} faulted in background()", s->id());
   bool modal = msg::current().blocking;
   static bool was_modal = false;
   static ULONGLONG modal_end = 0;
   if (modal) {
-    if (!was_modal) log::write("screens: modal on");
+    if (!was_modal) { log::write("screens: modal on"); msg::window_opened(); }
     was_modal = true; modal_end = 0;
     // A screen that opens over the window (the log, B, in a conversation: it went unread, 2026-10-29) runs anyway.
     Screen* over = nullptr;
@@ -131,14 +135,14 @@ void tick() {
     if (!msg::current().open && !(best && best->priority() > s->priority())) g_titled.erase(s);
   if (was_modal) {
     if (!modal_end) { modal_end = GetTickCount64(); log::write("screens: modal off"); }
-    bool own = false;
-    if (g_current) guarded([&] { own = g_current->own_messages(); });
+    bool own = false, coming = false;
+    if (g_current) guarded([&] { own = g_current->own_messages(); coming = g_current->window_coming(); });
     // Another window of the same notice or conversation is coming while its message session is open; a key or a pad
     // button pressed since the window closed brings the screen back at once. So does another screen coming up: the
     // script went on to something else (a boss's talk leaves its proc "between windows" through the whole battle, so
     // the wheel never came up, 2026-11-03).
     bool pressed = std::max(hooks::key_ms(), input::pad_ms()) > modal_end;
-    if (!own && !pressed && best == g_current && msg::session_open()) { menu::frame(); return; }
+    if (!own && !pressed && best == g_current && (coming || msg::window_session_open())) { menu::frame(); return; }
     was_modal = false;
     log::writef("screens: re-enter after {} ms", GetTickCount64() - modal_end);
     if (g_current && best == g_current) guarded([&] { g_current->enter(); });

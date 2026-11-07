@@ -10,6 +10,7 @@
 #include "settings.h"
 #include "log.h"
 #include "seh.h"
+#include "ue/scan.h"
 #include "ue/ue.h"
 #include "watch.h"
 #include <windows.h>
@@ -89,7 +90,30 @@ void play_end_sound() {
   if (v >= 0 && v < (int)std::size(kCue)) play_system_sound(kCue[v]);
 }
 
+// Dev: every cue asked of exe+0x1286af0 (the lists' moves, BtlSEPlay and cursor_sound), a log line each: how a test
+// counts ticks in the muted dev game.
+static void (*g_cue_orig)(int) = nullptr;
+static void cue_detour(int cue) {
+  log::writef("sound: cue {}", cue);
+  g_cue_orig(cue);
+}
+
 void install() {
+  dev::route("/voice/cues", [](const dev::Request& r, int&) {
+    bool on = dev::arg_int(r, "on", 1) != 0;
+    return dev::on_game([on]() -> std::string {
+      if (!ue::known_build()) return "another build of the game\n";
+      if (on == (g_cue_orig != nullptr)) return "no change\n";
+      if (on) {
+        g_cue_orig = (void (*)(int))(scan::exe_base() + 0x1286af0);
+        if (!hooks::attach((void**)&g_cue_orig, (void*)&cue_detour, "sound cue")) { g_cue_orig = nullptr; return "attach failed\n"; }
+      } else {
+        hooks::detach((void**)&g_cue_orig, (void*)&cue_detour);
+        g_cue_orig = nullptr;
+      }
+      return on ? "logging cues\n" : "off\n";
+    });
+  }, "?on=1|0 log every game sound cue (dev)");
   dev::route("/voice", [](const dev::Request& r, int&) {
     auto out = std::make_shared<std::string>("timeout\n");
     bool all = dev::has(r, "all");

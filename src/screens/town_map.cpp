@@ -143,7 +143,11 @@ class TownMapScreen : public MenuScreen {
   Mirror& map_list_ = mirror("town", [this] { int s = step(); return s == 4 || s == 6 ? read() : -1; });
   std::string info_;
  public:
-  TownMapScreen() { map_list_.set = [this](int i) { return move_to(i); }; }
+  TownMapScreen() {
+    map_list_.set = [this](int i) { return move_to(i); };
+    // FUN_141454640 case 4: the fade over the map (FUN_14108e800), what its confirm waits for; town info has none.
+    map_list_.ready = [this] { int s = step(); return s == 6 || (s == 4 && ((int (*)())(scan::exe_base() + 0x108e800))() != 0); };
+  }
   const char* id() const override { return "town_map"; }
   int priority() const override { return 15; }
   // EAppPauseType::TownMap; never in a dungeon (Tartarus raised it during the Fuuka rescue, 2026-10-28).
@@ -206,6 +210,9 @@ class LocationListScreen : public MenuScreen {
   Mirror& list_ = mirror("places", [this] { uint8_t* l = list(); return l ? *(int32_t*)(l + 0x200) : -1; });
  public:
   LocationListScreen() {
+    // FUN_1414371e0 case 6: the M list reads nothing until the fade over it ends (FUN_14108e800); an entrance's list has
+    // no gate (FUN_141454640 case 5).
+    list_.ready = [this] { return (town_.get() && pause_top() == 2) || ((int (*)())(scan::exe_base() + 0x108e800))() != 0; };
     list_.set = [this](int i) {
       uint8_t* l = list();
       auto* a = l ? (TArray<uint8_t>*)(l + 0xD0) : nullptr;

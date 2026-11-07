@@ -39,5 +39,9 @@ bool modal();
 // the mod layer) is the menu's and never reaches the game; take_trigger_tap returns the last one (-1 LT, +1 RT) once.
 void claim_trigger_taps(bool on);
 int take_trigger_tap();
+// The right stick for the mod (the battle's details): while claimed the game does not see it; a flick up or down past
+// the stick's dead zone is taken once (+1 up, -1 down) until it is let back toward the middle.
+void claim_right_stick(bool on);
+int take_right_flick();
 std::string status();
 }  // namespace p3a::input

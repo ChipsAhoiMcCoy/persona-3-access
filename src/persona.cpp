@@ -13,6 +13,7 @@
 #include "seh.h"
 #include "social.h"
 #include "ue/scan.h"
+#include "ue/ue.h"
 #include "watch.h"
 #include <windows.h>
 #include <algorithm>
@@ -191,7 +192,7 @@ int stat_total(const uint8_t* e, int i) {
 // The total EXP an entry needs for a level: exe+0x1204000(entry, level) (0 below level 2; ally Personas, ids 1..0x22,
 // from their unit's table, the rest from a curve; the base of FDatUnitPersona::CalculateBonusExp, exe+0x1563220).
 int exp_for_level(const uint8_t* e, int level) {
-  if (!e || level < 2) return 0;
+  if (!e || level < 2 || !ue::known_build()) return 0;
   int v = -1;
   guarded([&] { v = ((int (*)(const void*, uint16_t))(scan::exe_base() + 0x1204000))(e, (uint16_t)level); });
   return v;

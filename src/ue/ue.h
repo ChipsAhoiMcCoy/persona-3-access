@@ -40,6 +40,13 @@ struct WeakObj {
 
 bool init();          // locate GObjects / GNames / ProcessEvent; false if this build is not understood
 bool ready();
+// Whether this P3R.exe is the build the mod's native addresses and object layouts were measured on. Reflection and
+// signatures work on any build; a fixed address or offset on another (the demo, another update) reads, calls or writes
+// the wrong thing: crashes, frozen games and menus stuck on the wrong row (a player's log, 2026-11-05).
+bool known_build();
+// The engine has been asked to quit (GIsRequestingExit, set by RequestEngineExit; found by signature): from here the
+// game takes its data and objects down around whatever still reads them.
+bool exit_requested();
 std::string status();
 
 // ---- names and strings ----

@@ -525,11 +525,23 @@ static std::string misc_check_label() {
 }
 static void prompt_tick() {
   // The objectives (top right, in corner brackets, then stacked lines) are drawn through DrawFont; not while a
-  // message window draws through the same routine.
-  if (!msg::current().open)
+  // message window draws through the same routine. Only while the field's panel is up (AUIAccessInfoDraw's state +0x294
+  // is 3; 13 and 14 from a camp menu until the field comes back, town_map.cpp) or a place has no panel at all: between two
+  // camp menus no screen is current, and the Item menu's Consumable Items tab, drawn the same way, was taken for an
+  // objective (2026-11-06). The capture holds what was drawn just before too: only a draw since the field came back counts.
+  static const int access_info = watch::want("UIAccessInfoDraw");
+  uint8_t* panel = (uint8_t*)watch::get(access_info);
+  int panel_state = -1;
+  if (panel) guarded([&] { panel_state = *(int32_t*)(panel + 0x294); });
+  static bool field_was = false;
+  static uint64_t field_since = 0;
+  bool field_up = !panel || panel_state == 3;
+  if (field_up && !field_was) field_since = GetTickCount64();
+  field_was = field_up;
+  if (!msg::current().open && field_up)
     for (auto& t : textcap::snapshot(200)) {
-      if (t.source != 0 || !core::has_words(t.text)) continue;
-      // U+300E opening corner bracket, top right (the camp's Consumable Items tab, drawn the same way, is elsewhere)
+      if (t.source != 0 || t.seen_ms <= field_since || !core::has_words(t.text)) continue;
+      // U+300E opening corner bracket, top right
       if (t.x > 1400 && t.y < 320 && t.text.rfind("\xE3\x80\x8E", 0) == 0) {
         std::string o = t.text.substr(3);
         if (o.size() >= 3 && o.compare(o.size() - 3, 3, "\xE3\x80\x8F") == 0) o.resize(o.size() - 3);

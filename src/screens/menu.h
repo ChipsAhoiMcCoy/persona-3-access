@@ -32,7 +32,8 @@ struct Mirror {
   std::string key;
   std::function<int()> cursor;             // the game's cursor now; -1 = the list is not up
   std::function<bool(int)> set;            // write the cursor directly (false = not now); empty = step with keys
-  // Whether the game takes a move now (false: an animation or an input lock; moves wait, never counted as stalls).
+  // Whether the game takes input now (false: an animation or an input lock). While it does not, the menu says nothing
+  // of its opening and drops moves and confirms, as the game does.
   // Empty: the widget's IsAnyAnimationPlaying when `widget` is given, else always ready.
   std::function<bool()> ready;
   std::function<ue::UObject*()> widget;    // the UUserWidget that draws the list (the default `ready`)
@@ -47,6 +48,8 @@ struct Mirror {
   // game's Shift cursor and the focus followed it, 2026-10-31). Off where an end's press is the game's (the calendar's
   // last day: the next month).
   bool keep_edges = false;
+  // Whether a game list is behind this at all (Done on the contract has none: nothing to wait for, no cursor to tick).
+  bool drives_game() const { return set || ready || widget; }
   // runtime (host)
   int seen = -1, target = -1, step_from = -1, steps = 0;
   std::string last_key;                    // the key last synced: a new key is a new list, whose cursor the game set
@@ -67,6 +70,8 @@ class MenuScreen : public Screen, public ui::Screen {
   bool escape_is_back() override { return true; }
   // The player moved: a new list's pending "focus follows the game's cursor" is dropped.
   void stop_following() { for (auto& m : mirrors_) m->follow = false; }
+  // Whether the focused list takes input now (Mirror::ready, and its cursor is up): the menu waits for the game.
+  bool takes_input();
   // Whether the menu has the keys now (false: something of the game's is over it, a term's page, a prompt).
   virtual bool holds_keys() { return true; }
   // A key down going to the game while it has the keys (a screen that reads what the game does with it).
@@ -78,6 +83,9 @@ class MenuScreen : public Screen, public ui::Screen {
   virtual bool title_every_entry() { return false; }
   // Whether entering the menu reads its focused item (false: something else has just said where the player is).
   virtual bool announce_entry() { return true; }
+  // Whether the title cuts off what is being said (false: what just happened finishes first, the blow that won a battle
+  // before "Victory").
+  virtual bool opening_interrupts() { return true; }
   // Whether Tab is the game's even on a page with sections (the compendium's registered stats); Page Up / Page Down
   // and the triggers still jump them.
   virtual bool game_tab() { return false; }
@@ -148,6 +156,12 @@ class MenuScreen : public Screen, public ui::Screen {
   Mirror* confirm_mirror_ = nullptr;
   bool attached_ = false;
   bool forget_ = false;
+  // The opening line, said once the list takes input.
+  bool entry_due_ = false;
+  bool entry_say_ = true;
+  std::string entry_title_;
+  void say_entry();
+  bool entry_ready();
 };
 
 namespace menu {

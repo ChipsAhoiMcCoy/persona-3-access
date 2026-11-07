@@ -8,6 +8,8 @@ This is an unofficial fan project. It is not affiliated with or endorsed by Atlu
 
 Alpha. Most of the game is covered and much of it has been tested, but nobody has finished the game with this mod yet. Please read [KNOWN_ISSUES.md](KNOWN_ISSUES.md), and please report what you find.
 
+The mod is made for the current Steam version of the full game. On anything else, such as the demo or an older update, it says so when it loads and reads messages and the field but not menus, because the game's menus are laid out differently there and reading them froze the game.
+
 ## Requirements
 
 - Persona 3 Reload, the Steam version, app 2161700.
@@ -235,23 +237,28 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   this turn). Whose turn it is with HP and SP, the target with its health and place ("1 of 2", so two of the same
   Shadow are told apart), its buffs and debuffs ("attack up", "agility down") and the affinities you have
   discovered
-  ("weak to Fire Attack"), the skill list with costs and descriptions, items with counts, target choice, who used
-  what, damage, healing and defeats. Battle keys: Space attack, E skills, R items, C guard, Q analyze, W tactics,
-  Tab rush, A and D or the left and right arrows change target, S survey (the up and down arrows go through everyone in the battle), F assist (the navigator's advice). After a 1 More, B (Shift) passes the turn: each member is read with HP and SP. C asks "Guard?" before guarding and says the buttons (Space to guard, Escape to cancel), and when a member's Theurgy gauge is full the turn summary says "Theurgy ready, T": T opens the Theurgy list (left and right arrows
+  ("weak to Fire Attack"), the skill list with costs and descriptions, items with counts, target choice, what enemies
+  and members acting of their own accord used, a counter included (a skill, item or Guard you picked yourself is not
+  read back, for any member you control), damage, healing and defeats. Battle keys: Space attack, E skills, R items, C guard, Q analyze, W tactics,
+  Tab rush, A and D or the left and right arrows change target, S survey (the up and down arrows go through everyone in the battle), F assist (the navigator's advice). Anyone in focus says their ailments with their health ("Jin, 96%, Downed, Poisoned"). The details of who is in focus (the target on the command wheel or a target list, whoever Survey, Shift or Tactics is on, the acting member in their skills and items): they start at the top each time you land on someone, and Ctrl+Down or the right stick down moves down through them line by line, Ctrl+Up or the stick up back toward the top: name and level, HP, SP, each ailment with the turns it can still last, each buff and debuff with its turns left, guarding, the affinities you have found, and for a party member their Persona, stats and Theurgy gauge. After a 1 More, B (Shift) passes the turn: each member is read with HP and SP. C asks "Guard?" before guarding and says the buttons (Space to guard, Escape to cancel), and when a member's Theurgy gauge is full the turn summary says "Theurgy ready, T": T opens the Theurgy list (left and right arrows
   choose, each read with its effect, Space uses it); in skill lists Space confirms, Q and E change Persona, F shows the Persona's status page, Escape goes back.
   Backslash repeats the turn summary. The navigator's and the party's remarks during a battle ("Two targets! You can
   handle them!") are not read, so they never cut off the battle's own news; they stay in the log (B, after the battle).
+  The same goes for the party's voiced chatter while you explore: the game's voices play, the mod does not read it over
+  them, the Reaper's warning included. A line with no voice is still read.
 - After battles: Shuffle Time reads every card's effect as soon as the cards are dealt, each with its position ("1 of
   4", "1 of 1"), and says when you may take more than one; a card you took leaves the row ("choose 1 more" when
   there are picks left), a skill card says how many you own, and a Persona card's status page is read too. Arcana
   Burst's bonus row is read the same way ("Arcana Burst. choose 2"; Escape cancels the last pick). With a full Persona
   stock, the Persona Overstock list follows: the new Persona ("Gain: ...") and each Persona you hold; Up and Down
   choose, Space releases the one chosen (the game asks to confirm), F shows its stats, and Q and E there move
-  through the list. The victory screen is a page you can move through with the arrows: the summary (EXP,
-  money, items found) in one line, then each member's and Persona's level up as it slides in (members with their new
-  max HP and SP), the hero's own level-up page (HP, SP, EXP to the next level, the equipped Persona), and the status
-  page of a Persona that learned a skill (its new level, which stats rose, the skill learned; Tab jumps its sections).
-  Space or Enter goes on; pressed before the game takes it, it is kept until it does. Enemies that fall together are said in one line ("2 Cowardly
+  through the list. The victory screen reads each thing as its own line, after the last blow's news, and you can go
+  back through them with the arrows: the EXP, the money, each item found, then each member's and Persona's level up as
+  it slides in (these never move you off the line you are on), the hero's own level-up page (HP, SP, EXP to the next
+  level, the equipped Persona; read again after a notice that cuts it off), and the status page of a Persona that
+  learned a skill (its new level, the skill learned and which stats rose are read out; the arrows go through the whole
+  page, and Tab jumps its sections). Space or Enter goes on and stops the reading; pressed before the game takes it, it
+  is kept until it does. Enemies that fall together are said in one line ("2 Cowardly
   Maya defeated"), and the All-Out Attack prompt is said once with its buttons (Space to attack, Escape to hold back).
 - Tartarus: Shadows are points of interest (their own category) and pulse from their direction when within 15 m,
   faster as they close in. Within 4 m you hear whether a Shadow has its back turned or is facing you; a high tick

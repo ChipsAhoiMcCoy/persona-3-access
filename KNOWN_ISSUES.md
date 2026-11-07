@@ -29,6 +29,9 @@ These reached the code but have not been seen working in the game, because no te
 - The Persona status page in battle (F on a skill list) was not checked again after the page was reworked.
 - The audio description text was checked by automated timing and transcript checks, not by a person watching every movie.
 - This Release build. Development used a slightly different build type, so the packaged zip is its own test.
+- Moving the battle target with the D-pad, and letting go of the triggers while holding it, because no real controller was used for that test.
+- A line of party chatter with no voice being read. None came up in testing.
+- The menu animation wait in a simple shop opened by the story.
 - Screen readers other than the ones used day to day. Please say which one you use when you report a problem.
 
 ## Known bugs
@@ -45,5 +48,7 @@ These reached the code but have not been seen working in the game, because no te
 ## Game updates
 
 The mod finds parts of the game's code by their exact shape in this version of the game. A game update can break some or all of it. If the mod says it could not find the game engine, or a screen goes silent after an update, please report it, and include the log.
+
+On any version it was not made for, such as the demo, the mod says so when it loads and turns its menus off. Messages and the field still work.
 
 The mod has only been tested on the Steam version on Windows. Other stores and Steam Deck or Linux have not been tried.
