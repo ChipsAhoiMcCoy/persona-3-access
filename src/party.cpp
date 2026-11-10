@@ -137,8 +137,13 @@ void tick() {
   static const int battle = watch::want("BtlCoreComponent");
   bool usual = watch::get(battle) || screens::current() || screens::loading();
   bool story = !world::player() || world::scene_playing();
-  bool quiet = usual || story;
   auto cur = members();
+  // A game over is not news either: with the hero down the game stands the fallen allies up at 1 HP for the retry,
+  // and the battle is already gone ("Yukari, HP 1 of 94" before the poem, 2026-11-10).
+  bool wiped = false;
+  for (auto& m : cur) if (m.id == 1 && m.hp == 0) wiped = true;
+  for (auto& p : prev) if (p.id == 1 && p.hp == 0) wiped = true;
+  bool quiet = usual || story || wiped;
   if (!quiet)
     for (auto& m : cur)
       for (auto& p : prev)

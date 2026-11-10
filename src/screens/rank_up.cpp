@@ -11,8 +11,12 @@
 // The poem is BP_UIPoetryDraw (UIRankUpDraw.PoetryActor -> AUIPoetryActor.pUIPoetryDraw; ArcanaID, ModeID,
 // UIPoetryIsRankMaxPoetry): lines drawn as pictures (DT UIPoetryDataAsset rows 0-4 a new link, 5-11 rank MAX, the
 // arcana's name a picture in the gap). The game's voice reads it, so the mod does not speak its words.
+// A game over's poem is the same screen: the script's EVT_GAMEOVER_POEM sends the rank-up message with link 1 and
+// mode 5, and the AnimManager's GameOverAllAnime brings four lines in as pictures (rows 12-15), unvoiced, for some
+// 10 s before the list of what to do. Their text is dialog 0 of the event's message file, read out as it starts.
 #include "screens/screen.h"
 #include "screens/util.h"
+#include "bmdfile.h"
 #include "core/strings.h"
 #include "log.h"
 #include "seh.h"
@@ -25,7 +29,8 @@ using namespace ue;
 
 class RankUpScreen : public Screen {
   Finder draw_{"UICmmRankUpDraw"};
-  int rank_ = -1, arcana_ = 0;
+  int rank_ = -1, arcana_ = 0, mode_ = -1;
+  std::string line_;   // the game over poem as spoken
   social::Card card_;
   WeakObj spoken_;   // the card last read out: a message window closing re-enters it (a later card can reuse its address)
   bool what_said_ = false, card_said_ = false;
@@ -44,6 +49,8 @@ class RankUpScreen : public Screen {
         state = *(int32_t*)((uint8_t*)m + 0x294);
       }
     });
+    mode_ = mode;
+    if (mode == 5) return;   // the game over poem: no card
     if (rank < 0 || rank > 10) rank = 0;
     // The card's rank is set late (0 while the poem shows): the rank-up message's mode says what it will be for a new
     // link (0, CMM_RANKUP mode 0) and rank MAX (2); 1 is a plain rank up.
@@ -52,6 +59,25 @@ class RankUpScreen : public Screen {
     if (rank == rank_ && arcana == arcana_) return;
     log::writef("rank_up: rank {} link {} mode {} state {}", rank, arcana, mode, state);
     rank_ = rank; arcana_ = arcana;
+  }
+  // The game over poem: "Game Over" and the poem's four lines from the event's own message file (dialogs 1 and 0),
+  // which the game shows as pictures, one line after another, before its list of what to do.
+  static std::string game_over() {
+    auto f = bmdfile::load("BMD_Scr_Event_Extr_300_010_C");
+    auto dialog = [&](size_t i) {
+      std::string out;
+      if (!f || !f->ok || i >= f->dialogs.size() || f->dialogs[i].kind != 0) return out;
+      for (auto& p : f->dialogs[i].pages) {
+        std::string t = bmdfile::text(p);
+        // The poem's pages have no end of their own: each runs on through the ones after it.
+        if (!t.empty() && !out.ends_with(t)) out += (out.empty() ? "" : " ") + t;
+      }
+      return out;
+    };
+    std::string head = dialog(1), poem = dialog(0);
+    if (head.empty()) head = strings::kGameOver;
+    if (head.back() != '.') head += '.';
+    return poem.empty() ? head : head + " " + poem;
   }
   UObject* manager() {
     UObject* d = draw_.get();
@@ -95,6 +121,14 @@ class RankUpScreen : public Screen {
   void tick() override {
     int was = rank_;
     read();
+    if (mode_ == 5) {
+      if (!what_said_) {
+        what_said_ = true;
+        log::writef("rank_up: the game over poem");
+        speech::speak(line_ = game_over(), true);
+      }
+      return;
+    }
     UObject* card = card_timeline();
     // The poem: when its own timeline starts and the card has not (a new link, rank MAX).
     if (!what_said_ && !card && started(timeline("CardInAnime"))) {
@@ -109,6 +143,7 @@ class RankUpScreen : public Screen {
     }
   }
   std::string describe() override {
+    if (mode_ == 5) return line_;
     if (card_said_) return card_.line;
     return card_.what;
   }

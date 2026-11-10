@@ -1,7 +1,8 @@
 // The "SELECT" list (UIGenericSelect: who to think of at the shrine's fortune, the Velvet Room's Talk, the cafe's
 // coffee: UGenericSelectShop, the same layout as UGenericSelectMsg). BP_GenericSelectDraw_C
 // lives only while it is open; its PSystem (UGenericSelectMsg, native; measured 2026-10-28) holds +0x28 a TArray of
-// TSharedPtr entries (object, refcount) whose object has the entry's BMD page at +0x8, and the heading's pages at
+// TSharedPtr entries (object, refcount) whose object has the entry's BMD page at +0x8 (and its INFO line's page at
+// +0x18, null when the option names none), and the heading's pages at
 // +0x48 (the activity, "Fortune") and +0x50 (the question, "Who should I think of...?"). The highlighted entry is
 // drawn dark on a white bar (the text itself stays white).
 // The item variant (UGenericSelectItem: what to plant in the rooftop garden) keeps the same entry array, but each
@@ -73,32 +74,33 @@ class GenericSelectScreen : public MenuScreen {
   }
   // The item variant's description: the game builds it as BMD dialog <id & 0xFFF> once its cursor is on the item.
   // Other lists show an INFO line for the highlighted entry (the game over list's "Start over from the beginning of
-  // the battle."): the page on screen that is neither the heading nor an entry, once the game's cursor is there,
-  // kept per entry (the game builds it once: a re-read a moment later found nothing on screen).
-  std::map<int, std::string> info_;
+  // the battle."): the entry's own page (+0x18), which the system builds with the list from the dialog its option
+  // names. It was once taken from the pages on screen, which held every entry's line as the list opened and the last
+  // entry's for a moment after a move: the wrong line was read, then the right one (2026-11-10).
   std::string description(int i) {
     if (items_.empty()) {
-      if (list_.seen == i && list_.target < 0) {
-        std::string best;
-        for (auto& p : msg::visible(300)) {
-          std::string t = core::clean_text(p.text);
-          if (t.empty() || heading_.find(t) != std::string::npos) continue;
-          if (std::find(names_.begin(), names_.end(), t) != names_.end()) continue;
-          best = t;
-        }
-        if (!best.empty()) info_[i] = best;
-      }
-      auto it = info_.find(i);
-      return it != info_.end() ? it->second : std::string();
+      uint8_t* sys = system();
+      auto* arr = sys ? (TArray<void*[2]>*)(sys + 0x28) : nullptr;
+      if (!arr || !arr->data || i < 0 || i >= arr->num || !arr->data[i][0]) return {};
+      void* page = *(void**)((uint8_t*)arr->data[i][0] + 0x18);
+      return page ? core::clean_text(msg::page_string(page)) : std::string();
     }
     if (i < 0 || i >= (int)items_.size() || items_[i] < 0) return {};
     return items::help(items_[i]);   // its file's line: the drawn page is built once and matched by dialog alone
   }
  public:
   // The cursor written, then exe+0x1478330(actor, direction, 1), what the actor's own move runs: the sound, the
-  // system's notice, the draw's rows, and the item variant's info. The list takes moves in the actor's state 5.
+  // system's notice, the draw's rows, and the item variant's info. The list takes input as the actor's own check
+  // (exe+0x146eb30) has it: the actor in state 5 and its draw (+0x370) neither opening (2) nor closing (4). The
+  // actor reaches 5 while the draw still opens: the list was announced and a confirm sent that the game dropped.
   GenericSelectScreen() {
-    list_.ready = [this] { auto* a = (uint8_t*)actor_.get(); return a && *(int32_t*)(a + 0x294) == 5; };
+    list_.ready = [this] {
+      auto* a = (uint8_t*)actor_.get();
+      auto* d = (uint8_t*)draw_.get();
+      if (!a || !d || *(int32_t*)(a + 0x294) != 5) return false;
+      int s = *(int32_t*)(d + 0x370);
+      return s != 2 && s != 4;
+    };
     list_.set = [this](int i) {
       auto* a = (uint8_t*)actor_.get();
       ListCursor lc(a ? a + 0x2A4 : nullptr);
@@ -117,13 +119,11 @@ class GenericSelectScreen : public MenuScreen {
   // cafe's coffee (2026-10-31).
   void on_enter() override { screens::set_keys(strings::kSelectKeys); read(); }
   void on_tick() override { read(); }
-  void on_leave() override { names_.clear(); items_.clear(); heading_.clear(); info_.clear(); }
+  void on_leave() override { names_.clear(); items_.clear(); heading_.clear(); }
   void read() {
     uint8_t* sys = system();
     if (!sys) return;
-    std::string h = heading(sys);
-    if (h != heading_) info_.clear();   // another list
-    heading_ = h;
+    heading_ = heading(sys);
     auto names = entries(sys);
     // Locked entries stay in the array (the Velvet Room's Talk holds 15 topics and shows 7): the list is what is
     // drawn, in array order.

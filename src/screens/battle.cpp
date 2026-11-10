@@ -143,6 +143,10 @@ class BattleScreen : public Screen {
   // not said (the user's call, 2026-11-05: any member the player commands). Whatever a member does of their own accord
   // is said: nothing is picked on the wheel (Rush), for a member on orders or an ailment (no wheel), or once anyone else acts.
   WeakObj picked_;
+  // Whose action the player gave on the wheel or in its lists (a plain attack too): the one unit it hits is the one
+  // the player chose, so its damage or healing is said without the name (the user's call, 2026-11-10). Dropped once
+  // anyone else acts, so a later turn of the same member that no wheel opened (an ailment, orders) names its target.
+  WeakObj commanded_;
   // The one unit an action hits (ABtlActor.GetActionTargets), null for none or several.
   UObject* attacked(UObject* action) {
     UFunction* f = action ? find_function(class_of(action), "GetActionTargets") : nullptr;
@@ -175,6 +179,8 @@ class BattleScreen : public Screen {
       if (t.source == 2 && t.y > 95 && t.y < 115 && t.x > 300 && t.x < 700 && (t.color & 0xff) == 0xff && core::has_words(t.text)) { b = t.text; break; }
     UObject* action_now = get<UObject*>(core, "CurrentAction");
     if (st == 0 && action_now && !(WeakObj::of(action_now) == picked_)) picked_ = {};
+    if (st != 0) commanded_ = WeakObj::of(main_character());
+    else if (action_now && !(WeakObj::of(action_now) == commanded_)) commanded_ = {};
     if (b.empty()) {
       banner_gone_ = true;
     } else {
@@ -223,8 +229,13 @@ class BattleScreen : public Screen {
           int d = cur.hp - it->second.hp;
           if (cur.hp == 0 && cur.enemy) defeated.push_back(cur.name);
           else if (cur.hp == 0) speech::speak(std::format("{} {}", cur.name, strings::kKnockedOut), false);
-          else if (d < 0) speech::speak(std::format("{} {} {}", cur.name, -d, strings::kDamage), false);
-          else speech::speak(std::format("{} {} {}", cur.name, strings::kHealed, d), false);
+          else {
+            // The player's own choice of this one unit: the number alone. Anything else names who it landed on (an
+            // enemy's or an ally's own action, a whole side, an attack sent back at the attacker).
+            bool chosen = st == 0 && action_now && commanded_.resolve() == action_now && attacked(action_now) == u;
+            std::string s = d < 0 ? std::format("{} {}", -d, strings::kDamage) : std::format("{} {}", strings::kHealed, d);
+            speech::speak(chosen ? s : std::format("{} {}", cur.name, s), false);
+          }
         }
         if (it != units_.end()) {
           uint32_t gained = cur.status & ~it->second.status;
