@@ -295,10 +295,9 @@ std::vector<Poi> scan(float radius) {
 }
 
 std::string describe(const Poi& p) {
-  // A real name stands alone ("Vending Machine"); exits say so after the name ("Iwatodai Station exit").
-  std::string kind = kind_name(p.kind);
-  std::string head = p.name == kind ? kind : p.kind == Kind::Exit ? p.name + " " + strings::kExitSuffix : p.name;
-  return std::format("{}, {}, {}", head, core::meters(p.dist / 100.0f), clock(p.bearing));
+  // The name stands alone, a way into another area's too: it is where it leads, and its category says what it is
+  // ("Gekkoukan High School exit" was taken for the way out of the school; the user's call, 2026-11-09).
+  return std::format("{}, {}, {}", p.name, core::meters(p.dist / 100.0f), clock(p.bearing));
 }
 
 // ---- the review selection ----
@@ -347,7 +346,7 @@ static std::vector<Poi> settle(const std::vector<Poi>& all, int delta, bool move
   return {};
 }
 
-// "Exits: Iwatodai Station exit, 6 meters, 2 o'clock, 1 of 3", the nearest selected.
+// "Exits: Iwatodai Station, 6 meters, 2 o'clock, 1 of 3", the nearest selected.
 static void announce_nearest(const std::vector<Poi>& list) {
   if (list.empty()) { speech::speak(strings::kNothingNearbyFull, true); g_sel = {}; return; }
   g_sel = list[0].obj;
@@ -483,12 +482,27 @@ static bool is_named(const std::string& poi_name, const std::string& label) {
   return poi_name == label || (poi_name.size() > label.size() + 2 && poi_name.starts_with(label) &&
                                poi_name.compare(label.size(), 2, " (") == 0);
 }
+// A way onward the game names as what you do there ("Go Elsewhere", "Head Up", "Return to Dorm", "Proceed Onward",
+// "Enter the Velvet Room", "To furthest floor": every such first word in the DT_Fld*HitName tables), not as a place.
+static bool named_as_action(const std::string& name) {
+  for (const char* verb : {"Go ", "Head ", "Return ", "Proceed ", "Enter ", "Exit ", "To "})
+    if (name.rfind(verb, 0) == 0) return true;
+  return false;
+}
 static std::string verb_for(const std::string& label) {
   for (auto& p : scan(800.0f)) {
     if (!is_named(p.name, label)) continue;
     UObject* a = p.obj.resolve();
     std::string icon = a ? icon_of(a) : "";
-    if (icon == "Goto") return strings::kVerbGoTo;
+    // "Go to" only before a place the way leads to ("Go to: Iwatodai Station"). A label that already says what you do
+    // ("Enter the Velvet Room", "Go Elsewhere", "Head Up") and a thing that is not an area change (Tartarus' "Giant
+    // Device", a hit of type Normal under the same icon) stand alone: "Go to: Giant Device" and "Go to: Enter the
+    // Velvet Room" read oddly (the user's call, 2026-11-09).
+    if (icon == "Goto") {
+      FField* tp = a ? find_prop(class_of(a), "mType_") : nullptr;
+      bool area_change = tp && enum_name(prop_inner_object(tp), *(uint8_t*)((uint8_t*)a + prop_offset(tp))) == "AreaChange";
+      return area_change && !named_as_action(label) ? strings::kVerbGoTo : "";
+    }
     if (icon == "Speak") return strings::kVerbTalk;
     if (icon == "Listen") return strings::kVerbListen;
     if (icon == "Shop") return strings::kVerbShop;

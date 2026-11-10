@@ -106,7 +106,7 @@ once, to `%LOCALAPPDATA%\P3RAccess\settings.ini`. The menu plays the game's own 
 
 - Wall tones: on, off
 - Beacon: off, on (also Shift+Semicolon): a beep from the direction of the path to the selected point of interest
-- Nearby chimes: on, off: the chime when an exit, person or thing comes within 8 m
+- Nearby chimes: on, off: the chime when a way to another area, a person or a thing comes within 8 m
 - Shadow alerts: on, off: the Shadow pulse and the back-turned / facing-you cues in Tartarus
 - 3D sound for headphones: on, off: the beacon, the nearby chimes and the Shadow cues come from where their source is, ahead, behind, above or below (Steam Audio's HRTF; far sounds are also a little duller). Off pans them left and right only, as before
 - Lower pitch behind you: on, off: the beacon, the nearby chimes and the Shadow pulse play lower when their source is behind you
@@ -143,11 +143,12 @@ Menu) is announced the same way ("Fast-forward on", "Fast-forward off"); while i
 read (each would cut off the last) but still go in the log (B), and when it stops, at a choice or by your key, the
 line on screen is read.
 
-Points of interest come in categories: exits (to another area), doors (rooms you check to go in: classrooms,
+Points of interest come in categories: exits (each leads to another area and is named for where it goes:
+"Gekkoukan High School" there is the way into the school, not out of it), doors (rooms you check to go in: classrooms,
 offices, restrooms, the dorm's bedrooms), people, shops (businesses, food, vendors and vending machines), objects
 (everything else you can check) and, in Tartarus, Shadows. Each category lists its points nearest first, and a
 category with nothing in it is skipped. The proximity chimes rise in pitch in the same order: exits lowest, then
-doors, people, shops, and objects highest. They are spoken with their name, distance, clock direction and position: "Iwatodai Station exit, 6 meters, 2 o'clock, 1 of 3". The category is said first when you change category or open the controller layer.
+doors, people, shops, and objects highest. They are spoken with their name, distance, clock direction and position: "Iwatodai Station, 6 meters, 2 o'clock, 1 of 3". The category is said first when you change category or open the controller layer.
 12 o'clock is straight ahead (where pushing forward walks), 3 o'clock is to your right.
 
 ### More keys in particular screens
@@ -182,7 +183,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
 - Controller and system notices ("A device was disconnected").
 - In the field: the area name when you arrive, with the part of it the game's banner names and its floor ("Iwatodai
   Dorm, Hallway, floor 2"), the story objective when it changes ("Objective: Head to the faculty office"), the
-  interaction prompt when you can use something ("Go to: Head to the Dorm"; over a Social Link partner also their
+  interaction prompt when you can use something ("Check: Vending Machine", "Go to: Iwatodai Station"; a prompt that already says what you do, like "Head to the Dorm" or "Enter the Velvet Room", and a device you operate are said by name alone; over a Social Link partner also their
   arcana and rank, "Talk: Kenji Tomochika, Magician, rank MAX"), item notices with every item and its count ("Got
   Bead times 3, 500 yen"), wall tones, points of interest (people by name), auto-walk and beacon.
 - Describe the area (Semicolon, or both triggers and B): a written description of where you stand, as the
@@ -240,7 +241,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   ("weak to Fire Attack"), the skill list with costs and descriptions, items with counts, target choice, what enemies
   and members acting of their own accord used, a counter included (a skill, item or Guard you picked yourself is not
   read back, for any member you control), damage, healing and defeats. Battle keys: Space attack, E skills, R items, C guard, Q analyze, W tactics,
-  Tab rush, A and D or the left and right arrows change target, S survey (the up and down arrows go through everyone in the battle), F assist (the navigator's advice). Anyone in focus says their ailments with their health ("Jin, 96%, Downed, Poisoned"). The details of who is in focus (the target on the command wheel or a target list, whoever Survey, Shift or Tactics is on, the acting member in their skills and items): they start at the top each time you land on someone, and Ctrl+Down or the right stick down moves down through them line by line, Ctrl+Up or the stick up back toward the top: name and level, HP, SP, each ailment with the turns it can still last, each buff and debuff with its turns left, guarding, the affinities you have found, and for a party member their Persona, stats and Theurgy gauge. After a 1 More, B (Shift) passes the turn: each member is read with HP and SP. C asks "Guard?" before guarding and says the buttons (Space to guard, Escape to cancel), and when a member's Theurgy gauge is full the turn summary says "Theurgy ready, T": T opens the Theurgy list (left and right arrows
+  Tab rush, A and D or the left and right arrows change target (the target never wraps around: at the first or last enemy a further press says who you are still on; the same in Analyze and in target lists; a skill or item that hits a whole side reads as one choice, "All enemies" or "All allies" with their names), S survey (the up and down arrows go through everyone in the battle), F assist (the navigator's advice). Anyone in focus says their ailments with their health ("Jin, 96%, Downed, Poisoned"). The details of who is in focus (the target on the command wheel or a target list, whoever Survey, Shift or Tactics is on, the acting member in their skills and items): they start at the top each time you land on someone, and Ctrl+Down or the right stick down moves down through them line by line, Ctrl+Up or the stick up back toward the top: name and level, HP, SP, each ailment with the turns it can still last, each buff and debuff with its turns left, guarding, the affinities you have found, and for a party member their Persona, stats and Theurgy gauge. After a 1 More, B (Shift) passes the turn: each member is read with HP and SP. C asks "Guard?" before guarding and says the buttons (Space to guard, Escape to cancel), and when a member's Theurgy gauge is full the turn summary says "Theurgy ready, T": T opens the Theurgy list (left and right arrows
   choose, each read with its effect, Space uses it); in skill lists Space confirms, Q and E change Persona, F shows the Persona's status page, Escape goes back.
   Backslash repeats the turn summary. The navigator's and the party's remarks during a battle ("Two targets! You can
   handle them!") are not read, so they never cut off the battle's own news; they stay in the log (B, after the battle).
@@ -340,8 +341,8 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   holding that direction would actually take you: a wall you would just slide along stays quiet.
 - Beacon: a short beep every 0.6 seconds from the direction of the path to the selected place; a lower beep means it
   is behind you (Lower pitch behind you).
-- Nearby chimes: when an exit, person or thing comes within 8 m, it chimes once from its direction, rising from exits
-  (lowest) through doors, people and shops to things to check or open (highest). A slightly lower chime means it is behind you. It chimes again
+- Nearby chimes: when a way to another area, a person or a thing comes within 8 m, it chimes once from its direction,
+  rising from exits (lowest) through doors, people and shops to things to check or open (highest). A slightly lower chime means it is behind you. It chimes again
   once you have been more than 15 m away.
 
 The beacon, the chimes and the Shadow cues are positioned with Steam Audio (Valve, Apache 2.0; phonon.dll beside

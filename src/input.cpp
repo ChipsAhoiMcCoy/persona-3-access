@@ -87,6 +87,9 @@ void claim_trigger_taps(bool on) { g_claim_taps = on; if (!on) g_tap = 0; }
 int take_trigger_tap() { return g_tap.exchange(0); }
 static std::atomic<bool> g_claim_rstick{false};
 static std::atomic<int> g_rflick{0};
+static std::atomic<uint16_t> g_end_buttons{0};
+static std::atomic<int> g_end_sticks{0};
+void block_ends(uint16_t buttons, int stick_sides) { g_end_buttons = buttons; g_end_sticks = stick_sides; }
 void claim_right_stick(bool on) { g_claim_rstick = on; if (!on) g_rflick = 0; }
 int take_right_flick() { return g_rflick.exchange(0); }
 void set_modal(bool on) { g_modal = on; }
@@ -176,7 +179,9 @@ static DWORD WINAPI get_state_hook(DWORD user, XINPUT_STATE* st) {
     g_real_connected = r == ERROR_SUCCESS;
     if (r == ERROR_SUCCESS) {
       g_real_buttons = st->Gamepad.wButtons;
-      st->Gamepad.wButtons &= ~g_swallow;
+      st->Gamepad.wButtons &= ~(g_swallow | g_end_buttons.load());
+      int sides = g_end_sticks;
+      if (((sides & 1) && st->Gamepad.sThumbLX < 0) || ((sides & 2) && st->Gamepad.sThumbLX > 0)) st->Gamepad.sThumbLX = 0;
     } else {
       g_real_buttons = 0;
     }

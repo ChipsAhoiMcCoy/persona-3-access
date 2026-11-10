@@ -708,7 +708,7 @@ def main():
                 if "item=Msg" in m and "item=MsgSubtitles" not in m: key("enter", 2); continue
                 return
         def poi(name):
-            for l in http("/poi?r=30000").splitlines():   # "#123 Name, 5 meters" or "#123 Name exit, ..."
+            for l in http("/poi?r=30000").splitlines():   # "#123 [Kind] Name, 5 meters, ..."
                 parts = l.split(" ", 1)
                 if len(parts) == 2 and parts[1].startswith("["): parts[1] = parts[1].split("] ", 1)[-1]   # "[Object] Bed"
                 if len(parts) == 2 and parts[1].lower().startswith(name.lower()): return parts[0].lstrip("#")

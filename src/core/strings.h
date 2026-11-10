@@ -103,6 +103,10 @@ inline constexpr const char* kTarget = "Target";
 inline constexpr const char* kSkills = "Skills";
 inline constexpr const char* kItems = "Items";
 inline constexpr const char* kChooseTarget = "Choose target";
+// A skill or item that takes a whole side at once: the one thing in the target list.
+inline constexpr const char* kAllEnemies = "All enemies";
+inline constexpr const char* kAllAllies = "All allies";
+inline constexpr const char* kAllUnits = "Everyone";
 // EBtlDataAnalyze 0..6: normal, null, repel, drain, weak, resist, unknown
 inline constexpr const char* kAttrNames[] = {"Slash", "Strike", "Pierce", "Fire", "Ice", "Elec", "Wind", "Light", "Dark"};
 inline constexpr const char* kAffinity[] = {"", "nulls", "repels", "drains", "weak to", "resists", ""};
@@ -278,8 +282,9 @@ inline constexpr Hint kNoticeKeys{"Space continues.", "A continues."};
 inline constexpr Hint kChooseKeys{"Up and down arrows choose, Space confirms.", "Up and down choose, A confirms."};
 inline constexpr Hint kCampKeys{"Space opens, Escape closes.", "A opens, B closes."};
 // Points of interest
+// A way into another area: said by its name alone, which is where it leads ("Gekkoukan High School exit" was taken
+// for the way out of the school; the players' call, 2026-11-09). This is the one with no name.
 inline constexpr const char* kPoiExit = "Exit";
-inline constexpr const char* kExitSuffix = "exit";
 inline constexpr const char* kVerbGoTo = "Go to";
 inline constexpr const char* kVerbTalk = "Talk";
 inline constexpr const char* kVerbListen = "Listen";
@@ -425,6 +430,11 @@ inline constexpr const char* kNoMatch = "no match for";
 inline constexpr const char* kSearchCleared = "search cleared";
 inline constexpr const char* kExpanded = "expanded";
 inline constexpr const char* kCard = "Card";
+// Shuffle Time's Minor Arcana suits, said with the card's number: "Wands 1".
+inline constexpr const char* kSuitSwords = "Swords";
+inline constexpr const char* kSuitCoins = "Coins";
+inline constexpr const char* kSuitCups = "Cups";
+inline constexpr const char* kSuitWands = "Wands";
 inline constexpr const char* kCollapsed = "collapsed";
 // Camp submenus (camp_menus.cpp)
 // Their keys (F1), from each menu's native input function: Q / E LB / RB,

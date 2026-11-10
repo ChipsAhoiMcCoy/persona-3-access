@@ -4,6 +4,7 @@
 #include "core/strings.h"
 #include "items.h"
 #include "log.h"
+#include "input.h"
 #include "msg.h"
 #include "party.h"
 #include "persona.h"
@@ -193,6 +194,46 @@ class BattleResultScreen : public MenuScreen {
     for (auto& sec : page_) if (sec.key == key) return true;
     return false;
   }
+  // ---- ahead of the animation (the user's call, 2026-11-09): the page's parts are known the moment it opens, so
+  // nothing waits for the game's slides. The summary is said at once; the level-ups (read then too, pending_) come on
+  // the player's confirm, or when the game slides them in by itself, whichever is first. A confirm with nothing left
+  // to hear ends the page (finishing_): the game is taken through what it still has to show, its own wait before the
+  // level-ups ended (WaitStateTime against SecondChangeToLevup, "Update State" 472) and a press made wherever it takes
+  // one, up to the next page that is the player's to read (the hero's, a Persona's status) or the end.
+  std::vector<Section> pending_;
+  bool finishing_ = false;
+  int press_state_ = -1;      // the state the last finishing press was made in
+  int press_frames_ = 0;      // the game's frames since it was delivered
+  // The parts the game has not shown yet: said now, the first cutting off what is being said.
+  bool reveal_pending() {
+    if (pending_.empty()) return false;
+    auto parts = std::move(pending_);
+    pending_.clear();
+    for (auto& sec : parts) add(sec.key, std::move(sec.lines));
+    return true;
+  }
+  bool reveal(const std::string& key) {
+    for (size_t i = 0; i < pending_.size(); ++i)
+      if (pending_[i].key == key) {
+        Section sec = std::move(pending_[i]);
+        pending_.erase(pending_.begin() + i);
+        add(sec.key, std::move(sec.lines));
+        return true;
+      }
+    return false;
+  }
+  // The game takes a press now: the OK key help, or a Persona's level-up animation (state 3 reads the button itself
+  // and jumps to the last Persona, "Update State" 962).
+  static bool wants_press(UObject* ui) {
+    if (takes_press(ui)) return true;
+    return result_state(ui) == 3 && get_bool(ui, "isStartAnimPersonaLvup") && !get_bool(ui, "isFinishPersonaLvupAnim");
+  }
+  // The game's wait before the level-ups slide in is over: it changes state on its next tick.
+  static void end_wait(UObject* ui) {
+    float* waited = field<float>(ui, "WaitStateTime");
+    float* wait = field<float>(ui, "SecondChangeToLevup");
+    if (waited && wait && *waited < *wait) *waited = *wait;
+  }
   // A section the game added: its lines in turn, after what is being said unless the player's press brought it.
   void add(const std::string& key, std::vector<std::string> lines) {
     if (lines.empty()) return;
@@ -230,24 +271,51 @@ class BattleResultScreen : public MenuScreen {
   // Tartarus keeps its battle core between fights, so the levels each battle starts from are forgotten here, not
   // when the core goes ("level up to 6" after every later victory, 2026-10-27).
   void on_leave() override {
-    if (!active()) { forget_battle_start(); state_ = -1; persona_ = 0; armed_ = -1; pressed_ = false; page_.clear(); }
+    if (!active()) {
+      forget_battle_start();
+      state_ = -1; persona_ = 0; armed_ = -1; pressed_ = false; page_.clear();
+      pending_.clear(); finishing_ = false; press_state_ = -1;
+    }
   }
   void on_tick() override {
     UObject* ui = result_ui();
     int s = result_state(ui);
     if (s != state_) {
       log::writef("result: state {} -> {}", state_, s);
-      if (s == 1 || s == 4) page_.clear();
+      if (s == 1 || s == 4) { page_.clear(); pending_.clear(); }
+      if (s != 1 && s != 2 && s != 3) finishing_ = false;   // a page of its own, or the end: the player's again
       // A state first seen late (a message window was over the screen) brings the sections before it.
       if (s >= 1 && s <= 3 && !has("top")) add("top", top(ui));
-      if ((s == 2 || s == 3) && !has("allies")) add("allies", allies(ui));
-      if (s == 3) add("personas", personas(ui));
+      // The level-ups, read as the summary opens (the game slides them in later; isLevelupScreen is set after this).
+      if (s == 1) {
+        if (auto l = allies(ui); !l.empty()) pending_.push_back({"allies", std::move(l)});
+        if (auto l = personas(ui); !l.empty()) pending_.push_back({"personas", std::move(l)});
+        log::writef("result: {} level-up part(s) read ahead", pending_.size());
+      }
+      // The game shows them now: said, unless the player's confirm brought them already.
+      if ((s == 2 || s == 3) && !has("allies") && !reveal("allies")) add("allies", allies(ui));
+      if (s == 3 && !has("personas") && !reveal("personas")) add("personas", personas(ui));
       if (s == 4) add("hero", hero(ui));
       state_ = s;
       armed_ = -1;
       persona_ = 0;
       pressed_ = false;
+      press_state_ = -1;
       screens::set_keys(s == 7 ? strings::kLevelUpKeys : strings::kResultKeys);
+    }
+    // The player is ahead of the game (heard the level-ups, or is done with the page): its wait is over.
+    if (s == 1 && (finishing_ || (pending_.empty() && (has("allies") || has("personas"))))) end_wait(ui);
+    // Done with the page: a press wherever the game takes one. The next is made only once the last was delivered in
+    // full and the game ran two frames on it without leaving the state it was made in.
+    if (finishing_ && s >= 1 && s <= 3) {
+      if (input::injected_held() || input::busy()) press_frames_ = 0;
+      else ++press_frames_;
+      if (wants_press(ui) && (press_state_ != s || press_frames_ > 2)) {
+        log::writef("result: finishing press in state {}", s);
+        press_state_ = s;
+        press_frames_ = 0;
+        press();
+      }
     }
     if (s == 7) {
       const uint8_t* was = persona_page(ui);
@@ -282,8 +350,14 @@ class BattleResultScreen : public MenuScreen {
       if (!u) return;
       speech::stop();   // a pad's press stops nothing by itself: the rest of the page is not read into what comes next
       pressed_ = true;
+      int s = result_state(u);
+      // The summary and its level-ups: the next part at once, or the page's end (on_tick takes the game there).
+      if (s >= 1 && s <= 3) {
+        if (!reveal_pending()) finishing_ = true;
+        return;
+      }
       if (takes_press(u)) press();
-      else armed_ = result_state(u);
+      else armed_ = s;
     };
     b.begin_stop("res");
     for (auto& sec : page_)

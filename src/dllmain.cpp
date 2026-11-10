@@ -10,6 +10,7 @@
 #include "input.h"
 #include "log.h"
 #include "mod.h"
+#include "nav.h"
 #include "speech.h"
 #include "ue/ue.h"
 
@@ -139,6 +140,7 @@ extern "C" __declspec(dllexport) DWORD WINAPI p3a_unload(LPVOID) {
   SetEvent(g_quit);
   if (g_init && WaitForSingleObject(g_init, 5000) == WAIT_TIMEOUT) log::write("p3access: the init thread is still running");
   if (!g_up) return 1;
+  nav::unload();   // before the key filter goes: the walk's held keys are let go
   // The server first, so no request runs mod code while it is torn down; cancelling releases handlers that wait
   // on the game thread.
   hooks::cancel_pending();

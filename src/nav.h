@@ -15,4 +15,5 @@ void toggle_beacon();
 void tick();   // game thread
 std::string status();
 void install();
+void unload();   // the mod is being unloaded: let go of the walk's keys (any thread)
 }  // namespace p3a::nav

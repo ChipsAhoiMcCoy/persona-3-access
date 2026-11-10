@@ -54,7 +54,7 @@ UObject* shuffle_ui() {
 // cursor with it).
 class ShuffleScreen : public MenuScreen {
   using Param = std::array<uint8_t, 12>;   // FAppPropsCardParam
-  struct Card { Param param{}; std::string effect; int owned = -1; bool read = false; };
+  struct Card { Param param{}; std::string effect, face; int owned = -1; bool read = false; };
   std::vector<Card> cards_;
   WeakObj deal_;              // the deal the cards belong to
   bool listed_ = false;       // every card read once: the row is up
@@ -174,6 +174,7 @@ class ShuffleScreen : public MenuScreen {
     std::string t = read_page(ui, next);
     if (!t.empty()) {
       cards_[next].effect = t;
+      cards_[next].face = face(ui, next, param(ui, next));
       cards_[next].read = true;
       cards_[next].owned = -1;
       if (card_call(ui, "GetItemNumSelectCard", next) >= 0) cards_[next].owned = card_call(ui, "GetHaveItemNumBySelectCard", next);
@@ -192,9 +193,26 @@ class ShuffleScreen : public MenuScreen {
     const uint8_t* e = persona::status_entry(ps);
     return e && *(uint16_t*)(e + 2) ? e : nullptr;
   }
+  // What the card's face shows (the art, its number and the name bar: "Fool", a suit card's suit and number), which
+  // the effect page does not say (the user's call, 2026-11-09). A Persona card's page names it already. The effect
+  // page's dialog tells the card: BMD_BtlShuffleMsg in order, 4 Sword, 5 Coin, 6..25 Cup, 26 Wand, 27..39 Fool to
+  // Hanged Man, 92..98 Temperance to Judgement (there is no Death card). A suit card's number is Rank + 1 (Rank 0
+  // under the "1" drawn on the Wand, 2026-11-09).
+  static std::string face(UObject* ui, int i, const Param& p) {
+    int type = p[0], rank = *(const int32_t*)(p.data() + 8), d = detail_dialog(ui, i);
+    if (type == 2) {
+      int arcana = d >= 27 && d <= 39 ? d - 26 : d >= 92 && d <= 98 ? d - 77 : 0;
+      return arcana ? strings::kArcana[arcana] : "";
+    }
+    if (type != 3) return {};
+    const char* suit = d == 4 ? strings::kSuitSwords : d == 5 ? strings::kSuitCoins : d >= 6 && d <= 25 ? strings::kSuitCups :
+                       d == 26 ? strings::kSuitWands : nullptr;
+    return suit ? std::format("{} {}", suit, rank + 1) : std::string();
+  }
   std::string label(int i) {
     if (i < 0 || i >= (int)cards_.size()) return {};
     std::string s = cards_[i].effect.empty() ? std::format("{} {}", strings::kCard, i + 1) : cards_[i].effect;
+    if (!cards_[i].face.empty()) s = std::format("{}: {}", cards_[i].face, s);
     if (cards_[i].owned >= 0) s += std::format(", {} {}", strings::kOwned, cards_[i].owned);
     return s;
   }

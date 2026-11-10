@@ -191,7 +191,13 @@ class BattleScreen : public Screen {
       }
       banner_gone_ = false;
     }
-    // HP changes and defeats.
+    // HP changes and defeats. The enemies an All-Out Attack finishes keep their HP until the results take them away,
+    // after Shuffle Time ("2 Muttering Tiara defeated" came after the cards, 2026-11-09): a deal with a card still to
+    // take (the next battle's comes on the same actor, its last deal's picks all made) means the battle is won, and
+    // whoever is left is defeated now.
+    UObject* deal = shuffle_ui();
+    int picks = deal ? get<int32_t>(deal, "EnableSelectNum") : 0;
+    bool won = picks > 0 && get<int32_t>(deal, "SelectedCardNum") < picks;
     std::map<WeakObj::Key, Unit> next;
     std::vector<std::string> defeated;
     for (const char* list : {"PlayerList", "EnemyList"}) {
@@ -202,6 +208,7 @@ class BattleScreen : public Screen {
         WeakObj w = WeakObj::of(u);
         auto key = w.key();
         Unit cur{w_.unit_name(u), w_.unit_int("GetUnitHP", u), list[0] == 'E', 0};
+        if (won && cur.enemy) cur.hp = 0;
         cur.status = cur.hp > 0 ? status_of(u) : 0;
         if (!cur.enemy) {   // party levels as the battle began, for the victory screen's level ups
           int id = w_.unit_int("GetUnitID", u);
@@ -302,8 +309,63 @@ class BattleScreen : public Screen {
     else if (t && target_pressed && screens::current() == this && !msg::current().blocking && !input::modal()) {
       // The last enemy left: the game's cursor has nowhere to go, so the press is answered with who it is still on.
       auto* l = enemy_list();
-      if (l && l->num == 1) speech::speak(target_line(t), false);   // the focus did not move: nothing is cut off
+      if (l && l->num == 1) speech::speak(target_line(t), true);   // interrupting, like a menu's end (say_end)
     }
+  }
+  // ---- no wrapping (the players' call, 2026-11-09): the game's own target cursors go round (the wheel's "Target
+  // Index" + 1 mod the list, BP_BtlGuiComponent 17497; Analyze's ListControll), so with two enemies nobody could tell
+  // the leftmost from the rightmost. A press that would go round never reaches the game: the key is taken
+  // (keys::set_capture), the button hidden (input::block_ends), and the press is answered with who the cursor is
+  // still on. Which press lowers the index: the wheel's left (On Select Behind Target) and Analyze's R1 (NextTarget
+  // is ListControll(false)); its L1 raises it.
+  Finder analyze_{"BP_BtlGuiAnalyze_C"};
+  struct Ends { bool low = false, high = false; UObject* on = nullptr; };   // the cursor is on the first / the last
+  Ends ends(int st) {
+    UObject* o = st == 1 ? guicomp_.get() : st == 8 ? analyze_.get() : nullptr;
+    if (!o || (st == 1 && !get_bool(o, "IsCreateEnemyList"))) return {};   // the wheel's list is this turn's
+    auto* l = field<TArray<UObject*>>(o, "EnemyList");
+    int32_t* i = field<int32_t>(o, st == 1 ? "Target Index" : "TargetIndex");
+    if (!l || !i || l->num < 2 || *i < 0 || *i >= l->num) return {};
+    return {*i == 0, *i == l->num - 1, l->data[*i]};
+  }
+  bool mine() { return screens::current() == this && !msg::current().blocking && !input::modal(); }
+  // -1: the press lowers the index, +1 raises it, 0: not a target key in this state.
+  static int key_step(int st, uint32_t vk) {
+    if (st == 1) return vk == VK_LEFT || vk == 'A' ? -1 : vk == VK_RIGHT || vk == 'D' ? 1 : 0;
+    if (st == 8) return vk == 'E' || vk == 'D' ? -1 : vk == 'Q' || vk == 'A' ? 1 : 0;   // R1 / L1 on the keyboard
+    return 0;
+  }
+  std::string analyze_line(UObject* t) { return std::format("{}, {} {}", w_.enemy(t), strings::kLevel, w_.unit_int("GetUnitLevel", t)); }
+  void say_end(int st, UObject* t) {
+    // Interrupting, like a menu's end: each press says it afresh instead of queueing the name (the user's call, 2026-11-09).
+    if (t) speech::speak(st == 1 ? target_line(t) : analyze_line(t), true);
+  }
+  bool end_key(uint32_t vk, bool repeat) {
+    if (!mine()) return false;
+    int st = gui_state(), step = key_step(st, vk);
+    if (!step) return false;
+    Ends e = ends(st);
+    if (!(step < 0 ? e.low : e.high)) return false;
+    if (!repeat) say_end(st, e.on);
+    return true;
+  }
+  uint16_t end_pad_was_ = 0;
+  void end_pad(int st) {
+    Ends e = mine() ? ends(st) : Ends{};
+    uint16_t hide = 0;
+    int sticks = 0;
+    if (st == 1) {
+      if (e.low) { hide |= XINPUT_GAMEPAD_DPAD_LEFT; sticks |= 1; }
+      if (e.high) { hide |= XINPUT_GAMEPAD_DPAD_RIGHT; sticks |= 2; }
+    } else if (st == 8) {
+      if (e.low) hide |= XINPUT_GAMEPAD_RIGHT_SHOULDER;
+      if (e.high) hide |= XINPUT_GAMEPAD_LEFT_SHOULDER;
+    }
+    input::block_ends(hide, sticks);
+    uint16_t pad = input::layer_open() ? 0 : input::real_buttons() & (XINPUT_GAMEPAD_DPAD_LEFT | XINPUT_GAMEPAD_DPAD_RIGHT |
+                                                                        XINPUT_GAMEPAD_LEFT_SHOULDER | XINPUT_GAMEPAD_RIGHT_SHOULDER);
+    if (pad & ~end_pad_was_ & hide) say_end(st, e.on);
+    end_pad_was_ = pad;
   }
   int bg_state_ = -1;
   // Said the current prompt (state 5 / 11): set when it is said, cleared when the game's state changes. The All-Out
@@ -311,6 +373,7 @@ class BattleScreen : public Screen {
   bool prompt_said_ = false;
 
  public:
+  BattleScreen() { keys::set_capture([this](uint32_t vk, bool repeat) { return end_key(vk, repeat); }); }
   const char* id() const override { return "battle"; }
   // The All-Out and guard prompts and Analyze answer C (Cancel); on the command wheel C is Guard (and so is the
   // game's own Escape there, left to it).
@@ -322,14 +385,18 @@ class BattleScreen : public Screen {
   void background() override {
     bool target_pressed = target_press();
     UObject* core = core_.get();
+    end_pad(core ? gui_state() : 0);
     if (!core) { units_.clear(); forget_battle_start(); downed_since_turn_ = false; last_actor_ = {}; return; }
     watch();
     int st = gui_state();
     // Assist (13, BTL_STATE_NAVIGATION) only plays the navigator's advice over the wheel: back from it is the same
     // turn, not the wheel opening again (each press re-read the turn line, 2026-11-01).
     bool entering = st != bg_state_ && bg_state_ != 13;
+    // The mod loaded into a battle already in the All-Out state (a hot reload): that state lasts through Shuffle Time
+    // and the results, so it is taken as answered (the prompt was said again after Shuffle Time, 2026-11-09).
+    bool loaded_into = bg_state_ == -1 && st == 5;
     bg_state_ = st;
-    if (entering) prompt_said_ = false;
+    if (entering) prompt_said_ = loaded_into;
     if (st == 1) top_tick(entering, target_pressed);
     else turn_due_ = false;
   }
@@ -368,7 +435,7 @@ class BattleScreen : public Screen {
         if (entering) screens::set_keys([] { return std::string(strings::kAnalyzeKeys()) + " " + strings::kDetailKeys(); });
         if (!t || (!entering && t == target_.resolve())) break;
         target_ = WeakObj::of(t);
-        std::string s = std::format("{}, {} {}", w_.enemy(t), strings::kLevel, w_.unit_int("GetUnitLevel", t));
+        std::string s = analyze_line(t);
         speech::speak(entering ? std::string(strings::kAnalyze) + ". " + s : s, true);
         break;
       }

@@ -151,7 +151,19 @@ class BattleItems : public BattleList {
 };
 
 class BattleTargets : public BattleList {
-  Mirror& m_ = mirror("targets", [this] { UObject* l = list_.get(); return l ? get<int32_t>(l, "TargetIndex") : -1; });
+  // A skill or item that takes a whole side (TargetType, EBtlDataTargetType: 0 one target, else the list): the game
+  // still steps TargetIndex through the list, but confirm acts on all of it (the target manager's targets are the
+  // list, BP_BtlTargetSelect 12608), so the menu is one item that says so and the game's cursor stays where it is
+  // (each name alone read as a single target; the players' call, 2026-11-09).
+  bool all() {
+    UObject* l = list_.get();
+    auto* list = l ? field<TArray<UObject*>>(l, "targetList") : nullptr;
+    return list && list->num > 1 && get<uint8_t>(l, "TargetType") != 0;
+  }
+  Mirror& m_ = mirror("targets", [this] {
+    UObject* l = list_.get();
+    return !l ? -1 : all() ? 0 : get<int32_t>(l, "TargetIndex");
+  });
  public:
   // Confirm acts on the target manager's targets, which only the move sets (TargetIndex alone is drawn nowhere and
   // acted on by nothing): the game's own "On Select Next Target" runs from the index before i. It plays the sound,
@@ -168,6 +180,7 @@ class BattleTargets : public BattleList {
       auto* list = l ? field<TArray<UObject*>>(l, "targetList") : nullptr;
       int32_t* ti = l ? field<int32_t>(l, "TargetIndex") : nullptr;
       if (!list || !ti || i < 0 || i >= list->num) return false;
+      if (all()) return true;   // one item, nothing to move
       *ti = (i - 1 + list->num) % list->num;
       return call(l, "On Select Next Target");
     };
@@ -179,6 +192,24 @@ class BattleTargets : public BattleList {
     auto* list = l ? field<TArray<UObject*>>(l, "targetList") : nullptr;
     if (!list) return;
     b.begin_stop("targets");
+    if (all()) {
+      std::vector<WeakObj> units;
+      for (int i = 0; i < list->num; ++i) units.push_back(WeakObj::of(list->data[i]));
+      b.add_item(slot("targets.all", 0), game_item(m_, 0, [this, units] {
+        int enemies = 0;
+        std::string names;
+        for (auto& w : units) {
+          UObject* t = w.resolve();
+          if (!t) continue;
+          enemies += get_bool(t, "EnemyFlag") ? 1 : 0;
+          names += (names.empty() ? "" : ", ") + w_.unit_name(t);
+        }
+        const char* side = enemies == (int)units.size() ? strings::kAllEnemies : enemies == 0 ? strings::kAllAllies : strings::kAllUnits;
+        return std::format("{}: {}", side, names);
+      }));
+      b.set_start(slot("targets.all", 0));
+      return;
+    }
     b.start_row("targets");
     for (int i = 0; i < list->num; ++i) {
       UObject* t = list->data[i];
@@ -192,6 +223,7 @@ class BattleTargets : public BattleList {
     b.end_row();
     if (int c = m_.cursor(); c >= 0) b.set_start(slot("targets", c));
   }
+  void on_tick() override { m_.key = all() ? "targets.all" : "targets"; }
 };
 
 class BattleTheurgy : public BattleList {

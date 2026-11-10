@@ -30,7 +30,7 @@ for i in $(seq 1 $n); do
   pick=$(echo "$list" | grep "Shadow" | head -1)
   [ -z "$pick" ] && pick=$(echo "$list" | grep -E "Breakable object|Treasure Chest" | head -1)
   if [ -z "$pick" ]; then
-    pick=$(echo "$list" | grep -i "Head Up exit" | head -1)
+    pick=$(echo "$list" | grep -i "Head Up," | head -1)
     if [ -z "$pick" ]; then idle=$((${idle:-0}+1)); [ $idle -gt 8 ] && { echo "nothing left"; break; }; continue; fi
   fi
   idle=0
@@ -40,7 +40,7 @@ for i in $(seq 1 $n); do
     case "$pick" in
       *Shadow*|*Breakable*) p get strike >/dev/null;;
       *Chest*) p get "key?k=space&ms=120" >/dev/null;;
-      *exit*) p get "key?k=space&ms=120" >/dev/null; climbed=$((climbed+1)); sleep 4
+      *"Head Up,"*) p get "key?k=space&ms=120" >/dev/null; climbed=$((climbed+1)); sleep 4
               [ $climbed -ge $floors ] && { echo "climbed $climbed"; break; };;
     esac
     target=""

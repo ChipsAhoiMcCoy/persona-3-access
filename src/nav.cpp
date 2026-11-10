@@ -198,10 +198,10 @@ void tick() {
   if (g_walking) {
     if (!located) { stop(false); return; }
     if (fighting) { log::write("nav: stopped, a battle began"); stop(false); return; }
-    // A party member's line in the field (the monorail, 2026-10-27) holds the hero: wait it out, then walk on.
-    static bool paused = false;
-    if (blocking) { release(); paused = true; return; }
-    if (paused) { paused = false; g_progress_at = now; g_progress_pos = me; g_last_valid = false; refresh_path(me); }
+    // A message window or a menu over the field ends the walk, without a word over what it says (the user's call,
+    // 2026-11-09). It used to wait and walk on: Mitsuru's "Hold on. It's not safe to continue any further" turns the
+    // hero back from a blocked way, and the walk took him straight into it again, over and over.
+    if (blocking) { log::write("nav: stopped, a message or a menu came up"); stop(false); return; }
     if (keys::movement_key_down()) { log::write("nav: stopped, a movement key is held"); stop(true); return; }   // the player took over
     // Stairs and doors are area changes that move the hero to another part of the map in one frame; the walk ends
     // there (otherwise it re-paths from the new floor and runs on through the next staircase).
@@ -288,7 +288,18 @@ std::string status() {
                      g_held[0] ? (char)g_held[0] : '-', g_held[1] ? (char)g_held[1] : '-');
 }
 
+// The mod is going (a hot reload): the walk's keys are let go. Left held, the game ran the hero on with nobody
+// steering and wedged him in a corner, and the next walk was "Stuck" against the key still down (2026-11-09).
+void unload() {
+  g_walking = false;
+  for (uint32_t& k : g_held) { if (k) input::post_key(k, false, true); k = 0; }
+}
+
 void install() {
+  // A walk key an earlier copy of the mod left down (it was unloaded or died mid-walk) is let go, unless the player
+  // has that key down now.
+  for (uint32_t k : {(uint32_t)'W', (uint32_t)'A', (uint32_t)'S', (uint32_t)'D'})
+    if (!(GetAsyncKeyState((int)k) & 0x8000)) input::post_key(k, false, true);
   // Dev: the field strike without a key. A posted Ctrl reaches the game's input layer but never starts the attack
   // (2026-10-27); the dungeon component's state machine does: NextBehavior = Attack (7) while Behavior is Free (1)
   // swings once and returns to Free. The player strikes with Ctrl as usual.

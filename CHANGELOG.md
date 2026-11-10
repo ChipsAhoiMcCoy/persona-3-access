@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+### Battles
+- The target no longer wraps around on the command wheel or in Analyze. At the first or last enemy, a further press says who you are still on, so you can tell the leftmost from the rightmost.
+- A skill or item that hits a whole side is now one choice in the target list: "All enemies" or "All allies" with their names, instead of a single enemy's name.
+- Enemies finished by an All-Out Attack are announced as defeated when the battle is won, not after Shuffle Time.
+
+### Victory screen
+- The screen no longer waits for the game's animation. The summary is read at once, your confirm brings the level-ups straight away, and a confirm with nothing left to hear takes you through the rest of the animation to the next page that is yours to read.
+
+### Shuffle Time
+- Each card now says what its face shows before its effect: "Fool", or a suit card's suit and number such as "Wands 1".
+
+### Exploring
+- Exits are said by name alone: "Iwatodai Station", not "Iwatodai Station exit", which was taken for the way out of the place.
+- Prompts say "Go to" only before a place an exit leads to. A prompt that already says what you do, like "Enter the Velvet Room", and a device you operate are said by name alone.
+- The auto-walk ends when a dialogue or menu comes up, instead of walking on into a way the game has just turned you back from.
+
 ## 0.1.0-alpha.2
 
 ### Stability
