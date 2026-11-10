@@ -80,7 +80,7 @@ class CampScreen : public MenuScreen {
     // System's Return to Title, once confirmed, fades the screen out, waits for the fade (FUN_14135b890 state 0xF:
     // FUN_141090af0, the fade at its end) and only then closes itself and the camp: the root is on its list for a few
     // more frames behind the black screen, and read "Menu, System, 9 of 9" on the way to the title (2026-11-10).
-    return !((bool (*)())(scan::exe_base() + 0x1090af0))();
+    return !faded_out();
   }
   std::string title() override { return strings::kCamp; }
   void on_enter() override { screens::set_keys(strings::kCampKeys); }

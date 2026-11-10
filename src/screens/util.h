@@ -47,6 +47,11 @@ inline ListCursor cursor_at(void* base, int off) { return ListCursor(base ? *(vo
 // A game sound cue (exe+0x1286af0, BtlSEPlay's too): 0 = the cursor sound every list's move plays.
 inline void cursor_sound(int cue = 0) { ((void (*)(int))(scan::exe_base() + 0x1286af0))(cue); }
 
+// Whether the screen is faded out: the game's fade at the end of a fade-out (exe+0x1090af0, what its menus wait on
+// before they close after a choice that leaves the place: FUN_14135b890 state 0xF). A menu still on its list then
+// is behind a black screen, not in front.
+inline bool faded_out() { return ((bool (*)())(scan::exe_base() + 0x1090af0))(); }
+
 // Write a list's cursor the way the game's own move does: the index, the cursor bar's slide (the draw's
 // bar(draw, row), which the move calls; without it the bar stays on the old row; 0 = the draw reads the cursor every
 // frame) and the cursor sound. A write to where the cursor already is does nothing.

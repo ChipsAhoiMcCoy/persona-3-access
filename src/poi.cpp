@@ -7,6 +7,7 @@
 #include "audio.h"
 #include "msg.h"
 #include "screens/screen.h"
+#include "screens/util.h"
 #include "textcap.h"
 #include "devserver.h"
 #include "gametext.h"
@@ -584,6 +585,9 @@ static void prompt_tick() {
     }
     return;
   }
+  // A prompt that comes up behind a faded-out screen is not shown: a menu that closes after its fade-out (Rewind, a
+  // load) leaves the old place's prompt up for a few frames, and "Dorm Register" was said on the way out (2026-11-10).
+  if (ue::known_build() && screens::faded_out()) return;
   last = label;
   std::string verb = verb_for(label);
   // A Social Link partner's prompt also shows the link's arcana and rank.

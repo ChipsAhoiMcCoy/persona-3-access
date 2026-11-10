@@ -7,6 +7,8 @@
 - A skill or item that hits a whole side is now one choice in the target list: "All enemies" or "All allies" with their names, instead of a single enemy's name.
 - Damage or healing on the one target you chose yourself is said as the number alone: "14 damage", "healed 53". The name stays wherever you did not pick the target: enemies' and allies' own actions, anything that hits several, and an attack sent back at you.
 - Enemies finished by an All-Out Attack are announced as defeated when the battle is won, not after Shuffle Time.
+- Rush is announced: "Rush" when you turn it on, "Rush off" when you stop it or the game ends it, as a boss's mid-battle lines do. It was silent.
+- The word the game shows beside a hit is said: "Weak", "Critical", "Resist", "Miss" or "Block", followed by "on" and the name unless it is the one target you chose. A miss or a blocked attack used to say nothing at all.
 
 ### Keys (F1)
 - On a Tartarus floor, F1 now also names Auto-Recover (Y, or RB on a controller) and Navi (N, or View).
@@ -35,6 +37,9 @@
 
 ### Menus
 - Returning to the title from System no longer reads "Menu, System, 9 of 9" again after you confirm.
+- Rewind: you can now go back to any day in the list. The game's cursor did not follow the focus, so only the day the list opened on could be confirmed.
+- Rewind: the list waits for its opening animation like the other menus, and nothing is read again behind the fade after you confirm a day.
+- A prompt such as "Check: Dorm Register" is no longer said behind the black screen while a rewind or a load takes you away.
 
 ## 0.1.0-alpha.2
 

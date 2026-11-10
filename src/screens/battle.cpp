@@ -28,6 +28,7 @@
 #include <format>
 #include <cstring>
 #include <map>
+#include <set>
 #include <vector>
 
 namespace p3a::screens {
@@ -147,6 +148,30 @@ class BattleScreen : public Screen {
   // the player chose, so its damage or healing is said without the name (the user's call, 2026-11-10). Dropped once
   // anyone else acts, so a later turn of the same member that no wheel opened (an ailment, orders) names its target.
   WeakObj commanded_;
+  // Rush (Tab): BP_BtlGuiComponent ChangeRush flips the core's request (RequestRushMode) and shows or hides the RUSH
+  // sign, a sprite; the fighting phase follows it at the next turn. The request is what the press changed.
+  bool rush_ = false;
+  // What a hit was: the word the game throws up beside the number (BP_BtlGuiDamage2_C, one actor per popup, made by
+  // BP_BtlGuiIcon CreateDamage and started with the unit and a type: 5 WEAK, 6 CRITICAL, 7 RESIST, 8 MISS, 9 BLOCK;
+  // 0 to 4 are the plain numbers, which the HP watch says). A miss or a block changes no HP: nothing was said at all.
+  int popups_ = watch::want("BP_BtlGuiDamage2_C", true);
+  std::set<WeakObj::Key> popups_seen_;
+  void hit_words(UObject* action_now, int st) {
+    std::set<WeakObj::Key> live;
+    for (UObject* o : watch::all(popups_)) {
+      UObject* u = get<UObject*>(o, "Chara");
+      if (!u) continue;   // not started yet
+      auto key = WeakObj::of(o).key();
+      live.insert(key);
+      if (popups_seen_.count(key)) continue;
+      int type = get<int32_t>(o, "Type");
+      if (type < 5 || type > 9) continue;
+      const char* word = strings::kHitWords[type - 5];
+      bool chosen = st == 0 && action_now && commanded_.resolve() == action_now && attacked(action_now) == u;
+      speech::speak(chosen ? std::string(word) : std::format("{} {} {}", word, strings::kOn, w_.unit_name(u)), false);
+    }
+    popups_seen_.swap(live);
+  }
   // The one unit an action hits (ABtlActor.GetActionTargets), null for none or several.
   UObject* attacked(UObject* action) {
     UFunction* f = action ? find_function(class_of(action), "GetActionTargets") : nullptr;
@@ -169,6 +194,12 @@ class BattleScreen : public Screen {
     UObject* core = core_.get();
     if (!core) return;
     int st = gui_state();
+    // On is said at once, over anything else: it answers the player's own press. Off queues: the game also ends a rush
+    // itself (a boss's mid-battle lines: DisableRush), with the last blow's news still being read.
+    if (bool rush = call_ret<bool>(core, "CheckRequestRushMode"); rush != rush_) {
+      rush_ = rush;
+      speech::speak(rush ? strings::kRushOn : strings::kRushOff, rush);
+    }
     if (st == 1) picked_ = {};
     else if (st == 2 || st == 3 || st == 4 || st == 7 || st == 11) picked_ = WeakObj::of(main_character());
     // The action banner (only while no battle menu is up: menus draw names in the same band).
@@ -197,6 +228,7 @@ class BattleScreen : public Screen {
       }
       banner_gone_ = false;
     }
+    hit_words(action_now, st);
     // HP changes and defeats. The enemies an All-Out Attack finishes keep their HP until the results take them away,
     // after Shuffle Time ("2 Muttering Tiara defeated" came after the cards, 2026-11-09): a deal with a card still to
     // take (the next battle's comes on the same actor, its last deal's picks all made) means the battle is won, and
@@ -397,7 +429,7 @@ class BattleScreen : public Screen {
     bool target_pressed = target_press();
     UObject* core = core_.get();
     end_pad(core ? gui_state() : 0);
-    if (!core) { units_.clear(); forget_battle_start(); downed_since_turn_ = false; last_actor_ = {}; return; }
+    if (!core) { units_.clear(); forget_battle_start(); downed_since_turn_ = false; last_actor_ = {}; rush_ = false; popups_seen_.clear(); return; }
     watch();
     int st = gui_state();
     // Assist (13, BTL_STATE_NAVIGATION) only plays the navigator's advice over the wheel: back from it is the same

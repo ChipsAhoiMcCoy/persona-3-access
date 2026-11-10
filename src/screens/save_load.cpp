@@ -16,20 +16,35 @@ using namespace ue;
 // draw's CursorIndex / CurrentIndex every frame; a write is followed by exe+0x152a120(actor), the tail of the game's
 // own move (the actor's row / top / index copies, the sound, the slot's key help).
 class SaveLoadScreen : public MenuScreen {
-  Finder draw_{"SaveLoadDraw"}, actor_{"UISaveLoad"};
+  Finder draw_{"SaveLoadDraw"}, actor_{"UISaveLoad"}, restore_{"UIRestore"};
   Mirror& list_ = mirror("slots", [this] { UObject* d = draw_.get(); int c = d ? get<int32_t>(d, "CurrentIndex") : -1; return c >= 0 && c < count() ? c : -1; });
   std::string slot_text_;
   int slot_seen_ = -1;
  public:
   SaveLoadScreen() {
     // AUISaveLoad +0x348 is its state: 3 once the opening has played; +0x350 the list is set up (FUN_141533eb0). Rewind
-    // (BootMode 3) has a state of its own, not read here: it takes moves as it did.
+    // (BootMode 3) is AUIRestore's list, its state +0x280 (FUN_141533380): 2 the opening, 3 the list's input
+    // (FUN_141527240), 4 and 5 a day confirmed, 8 waiting for the fade-out, 9 loading, 6 and 7 closing. Only 3 takes
+    // input: the confirmed day's prompt closing does not read the list again behind the fade.
     list_.ready = [this] {
-      if (draw_.get() && rewind()) return true;
+      if (draw_.get() && rewind()) { auto* r = (uint8_t*)restore_.get(); return r && *(int32_t*)(r + 0x280) == 3; }
       auto* a = (uint8_t*)actor_.get();
       return a && *(int32_t*)(a + 0x348) == 3 && a[0x350];
     };
     list_.set = [this](int i) {
+      // Rewind has no AUISaveLoad: its cursor is AUIRestore's own ListCursor (+0x2F8), and its move (FUN_141527240)
+      // copies the index to +0x278, sets the key help for a day with or without data (FUN_14152dd50) and plays the
+      // cursor sound. Without it the focus moved and the game's cursor stayed, so no day but the last could be
+      // confirmed (2026-11-10).
+      if (draw_.get() && rewind()) {
+        auto* r = (uint8_t*)restore_.get();
+        if (!r || *(int32_t*)(r + 0x280) != 3 || !ListCursor(r + 0x2f8).set(i)) return false;
+        *(int32_t*)(r + 0x278) = i;
+        uint8_t* saves = ((uint8_t* (*)())(scan::exe_base() + 0x122ac90))();
+        ((void (*)(void*, uint8_t, char))(scan::exe_base() + 0x152dd50))(r, saves[0x2ff30 + i * 0x30], 1);
+        cursor_sound();
+        return true;
+      }
       auto* a = (uint8_t*)actor_.get();
       ListCursor lc(a ? a + 0x298 : nullptr);
       if (!a || i >= lc.count() || !lc.set(i)) return false;

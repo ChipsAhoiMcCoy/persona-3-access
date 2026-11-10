@@ -137,6 +137,10 @@ inline constexpr const char* kPersonaWord = "Persona";
 inline constexpr const char* kTheurgyCharge = "Theurgy gauge";
 inline constexpr Hint kDetailKeys{"Control and the up and down arrows read the details of who is in focus.", "The right stick, up and down, reads the details of who is in focus."};
 inline constexpr const char* kOneMore = "1 More!";
+inline constexpr const char* kRushOn = "Rush";
+inline constexpr const char* kRushOff = "Rush off";
+// The word beside a hit's number (BP_BtlGuiDamage2 types 5 to 9), then "on" and the unit unless the player chose it.
+inline constexpr const char* kHitWords[] = {"Weak", "Critical", "Resist", "Miss", "Block"};
 inline constexpr const char* kPersonaStatus = "Persona status";
 inline constexpr const char* kLearnSkill = "Learn";
 inline constexpr const char* kNewSkill = "New skill";
