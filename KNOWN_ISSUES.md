@@ -24,7 +24,9 @@ These reached the code but have not been seen working in the game, because no te
 
 - Episode Aigis has not been played through with the mod. Its movies and area descriptions are in place, and its Theurgy list has been checked, but the episode as a whole is untested.
 - A late game playthrough has not been completed. Each menu was tested on saves from various points, not by finishing the game with the mod. Monad and the Abyss of Time were visited to check area descriptions, not played through.
-- The victory screen's Persona level-up page has not been confirmed in normal play.
+- In Analyze, the stop at the first and last enemy has not been tried in the game. On the command wheel it has.
+- The single "All enemies" or "All allies" choice for a skill or item that hits a whole side has not been tried in the game.
+- The victory screen's new pacing was tried in one battle with a member's level-up. The hero's own level-up page and a battle with several level-ups at once have not been tried with it.
 - The Missing Persons board in the field. The camp's Missing Persons list has been tested.
 - The Persona status page in battle (F on a skill list) was not checked again after the page was reworked.
 - The audio description text was checked by automated timing and transcript checks, not by a person watching every movie.
