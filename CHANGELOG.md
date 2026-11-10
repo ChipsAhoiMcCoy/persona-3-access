@@ -8,6 +8,11 @@
 - Damage or healing on the one target you chose yourself is said as the number alone: "14 damage", "healed 53". The name stays wherever you did not pick the target: enemies' and allies' own actions, anything that hits several, and an attack sent back at you.
 - Enemies finished by an All-Out Attack are announced as defeated when the battle is won, not after Shuffle Time.
 
+### Keys (F1)
+- On a Tartarus floor, F1 now also names Auto-Recover (Y, or RB on a controller) and Navi (N, or View).
+- F1 on a dialogue choice list names its keys. It said "No keys to tell here".
+- The Auto-Recover tutorial names Y on the keyboard, not E.
+
 ### Game over
 - The poem before the choices is read: "Game Over", then its four lines as the game brings them in. That stretch was silent, apart from your fallen allies' HP being read out, which is gone.
 - Confirm during the poem skips the rest of it and goes on to the choices. The game itself only finishes one line per press.

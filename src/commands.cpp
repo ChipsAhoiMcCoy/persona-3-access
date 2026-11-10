@@ -55,7 +55,8 @@ static void screen_keys() {
   if (m.blocking && !over) k = m.kind == "Tutorial" ? strings::kTutorialKeys() : !m.choices.empty() ? strings::kChooseKeys()
                     : m.kind == "System" ? strings::kSpaceContinues() : strings::kDialogueKeys();
   else if (screens::current()) k = screens::keys();
-  else if (world::player()) k = std::string(strings::kFieldKeys()) + " " + strings::kModKeysHint();
+  else if (world::player())
+    k = std::string(strings::kFieldKeys()) + " " + (poi::tartarus_floor() > 0 ? std::string(strings::kTartarusKeys()) + " " : std::string()) + strings::kModKeysHint();
   if (k.empty()) k = std::string(strings::kNoKeys) + " " + strings::kModKeysHint();
   speech::speak(k, true);
 }

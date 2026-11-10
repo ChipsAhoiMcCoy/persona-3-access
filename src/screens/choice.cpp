@@ -44,6 +44,9 @@ class ChoiceScreen : public MenuScreen {
   bool over_messages() const override { return true; }
   bool active() override { msg::Current c = msg::current(); return c.open && c.choice >= 0 && complete(c); }
   bool announce_entry() override { return false; }
+  // F1 over a choice list: the screen is over the message window, so the keys are its own to name (it answered "No
+  // keys to tell here", 2026-11-10).
+  void on_enter() override { screens::set_keys(strings::kChooseKeys); }
   // The review key: the question, then the focused answer.
   std::string describe() override {
     msg::Current c = msg::current();

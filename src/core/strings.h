@@ -235,6 +235,8 @@ inline constexpr Hint kDialogueKeys{"Conversation keys: Space next, B log, Shift
                                     "Conversation keys: A next, L3 log, X auto, Menu button fast-forwards."};
 inline constexpr Hint kFieldKeys{"Field keys: Space checks and talks, Tab menu, M map, B log, Ctrl messages or attack, Shift dash, H saves.",
                                  "Field keys: A checks and talks, Y menu, LB map, L3 log, X messages or attack, RT dash, Menu button saves."};
+// Added to the field's keys on a Tartarus floor. Auto-Recover's button is the one its tutorial draws (icon 117).
+inline constexpr Hint kTartarusKeys{"In Tartarus: Y Auto-Recover, N Navi.", "In Tartarus: RB Auto-Recover, View Navi."};
 // The help keys (F1 = this screen's keys, Shift+F1 = the mod's own keys, F2 its settings; on a controller, the mod
 // layer's Menu, and View for the settings, whose last row reads the keys).
 inline constexpr Hint kModKeysHint{"Shift+F1 lists the mod's keys, F2 opens its settings.", "Both triggers and View open the mod's settings; its last row lists the mod's keys."};

@@ -297,7 +297,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   its stats and what the trade needs ("needs Topaz 3, you have 1"), then its description. Be Blue V is a part-time
   job, read as choices. Money gained or spent anywhere is announced.
 - Tartarus: the block and floor ("Thebel, floor 3"), breakable objects as points of interest (broken ones leave the list), stairs ("Head Up").
-- Outside battle, a party member's HP or SP changing is read (Auto-Recover with Y in Tartarus, items, the
+- Outside battle, a party member's HP or SP changing is read (Auto-Recover with Y, or RB on a controller, in Tartarus; items, the
   entrance clock). N (Navi) and the other Tartarus helpers speak through messages.
 - Tartarus terminals (the Giant Device at the entrance and on floors): each floor you can travel to, the furthest
   one reached marked; the up and down arrows choose, Space travels.

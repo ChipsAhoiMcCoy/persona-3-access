@@ -49,7 +49,7 @@ static const char* icon_name(int id, const std::string& around = {}) {
     case 112: return pad ? "Y" : nearby("menu") ? "Tab" : "E";   // battle skills (Persona); the field menu
     case 113: return pad ? "A" : "Space";      // attack, confirm
     case 114: return pad ? "LB" : nearby("map") ? "M" : "Q";     // left page / previous (with 117); the field map
-    case 117: return pad ? "RB" : "E";         // right page / next
+    case 117: return pad ? "RB" : nearby("exploration") || nearby("recover") ? "Y" : "E";   // right page / next; Auto-Recover in Tartarus
     case 115: return pad ? "LT" : "B";         // battle Shift (B on the command wheel, measured 2026-10-28)
     case 118: return pad ? "RT" : "Shift";     // dash
     default: return nullptr;
