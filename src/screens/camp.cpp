@@ -76,7 +76,11 @@ class CampScreen : public MenuScreen {
     int st = r ? *(int32_t*)((uint8_t*)r + 0x38) : 0;
     // 4 for a frame as a confirmed entry opens its submenu (2026-11-03): still the camp, not a gap that read its title
     // again when it came back.
-    return (st == 2 || st == 3 || st == 4) && !camp_submenu_open();
+    if (!(st == 2 || st == 3 || st == 4) || camp_submenu_open()) return false;
+    // System's Return to Title, once confirmed, fades the screen out, waits for the fade (FUN_14135b890 state 0xF:
+    // FUN_141090af0, the fade at its end) and only then closes itself and the camp: the root is on its list for a few
+    // more frames behind the black screen, and read "Menu, System, 9 of 9" on the way to the title (2026-11-10).
+    return !((bool (*)())(scan::exe_base() + 0x1090af0))();
   }
   std::string title() override { return strings::kCamp; }
   void on_enter() override { screens::set_keys(strings::kCampKeys); }

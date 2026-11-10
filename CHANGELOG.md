@@ -33,6 +33,9 @@
 ### Velvet Room
 - A Persona's status page in registration and in the compendium is read again. It was silent: the list behind it kept the focus. The page now opens with what confirming does, "Register this Persona?" or "Summon this Persona?", before the Persona's name.
 
+### Menus
+- Returning to the title from System no longer reads "Menu, System, 9 of 9" again after you confirm.
+
 ## 0.1.0-alpha.2
 
 ### Stability
