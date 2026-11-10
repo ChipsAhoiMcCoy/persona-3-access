@@ -93,6 +93,7 @@ inline constexpr const char* kRankUp = "up to rank";
 inline constexpr const char* kStatUp = "up";
 inline constexpr const char* kStatsUp = "Stats up.";
 inline constexpr Hint kSpaceContinues{"Space continues.", "A continues."};
+inline constexpr Hint kGameOverKeys{"Space skips to the choices.", "A skips to the choices."};
 inline constexpr const char* kGameOver = "Game Over";   // the game's own words, when its message file is not loaded
 inline constexpr Hint kResultKeys{"The up and down arrows go through the results, Space continues.", "The D-pad goes through the results, A continues."};
 // Battle

@@ -238,7 +238,10 @@ static void pending_tick() {
   }
 }
 
+static uint32_t g_presses = 0;
+uint32_t press_count() { return g_presses; }
 void player_pressed() {
+  ++g_presses;
   bool blocking;
   { std::lock_guard lk(g_mu); blocking = g_current.blocking; }
   if (blocking) speech::stop();

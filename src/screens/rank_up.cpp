@@ -17,11 +17,15 @@
 #include "screens/screen.h"
 #include "screens/util.h"
 #include "bmdfile.h"
+#include "input.h"
+#include "msg.h"
 #include "core/strings.h"
 #include "log.h"
 #include "seh.h"
 #include "social.h"
 #include "speech.h"
+#include <windows.h>
+#include <xinput.h>
 #include <format>
 
 namespace p3a::screens {
@@ -79,6 +83,49 @@ class RankUpScreen : public Screen {
     if (head.back() != '.') head += '.';
     return poem.empty() ? head : head + " " + poem;
   }
+  // The poem's actor (AUIRankUpDraw.UIGameOverPoem). Its state (+0x4F4; its tick's switch at exe+0x1506ed3): 3 a wait,
+  // 4 the lines, one after another (its AnimManager +0x37C: the line coming in, 4 = all in), 5 a hold, 6 the fade.
+  // In state 4 the game's confirm or cancel finishes the line coming in and starts the next, so the game itself
+  // takes four presses; +0x4FC is its pause (the skip button's first press).
+  UObject* poem_actor() {
+    UObject* m = manager();
+    UObject* p = m ? get<UObject*>(m, "UIGameOverPoem") : nullptr;
+    return p && is_live(p) ? p : nullptr;
+  }
+  // The player's confirm takes the poem to its end (the user's call, 2026-11-10: it is read out whole as it starts,
+  // so nobody waits for lines they cannot see come in): the mod makes the presses the lines left need, each once the
+  // last was delivered in full and the game ran two frames on it without starting the next line.
+  uint32_t presses_ = 0;
+  bool skipping_ = false;
+  int press_line_ = -1, press_frames_ = 0;
+  void skip_tick() {
+    uint32_t n = msg::press_count();
+    bool pressed = n != presses_;
+    presses_ = n;
+    UObject* p = poem_actor();
+    UObject* anim = p ? get<UObject*>(p, "AnimManager") : nullptr;
+    int state = p ? *(int32_t*)((uint8_t*)p + 0x4F4) : 0;
+    int line = anim && is_live(anim) ? *(int32_t*)((uint8_t*)anim + 0x37C) : -1;
+    bool paused = p && *((uint8_t*)p + 0x4FC) != 0;
+    if (state != 4 || line < 0 || line > 3) { skipping_ = false; return; }
+    if (paused) return;
+    if (pressed && !skipping_) {
+      skipping_ = true;
+      press_line_ = line;   // the player's own press is this line's
+      press_frames_ = 0;
+      log::writef("rank_up: the poem skipped from line {}", line);
+      return;
+    }
+    if (!skipping_) return;
+    if (input::injected_held() || input::busy()) press_frames_ = 0;
+    else ++press_frames_;
+    if (press_line_ != line || press_frames_ > 2) {
+      press_line_ = line;
+      press_frames_ = 0;
+      if (input::pad_in_use()) input::press(XINPUT_GAMEPAD_A, 60, 40);
+      else input::inject_key(VK_RETURN);
+    }
+  }
   UObject* manager() {
     UObject* d = draw_.get();
     UObject* m = d ? *(UObject**)((uint8_t*)d + 0xB30) : nullptr;
@@ -116,6 +163,8 @@ class RankUpScreen : public Screen {
     spoken_ = d;
     rank_ = -1; arcana_ = 0;
     what_said_ = card_said_ = false;
+    skipping_ = false;
+    presses_ = msg::press_count();
     read();
   }
   void tick() override {
@@ -126,7 +175,9 @@ class RankUpScreen : public Screen {
         what_said_ = true;
         log::writef("rank_up: the game over poem");
         speech::speak(line_ = game_over(), true);
+        screens::set_keys(strings::kGameOverKeys);
       }
+      skip_tick();
       return;
     }
     UObject* card = card_timeline();

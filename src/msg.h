@@ -22,6 +22,7 @@ void repeat();   // speak the current page again
 // The player pressed confirm or cancel (Enter, Space, Escape, Backspace; A, B): over a blocking message window the
 // mod's reading stops at once, so a page skipped (or a choice made) feels instant (game thread).
 void player_pressed();
+uint32_t press_count();   // how many such presses so far: a screen that acts on the player's confirm compares it
 // A story cut-in's description was just read (cutin.cpp): the next dialogue line queues after it, not over it.
 void cutin_said();
 

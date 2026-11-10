@@ -10,6 +10,7 @@
 
 ### Game over
 - The poem before the choices is read: "Game Over", then its four lines as the game brings them in. That stretch was silent, apart from your fallen allies' HP being read out, which is gone.
+- Confirm during the poem skips the rest of it and goes on to the choices. The game itself only finishes one line per press.
 - Each choice is followed by its own description. The wrong one was read first and then corrected, and a description could repeat or follow you to the next choice.
 - The choices are announced once the game takes input on them. They were announced a moment early, so a confirm pressed at once was lost.
 

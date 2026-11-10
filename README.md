@@ -205,6 +205,8 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   the lobby, other floors) and "Town Map" first; the up and down arrows choose, Space goes. Where the story allows no travel, M
   opens only the area map instead: it is announced, and C closes it. Other game keys in town: H saves
   anywhere, Ctrl opens messages, B the log.
+- Game over: "Game Over" and the poem are read whole as the poem starts to appear. Space or Enter (A) skips the rest
+  of its animation and goes on to the choices; each choice is read with its description.
 - SELECT lists (who to think of at the shrine's fortune, and the like): the activity and the question, then each
   entry as you move. The rooftop garden's planting list reads each seedling with how many you own and what it
   grows (and in how many days).
