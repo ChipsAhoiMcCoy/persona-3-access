@@ -299,15 +299,18 @@ class VelvetScreen : public MenuScreen {
       for (int i = 0; i < 3; ++i) { std::string l = strings::kFusionMethods[i]; b.add_item(slot("velvet.method", i), game_item(method_, i, [l] { return l; })); }
       b.pop_context();
       if (int c = method_.cursor(); c >= 0) b.set_start(slot("velvet.method", c));
+    } else if (on_page()) {   // before the compendium's and registration's lists: their pages are in the same scene
+      const uint8_t* e = persona::shown_status();
+      bool fusion = sc == 4 && step() == 5;
+      bool result = fusion && (!result_id_ || (e && *(uint16_t*)(e + 2) == result_id_));
+      // The compendium's and registration's pages are a question: confirming summons or registers the Persona.
+      const char* lead = result ? strings::kFusionResult : fusion ? strings::kFusionMaterial
+                         : sc == 5 ? strings::kSummonThis : sc == 6 ? strings::kRegisterThis : "";
+      build_status_page(b, e, lead, result ? velvet_result_bonus() : "", nullptr);
     } else if (sc == 5) {
       build_book(b);
     } else if (sc == 6) {
       build_regist(b);
-    } else if (on_page()) {
-      const uint8_t* e = persona::shown_status();
-      bool fusion = sc == 4 && step() == 5;
-      bool result = fusion && (!result_id_ || (e && *(uint16_t*)(e + 2) == result_id_));
-      build_status_page(b, e, result ? strings::kFusionResult : fusion ? strings::kFusionMaterial : "", result ? velvet_result_bonus() : "", nullptr);
     } else if (levelup()) {
       screens::set_keys(strings::kLevelUpKeys);
       build_status_page(b, levelup_, strings::kLevelUp, "", levelup_before_);

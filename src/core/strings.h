@@ -342,6 +342,8 @@ inline constexpr const char* kSpecialReady = "ready to fuse";
 inline constexpr const char* kCompendium = "Compendium. Select a Persona.";
 inline constexpr const char* kNotRegistered = "not registered";
 inline constexpr const char* kRegister = "Who shall you register?";
+inline constexpr const char* kRegisterThis = "Register this Persona?";
+inline constexpr const char* kSummonThis = "Summon this Persona?";
 inline constexpr Hint kStatusConfirmKeys{"Space registers it, Page Down and Page Up jump between sections, F skills and affinities, Tab registered stats, Escape back.", "A registers it, RT and LT jump between sections, X skills and affinities, Y registered stats, B back."};
 inline constexpr Hint kRegisterKeys{"Up and down arrows choose, Space opens its status, Tab marks it, F registers the marked ones or all, Escape back.", "Up and down choose, A opens its status, Y marks it, X registers the marked ones or all, B back."};
 inline constexpr Hint kCompendiumPageKeys{"Space summons, Tab and Shift Tab jump between sections, F skills and affinities, Escape back.", "A summons, RT and LT jump between sections, X skills and affinities, B back."};

@@ -27,6 +27,7 @@ These reached the code but have not been seen working in the game, because no te
 - In Analyze, the stop at the first and last enemy has not been tried in the game. On the command wheel it has.
 - The single "All enemies" or "All allies" choice for a skill or item that hits a whole side has not been tried in the game.
 - The victory screen's new pacing was tried in one battle with a member's level-up. The hero's own level-up page and a battle with several level-ups at once have not been tried with it.
+- The compendium's Persona status page (Summon from the Compendium, then a Persona) was not tried in the game after its fix. Registration's page, which had the same fault, was.
 - The Missing Persons board in the field. The camp's Missing Persons list has been tested.
 - The Persona status page in battle (F on a skill list) was not checked again after the page was reworked.
 - The audio description text was checked by automated timing and transcript checks, not by a person watching every movie.

@@ -18,6 +18,9 @@
 - Prompts say "Go to" only before a place an exit leads to. A prompt that already says what you do, like "Enter the Velvet Room", and a device you operate are said by name alone.
 - The auto-walk ends when a dialogue or menu comes up, instead of walking on into a way the game has just turned you back from.
 
+### Velvet Room
+- A Persona's status page in registration and in the compendium is read again. It was silent: the list behind it kept the focus. The page now opens with what confirming does, "Register this Persona?" or "Summon this Persona?", before the Persona's name.
+
 ## 0.1.0-alpha.2
 
 ### Stability

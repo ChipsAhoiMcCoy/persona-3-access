@@ -34,7 +34,7 @@ void build_status_page(ui::GraphBuilder& b, const uint8_t* e, const std::string&
   b.begin_stop(k);
   b.set_region(k + ".top");
   std::string name = persona::describe(id, level);
-  if (!lead.empty()) name = lead + (lead.back() == '!' ? " " : ": ") + name;
+  if (!lead.empty()) name = lead + (lead.back() == '!' || lead.back() == '?' ? " " : ": ") + name;
   if (name_id && name_item) b.add_item(*name_id, name_item);
   else b.add_item(ui::ControlId::structural(k + ".name"), M::item([name] { return name; }));
   if (!bonus.empty()) b.add_item(ui::ControlId::structural(k + ".bonus"), M::item([bonus] { return bonus; }));
