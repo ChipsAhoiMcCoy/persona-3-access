@@ -49,7 +49,7 @@ Delete `Win64\dsound.dll` and the `Win64\P3RAccess` folder. To also remove setti
 
 The game has likely been updated, or something stopped it from starting properly. Please report it and include the log. The mod keeps quiet after this and the game itself should carry on.
 
-### Speech works, but no wall tones, chimes or narrator
+### Speech works, but no wall tones, sonar or narrator
 
 - Check the mod's volume settings with F2, or both triggers and View.
 - Check these exist:

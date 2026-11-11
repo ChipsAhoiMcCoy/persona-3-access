@@ -52,7 +52,7 @@ bool scene_playing() { return scene_flag("IsPlayingEvent"); }
 bool scene_fast() { return scene_flag("IsHighSpeed"); }
 
 // A battle keeps the field's hero and, between turns, shows no screen: only its own component says it is on
-// (BtlCoreComponent, as the auto-walk checks). The wall tones and the nearby chimes went on through battles and
+// (BtlCoreComponent, as the auto-walk checks). The wall tones went on through battles and
 // story scenes until every field sound asked here (the user, 2026-11-10).
 static uint64_t g_frame = 0;   // world::tick's count: exploring() is worked out once per frame, on its first asking
 static bool exploring_now() {

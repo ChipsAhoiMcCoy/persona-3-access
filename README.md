@@ -109,16 +109,16 @@ Backspace or F2 (B or View) closes. Changes are saved at
 once, to `%LOCALAPPDATA%\P3RAccess\settings.ini`. The menu plays the game's own menu sounds: opening and closing
 (the camp menu's), the cursor on each move, and a sound on each value change.
 
-Exploring holds Wall tones, Nearby chimes, Shadow alerts, Points of interest range and Wall tone volume.
+Exploring holds Wall tones, Shadow alerts, Points of interest range and Wall tone volume.
 Sonar holds everything named Sonar. Sound holds 3D sound for headphones, Lower pitch behind you, Mod master volume
-and Beeps and chimes volume. Dialogue and movies holds Voiced dialogue, When a line ends, Read cutscene subtitles and
+and Shadow sounds volume. Dialogue and movies holds Voiced dialogue, When a line ends, Read cutscene subtitles and
 the two Audio description settings. Controls and help holds Controller trigger delay, Menu key hints on entry and
 Mod keys.
 
 Sound test is where to learn the mod's sounds. Space or Enter (A) on a row plays its sound, wherever you are and
 whatever is switched off, and the row says what the sound means. It holds the five sonar sounds, the tick
-that marks the selected point, the same sound from your left, your right and behind you, the nearby
-chime, the Shadow's growl (plain and hunting you), the Shadow alarm and the sound of a Shadow losing you, the two
+that marks the selected point, the same sound from your left, your right and behind you,
+the Shadow's growl (plain and hunting you), the Shadow alarm and the sound of a Shadow losing you, the two
 strike-reach rings, the four wall tones and the controller layer's tick. They play at the volumes set under Sound.
 
 - Wall tones: on, off
@@ -126,14 +126,13 @@ strike-reach rings, the four wall tones and the controller layer's tick. They pl
 - Sonar plays: everything nearby, the list's category only, the selected point only (at any distance): narrows the sonar to the category the points of interest list is on, or to the one point you selected there, which then sounds however far away it is
 - Sonar range: 10 meters; 5, 15, 20, 30 or 40
 - Sonar: exits, Sonar: doors, Sonar: people, Sonar: shops, Sonar: objects: on, off: each kind of thing on its own. Changing one plays its sound, so this is also where to learn them
-- Nearby chimes: on, off: the chime when a way to another area, a person or a thing comes within 8 m. Only while the sonar is off: with it on, each thing's own sound tells you it has come near
 - Shadow alerts: on, off: in Tartarus, the Shadow pulse, the alarm when one notices you, the strike-reach ring (for Shadows and breakable objects) and the back-turned / facing-you cues
-- 3D sound for headphones: on, off: the sonar, the nearby chimes and the Shadow cues come from where their source is, ahead, behind, above or below (Steam Audio's HRTF; far sounds are also a little duller). Off pans them left and right only, as before
-- Lower pitch behind you: on, off: the sonar's sounds, the nearby chimes and the Shadow pulse play lower when their source is behind you
+- 3D sound for headphones: on, off: the sonar and the Shadow cues come from where their source is, ahead, behind, above or below (Steam Audio's HRTF; far sounds are also a little duller). Off pans them left and right only, as before
+- Lower pitch behind you: on, off: the sonar's sounds and the Shadow pulse play lower when their source is behind you
 - Points of interest range: 60 meters; 20, 40, 100 or 150
 - Mod master volume: 100 percent; 0 to 100 in steps of 10, like the game's volume sliders: every sound the mod plays (not the game's own sounds, which follow the game's settings)
 - Sonar volume: 80 percent; 0 to 100 in steps of 10: the sonar's sounds (changing it plays one)
-- Beeps and chimes volume: 60 percent; 0 to 100 in steps of 10: the nearby chimes, the Shadow cues and the controller layer's tick
+- Shadow sounds volume: 60 percent; 0 to 100 in steps of 10: the Shadow cues and the controller layer's tick
 - Wall tone volume: 100 percent; 0 to 100 in steps of 10: the wall tones
 - Controller trigger delay: 150 milliseconds; off, 100 or 250
 - Menu key hints on entry: off, on: menus say their keys after their first line, as they used to, besides F1
@@ -189,7 +188,7 @@ Points of interest come in categories: exits (each leads to another area and is 
 "Gekkoukan High School" there is the way into the school, not out of it), doors (rooms you check to go in: classrooms,
 offices, restrooms, the dorm's bedrooms), people, shops (businesses, food, vendors and vending machines), objects
 (everything else you can check) and, in Tartarus, Shadows. Each category lists its points nearest first, and a
-category with nothing in it is skipped. The sonar and the nearby chimes have one sound for each of the first five
+category with nothing in it is skipped. The sonar has one sound for each of the first five
 (see Sounds). Points are spoken with their name, distance, clock direction and position: "Iwatodai Station, 6 meters, 2 o'clock, 1 of 3". The category is said first when you change category or open the controller layer.
 12 o'clock is straight ahead (where pushing forward walks), 3 o'clock is to your right.
 With the sonar on, each point you land on in the list also plays its kind's sound once from where it is, however far,
@@ -411,13 +410,9 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   advantage. No ring means a swing would miss. The same ring plays for a breakable object while your strike would
   break it (the game's own hit area again), unless a Shadow is in reach: then the ring is the Shadow's. It is part of
   Shadow alerts, so it is silent while that setting is off.
-- Sounds stay in place: a sound that has a place in the world (the sonar's, the Shadow cues, the nearby
-  chimes) stays there for as long as it plays, so it shifts in your ears as you walk or turn the camera during it.
-- Nearby chimes: when a way to another area, a person or a thing comes within 8 m, its kind's sonar sound (the air,
-  the knocks, the whistle, the bell or the plucked note) plays once from its direction, a little lower when it is behind you. It plays again
-  once you have been more than 15 m away. The chimes are the sonar's quieter stand-in: they play only while the sonar is off.
+- Sounds stay in place: a sound that has a place in the world (the sonar's, the Shadow cues) stays there for as long as it plays, so it shifts in your ears as you walk or turn the camera during it.
 
-The sonar, the chimes and the Shadow cues are positioned with Steam Audio (Valve, Apache 2.0; phonon.dll beside
+The sonar and the Shadow cues are positioned with Steam Audio (Valve, Apache 2.0; phonon.dll beside
 the mod; its license and third-party notices are in the P3RAccess\licenses folder). Without phonon.dll they pan left and
 right as before. Headphones give the best sense of ahead and behind.
 

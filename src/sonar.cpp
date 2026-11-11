@@ -31,7 +31,7 @@ constexpr float kNearM = 1.5f;         // at and under this: the fastest rhythm,
 // How much quieter a thing is at the range's edge (and beyond, when selected). 14 at first: with the far-off sound's
 // duller treble on top, a thing was not noticed until the player was nearly on it (the user, 2026-11-10).
 constexpr float kEdgeDb = 8.0f;
-constexpr float kBehindRate = 0.84f;   // "Lower pitch behind you": three semitones down, as the chimes
+constexpr float kBehindRate = 0.84f;   // "Lower pitch behind you": three semitones down
 constexpr ULONGLONG kRescanMs = 250;   // how often the list of things is read again (their sounds are placed per pulse)
 constexpr float kLookAheadCm = 300.0f; // how far past the range that reading looks
 
@@ -184,15 +184,6 @@ void selected(const poi::Poi& p) {
   emit(kind, me, p.loc, false);
 }
 
-void chime(const poi::Poi& p) {
-  FVector me;
-  int kind = cue_of(p.kind);
-  if (kind < 0 || !world::player_location(me)) return;
-  audio::Spot s = world::spot(me, p.loc);
-  bool behind = s.ahead < -0.2f && settings::on(settings::BehindPitch);
-  audio::play(cue(kind, false), 1.2f, s, audio::Bus::Cues, behind ? kBehindRate : 1.0f);
-}
-
 bool preview(settings::Id id) {
   int kind = id == settings::SonarExits ? 0 : id == settings::SonarDoors ? 1 : id == settings::SonarPeople ? 2 :
              id == settings::SonarShops ? 3 : id == settings::SonarThings ? 4 : id == settings::SonarVolume ? (int)SonarCue::Thing : -1;
@@ -201,14 +192,14 @@ bool preview(settings::Id id) {
   return true;
 }
 
-void demo(int kind, bool marked, int side, bool chime) {
+void demo(int kind, bool marked, int side) {
   audio::Spot s{};   // straight ahead
   s.dist_m = 2.0f;
   if (side == 1) { s.right = -1; s.ahead = 0; s.pan = -1; }
   else if (side == 2) { s.right = 1; s.ahead = 0; s.pan = 1; }
   else if (side == 3) s.ahead = -1;
   bool lower = side == 3 && settings::on(settings::BehindPitch);
-  audio::play(cue(kind, marked), chime ? 1.2f : 1.0f, s, chime ? audio::Bus::Cues : audio::Bus::Sonar, lower ? kBehindRate : 1.0f);
+  audio::play(cue(kind, marked), 1.0f, s, audio::Bus::Sonar, lower ? kBehindRate : 1.0f);
 }
 
 void install() {

@@ -265,13 +265,12 @@ inline constexpr const char* kHelpSonarScope = "Which points the sonar plays: ev
 inline constexpr const char* kHelpSonarRange = "How far away a thing can be and still sound.";
 inline constexpr const char* kHelpSonarKind = "Whether this kind of thing sounds. Changing it plays its sound.";
 inline constexpr const char* kHelpSonarVolume = "How loud the sonar's sounds are. Changing it plays one.";
-inline constexpr const char* kHelpNearbyChimes = "A chime when a way out, a person or a thing comes within 8 meters. Only while the sonar is off.";
 inline constexpr const char* kHelpShadowAlerts = "In Tartarus: the Shadow's growl, the alarm when one notices you, the ring when your strike will reach, and whether a close Shadow faces you.";
 inline constexpr const char* kHelpHrtf = "The mod's sounds come from where their source is: ahead, behind, above or below. For headphones. Off pans them left and right only.";
 inline constexpr const char* kHelpBehindPitch = "Sounds whose source is behind you play lower.";
 inline constexpr const char* kHelpPoiRange = "How far the points of interest list reaches.";
 inline constexpr const char* kHelpMasterVolume = "Every sound the mod plays. The game's own sounds follow the game's settings.";
-inline constexpr const char* kHelpSoundVolume = "The nearby chimes, the Shadow sounds and the controller layer's tick.";
+inline constexpr const char* kHelpSoundVolume = "The Shadow sounds and the controller layer's tick.";
 inline constexpr const char* kHelpWallVolume = "How loud the wall tones are.";
 inline constexpr const char* kHelpTriggerDelay = "How long one trigger waits for the other before it counts as the game's own press. Longer makes the mod's controller layer easier to open.";
 inline constexpr const char* kHelpEntryHints = "Menus say their keys after their first line. Off, F1 still reads them.";
@@ -293,7 +292,6 @@ inline constexpr SoundTest kSoundTests[] = {
     {"A sound to your left", "The person whistle, from your left."},
     {"A sound to your right", "The person whistle, from your right."},
     {"A sound behind you", "The person whistle, from behind you. Lower in pitch when that setting is on."},
-    {"Nearby chime", "With the sonar off: something has come within 8 meters. It is that kind's sonar sound, played once."},
     {"Shadow growl", "A Shadow is within 30 meters. It repeats faster and louder as the Shadow closes in."},
     {"Shadow growl, hunting you", "The growl of a Shadow that has noticed you: higher, louder and faster."},
     {"Shadow alarm", "A Shadow has just noticed you."},
@@ -321,13 +319,12 @@ inline constexpr const char* kSetSonarThings = "Sonar: objects";
 inline constexpr const char* kSetSonarVolume = "Sonar volume";
 inline constexpr const char* kSonarOn = "Sonar on";
 inline constexpr const char* kSonarOff = "Sonar off";
-inline constexpr const char* kSetNearbyChimes = "Nearby chimes";
 inline constexpr const char* kSetShadowAlerts = "Shadow alerts";
 inline constexpr const char* kSetHrtf = "3D sound for headphones";
 inline constexpr const char* kSetBehindPitch = "Lower pitch behind you";
 inline constexpr const char* kSetPoiRange = "Points of interest range";
 inline constexpr const char* kSetMasterVolume = "Mod master volume";
-inline constexpr const char* kSetSoundVolume = "Beeps and chimes volume";
+inline constexpr const char* kSetSoundVolume = "Shadow sounds volume";
 inline constexpr const char* kSetWallVolume = "Wall tone volume";
 inline constexpr const char* kSetTriggerDelay = "Controller trigger delay";
 inline constexpr const char* kSetEntryHints = "Menu key hints on entry";

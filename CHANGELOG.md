@@ -12,11 +12,13 @@
 - Choosing who gets an item, casts or receives a skill, or changes gear no longer reads each member's level.
 - The mod settings are in five categories instead of one list of 27: Exploring, Sonar, Sound, Dialogue and movies, Controls and help. Tab and Shift+Tab, Page Down and Page Up, or RB and LB change category.
 - Mod settings: every setting says what it does, read with the row after its value and position. No extra key is needed.
-- Mod settings: a new Sound test category. Space or A on a row plays one of the mod's sounds, and the row says what the sound means: the sonar's five sounds, the selected point's tick, a sound from your left, your right and behind you, the nearby chime, the Shadow's growl, alarm and lost-you sound, the strike-reach rings, the four wall tones and the controller layer's tick.
+- Mod settings: a new Sound test category. Space or A on a row plays one of the mod's sounds, and the row says what the sound means: the sonar's five sounds, the selected point's tick, a sound from your left, your right and behind you, the Shadow's growl, alarm and lost-you sound, the strike-reach rings, the four wall tones and the controller layer's tick.
 - Mod settings: pressing on at the first or last row says the row again without the cursor sound, as the game's menus do.
 
 ### Removed
 - The beacon (the chirp toward the selected point of interest), its setting and its key, Shift+Semicolon. The sonar already marks the selected point, and the auto-walk takes you there; the beacon was one more sound on top of them.
+- The nearby chimes and their setting. The sonar's sounds are what tell you something is near; with the sonar off, nothing plays in their place.
+- "Beeps and chimes volume" is now "Shadow sounds volume": it sets the Shadow cues and the controller layer's tick, which is all that is left on it. Your saved value is kept.
 
 ### Fixes
 - After Shuffle Time, enemies finished by an All-Out Attack are no longer read as healed, down and defeated a second time.

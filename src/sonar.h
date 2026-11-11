@@ -20,13 +20,11 @@ namespace p3a::sonar {
 void tick();                       // game thread
 void toggle();                     // the key: on or off, said
 void selected(const poi::Poi& p);  // the list chose this point: its sound once, from its place
-// The nearby chime (the sonar's stand-in while it is off): the kind's sound once, from its place, on the cues' volume.
-void chime(const poi::Poi& p);
 // The settings menu changed `id`: the sound that shows the change (a kind's own, or one at the new volume), played
 // straight ahead. False when the option has no sound to show.
 bool preview(settings::Id id);
 // The settings menu's sound test: kind 0 exit .. 4 object, plain or with the selected point's tick, from `side`
-// (0 ahead, 1 the left, 2 the right, 3 behind: lower when that setting is on), on the sonar's or the cues' volume.
-void demo(int kind, bool marked, int side = 0, bool chime = false);
+// (0 ahead, 1 the left, 2 the right, 3 behind: lower when that setting is on), on the sonar's volume.
+void demo(int kind, bool marked, int side = 0);
 void install();                    // dev route /sonar
 }  // namespace p3a::sonar

@@ -5,7 +5,7 @@ namespace p3a::settings {
 // mod settings menu that changes them: F2, or both triggers and View on a controller (the game's Config keys say so).
 // A new option: an Id here, a row in settings.cpp's table, its name in strings.h, and its README line.
 enum Id { WallTones, Sonar, SonarScope, SonarRange, SonarExits, SonarDoors, SonarPeople, SonarShops, SonarThings,
-          NearbyChimes, ShadowAlerts, Hrtf, BehindPitch, PoiRange, MasterVolume, SonarVolume, SoundVolume, WallVolume, TriggerDelay, EntryHints, VoicedLines, VoiceEndSound, Subtitles, AudioDescription, DescriptionVolume, Count };
+          ShadowAlerts, Hrtf, BehindPitch, PoiRange, MasterVolume, SonarVolume, SoundVolume, WallVolume, TriggerDelay, EntryHints, VoicedLines, VoiceEndSound, Subtitles, AudioDescription, DescriptionVolume, Count };
 int get(Id id);   // the value: 0/1, meters, percent, milliseconds or a choice's index
 inline bool on(Id id) { return get(id) != 0; }
 // VoicedLines: what the screen reader does with a line the game voices.

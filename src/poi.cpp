@@ -624,41 +624,12 @@ static void pickup_tick() {
   shown.swap(now_shown);
 }
 
-// Things coming into reach chime once from their direction (re-armed once the hero is 15 m away): exits low, things
-// to check or open high, people in between. A sound, not words: the points of interest list has the words.
-// Not while the sonar is on: there each thing's own repeating sound says it has come near.
-static void proximity_chimes() {
-  if (!settings::on(settings::NearbyChimes) || settings::on(settings::Sonar)) return;
-  static ULONGLONG last = 0;
-  ULONGLONG now = GetTickCount64();
-  if (now - last < 300) return;
-  last = now;
-  static std::set<WeakObj::Key> armed;
-  world::FVector me;
-  if (!world::player_location(me)) { armed.clear(); return; }
-  std::set<WeakObj::Key> still;
-  int played = 0;
-  for (auto& p : scan(1500.0f)) {
-    if (p.kind == Kind::Enemy) continue;   // Shadows have their own pulse
-    auto key = p.obj.key();
-    if (p.dist > 800.0f) { if (armed.count(key)) still.insert(key); continue; }
-    still.insert(key);
-    if (armed.count(key) || played >= 2) continue;
-    sonar::chime(p);   // its kind's sound (the sonar's), a little lower from behind
-    ++played;
-  }
-  armed.swap(still);
-}
-
 void tick() {
   if (screens::current() || msg::current().blocking) return;   // a menu, notice or message has the floor
   pickup_tick();
   // The field's sounds only while the player walks it: a battle between turns has no screen up, and a story scene
   // no blocking window, yet neither is the place for them.
-  if (world::exploring()) {
-    shadow::tick();
-    proximity_chimes();
-  }
+  if (world::exploring()) shadow::tick();
   prompt_tick();
   // The area is said on arrival: when the hero is a new actor (a field loaded) or the place banner changes (the game
   // sets it on every arrival, a floor or room of the same field included); until the hit actors that name it have
