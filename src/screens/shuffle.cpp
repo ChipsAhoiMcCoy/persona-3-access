@@ -62,9 +62,10 @@ class ShuffleScreen : public MenuScreen {
   bool listed_ = false;       // every card read once: the row is up
   bool reading_ = false;      // the mod has the game's cursor
   int home_ = 0;              // the player's card while the mod reads the others
-  int reading_card_ = -1;     // the card the cursor was put on
+  int reading_card_ = refreshed_ = -1;     // the card the cursor was put on
   uint64_t mark_ = 0;         // pages built after this are the card's
-  int waited_ = 0;            // ticks on reading_card_
+  int refreshed_ = -1;        // the card whose page the game was asked to build again
+  int refreshed_frames_ = 0;  // frames the game has run since on that card, shown and still
   std::string persona_;
   bool bonus_ = false;        // the row is Arcana Burst's
   bool overstock_ = false;    // the release list was said
@@ -161,7 +162,7 @@ class ShuffleScreen : public MenuScreen {
       if (reading_) {
         show(ui, home_);
         reading_ = false;
-        reading_card_ = -1;
+        reading_card_ = refreshed_ = -1;
       }
       listed_ = true;
       return;
@@ -174,7 +175,6 @@ class ShuffleScreen : public MenuScreen {
     if (reading_card_ != next || get<int32_t>(ui, "SelectCoursorIndex") != next) {
       show(ui, next);
       reading_card_ = next;
-      waited_ = 0;
       return;
     }
     std::string t = read_page(ui, next);
@@ -186,12 +186,30 @@ class ShuffleScreen : public MenuScreen {
       if (card_call(ui, "GetItemNumSelectCard", next) >= 0) cards_[next].owned = card_call(ui, "GetHaveItemNumBySelectCard", next);
       return;
     }
-    // A card whose page never comes (a state not modelled): it keeps its number instead of holding the row forever.
-    if (++waited_ > 120) {
-      log::writef("shuffle: no page for card {} (showing {}, fading {})", next, get<int32_t>(ui, "showCardInfoIndex"),
-                  get_bool(ui, "selectCardInfoOutStart"));
+    // No page yet. The game's own states say whether one is coming (BP_BtlShuffleUI AnimeUpdateSelectCardInfo):
+    //  - the info pages are off for good (a card was taken: SelectCardInfoOutFinish; the select UI is not drawn):
+    //    the card keeps its number;
+    //  - the old card's page is still fading out (selectCardInfoOutStart), or the cursor's card is not the one
+    //    shown yet: it is coming;
+    //  - this card is the one shown and nothing was built: its text has the same message number as the card before
+    //    it, and the game builds a page only when that number changes. Its own refresh (RefereshCardInfo) builds it
+    //    again; a card that still has none once the game has run two frames on that has no page.
+    if (get_bool(ui, "SelectCardInfoOutFinish") || !get_bool(ui, "isDrawSelectUI") || !get_bool(ui, "isAvailableDraw")) {
+      log::writef("shuffle: no page for card {}: the info pages are off", next);
       cards_[next].read = true;
+      return;
     }
+    if (get<int32_t>(ui, "showCardInfoIndex") != next || get_bool(ui, "selectCardInfoOutStart")) return;
+    if (refreshed_ != next) {
+      refreshed_ = next;
+      refreshed_frames_ = 0;
+      mark_ = msg::created_seq();
+      call(ui, "RefereshCardInfo");
+      return;
+    }
+    if (++refreshed_frames_ <= 2) return;
+    log::writef("shuffle: no page for card {} after the game's refresh", next);
+    cards_[next].read = true;
   }
   static const uint8_t* persona_page(UObject* ui) {
     UObject* ps = get<UObject*>(ui, "_PersonaStatusActor");
@@ -299,7 +317,7 @@ class ShuffleScreen : public MenuScreen {
     cards_.clear();
     listed_ = reading_ = bonus_ = overstock_ = false;
     stats_ = 0;
-    reading_card_ = -1;
+    reading_card_ = refreshed_ = -1;
     picked_ = 0;
     deal_ = {};
   }
@@ -310,7 +328,7 @@ class ShuffleScreen : public MenuScreen {
       deal_ = WeakObj::of(ui);
       cards_.clear();
       listed_ = reading_ = false;
-      reading_card_ = -1;
+      reading_card_ = refreshed_ = -1;
     }
     // Arcana Burst's row replaces the deal's: read anew, then said with its title.
     if (bonus(ui) != bonus_) {
