@@ -76,9 +76,6 @@ struct NodeVtable {
   /// group use the plain nearest-survivor walk.
   std::string land_group;
 
-  /// Optional. Fires when the USER's movement lands on this node (arrows, Home/End, Tab into a stop, a type-ahead
-  /// result) -- not on a rebaseline or a programmatic focus.
-  std::function<void()> on_focus;
   /// Optional. Primary activation (the host's confirm: ui_actions::Activate).
   std::function<void()> on_activate;
   /// Optional. The control's details as text (a description, stats): what the host reads on demand (P3R: the review
@@ -95,14 +92,6 @@ struct NodeVtable {
   /// that changes state -- the synchronous feedback path for rapid key repeats. Asynchronous /
   /// game-driven changes ride the Live announcement watch instead.
   std::function<std::string()> state_text;
-  /// Optional. Plays this control's own sound when focus lands on it, replacing the navigator's
-  /// default (NavigatorHost::hover_sound). A plain action so the core stays game-agnostic.
-  std::function<void()> hover_sound;
-  /// Optional. The text type-ahead matches against; empty = the first announcement part (the label).
-  /// (A cell whose label is a bare number can search as its row's name, etc.)
-  std::function<std::string()> search_text;
-  /// If true, type-ahead never matches this control.
-  bool exclude_from_search = false;
 
   /// Set when this node's announcements already include its list position, or it should have none (a
   /// lone prompt), so the announcer doesn't append the auto-stamped one.
@@ -111,15 +100,12 @@ struct NodeVtable {
 
 using NodeVtablePtr = std::shared_ptr<NodeVtable>;
 
-/// A directed edge to another node, with an optional spoken transition line (a "lane change" -- e.g.
-/// crossing into a new column band). Kept as plain data; contextual announcements are composed from
-/// node metadata by the announcer, not per-edge closures, which keeps renders cheap to throw away.
+/// A directed edge to another node. Plain data: what a move reads is composed from node metadata by
+/// the announcer, which keeps renders cheap to throw away.
 struct Transition {
   ControlId destination;
-  std::string label;  // spoken only while crossing this edge; empty = silent edge
 
-  explicit Transition(ControlId dest, std::string edge_label = {})
-      : destination(std::move(dest)), label(std::move(edge_label)) {}
+  explicit Transition(ControlId dest) : destination(std::move(dest)) {}
 };
 
 /// A control: identity, behaviors, directional transitions, and structural metadata (its parent chain,
@@ -150,13 +136,9 @@ class GraphNode {
   /// The node's structural parent within THIS render, or null at screen level. The parent chain IS the
   /// presentation hierarchy: the announcer prefix-diffs old/new chains by identity, so entering a
   /// context reads its levels outermost-first and a move inside one reads the control alone. A parent
-  /// is non-focusable pure structure (a titled list -- `focusable` false, never in the render's
-  /// nodes/order).
+  /// is pure structure (a titled list): it exists only on parent chains for announcements -- never
+  /// navigable, never in the render's nodes/order.
   GraphNode* parent = nullptr;
-
-  /// False for a pure-structure parent node (a titled list): it exists only on parent chains for
-  /// announcements -- never navigable, never in the render's nodes/order.
-  bool focusable = true;
 
   /// The Tab-stop this node belongs to. Nodes sharing a stop key form one stop; Tab cycles stops in
   /// first-appearance order, landing on the stop's remembered position.
@@ -167,14 +149,9 @@ class GraphNode {
 
   /// Auto-stamped sibling position (1-based) and count, from the builder: menu-mode nodes grouped by
   /// (parent, stop) -- "3 of 10" among the siblings arrows actually reach; a multi-item row's members
-  /// are positioned within their row. 0 = none (raw/grid nodes, or the child of a parent that
-  /// suppresses positions).
+  /// are positioned within their row. 0 = none (raw/grid nodes).
   int position_index = 0;
   int position_count = 0;
-
-  /// On a parent (context) node: its direct children get NO auto position -- for log-like streams
-  /// where "37 of 200" is noise.
-  bool suppress_child_positions = false;
 
  private:
   std::array<std::optional<Transition>, kGraphDirCount> transitions_;
@@ -183,14 +160,14 @@ class GraphNode {
 /// One built snapshot of a graph: the nodes (keyed by structural identity), their order of declaration,
 /// and where focus starts when there is no prior position. Rebuilt per operation and thrown away --
 /// live state belongs in the node callbacks, not here. Owns every node it was built with, INCLUDING
-/// the non-focusable context nodes that appear only on parent chains.
+/// the context nodes that appear only on parent chains.
 class GraphRender {
  public:
   /// Where focus starts with no prior position. Always set by GraphBuilder::build(); unset only on a
   /// hand-built render, which then leaves focus unset.
   std::optional<ControlId> start_key;
 
-  /// Take ownership of a node without publishing it (the non-focusable context parents).
+  /// Take ownership of a node without publishing it (the context parents).
   GraphNode* adopt(std::unique_ptr<GraphNode> node) {
     arena_.push_back(std::move(node));
     return arena_.back().get();
@@ -222,17 +199,14 @@ class GraphRender {
 using GraphRenderPtr = std::unique_ptr<GraphRender>;
 
 /// The persistent cursor for a graph -- the only thing that survives between renders. Holds where focus
-/// is, the last computed traversal order (for closest-survivor recovery), per-stop remembered positions
-/// (so Tab returns to where you were in a stop), and a one-shot move request.
+/// is, the last computed traversal order (for closest-survivor recovery) and per-stop remembered
+/// positions (so Tab returns to where you were in a stop).
 struct GraphState {
   /// The focused control's id. Unset until first render.
   std::optional<ControlId> cur_key;
 
   /// The down-right total order from the previous render. EMPTY on first render.
   std::vector<ControlId> key_order;
-
-  /// If set, focus jumps here on the next render when present (consumed either way).
-  std::optional<ControlId> next_suggested_move;
 
   /// The focused node's NodeVtable::land_group (empty when it had none) -- the row-vanish fallback
   /// prefers survivors of this group.

@@ -22,7 +22,7 @@ namespace p3a::ui {
 
 struct NavigatorHost {
   std::function<void(std::string_view text, bool interrupt)> speak;
-  std::function<void()> hover_sound;        // the default landing sound (a node's own hover_sound overrides)
+  std::function<void()> hover_sound;        // the sound of a landing (a move, an edge repeat)
   std::function<bool()> focus_mode_active;  // false = the mod does not own the keyboard; stay silent
   std::function<int()> frame_count;         // for the idle-rebuild throttle
   // An edge press the host hands on to something that answers it (a game list that moves on past the mod's ends):
@@ -96,22 +96,20 @@ class GraphNavigator {
   static bool on_list_axis(const GraphNode* node, GraphDir dir);  // is `dir` along the list the node sits in
   void repeat_focused();                                           // the edge case: say the focused item again
   bool section_jump(int dir);
-  // A player's landing on `to`: its sound, its on_focus, the line read as a move from `from`, interrupting.
-  void land(const GraphNode* to, const GraphNode* from, std::string_view transition = {});
+  // A player's landing on `to`: the host's sound, then the line read as a move from `from`, interrupting.
+  void land(const GraphNode* to, const GraphNode* from);
   bool vtable_activate();
   bool vtable_adjust(int sign);
   void feedback_after_change();  // speak state_text, rerender, rebaseline the live watch
-  void play_hover(const GraphNode* node);
-  void fire_focus(const GraphNode* node);                          // the node's on_focus on a user landing (a change of node)
+  void play_hover();
   void speak(std::string_view text, bool interrupt);
-  std::optional<std::string> compose_move(const GraphNode* from, const GraphNode* to, bool entry, std::string_view transition = {});
+  std::optional<std::string> compose_move(const GraphNode* from, const GraphNode* to, bool entry);
   void watch_live(const GraphNode* node);
   void mark_spoken(const GraphNode* node);
 
   // typeahead glue
   void type_char(std::uint32_t cp);   // one Unicode code point
   void rebuild_search_scope();
-  static std::string search_text_of(const GraphNode* n);
   void search_focus_result(int index);
   void clear_search(bool announce);
   bool tick_result_arrows(const TypeaheadInput& in);

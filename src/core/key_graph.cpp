@@ -56,13 +56,6 @@ bool KeyGraph::rerender() {
 }
 
 void KeyGraph::reconcile(GraphRender& render, GraphState& state) {
-  // Honor a pending suggested move first, if its target still exists (consumed either way).
-  if (state.next_suggested_move) {
-    GraphNode* suggested = render.node_at(*state.next_suggested_move);
-    if (suggested != nullptr) state.cur_key = suggested->id;
-    state.next_suggested_move.reset();
-  }
-
   const std::optional<ControlId> old = state.cur_key;
   std::optional<ControlId> resolved;
 
@@ -185,7 +178,6 @@ MoveResult KeyGraph::move(GraphDir dir) {
   set_current(dest);
   result.to = dest;
   result.moved = true;
-  result.transition_label = t->label;
   return result;
 }
 

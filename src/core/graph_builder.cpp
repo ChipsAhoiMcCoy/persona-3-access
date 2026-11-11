@@ -48,7 +48,7 @@ GraphBuilder& GraphBuilder::set_region(Key key) {
 
 // ---- the parent stack: contexts ----
 
-GraphBuilder& GraphBuilder::push_context(std::string_view label, std::string_view role, bool positions) {
+GraphBuilder& GraphBuilder::push_context(std::string_view label, std::string_view role) {
   GraphNode* parent = current_parent();
   auto vtable = std::make_shared<NodeVtable>();
   vtable->announcements.push_back(NodeAnnouncement::fixed(std::string(label)));
@@ -61,9 +61,7 @@ GraphBuilder& GraphBuilder::push_context(std::string_view label, std::string_vie
                    (parent != nullptr ? parent->id.structural_key().to_string() : std::string()) + "/" +
                    std::string(label);
   GraphNode* node = own(std::make_unique<GraphNode>(ControlId::structural(Key(id)), std::move(vtable)));
-  node->parent = parent;
-  node->focusable = false;
-  node->suppress_child_positions = !positions;
+  node->parent = parent;   // never published: it lives on its children's parent chains only
   parents_.push_back(node);
   return *this;
 }
@@ -126,8 +124,8 @@ GraphBuilder& GraphBuilder::add_node(ControlId id, NodeVtablePtr vtable) {
   return *this;
 }
 
-GraphBuilder& GraphBuilder::connect(ControlId from, GraphDir dir, ControlId to, std::string label) {
-  raw_edges_.push_back(RawEdge{std::move(from), dir, std::move(to), std::move(label)});
+GraphBuilder& GraphBuilder::connect(ControlId from, GraphDir dir, ControlId to) {
+  raw_edges_.push_back(RawEdge{std::move(from), dir, std::move(to)});
   return *this;
 }
 
@@ -160,7 +158,7 @@ GraphRenderPtr GraphBuilder::build() {
   wire_menu_edges();
   for (const RawEdge& e : raw_edges_) {
     GraphNode* from = render->node_at(e.from);
-    if (from != nullptr && render->contains(e.to)) from->set_transition(e.dir, Transition(e.to, e.label));
+    if (from != nullptr && render->contains(e.to)) from->set_transition(e.dir, Transition(e.to));
   }
   stitch_mode_boundaries();
 
@@ -236,7 +234,6 @@ void GraphBuilder::stamp_positions() {
       continue;
     }
     GraphNode* node = row->items[0];
-    if (node->parent != nullptr && node->parent->suppress_child_positions) continue;
     GroupKey key{node->parent, node->stop_key};
     auto it = groups.find(key);
     if (it == groups.end()) {

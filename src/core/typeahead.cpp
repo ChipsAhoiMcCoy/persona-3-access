@@ -1,64 +1,16 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks, itself ported from Dark Vision (WrathAccess) by Bradley Renshaw; both zlib, see LICENSES/. This is not the original software.
 #include "core/typeahead.h"
 
+#include "core/utf8.h"
+
 #include <cstdint>
 #include <utility>
 
 namespace p3a::ui {
 namespace {
 
-// ---- minimal UTF-8 codec (the core may not depend on ICU or the Windows NLS APIs) ----
-
-// Decodes the code point starting at `i`, advancing `i`. Invalid bytes decode as themselves so text is
-// never corrupted, only left unfolded.
-std::uint32_t next_codepoint(std::string_view s, std::size_t& i) {
-  const auto b0 = static_cast<unsigned char>(s[i]);
-  auto cont = [&s](std::size_t k) {
-    return k < s.size() && (static_cast<unsigned char>(s[k]) & 0xC0) == 0x80;
-  };
-  if (b0 < 0x80) {
-    i += 1;
-    return b0;
-  }
-  if ((b0 & 0xE0) == 0xC0 && cont(i + 1)) {
-    const std::uint32_t cp = ((b0 & 0x1Fu) << 6) | (static_cast<unsigned char>(s[i + 1]) & 0x3Fu);
-    i += 2;
-    return cp;
-  }
-  if ((b0 & 0xF0) == 0xE0 && cont(i + 1) && cont(i + 2)) {
-    const std::uint32_t cp = ((b0 & 0x0Fu) << 12) | ((static_cast<unsigned char>(s[i + 1]) & 0x3Fu) << 6) |
-                             (static_cast<unsigned char>(s[i + 2]) & 0x3Fu);
-    i += 3;
-    return cp;
-  }
-  if ((b0 & 0xF8) == 0xF0 && cont(i + 1) && cont(i + 2) && cont(i + 3)) {
-    const std::uint32_t cp = ((b0 & 0x07u) << 18) | ((static_cast<unsigned char>(s[i + 1]) & 0x3Fu) << 12) |
-                             ((static_cast<unsigned char>(s[i + 2]) & 0x3Fu) << 6) |
-                             (static_cast<unsigned char>(s[i + 3]) & 0x3Fu);
-    i += 4;
-    return cp;
-  }
-  i += 1;
-  return b0;
-}
-
-void append_codepoint(std::string& out, std::uint32_t cp) {
-  if (cp < 0x80) {
-    out.push_back(static_cast<char>(cp));
-  } else if (cp < 0x800) {
-    out.push_back(static_cast<char>(0xC0 | (cp >> 6)));
-    out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
-  } else if (cp < 0x10000) {
-    out.push_back(static_cast<char>(0xE0 | (cp >> 12)));
-    out.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3F)));
-    out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
-  } else {
-    out.push_back(static_cast<char>(0xF0 | (cp >> 18)));
-    out.push_back(static_cast<char>(0x80 | ((cp >> 12) & 0x3F)));
-    out.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3F)));
-    out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
-  }
-}
+using core::utf8::append_codepoint;
+using core::utf8::next_codepoint;
 
 // The ASCII folding of one code point, or null to pass it through unchanged. Entries are exactly the
 // characters Unicode NFD decomposes into a base letter + a combining mark, plus the ligatures ae and
@@ -173,7 +125,7 @@ void TypeAheadSearch::add_codepoint(std::uint32_t cp) { append_codepoint(buffer_
 bool TypeAheadSearch::remove_char() {
   if (buffer_.empty()) return false;
   // Drop continuation bytes (10xxxxxx), then the lead byte: one whole code point.
-  while (buffer_.size() > 1 && (static_cast<unsigned char>(buffer_.back()) & 0xC0) == 0x80) buffer_.pop_back();
+  while (buffer_.size() > 1 && core::utf8::is_continuation(buffer_, buffer_.size() - 1)) buffer_.pop_back();
   buffer_.pop_back();
   return true;
 }

@@ -117,35 +117,190 @@ TEST_CASE("type-ahead results survive rerenders between the typing and the arrow
   CHECK(screen.builds > 10);
 }
 
-TEST_CASE("on_focus fires on a user landing, once per change of node, not on an edge repeat") {
-  struct FocusScreen : Screen {
-    int fired = 0;
-    std::string_view key() const override { return "f"; }
-    bool is_active() override { return true; }
-    std::string screen_name() const override { return "f"; }
-    void build(GraphBuilder& b) override {
-      b.begin_stop("items");
-      b.start_row("items");
-      b.add_item(id("a"), vt("a"));
-      auto v = vt("b"); v->on_focus = [this] { ++fired; };
-      b.add_item(id("b"), v);
-      b.add_item(id("c"), vt("c"));
-      b.end_row();
-    }
-  };
-  std::vector<std::string> spoken; int frame = 0;
-  FocusScreen screen;
-  GraphNavigator nav{NavigatorHost{[&](std::string_view t, bool) { spoken.emplace_back(t); }, {}, [] { return true; }, [&] { return frame; }}};
-  nav.attach(&screen); nav.ensure_focus();
-  CHECK(screen.fired == 0);          // the initial seat is not a user landing
-  nav.on_action(ui_actions::Right);  // a -> b
-  CHECK(screen.fired == 1);
-  nav.on_action(ui_actions::Right);  // b -> c
-  nav.on_action(ui_actions::Left);   // c -> b
-  CHECK(screen.fired == 2);
-  nav.on_action(ui_actions::Home);   // b -> a
-  nav.on_action(ui_actions::End);    // a -> c
-  CHECK(screen.fired == 2);
+namespace {
+// Two options under a title, as the mod's settings menu declares its rows: a value Left / Right change, and a
+// switch Enter flips. Each says its state at once (state_text) and carries its value as a live part; the first has a
+// description too (a live tooltip part).
+struct OptionScreen : Screen {
+  int volume = 5;
+  bool muted = false;
+  std::string help;
+  std::string_view key() const override { return "options"; }
+  bool is_active() override { return true; }
+  std::string screen_name() const override { return "options"; }
+  void build(GraphBuilder& b) override {
+    b.begin_stop("options");
+    b.push_context("Sound");
+    auto v = std::make_shared<NodeVtable>();
+    v->announcements = {NodeAnnouncement([] { return std::string("Volume"); }, false, announcement_kinds::kLabel),
+                        NodeAnnouncement([this] { return std::to_string(volume); }, true, announcement_kinds::kValue),
+                        NodeAnnouncement([this] { return help; }, true, announcement_kinds::kTooltip)};
+    v->on_adjust = [this](int sign, bool) { volume += sign; };
+    v->state_text = [this] { return std::to_string(volume); };
+    b.add_item(id("volume"), v);
+    auto m = std::make_shared<NodeVtable>();
+    m->announcements = {NodeAnnouncement([] { return std::string("Mute"); }, false, announcement_kinds::kLabel),
+                        NodeAnnouncement([this] { return std::string(muted ? "on" : "off"); }, true, announcement_kinds::kValue)};
+    m->on_activate = [this] { muted = !muted; };
+    m->state_text = [this] { return std::string(muted ? "on" : "off"); };
+    b.add_item(id("mute"), m);
+    b.pop_context();
+  }
+};
+
+struct Said {
+  std::string text;
+  bool interrupt;
+};
+
+// A host that keeps what was said with its interrupt flag, counts the landing sound, and can switch focus mode off
+// or answer the edges itself.
+struct OptionHarness {
+  std::vector<Said> said;
+  int hovers = 0;
+  int frame = 0;
+  bool mode = true;
+  bool answered = false;
+  OptionScreen screen;
+  GraphNavigator nav{NavigatorHost{[this](std::string_view t, bool interrupt) { said.push_back({std::string(t), interrupt}); },
+                                   [this] { ++hovers; }, [this] { return mode; }, [this] { return frame; },
+                                   [this](GraphDir) { return answered; }}};
+  OptionHarness() { nav.attach(&screen); nav.ensure_focus(); }
+  void pull() { frame += 100; nav.ensure_focus(); }   // a frame's pull, past the idle throttle
+};
+}  // namespace
+
+TEST_CASE("an entry is queued; a move, a changed value and an edge repeat interrupt") {
+  OptionHarness h;
+  REQUIRE(h.said.size() == 1);
+  CHECK(h.said[0].text == "Sound, Volume, 5");   // the title, then the row
+  CHECK_FALSE(h.said[0].interrupt);              // an entry follows what was being said
+  CHECK(h.hovers == 0);
+
+  h.said.clear();
+  CHECK(h.nav.on_action(ui_actions::Right));     // the value changes: no move
+  REQUIRE(h.said.size() == 1);
+  CHECK(h.said[0].text == "6");
+  CHECK(h.said[0].interrupt);
+  CHECK(h.hovers == 0);
+  h.pull();
+  CHECK(h.said.size() == 1);                     // and the live watch does not say it a second time
+
+  h.said.clear();
+  CHECK(h.nav.on_action(ui_actions::Down));
+  REQUIRE(h.said.size() == 1);
+  CHECK(h.said[0].text == "Mute, off");          // a sibling: no title again
+  CHECK(h.said[0].interrupt);
+  CHECK(h.hovers == 1);
+
+  h.said.clear();
+  CHECK(h.nav.on_action(ui_actions::Activate));
+  REQUIRE(h.said.size() == 1);
+  CHECK(h.said[0].text == "on");
+  CHECK(h.said[0].interrupt);
+  h.pull();
+  CHECK(h.said.size() == 1);
+
+  h.said.clear();
+  CHECK_FALSE(h.nav.on_action(ui_actions::Down));   // the last row: said again, with the landing sound, not taken
+  REQUIRE(h.said.size() == 1);
+  CHECK(h.said[0].text == "Mute, on");
+  CHECK(h.said[0].interrupt);
+  CHECK(h.hovers == 2);
+
+  h.answered = true;                             // the host hands the edge to something that answers it
+  h.said.clear();
+  CHECK_FALSE(h.nav.on_action(ui_actions::Down));
+  CHECK(h.said.empty());
+  CHECK(h.hovers == 2);
+}
+
+TEST_CASE("a live part that changes by itself is said alone: a value at once, a description queued") {
+  OptionHarness h;
+  h.pull();
+  h.said.clear();
+  h.screen.volume = 9;                           // the game changed it, not the player
+  h.pull();
+  REQUIRE(h.said.size() == 1);
+  CHECK(h.said[0].text == "9");
+  CHECK(h.said[0].interrupt);
+
+  h.said.clear();
+  h.screen.help = "How loud.";                   // a description that arrives late
+  h.pull();
+  REQUIRE(h.said.size() == 1);
+  CHECK(h.said[0].text == "How loud.");
+  CHECK_FALSE(h.said[0].interrupt);
+  h.pull();
+  CHECK(h.said.size() == 1);                     // once
+
+  h.said.clear();
+  h.nav.forget_live();                           // the next values are a fresh baseline
+  h.screen.volume = 3;
+  h.pull();
+  CHECK(h.said.empty());
+}
+
+TEST_CASE("a focus the screen asks for is read as a move, interrupts on request, or stays silent") {
+  OptionHarness h;
+  h.said.clear();
+  h.nav.focus_node(id("mute"));
+  h.pull();
+  REQUIRE(h.said.size() == 1);
+  CHECK(h.said[0].text == "Mute, off");
+  CHECK_FALSE(h.said[0].interrupt);
+  CHECK(h.hovers == 0);                          // not a player's landing: no sound
+
+  h.said.clear();
+  h.nav.focus_node(id("volume"), true, true);    // the game moved its own cursor
+  h.pull();
+  REQUIRE(h.said.size() == 1);
+  CHECK(h.said[0].text == "Volume, 5");
+  CHECK(h.said[0].interrupt);
+
+  h.said.clear();
+  h.nav.focus_node(id("mute"), false);
+  h.pull();
+  CHECK(h.said.empty());
+  CHECK(h.nav.focused_id() == id("mute"));
+
+  h.mode = false;                                // the mod does not own the keys: landings are seated, not said
+  h.nav.focus_node(id("volume"));
+  h.pull();
+  h.mode = true;
+  h.pull();
+  CHECK(h.said.empty());
+  CHECK(h.nav.focused_id() == id("volume"));
+
+  h.nav.focus_node(id("nowhere"));               // not in the menu: dropped
+  h.pull();
+  CHECK(h.said.empty());
+  CHECK(h.nav.focused_id() == id("volume"));
+}
+
+TEST_CASE("a closed screen starts again from its first row; a kept one comes back where it was") {
+  OptionHarness h;
+  h.nav.on_action(ui_actions::Down);
+  h.nav.attach(nullptr);
+  h.nav.attach(&h.screen);                       // its state was kept
+  h.said.clear();
+  h.pull();
+  CHECK(h.nav.focused_id() == id("mute"));
+  REQUIRE(h.said.size() == 1);
+  CHECK(h.said[0].text == "Sound, Mute, off");   // read in full again: a new entry
+
+  h.nav.attach(nullptr);
+  h.nav.screen_closed(&h.screen);                // its state is dropped
+  h.nav.attach(&h.screen);
+  h.nav.settle_silently();                       // the host says the title itself, then the focus
+  h.said.clear();
+  h.pull();
+  CHECK(h.said.empty());
+  CHECK(h.nav.focused_id() == id("volume"));
+  h.nav.announce_current();
+  REQUIRE(h.said.size() == 1);
+  CHECK(h.said[0].text == "Sound, Volume, 5");
+  CHECK_FALSE(h.said[0].interrupt);
 }
 
 namespace {

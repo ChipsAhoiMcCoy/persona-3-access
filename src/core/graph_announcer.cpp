@@ -38,13 +38,11 @@ std::vector<ControlId> GraphAnnouncer::path_ids(const GraphNode* node) {
   return ids;
 }
 
-std::optional<std::string> GraphAnnouncer::compose(const GraphNode* from, const GraphNode* to,
-                                                  std::string_view transition_label) {
-  return compose_from_path(path_ids(from), to, transition_label);
+std::optional<std::string> GraphAnnouncer::compose(const GraphNode* from, const GraphNode* to) {
+  return compose_from_path(path_ids(from), to);
 }
 
-std::optional<std::string> GraphAnnouncer::compose_from_path(const std::vector<ControlId>& from_path, const GraphNode* to,
-                                                            std::string_view transition_label) {
+std::optional<std::string> GraphAnnouncer::compose_from_path(const std::vector<ControlId>& from_path, const GraphNode* to) {
   if (to == nullptr) return std::nullopt;
 
   const std::vector<const GraphNode*> to_path = path_of(to);
@@ -60,8 +58,6 @@ std::optional<std::string> GraphAnnouncer::compose_from_path(const std::vector<C
     message.list_item().fragment(part);
     any = true;
   };
-
-  push(transition_label);
 
   if (i >= to_path.size()) {
     // Ascended (or same node): announce just the now-innermost focus.

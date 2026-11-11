@@ -49,29 +49,6 @@ const Storeys kStoreys[] = {
 #include "core/area_storeys.inc"
 };
 
-const char* kOutdoorDay = "It is daytime under an open sky.";
-const char* kOutdoorEvening = "The sun is setting; the sky glows orange and violet and long shadows stretch across the ground.";
-const char* kOutdoorNight = "It is night. Streetlights and lit windows glow against the dark sky.";
-const char* kIndoorDay = "Daylight comes in through the windows.";
-const char* kIndoorEvening = "Warm sunset light slants in through the windows.";
-const char* kIndoorNight = "It is dark outside the windows; the place runs on its ceiling lights.";
-const char* kDarkHour =
-    "It is the Dark Hour. Everything is washed in a sickly green light under a huge, swollen moon; the electric lights "
-    "are dead, dark puddles like blood stain the ground, and anyone caught in it stands sealed in an upright coffin.";
-const char* kSpring = "Spring: the trees are fresh and green, and the air is mild.";
-const char* kSummer = "It is summer: the air is hot and humid, the sunlight harsh, the trees thick and deep green.";
-const char* kAutumn = "It is autumn: the trees have turned orange and red, and dry leaves gather on the ground.";
-const char* kWinter = "It is winter: the trees stand bare and the air is cold enough to see your breath.";
-const char* kJanuary1 =
-    "This January the colour seems to be draining out of the world; everything looks faded and grey.";
-const char* kJanuary2 = "It is late January, and the world has gone almost grey, as if its colour were dying out.";
-const char* kTown1 =
-    "Litter lies uncollected, black garbage bags pile up in the corners, and white posters stamped with a red symbol, "
-    "put up by the cult that welcomes the coming Fall, are pasted over the walls, pillars and signs.";
-const char* kTown2 =
-    "The cult's white posters with their red symbol are everywhere now, plastered over every wall, pillar, sign and "
-    "shutter and scattered on the ground among the garbage bags and litter.";
-
 // Episode Aigis rebuilds two fields under its own ids: the dorm (122) and Paulownia Mall (123).
 int canonical(int major) { return major == 122 ? 102 : major == 123 ? 103 : major; }
 

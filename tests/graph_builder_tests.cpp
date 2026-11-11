@@ -124,7 +124,6 @@ TEST_CASE("a context builds a non-focusable parent chain") {
   const auto* b2 = render->node_at(id("b"));
   const auto* c2 = render->node_at(id("c"));
   CHECK(a->parent != nullptr);
-  CHECK_FALSE(a->parent->focusable);
   CHECK(a->parent->parent == nullptr);
   CHECK(a->parent == b2->parent->parent);              // Advanced nests under Settings
   CHECK(a->parent == c2->parent);                      // c popped back out to Settings
@@ -164,10 +163,6 @@ TEST_CASE("positions auto-stamp by sibling group") {
                                     .add_item(id("r2"), vt("R2"))
                                     .end_row()  // row members
                                     .begin_stop()
-                                    .push_context("Log", {}, false)  // a parent whose children get none
-                                    .add_item(id("l1"), vt("L1"))
-                                    .add_item(id("l2"), vt("L2"))
-                                    .pop_context()
                                     .add_node(id("raw"), vt("Raw"))  // a raw node gets none
                                     .build();
 
@@ -181,7 +176,6 @@ TEST_CASE("positions auto-stamp by sibling group") {
   CHECK(render->node_at(id("r1"))->position_index == 1);
   CHECK(render->node_at(id("r2"))->position_index == 2);
   CHECK(render->node_at(id("r2"))->position_count == 2);
-  CHECK(render->node_at(id("l2"))->position_count == 0);
   CHECK(render->node_at(id("raw"))->position_count == 0);
 }
 
@@ -240,14 +234,22 @@ TEST_CASE("raw mode wires explicit edges") {
   const GraphRenderPtr render = GraphBuilder()
                                     .add_node(id("a"), vt("A"))
                                     .add_node(id("b"), vt("B"))
-                                    .connect(id("a"), GraphDir::Right, id("b"), "crossing the aisle")
+                                    .connect(id("a"), GraphDir::Right, id("b"))
                                     .connect(id("a"), GraphDir::Down, id("ghost"))  // undeclared -> dropped
+                                    .connect(id("ghost"), GraphDir::Up, id("a"))
                                     .set_start(id("b"))
                                     .build();
 
   CHECK(render->start_key == id("b"));
-  CHECK(render->node_at(id("a"))->transition(GraphDir::Right)->label == "crossing the aisle");
+  CHECK(render->node_at(id("a"))->transition(GraphDir::Right)->destination == id("b"));
   CHECK_FALSE(render->node_at(id("a"))->has_transition(GraphDir::Down));
+  CHECK_FALSE(render->node_at(id("b"))->has_transition(GraphDir::Left));   // edges are one-way
+}
+
+TEST_CASE("a start that was not declared falls back to the first node") {
+  const GraphRenderPtr render =
+      GraphBuilder().add_item(id("a"), vt("A")).add_item(id("b"), vt("B")).set_start(id("gone")).build();
+  CHECK(render->start_key == id("a"));
 }
 
 TEST_CASE("guards reject misuse") {
@@ -259,6 +261,38 @@ TEST_CASE("guards reject misuse") {
 
   GraphBuilder bare;
   CHECK_THROWS_AS(bare.add_item(id("x"), std::make_shared<NodeVtable>()), std::invalid_argument);
+  CHECK_THROWS_AS(bare.add_node(id("y"), nullptr), std::invalid_argument);
+
+  GraphBuilder rows;
+  CHECK_THROWS_AS(rows.end_row(), std::logic_error);        // no row open
+  rows.start_row();
+  CHECK_THROWS_AS(rows.start_row(), std::logic_error);      // one is open already
+  CHECK_THROWS_AS(rows.begin_stop(), std::logic_error);     // a stop cannot start inside a row
+  CHECK_THROWS_AS(rows.end_row(), std::logic_error);        // an empty row
+  rows.add_item(id("a"), vt("A"));
+  CHECK_THROWS_AS(rows.build(), std::logic_error);          // the row was never closed
+  rows.end_row();
+  CHECK(rows.build() != nullptr);
+
+  GraphBuilder contexts;
+  CHECK_THROWS_AS(contexts.pop_context(), std::logic_error);   // nothing was pushed
+}
+
+TEST_CASE("an actionable item is stamped with its stop as its landing group; a plain line is not") {
+  auto action = vt("Use");
+  action->on_activate = [] {};
+  auto own = vt("Own");
+  own->on_activate = [] {};
+  own->land_group = "mine";
+  const GraphRenderPtr render = GraphBuilder()
+                                    .begin_stop("items")
+                                    .add_item(id("line"), vt("A line"))
+                                    .add_item(id("use"), action)
+                                    .add_item(id("own"), own)
+                                    .build();
+  CHECK(render->node_at(id("line"))->vtable->land_group.empty());
+  CHECK(render->node_at(id("use"))->vtable->land_group == "items");
+  CHECK(render->node_at(id("own"))->vtable->land_group == "mine");   // the screen's own group is kept
 }
 
 TEST_CASE("menu rows and raw nodes mix") {

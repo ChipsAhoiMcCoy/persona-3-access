@@ -308,8 +308,10 @@ std::vector<float> raw(SonarCue cue, int rate, bool brief) {
     case SonarCue::Shop: return shop_cue(rate, brief);
     case SonarCue::Event: return event_cue(rate, brief);
     case SonarCue::Fragment: return fragment_cue(rate, brief);
-    default: return thing_cue(rate, brief ? kBrief : 0.11);
+    case SonarCue::Thing:
+    case SonarCue::Count: break;
   }
+  return thing_cue(rate, brief ? kBrief : 0.11);   // Thing, and any value that names no kind
 }
 }  // namespace
 
@@ -321,14 +323,17 @@ std::vector<float> sonar_cue(SonarCue cue, int rate, bool brief) {
 
 std::vector<float> signal_cue(SignalCue cue, int rate) {
   std::vector<float> v;
+  bool made = false;
   switch (cue) {
-    case SignalCue::Shadow: v = shadow_cue(rate); break;
-    case SignalCue::Ambush: v = ambush_cue(rate); break;
-    case SignalCue::Reach: v = reach_cue(rate); break;
-    case SignalCue::Spotted: v = spotted_cue(rate); break;
-    case SignalCue::Lost: v = lost_cue(rate); break;
-    default: v = layer_cue(rate); break;
+    case SignalCue::Shadow: v = shadow_cue(rate); made = true; break;
+    case SignalCue::Ambush: v = ambush_cue(rate); made = true; break;
+    case SignalCue::Reach: v = reach_cue(rate); made = true; break;
+    case SignalCue::Spotted: v = spotted_cue(rate); made = true; break;
+    case SignalCue::Lost: v = lost_cue(rate); made = true; break;
+    case SignalCue::Layer:
+    case SignalCue::Count: break;
   }
+  if (!made) v = layer_cue(rate);   // Layer, and any value that names no signal
   finish(v, rate, kSonarCueRms);
   return v;
 }

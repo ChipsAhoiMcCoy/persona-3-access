@@ -63,6 +63,76 @@ TEST_CASE("ad: overlapping cues are reported, not hidden") {
   CHECK(r.states[1] == State::Missed);
 }
 
+TEST_CASE("ad: a seek while a cue plays stops the narrator") {
+  Schedule s; s.load(three());
+  auto a = s.step({true, false, 1.0}, {});
+  REQUIRE(a.size() == 1);
+  CHECK(a[0].act == Act::Play);
+  CHECK(a[0].cue == 0);
+  CHECK(s.playing() == 0);
+  a = s.step({true, false, 7.0}, {true, false});   // the clock jumped over cue 1
+  REQUIRE(a.size() == 1);
+  CHECK(a[0].act == Act::Stop);
+  CHECK(a[0].cue == 0);
+  CHECK(s.playing() == -1);
+  CHECK(s.state(0) == State::Cut);
+  CHECK(s.reason(0) == "the movie jumped");
+  CHECK(s.state(1) == State::Skipped);
+  CHECK(s.state(2) == State::Pending);
+}
+
+TEST_CASE("ad: a narrator that stops by itself leaves the cue cut, and the next one still plays") {
+  Schedule s; s.load(three());
+  s.step({true, false, 1.0}, {});
+  auto a = s.step({true, false, 1.1}, {false, false});   // no clip sounding, and none reached its end
+  CHECK(a.empty());
+  CHECK(s.state(0) == State::Cut);
+  CHECK(s.reason(0) == "the narrator stopped");
+  a = s.step({true, false, 4.0}, {});
+  REQUIRE(a.size() == 1);
+  CHECK(a[0].act == Act::Play);
+  CHECK(a[0].cue == 1);
+}
+
+TEST_CASE("ad: a movie that ends during a pause lets a nearly finished description play out") {
+  Schedule s; s.load({{1.0, 2.0}});
+  s.step({true, false, 1.0}, {});
+  s.step({true, false, 2.0}, {true, false});
+  auto a = s.step({true, true, 2.6}, {true, false});      // the player pauses: 0.4 s of it left
+  REQUIRE(a.size() == 1);
+  CHECK(a[0].act == Act::Pause);
+  a = s.step({false, false, 2.6}, {true, false});         // the movie is gone while paused
+  REQUIRE(a.size() == 1);
+  CHECK(a[0].act == Act::Resume);
+  CHECK(s.state(0) == State::Playing);
+  a = s.step({false, false, 2.6}, {false, true});         // it reached its end
+  CHECK(a.empty());
+  CHECK(s.state(0) == State::Done);
+  CHECK(s.playing() == -1);
+}
+
+TEST_CASE("ad: reset arms every cue again") {
+  Schedule s; s.load(three());
+  s.step({true, false, 9.0}, {});                          // joined late: the first two are behind the clock
+  CHECK(s.state(0) == State::Skipped);
+  s.reset();
+  CHECK(s.size() == 3);
+  CHECK(s.playing() == -1);
+  for (int i = 0; i < 3; ++i) { CHECK(s.state(i) == State::Pending); CHECK(s.reason(i).empty()); }
+  auto a = s.step({true, false, 1.0}, {});
+  REQUIRE(a.size() == 1);
+  CHECK(a[0].cue == 0);
+}
+
+TEST_CASE("ad: every state has a name for the log") {
+  CHECK(std::string(state_name(State::Pending)) == "pending");
+  CHECK(std::string(state_name(State::Playing)) == "playing");
+  CHECK(std::string(state_name(State::Done)) == "done");
+  CHECK(std::string(state_name(State::Cut)) == "cut");
+  CHECK(std::string(state_name(State::Missed)) == "missed");
+  CHECK(std::string(state_name(State::Skipped)) == "skipped");
+}
+
 TEST_CASE("ad: a description in its last second outlives the movie's end") {
   Scenario sc; sc.length = 2.6;   // cue 0 runs 1.0-3.0: 0.4 s left when the movie ends
   SimResult r = simulate({{1.0, 2.0}}, sc);

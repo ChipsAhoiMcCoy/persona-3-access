@@ -187,7 +187,7 @@ bool GraphNavigator::arrow(GraphDir dir) {
     if (vtable_adjust(dir == GraphDir::Right ? 1 : -1)) return true;
   // Movement rides the edges (rows, lists, grids).
   MoveResult move = graph_->move(dir);
-  if (move.moved) { land(move.to, move.from, move.transition_label); return true; }
+  if (move.moved) { land(move.to, move.from); return true; }
   focus_node = graph_->current_node();  // move() rerendered: the node captured above may be a stale render's
   if (!focus_node) return false;
   // Nothing moved: at the edge of the list, repeat the focused item rather than go silent. Only along
@@ -211,7 +211,7 @@ bool GraphNavigator::on_list_axis(const GraphNode* node, GraphDir dir) {
 void GraphNavigator::repeat_focused() {
   const GraphNode* node = graph_ ? graph_->current_node() : nullptr;
   if (!node) return;
-  play_hover(node);
+  play_hover();
   if (auto t = GraphAnnouncer::leaf_text(node)) speak(*t, true);
   mark_spoken(node);
 }
@@ -245,24 +245,15 @@ bool GraphNavigator::land_on_stop(const Key& stop_key) {
   return true;
 }
 
-void GraphNavigator::land(const GraphNode* to, const GraphNode* from, std::string_view transition) {
+void GraphNavigator::land(const GraphNode* to, const GraphNode* from) {
   if (!to) return;
-  play_hover(to);
-  fire_focus(to);
-  if (auto t = compose_move(from, to, false, transition)) speak(*t, true);
+  play_hover();
+  if (auto t = compose_move(from, to, false)) speak(*t, true);
   mark_spoken(to);
 }
 
-void GraphNavigator::play_hover(const GraphNode* node) {
-  if (node && node->vtable && node->vtable->hover_sound) { try { node->vtable->hover_sound(); } catch (...) {} }
-  else if (host_.hover_sound) host_.hover_sound();
-}
-// A user landing on a node: the node's on_focus. Only on a CHANGE of node -- repeating the focused item at a
-// list edge is not a landing.
-void GraphNavigator::fire_focus(const GraphNode* node) {
-  if (!node || !node->vtable || !node->vtable->on_focus) return;
-  if (last_spoken_key_ && *last_spoken_key_ == node->id) return;
-  try { node->vtable->on_focus(); } catch (...) {}
+void GraphNavigator::play_hover() {
+  if (host_.hover_sound) host_.hover_sound();
 }
 
 bool GraphNavigator::jump_edge(bool first) {
@@ -309,13 +300,13 @@ bool GraphNavigator::vtable_adjust(int sign) {
   return true;
 }
 
-std::optional<std::string> GraphNavigator::compose_move(const GraphNode* from, const GraphNode* to, bool entry, std::string_view transition) {
-  if (entry) return GraphAnnouncer::compose(nullptr, to, transition);
+std::optional<std::string> GraphNavigator::compose_move(const GraphNode* from, const GraphNode* to, bool entry) {
+  if (entry) return GraphAnnouncer::compose(nullptr, to);
   // The node last spoken may have vanished (its row was removed by the action it just ran): its remembered path
   // still says which levels we were inside, so the landing reads as a sibling move, not as an entry that
   // repeats the list's title.
-  if (from == nullptr && last_spoken_key_ && !last_spoken_path_.empty()) return GraphAnnouncer::compose_from_path(last_spoken_path_, to, transition);
-  return GraphAnnouncer::compose(from, to, transition);
+  if (from == nullptr && last_spoken_key_ && !last_spoken_path_.empty()) return GraphAnnouncer::compose_from_path(last_spoken_path_, to);
+  return GraphAnnouncer::compose(from, to);
 }
 
 // ---- type-ahead search ----
@@ -379,20 +370,13 @@ void GraphNavigator::type_char(std::uint32_t cp) {
   search_.search((int)search_nodes_.size(), [this](int i) { return search_nodes_[(size_t)i].text; }, [this](int i) { search_focus_result(i); });
 }
 
-std::string GraphNavigator::search_text_of(const GraphNode* n) {
-  if (!n || !n->vtable) return {};
-  if (n->vtable->search_text) return n->vtable->search_text();
-  if (!n->vtable->announcements.empty() && n->vtable->announcements[0].text) return n->vtable->announcements[0].text();
-  return {};
-}
-
-// The searchable scope is the focused node's Tab-stop.
+// The searchable scope is the focused node's Tab-stop; a node is searched by its label (its first part).
 void GraphNavigator::rebuild_search_scope() {
   search_nodes_.clear();
   const GraphNode* node = graph_ ? graph_->current_node() : nullptr;
   if (!node || !graph_->current()) return;
   for (GraphNode* n : graph_->current()->order())
-    if (n->stop_key == node->stop_key && n->vtable && !n->vtable->exclude_from_search) search_nodes_.push_back({n->id, search_text_of(n)});
+    if (n->stop_key == node->stop_key && n->vtable) search_nodes_.push_back({n->id, GraphAnnouncer::first_part_text(n).value_or(std::string())});
 }
 
 void GraphNavigator::search_focus_result(int index) {

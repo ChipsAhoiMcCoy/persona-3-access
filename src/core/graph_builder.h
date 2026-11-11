@@ -53,8 +53,8 @@ class GraphBuilder {
 
   /// Push one NON-FOCUSABLE level of presentation hierarchy ("Difficulty settings", "list") onto nodes
   /// added from here -- pure structure: never navigable, announced when focus enters from outside.
-  /// `positions` false: its direct children get no auto-stamped "n of m". Close with pop_context().
-  GraphBuilder& push_context(std::string_view label, std::string_view role = {}, bool positions = true);
+  /// Close with pop_context().
+  GraphBuilder& push_context(std::string_view label, std::string_view role = {});
 
   GraphBuilder& pop_context();
 
@@ -76,9 +76,8 @@ class GraphBuilder {
   /// Add a node with no automatic wiring (raw mode; wire with connect()).
   GraphBuilder& add_node(ControlId id, NodeVtablePtr vtable);
 
-  /// Directed edge from -> to, with an optional spoken transition line ("lane change"). Edges to/from
-  /// undeclared nodes are dropped at build.
-  GraphBuilder& connect(ControlId from, GraphDir dir, ControlId to, std::string label = {});
+  /// Directed edge from -> to. Edges to/from undeclared nodes are dropped at build.
+  GraphBuilder& connect(ControlId from, GraphDir dir, ControlId to);
 
   // ---- build ----
 
@@ -98,7 +97,6 @@ class GraphBuilder {
     ControlId from;
     GraphDir dir;
     ControlId to;
-    std::string label;
   };
 
   static Key auto_stop_key(int index);

@@ -105,23 +105,6 @@ TEST_CASE("move to edge stops on a cycle") {
   CHECK(r.moved);
 }
 
-TEST_CASE("transition label is reported") {
-  GraphState state;
-  KeyGraph g(
-      [] {
-        return GraphBuilder()
-            .add_node(id("a"), vt("A"))
-            .add_node(id("b"), vt("B"))
-            .connect(id("a"), GraphDir::Right, id("b"), "lane change")
-            .build();
-      },
-      &state);
-
-  const MoveResult r = g.move(GraphDir::Right);
-  CHECK(r.moved);
-  CHECK(r.transition_label == "lane change");
-}
-
 TEST_CASE("reconcile follows the control's id across rebuilds") {
   GraphState state;
   int generation = 0;
@@ -157,23 +140,6 @@ TEST_CASE("reconcile falls back to the nearest survivor") {
   items.pop_back();                // remove "c"
   CHECK(g.rerender());
   CHECK(state.cur_key == id("b"));  // nearest earlier survivor
-}
-
-TEST_CASE("suggested move is honored and consumed") {
-  GraphState state;
-  KeyGraph g(
-      [] {
-        return GraphBuilder()
-            .add_item(id("a"), vt("a"))
-            .add_item(id("b"), vt("b"))
-            .add_item(id("c"), vt("c"))
-            .build();
-      },
-      &state);
-  state.next_suggested_move = id("c");
-  CHECK(g.rerender());
-  CHECK(state.cur_key == id("c"));
-  CHECK_FALSE(state.next_suggested_move.has_value());
 }
 
 TEST_CASE("compute order covers all stops") {

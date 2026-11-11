@@ -35,9 +35,7 @@ class Arena {
     auto vt = std::make_shared<NodeVtable>();
     vt->announcements.push_back(NodeAnnouncement::fixed(label));
     if (!role.empty()) vt->announcements.push_back(NodeAnnouncement::fixed(role));
-    GraphNode* n = add(ControlId::structural(Key("ctx:" + label)), std::move(vt), parent);
-    n->focusable = false;
-    return n;
+    return add(ControlId::structural(Key("ctx:" + label)), std::move(vt), parent);
   }
 
   GraphNode* custom(const std::string& key, std::vector<NodeAnnouncement> parts, GraphNode* parent = nullptr) {
@@ -166,13 +164,6 @@ TEST_CASE("a node that speaks its own position, or has none, gets no stamped one
 
   GraphNode* raw = a.custom("raw", {NodeAnnouncement::fixed("A line")});   // position_count 0: a raw node
   CHECK(spoken(GraphAnnouncer::leaf_text(raw)) == "A line");
-}
-
-TEST_CASE("the transition label leads") {
-  Arena a;
-  GraphNode* from = a.node("A");
-  GraphNode* to = a.node("B");
-  CHECK(spoken(GraphAnnouncer::compose(from, to, "next column")) == "next column, B");
 }
 
 TEST_CASE("a context change at the same depth reads the new level") {

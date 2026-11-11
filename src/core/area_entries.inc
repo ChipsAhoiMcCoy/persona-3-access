@@ -1,4 +1,5 @@
-// The area descriptions (included by area_text.cpp). One Entry per area, or per storey of a multi-storey area.
+// The area descriptions (included by area_text.cpp): one Entry per area, or per storey of a multi-storey area, then
+// the lines every place shares.
 // What each place holds comes from the game's own data: its named objects (DT_FldDailyHitName rows placed in the
 // area's Hit level, with their heights per storey), its prop and variant sublevels (LV_F<major>_<minor>_BG_*), the
 // light colours of Tartarus's block parts, and screenshots of the places (2026-11-02: the dorm, the school, the town
@@ -483,3 +484,29 @@ const Entry kEntries[] = {
 {.name = "Empyrean",
  .base = "Empyrean, the last labyrinth behind the doors of the Abyss of Time: a golden cathedral. Huge twisted marble columns rise from a polished checkerboard floor of gold and black inlaid with circular medallions, red marble walls and hanging banners lead the eye to a tall stained-glass window glowing at the end of the nave, and warm golden light pours over everything.", .dark_only = true},
 };
+
+// The lines every place shares, said after its own description where the entry has no line of its own: the light
+// (indoors and outdoors, by day, at sunset, at night; the Dark Hour), the season outdoors, January's decline, and
+// what January adds to a street.
+constexpr const char* kOutdoorDay = "It is daytime under an open sky.";
+constexpr const char* kOutdoorEvening = "The sun is setting; the sky glows orange and violet and long shadows stretch across the ground.";
+constexpr const char* kOutdoorNight = "It is night. Streetlights and lit windows glow against the dark sky.";
+constexpr const char* kIndoorDay = "Daylight comes in through the windows.";
+constexpr const char* kIndoorEvening = "Warm sunset light slants in through the windows.";
+constexpr const char* kIndoorNight = "It is dark outside the windows; the place runs on its ceiling lights.";
+constexpr const char* kDarkHour =
+    "It is the Dark Hour. Everything is washed in a sickly green light under a huge, swollen moon; the electric lights "
+    "are dead, dark puddles like blood stain the ground, and anyone caught in it stands sealed in an upright coffin.";
+constexpr const char* kSpring = "Spring: the trees are fresh and green, and the air is mild.";
+constexpr const char* kSummer = "It is summer: the air is hot and humid, the sunlight harsh, the trees thick and deep green.";
+constexpr const char* kAutumn = "It is autumn: the trees have turned orange and red, and dry leaves gather on the ground.";
+constexpr const char* kWinter = "It is winter: the trees stand bare and the air is cold enough to see your breath.";
+constexpr const char* kJanuary1 =
+    "This January the colour seems to be draining out of the world; everything looks faded and grey.";
+constexpr const char* kJanuary2 = "It is late January, and the world has gone almost grey, as if its colour were dying out.";
+constexpr const char* kTown1 =
+    "Litter lies uncollected, black garbage bags pile up in the corners, and white posters stamped with a red symbol, "
+    "put up by the cult that welcomes the coming Fall, are pasted over the walls, pillars and signs.";
+constexpr const char* kTown2 =
+    "The cult's white posters with their red symbol are everywhere now, plastered over every wall, pillar, sign and "
+    "shutter and scattered on the ground among the garbage bags and litter.";

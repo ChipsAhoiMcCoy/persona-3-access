@@ -184,6 +184,13 @@ inline constexpr const char* kAnalyze = "Analyze";
 inline constexpr const char* kSurveyTitle = "Survey";
 inline constexpr const char* kAllOutTitle = "All-Out Attack?";
 inline constexpr const char* kGuardTitle = "Guard?";
+// Said with a turn's line and after "1 More!", without their keys: F1 names those (kKeyTheurgy, kKeyShift).
+inline constexpr const char* kTheurgyReadyWords = "Theurgy ready";
+inline constexpr const char* kShiftAvailableWords = "Shift available";
+// A shop's quantity as it opens, before the number; its keys are kHowMany's (F1).
+inline constexpr const char* kHowManyWords = "How many?";
+// An item found more than once after a battle, a std::format string: the word, the item, how many ("Got Bead x3").
+inline constexpr const char* kGotMany = "{} {} x{}";
 inline constexpr const char* kTacticsTitle = "Tactics. Give an order?";
 inline constexpr const char* kTacticsOrder = "Order";
 inline constexpr const char* kTacticsEscape = "Escape";
@@ -235,6 +242,21 @@ inline constexpr const char* kNoMessage = "No message";
 inline constexpr const char* kAKey = "a key";
 inline constexpr Hint kYesNoHint{"Confirm for yes, cancel for no.", "A for yes, B for no."};
 inline constexpr const char* kThinking = "Thinking";
+// The buttons a message page draws as icons (tutorials), by the game's icon id: the key on the keyboard (the game's
+// default) and the controller's button. The keyboard has other keys for some of them by place: in battle, and in the
+// field where the sentence around the icon speaks of the menu, the map or recovering.
+struct IconKey { int id; const char* keyboard; const char* pad; };
+inline constexpr IconKey kIconKeys[] = {
+  {104, "U", "D-pad up"}, {105, "O", "D-pad down"}, {108, "H", "Menu"}, {110, "C", "B"}, {112, "E", "Y"}, {113, "Space", "A"},
+  {114, "Q", "LB"}, {115, "B", "LT"}, {117, "E", "RB"}, {118, "Shift", "RT"}, {119, "R", "the right stick button"},
+  {121, "I, J, K and L", "the right stick"}};
+inline constexpr const char* kIconUpBattle = "W";       // 104 in battle
+inline constexpr const char* kIconDownBattle = "S";     // 105 in battle
+inline constexpr const char* kIconMenuField = "Tab";    // 112 in the field: the menu
+inline constexpr const char* kIconMapField = "M";       // 114 in the field: the map
+inline constexpr const char* kIconRecoverField = "Y";   // 117 in the field: Auto-Recover
+inline constexpr const char* kKeySpace = "Space";       // the key configuration's Space
+inline constexpr const char* kTitleScreen = "Title screen";
 inline constexpr Hint kTutorialKeys{"Q and E turn the pages, Space goes on.", "LB and RB turn the pages, A goes on."};
 inline constexpr Hint kDialogueKeys{"Conversation keys: Space next, B log, Shift auto, Tab fast-forwards.",
                                     "Conversation keys: A next, L3 log, X auto, Menu button fast-forwards."};
@@ -349,6 +371,9 @@ inline constexpr const char* kEndPage = "page turn sound";
 inline constexpr const char* kEndMessage = "message chime sound";
 inline constexpr const char* kEndCursor = "cursor tick sound";
 inline constexpr const char* kMetersUnit = "meters";
+// A spoken distance (core/units.cpp): "1 meter", "6 meters", "less than 1 meter".
+inline constexpr const char* kMeterUnit = "meter";
+inline constexpr const char* kLessThanOneMeter = "less than 1 meter";
 inline constexpr const char* kPercent = "percent";
 inline constexpr const char* kMilliseconds = "milliseconds";
 inline constexpr Hint kListKeys{"Up and down arrows choose, Space confirms, Escape back.", "Up and down choose, A confirms, B back."};
@@ -395,6 +420,9 @@ inline constexpr const char* kShadowBackTurned = "Shadow close, back turned";
 inline constexpr const char* kShadowFacingYou = "Shadow close, facing you";
 inline constexpr const char* kNothingNearbyFull = "Nothing nearby";
 inline constexpr const char* kNothingSelected = "Nothing selected";
+inline constexpr const char* kOClock = "o'clock";                 // after the hour, a direction by the clock face: "2 o'clock"
+inline constexpr const char* kMonad = "Monad";                    // the area key's name for the section behind a Monad door
+inline constexpr const char* kMonadChambers = "Monad Chambers";   // the same in Episode Aigis' Abyss of Time
 // Navigation
 inline constexpr const char* kNoPath = "No path";
 inline constexpr const char* kStuck = "Stuck, stopping";
@@ -486,7 +514,6 @@ inline constexpr const char* kMagicShield = "Magic attacks reflected";
 inline constexpr const char* kAilmentsDoubled = "Ailments land more easily";
 inline constexpr const char* kWalls[] = {"Fire resisted", "Ice resisted", "Electricity resisted", "Wind resisted"};
 inline constexpr const char* kBreaks[] = {"Fire resistance broken", "Ice resistance broken", "Wind resistance broken", "Electricity resistance broken"};
-inline constexpr Hint kTheurgyReady{"Theurgy ready, T", "Theurgy ready, RT"};
 inline constexpr const char* kLog = "Log";
 inline constexpr const char* kRequests = "Elizabeth's requests";
 inline constexpr const char* kMissingPersons = "Missing Persons";
@@ -507,7 +534,6 @@ inline constexpr Hint kSelectKeys{"Up and down arrows choose, Space confirms, Es
 inline constexpr Hint kLogKeys{"Up and down arrows scroll, Space replays the voice, Escape closes", "Up and down scroll, A replays the voice, B closes"};
 inline constexpr const char* kLogEarlier = "An earlier line, from before this session";
 inline constexpr const char* kShift = "Shift. Pass the turn to";
-inline constexpr Hint kShiftAvailable{"B shifts the turn to another member", "LT shifts the turn to another member"};
 inline constexpr const char* kRewind = "Rewind. Choose a day to go back to";
 // The menu navigator's type-ahead (core/navigator.cpp)
 inline constexpr const char* kNoMatch = "no match for";
@@ -518,7 +544,7 @@ inline constexpr const char* kSuitSwords = "Swords";
 inline constexpr const char* kSuitCoins = "Coins";
 inline constexpr const char* kSuitCups = "Cups";
 inline constexpr const char* kSuitWands = "Wands";
-// Camp submenus (camp_menus.cpp)
+// Camp submenus (screens/camp_*.cpp, quest.cpp, theurgy.cpp)
 // Their keys (F1), from each menu's native input function: Q / E LB / RB,
 // F the X button, X RT, Z LT, H the Menu button.
 inline constexpr Hint kItemListKeys{"Up and down arrows choose, Q and E switch category, Space uses, Escape back.", "Up and down choose, LB and RB switch category, A uses, B back."};
@@ -627,4 +653,54 @@ inline constexpr ScenePicture kScenePictures[] = {
   {"T_UI_Picture_102", "Picture: a device on a flat base: two long arms hinged at their middles form a tall rhombus, with a small folding arm inside it, and a contact strip across the top."},
   {"T_UI_Picture_103", "Picture: on x and y axes, a circle resting on the origin, touching a horizontal line across its top. A line from the origin through the circle runs out to that top line; a red bell-shaped curve peaks at the top of the circle and falls away on both sides toward the x axis."},
 };
+
+// The mod's key list (Shift+F1, the settings menu's "Mod keys" row): what each key does, in the order they are bound.
+inline constexpr const char* kKeyHelpScreenKeys = "The keys of this screen";
+inline constexpr const char* kKeyHelpModKeys = "The mod's keys";
+inline constexpr const char* kKeyHelpSettings = "Mod settings";
+inline constexpr const char* kKeyHelpSonar = "Sonar on or off: the sounds of the things around you";
+inline constexpr const char* kKeyHelpWhere = "Where am I: the area, the date, your yen and the objective";
+inline constexpr const char* kKeyHelpStats = "Social stats";
+inline constexpr const char* kKeyHelpSocial = "Social Links and their ranks";
+inline constexpr const char* kKeyHelpReview = "Repeat the current message or describe the current screen";
+inline constexpr const char* kKeyHelpPoiNext = "Next point of interest, farther away";
+inline constexpr const char* kKeyHelpPoiPrev = "Previous point of interest, nearer";
+inline constexpr const char* kKeyHelpPoiCatNext = "Next category of points of interest, from its nearest";
+inline constexpr const char* kKeyHelpPoiCatPrev = "Previous category";
+inline constexpr const char* kKeyHelpParty = "Party: each member's level, HP and SP";
+inline constexpr const char* kKeyHelpWalk = "Walk to the selected point of interest, or stop walking";
+inline constexpr const char* kKeyHelpArea = "Describe the area: how the place around you looks";
+// A key's name in that list: its modifiers, then the key as Windows names it (kKeyUnnamed and its code when it has
+// no name).
+inline constexpr const char* kModCtrl = "Ctrl+";
+inline constexpr const char* kModAlt = "Alt+";
+inline constexpr const char* kModShift = "Shift+";
+inline constexpr const char* kKeyUnnamed = "key";
+// A controller button's name in that list.
+inline constexpr const char* kPadDpadUp = "D-pad up";
+inline constexpr const char* kPadDpadDown = "D-pad down";
+inline constexpr const char* kPadDpadLeft = "D-pad left";
+inline constexpr const char* kPadDpadRight = "D-pad right";
+inline constexpr const char* kPadMenu = "Menu button";
+inline constexpr const char* kPadView = "View button";
+inline constexpr const char* kPadL3 = "L3";
+inline constexpr const char* kPadR3 = "R3";
+inline constexpr const char* kPadLB = "LB";
+inline constexpr const char* kPadRB = "RB";
+inline constexpr const char* kPadA = "A";
+inline constexpr const char* kPadB = "B";
+inline constexpr const char* kPadX = "X";
+inline constexpr const char* kPadY = "Y";
+inline constexpr const char* kPadUnknown = "?";
+// Said once the mod is up, or when it could not start.
+inline constexpr const char* kModLoaded = "Persona 3 Access loaded";
+inline constexpr const char* kModLoadedNoSpeech = "Persona 3 Access loaded, no speech backend";
+inline constexpr const char* kNoEngine = "Persona 3 Access could not find the game engine. This game version may be unsupported.";
+// A date: "April 6, Monday", then ", holiday" on one (the game's own table abbreviates the weekday: "(Su)").
+inline constexpr const char* kWeekdays[7] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+inline constexpr const char* kMonths[13] = {"", "January", "February", "March", "April", "May", "June", "July",
+                                            "August", "September", "October", "November", "December"};
+inline constexpr const char* kHoliday = "holiday";
+// A Persona's stats on its one-line status, in kStatNames' order.
+inline constexpr const char* kStatAbbrev[5] = {"St", "Ma", "En", "Ag", "Lu"};
 }  // namespace p3a::strings

@@ -1,20 +1,13 @@
 #include "core/text_field.h"
 #include "core/strings.h"
+#include "core/utf8.h"
 #include <algorithm>
 
 namespace p3a::core {
 namespace {
-bool continuation(const std::string& s, size_t i) { return i < s.size() && (static_cast<unsigned char>(s[i]) & 0xC0) == 0x80; }
-size_t next_char(const std::string& s, size_t i) {
-  if (i < s.size()) ++i;
-  while (continuation(s, i)) ++i;
-  return i;
-}
-size_t prev_char(const std::string& s, size_t i) {
-  if (i > 0) --i;
-  while (i > 0 && continuation(s, i)) --i;
-  return i;
-}
+using utf8::next_char;
+using utf8::prev_char;
+bool continuation(const std::string& s, size_t i) { return utf8::is_continuation(s, i); }
 bool one_char(const std::string& s) { return !s.empty() && next_char(s, 0) == s.size(); }
 std::string or_blank(std::string s) { return s.empty() ? std::string(strings::kBlank) : s; }
 }  // namespace

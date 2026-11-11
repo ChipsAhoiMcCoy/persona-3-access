@@ -19,7 +19,6 @@ struct MoveResult {
   bool moved = false;          // focus actually changed nodes
   GraphNode* from = nullptr;   // node before the operation (null on first landing)
   GraphNode* to = nullptr;     // node after (== from when at an edge; null when the graph is empty)
-  std::string transition_label;  // the crossed edge's spoken line, when it had one (empty = none)
 };
 
 /// The navigation engine: a directed graph of controls rebuilt from a render callback on each
