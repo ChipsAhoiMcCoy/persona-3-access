@@ -382,7 +382,6 @@ inline constexpr const char* kCatShops = "Shops";
 inline constexpr const char* kCatDoors = "Doors";
 inline constexpr const char* kCatThings = "Objects";
 inline constexpr const char* kCatEvents = "Events";
-inline constexpr const char* kCatFragments = "Twilight Fragments";
 inline constexpr const char* kCatShadows = "Shadows";
 inline constexpr const char* kShadowBackTurned = "Shadow close, back turned";
 inline constexpr const char* kShadowFacingYou = "Shadow close, facing you";

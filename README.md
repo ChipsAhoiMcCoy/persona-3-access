@@ -186,12 +186,12 @@ line on screen is read.
 Points of interest come in categories: exits (each leads to another area and is named for where it goes:
 "Gekkoukan High School" there is the way into the school, not out of it), doors (rooms you check to go in: classrooms,
 offices, restrooms, the dorm's bedrooms), people, shops (businesses, food, vendors and vending machines), objects
-(everything else you can check), Twilight Fragments (the glowing blue fragments lying around town, which the game
-labels "Something Shining", and in Tartarus the crystals you strike to get one, listed as "Twilight Fragment
-crystal"; one that is picked up or broken leaves the list), events (spots that start a fight or a scene when you walk into them, with nothing
+(everything else you can check; among them the glowing blue Twilight Fragments lying around town, which the game
+labels "Something Shining" and the list calls "Twilight Fragment", and in Tartarus the crystals you strike to get
+one, "Twilight Fragment crystal"; one that is picked up or broken leaves the list), events (spots that start a fight or a scene when you walk into them, with nothing
 to press: a Tartarus Gatekeeper's floor lists "Gatekeeper" until it is beaten) and, in Tartarus, Shadows. Each
 category lists its points nearest first, and a category with nothing in it is skipped. The sonar has one sound for
-each of them but the Shadows
+each of the first six, and one more for Twilight Fragments
 (see Sounds). Points are spoken with their name, distance, clock direction and position: "Iwatodai Station, 6 meters, 2 o'clock, 1 of 3". The category is said first when you change category or open the controller layer.
 12 o'clock is straight ahead (where pushing forward walks), 3 o'clock is to your right.
 With the sonar on, each point you land on in the list also plays its kind's sound once from where it is, however far.
@@ -346,7 +346,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   (Paulownia Mall, from July): its menu (Fuse Equipment, Trade Card, Trade Item), each entry with how many you own,
   its stats and what the trade needs ("needs Topaz 3, you have 1"), then its description. Be Blue V is a part-time
   job, read as choices. Money gained or spent anywhere is announced.
-- Tartarus: the block and floor ("Thebel, floor 3"), breakable objects as points of interest (broken ones leave the list; a crystal that gives a Twilight Fragment is listed under Twilight Fragments), stairs ("Head Up").
+- Tartarus: the block and floor ("Thebel, floor 3"), breakable objects as points of interest (broken ones leave the list; a crystal that gives a Twilight Fragment is listed as "Twilight Fragment crystal"), stairs ("Head Up").
 - Outside battle, a party member's HP or SP changing is read (Auto-Recover with Y, or RB on a controller, in Tartarus; items, the
   entrance clock). N (Navi) and the other Tartarus helpers speak through messages.
 - Tartarus terminals (the Giant Device at the entrance and on floors): each floor you can travel to, the furthest

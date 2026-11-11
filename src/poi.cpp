@@ -341,7 +341,7 @@ std::string describe(const Poi& p) {
 // ---- the review selection ----
 // Categories (left and right) each hold their points of interest nearest first (up and down). Changing category, or
 // opening the controller's mod layer, selects the nearest; an empty category is skipped.
-enum class Cat { Exits, Doors, People, Shops, Things, Fragments, Events, Shadows, Count };
+enum class Cat { Exits, Doors, People, Shops, Things, Events, Shadows, Count };
 static const char* cat_name(Cat c) {
   switch (c) {
     case Cat::Exits: return strings::kCatExits;
@@ -349,7 +349,6 @@ static const char* cat_name(Cat c) {
     case Cat::People: return strings::kCatPeople;
     case Cat::Shops: return strings::kCatShops;
     case Cat::Things: return strings::kCatThings;
-    case Cat::Fragments: return strings::kCatFragments;
     case Cat::Events: return strings::kCatEvents;
     default: return strings::kCatShadows;
   }
@@ -364,8 +363,7 @@ static bool in_cat(const Poi& p, Cat c) {
     case Cat::Doors: return p.kind == Kind::Door;
     case Cat::People: return p.kind == Kind::Person;
     case Cat::Shops: return p.kind == Kind::Shop;
-    case Cat::Things: return p.kind == Kind::Thing;
-    case Cat::Fragments: return p.kind == Kind::Fragment;
+    case Cat::Things: return p.kind == Kind::Thing || p.kind == Kind::Fragment;   // a fragment is an object with its own sound
     case Cat::Events: return p.kind == Kind::Event;
     default: return p.kind == Kind::Enemy;
   }
