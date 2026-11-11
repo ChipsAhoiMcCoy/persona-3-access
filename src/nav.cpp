@@ -42,6 +42,10 @@ static bool g_off_mesh = false;      // the target's own spot has no navmesh pat
 static bool g_planned = false;       // the ways in were looked for on this walk
 static std::vector<FVector> g_entries;   // a standing point outside each way in to the target, nearest first
 static size_t g_entry_next = 0;
+static FVector g_side{};             // a step to the side, round someone or something the path runs into
+static bool g_side_on = false;
+static int g_side_tries = 0;         // steps tried after getting stuck, with the target no nearer since
+static float g_side_best = 0;        // the nearest to the target the walk was when it got stuck
 static uint32_t g_held[2] = {0, 0};
 constexpr float kArrive = 110.0f;      // cm from the target's location
 constexpr float kWaypointReached = 70.0f;
@@ -111,6 +115,9 @@ void walk_to(const WeakObj& target, const std::string& name) {
   g_planned = false;
   g_entries.clear();
   g_entry_next = 0;
+  g_side_on = false;
+  g_side_tries = 0;
+  g_side_best = 1e9f;
   if (!refresh_path(me)) { speech::speak(strings::kNoPath, true); return; }
   g_walking = true;
   g_progress_at = GetTickCount64();
@@ -236,6 +243,70 @@ static std::vector<FVector> find_entries(const Goal& g, const FVector& me, std::
   return out;
 }
 
+// ---- round what the path runs into ----
+// The navmesh knows the walls and nothing of who stands on the floor: a path down a hallway ran straight into a
+// student walking the other way, and the walk pushed against them until it said "Stuck" (the Gym Hallway,
+// 2026-11-11). The same goes for anything solid the navmesh was not cut round. The hero's body is swept ahead as
+// the game would move it, and when it would not get through, a step to one side is looked for.
+
+// Someone the body would walk into going a -> b. A person beside or behind the start does not count: the hero may
+// be touching them already, and walks away from them.
+static bool walks_into(const FVector& a, const FVector& b, const std::vector<ue::UObject*>& people, const FVector* goal = nullptr) {
+  float len = flat(a, b);
+  for (ue::UObject* p : people) {
+    FVector at = world::actor_location(p);
+    float d = flat(a, at);
+    // The person the walk is going to (a character's body is another actor than its talk trigger) is not in the way.
+    if (goal && flat(at, *goal) < 200.0f) continue;
+    if (d < 1.0f || len < 1.0f) return true;
+    if (((b.x - a.x) * (at.x - a.x) + (b.y - a.y) * (at.y - a.y)) / (len * d) > 0.3f) return true;
+  }
+  return false;
+}
+// The body can go a -> b: nothing solid on the way and nobody to walk into. `me` gives the height.
+static bool body_clear(const FVector& a, const FVector& b, const FVector& me, float radius, float half) {
+  float z = me.z + 10.0f, h = std::max(radius + 1.0f, half - 30.0f);
+  std::vector<ue::UObject*> people;
+  world::Hit hit = world::sweep(FVector{a.x, a.y, z}, FVector{b.x, b.y, z}, radius, h, &people);
+  return !hit.hit && !walks_into(a, b, people);
+}
+// Somebody stands in the next stretch toward the waypoint.
+static bool person_ahead(const FVector& me, const FVector& wp, const FVector& goal) {
+  float d = flat(me, wp);
+  if (d < 1.0f) return false;
+  float radius, half;
+  hero_body(radius, half);
+  float k = std::min(d, 150.0f) / d;
+  FVector to{me.x + (wp.x - me.x) * k, me.y + (wp.y - me.y) * k, me.z};
+  float z = me.z + 10.0f, h = std::max(radius + 1.0f, half - 30.0f);
+  std::vector<ue::UObject*> people;
+  world::sweep(FVector{me.x, me.y, z}, FVector{to.x, to.y, z}, radius, h, &people);
+  return !people.empty() && walks_into(me, to, people, &goal);
+}
+// A point to one side that the body can step to and walk on from toward the waypoint: the smallest turn off the
+// line first, either side, then further out. `skip` passes over that many that would do (the ones tried already).
+static bool find_sidestep(const FVector& me, const FVector& wp, int skip, FVector& out) {
+  float radius, half;
+  hero_body(radius, half);
+  float heading = std::atan2(wp.y - me.y, wp.x - me.x);
+  for (float r : {120.0f, 180.0f, 260.0f})
+    for (float deg : {45.0f, -45.0f, 70.0f, -70.0f, 90.0f, -90.0f, 120.0f, -120.0f}) {
+      float a = heading + deg * 3.14159265f / 180.0f;
+      FVector on{};
+      if (!world::project_to_nav(FVector{me.x + r * std::cos(a), me.y + r * std::sin(a), me.z - half}, 40.0f, on)) continue;
+      FVector s{on.x, on.y, me.z};
+      if (flat(s, me) < 60.0f || !body_clear(me, s, me, radius, half)) continue;
+      float d = flat(s, wp);
+      if (d < 30.0f) continue;
+      float k = std::min(d, 250.0f) / d;
+      if (!body_clear(s, FVector{s.x + (wp.x - s.x) * k, s.y + (wp.y - s.y) * k, me.z}, me, radius, half)) continue;
+      if (skip-- > 0) continue;
+      out = s;
+      return true;
+    }
+  return false;
+}
+
 // The game shows a hit actor's prompt only while the hero faces the way its mHeroDirectType_ asks: Back = against
 // the actor's own forward (into the door; the faculty office door, yaw -90, wants the hero at yaw 90, measured
 // 2026-10-27), Front = along it, Left/Right = a quarter turn, Center = toward its location. Turn the hero that way
@@ -310,6 +381,7 @@ void tick() {
     // back alley's, 2026-10-27) only moved the hero: plan again from there.
     if (jumped) {
       if (flat(goal, me) < 800.0f || std::fabs(goal.z - me.z) > 300.0f) { stop(false); arrived_at(); return; }
+      g_side_on = false;
       refresh_path(me);
       g_progress_at = now; g_progress_pos = me;
     }
@@ -346,6 +418,8 @@ void tick() {
       if (sweep_reaches(target, me, me, radius, half, people)) g_planned = true;
       else { plan(); next_entry(); }
     }
+    // The step to the side is taken: back on the path from there.
+    if (g_side_on && flat(g_side, me) < 45.0f) { g_side_on = false; refresh_path(me); }
     if (now - g_path_at > 700) refresh_path(me);
     FVector wp;
     if (!next_waypoint(me, wp)) { log::write("nav: stopped, no path"); stop(true); return; }
@@ -361,6 +435,13 @@ void tick() {
       // The navmesh path ends where the floor ends (beside the bed); from its last point head straight for the box.
       wp = box.center;
     }
+    // Somebody in the way is stepped round before the hero walks into them.
+    FVector on_path = wp;
+    if (!g_side_on && !g_direct && person_ahead(me, wp, goal) && find_sidestep(me, wp, 0, g_side)) {
+      g_side_on = true;
+      log::writef("nav: someone in the way at ({:.0f}, {:.0f}), round via ({:.0f}, {:.0f})", me.x, me.y, g_side.x, g_side.y);
+    }
+    if (g_side_on) wp = g_side;
     // 8-way chord toward the waypoint, camera-relative (the game's own movement is camera-relative too).
     float b = world::bearing(me, wp);
     int sector = ((int)std::lround(b / 45.0f) % 8 + 8) % 8;
@@ -388,6 +469,20 @@ void tick() {
             refresh_path(me);
             g_progress_at = now; g_progress_pos = me;
             log::writef("nav: detour {} via ({:.0f}, {:.0f})", g_detours, g_detour.x, g_detour.y);
+            return;
+          }
+        }
+        // Blocked by something the path does not know of (or the step round it was): step to one side and go on
+        // from there. Three steps with the target no nearer, and the walk is stuck.
+        if (!there) {
+          float left = flat(goal, me);
+          if (left < g_side_best - 50.0f) { g_side_best = left; g_side_tries = 0; }
+          g_side_on = false;
+          if (g_side_tries < 3 && find_sidestep(me, on_path, g_side_tries, g_side)) {
+            ++g_side_tries;
+            g_side_on = true;
+            g_progress_at = now; g_progress_pos = me;
+            log::writef("nav: blocked at ({:.0f}, {:.0f}), round via ({:.0f}, {:.0f})", me.x, me.y, g_side.x, g_side.y);
             return;
           }
         }
