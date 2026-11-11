@@ -40,7 +40,7 @@ constexpr float kPi = 3.14159265f;
 // about to strike (the user, 2026-11-10). A Tartarus floor has raised and sunken parts, so height filters nothing now.
 constexpr float kPulseRange = 3000.0f;
 constexpr float kMindRange = 4000.0f;    // cm: how far off a Shadow's noticing is told
-constexpr ULONGLONG kReachMs = 420;      // the ring's rhythm while in reach (the ring itself lasts 0.26 s)
+constexpr ULONGLONG kReachMs = 150;      // the ring's rhythm while in reach (the ring itself lasts 0.09 s)
 
 // What a Shadow's component shows this frame: the mark over its head, and whether it holds the hero as its target.
 enum class Mark { None, Exclamation, Question };

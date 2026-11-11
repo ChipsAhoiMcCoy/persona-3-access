@@ -27,7 +27,7 @@ enum class SignalCue {
   Shadow,   // a Shadow near: a low, rattling snarl that dies away
   Ambush,   // the strike will land from behind: two quick glassy ticks, the second higher
   Layer,    // the controller's mod layer opened: one soft tick
-  Reach,    // a Shadow or a breakable thing is within the strike's reach: a blade drawn, ringing on
+  Reach,    // a Shadow or a breakable thing is within the strike's reach: a quick ting of steel, repeated fast
   Spotted,  // a Shadow has noticed the hero: a harsh two-note alarm, rising
   Lost,     // it has lost him again: two soft notes, falling
   Count
