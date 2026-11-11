@@ -7,18 +7,18 @@
 
 namespace p3a::ui {
 
-// A value-equatable key. Stands in for C#'s `object` used as a dictionary key (structural control
-// keys, Tab-stop keys, region keys, menu row keys): there it was "a string, or a composite such as a
-// (region, row, col) tuple", compared with Equals(). Here it is either
-//   - empty      — the C# null (no key: a node outside any region, a hand-built node with no stop), or
-//   - a string   — the common case, including composites the caller has already flattened, or
+// A value-equatable key, used for structural control keys, Tab-stop keys, region keys and menu row
+// keys. It is either
+//   - empty      — no key (a node outside any region, a hand-built node with no stop), or
+//   - a string   — the common case, including composites the caller has already flattened
+//                  ("personas#3"), or
 //   - a pointer  — opaque identity, for ControlId::for_object where the backing object doubles as
 //                  the key (equality collapses to identity).
-// Deliberately NOT a general variant: the engine-free core must not depend on game types, and every
-// composite key the C# actually built was a string concatenation.
+// Deliberately NOT a general variant: the engine-free core must not depend on game types, and a
+// composite key is a string concatenation.
 class Key {
  public:
-  Key() = default;  // the C# null key
+  Key() = default;  // the empty key
   Key(std::string text) : kind_(Kind::String), text_(std::move(text)) {}
   Key(const char* text) : kind_(Kind::String), text_(text) {}
   Key(std::string_view text) : kind_(Kind::String), text_(text) {}
@@ -59,10 +59,9 @@ class Key {
 };
 
 /// The identity of a control (graph node) — a two-tier identity so focus can be followed across
-/// rebuilds even when the world shifts under us. Ported from Tanglebeep (with permission), which
-/// upgraded Factorio Access's plain string node key.
+/// rebuilds even when the world shifts under us.
 ///
-/// **Reference** (optional) is the game/domain object a node was derived from (a VM, a UIElement, an
+/// **Reference** (optional) is the game/domain object a node was derived from (a list row's object, an
 /// item), compared by reference identity — here a `const void*`, because the engine-free core must
 /// not know any game type and only ever compares the address. **StructuralKey** (always present) is
 /// a value-equatable key (see Key).

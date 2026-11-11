@@ -54,10 +54,9 @@ GraphBuilder& GraphBuilder::push_context(std::string_view label, std::string_vie
   vtable->announcements.push_back(NodeAnnouncement::fixed(std::string(label)));
   if (!role.empty()) vtable->announcements.push_back(NodeAnnouncement::fixed(std::string(role)));
 
-  // Stable synthetic identity so cross-render chain diffs match up -- SCOPED BY THE STOP: a purely
-  // label-pathed id collided for same-named contexts on different stops (two "Corpse of Mongrel" loot
-  // lists), so the announcer's prefix diff thought focus never left the first one and tabbing spoke
-  // just the bare item.
+  // Stable synthetic identity so cross-render chain diffs match up -- SCOPED BY THE STOP: with a purely
+  // label-pathed id, same-named contexts on different stops would collide, the announcer's prefix diff
+  // would think focus never left the first one, and tabbing would speak just the bare item.
   std::string id = "ctx:" + stop_key_.to_string() + ":" +
                    (parent != nullptr ? parent->id.structural_key().to_string() : std::string()) + "/" +
                    std::string(label);
@@ -133,9 +132,9 @@ GraphBuilder& GraphBuilder::end_row() {
 GraphBuilder& GraphBuilder::add_item(ControlId id, NodeVtablePtr vtable) {
   if (suppressed()) return *this;
   // An actionable node belongs to its Tab stop's landing group unless the screen said otherwise: when it vanishes
-  // on the rebuild its action caused (an item moved, sold, used), focus lands on the next row of the same list,
-  // not on the previous stop's last node (2026-09-04: Enter on the first row of a list bounced to the tab strip).
-  // Lead lines and headers have no action and keep no group, so they are never the landing.
+  // on the rebuild its action caused (an item used up, sold, registered), focus lands on the next row of the same
+  // list, not on the previous stop's last node. Lead lines and headers have no action and keep no group, so they
+  // are never the landing.
   if (vtable && vtable->land_group.empty() && vtable->on_activate) vtable->land_group = stop_key_.to_string();
   GraphNode* node = make_node(std::move(id), std::move(vtable));
   if (current_row_ != nullptr) {
@@ -150,12 +149,6 @@ GraphBuilder& GraphBuilder::add_item(ControlId id, NodeVtablePtr vtable) {
     row_of_[node] = row;
   }
   return *this;
-}
-
-GraphBuilder& GraphBuilder::add_label(ControlId id, std::function<std::string()> label) {
-  auto vtable = std::make_shared<NodeVtable>();
-  vtable->announcements.push_back(NodeAnnouncement(std::move(label)));
-  return add_item(std::move(id), std::move(vtable));
 }
 
 // ---- raw mode ----
@@ -187,7 +180,7 @@ GraphNode* GraphBuilder::make_node(ControlId id, NodeVtablePtr vtable) {
 // ---- build ----
 
 GraphRenderPtr GraphBuilder::build() {
-  if (current_row_ != nullptr) throw std::logic_error("Unclosed row - call EndRow()");
+  if (current_row_ != nullptr) throw std::logic_error("Unclosed row - call end_row()");
   if (raw_nodes_.empty() && rows_.empty()) return nullptr;
 
   auto render = std::make_unique<GraphRender>();
@@ -209,7 +202,7 @@ GraphRenderPtr GraphBuilder::build() {
   return render;
 }
 
-// Where a stop mixes MENU rows with RAW content (search/sort/filter controls above a sheet), the two
+// Where a stop mixes MENU rows with RAW content (a list's rows above a grid, a row with a walk of lines), the two
 // wiring systems don't see each other: menu auto-wiring connects only menu rows, and the raw content's
 // explicit edges stop at its own borders -- leaving a vertical gap arrows can't cross. Stitch it: at
 // each menu->raw boundary (declaration order, same stop), the menu row's cells gain Down edges into the
@@ -262,7 +255,7 @@ void GraphBuilder::stitch_mode_boundaries() {
   }
 }
 
-// Auto-stamp "n of m" positions the way the old containers did: a multi-item row's members are
+// Auto-stamp "n of m" positions: a multi-item row's members are
 // positioned within their ROW (a bar); single-item-row nodes among the siblings sharing their
 // (parent, stop) -- the vertical list/tree level arrows actually traverse. Raw/grid nodes get none.
 // A list of one says "1 of 1" too: a lone entry read without it did not sound like a menu option (the cafe's
@@ -299,8 +292,8 @@ void GraphBuilder::stamp(const std::vector<GraphNode*>& siblings) {
 // Tab-stop). Shared non-empty row keys preserve the column; otherwise vertical lands on first item.
 void GraphBuilder::wire_menu_edges() {
   // Segment rows in DECLARATION order: within a stop, consecutive menu rows chain vertically only when
-  // no raw node was declared between them. Interleaved raw content (a sheet between menu controls, e.g.
-  // the class progression grid between the skills list and the auto-level button) BREAKS the chain --
+  // no raw node was declared between them. Interleaved raw content (a grid between two lists of one
+  // stop) BREAKS the chain --
   // stitch_mode_boundaries wires the seams. Without the break, menu edges would skip straight over the
   // raw block; the stitcher (which only fills missing edges) would find the gap already bridged,
   // leaving the block an unreachable island.

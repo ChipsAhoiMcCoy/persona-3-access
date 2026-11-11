@@ -1,10 +1,10 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks, itself ported from Dark Vision (WrathAccess) by Bradley Renshaw; both zlib, see LICENSES/. This is not the original software.
 #pragma once
-// The graph-based navigator, ported from wotr-access src/UI/GraphNavigator.cs (+ Navigator.cs, Navigation.cs).
+// The graph-based navigator.
 //
 // Runs every screen on the key-graph core: the graph is rebuilt per operation and per frame, focus is
 // reconciled by identity, and a focus change is announced exactly once no matter what caused it (input,
-// a screen moving focus, a content rebuild, the game yanking a widget). Announcements are PULL-based:
+// a screen moving focus, a content rebuild, the game moving its own cursor). Announcements are PULL-based:
 // screens never make per-callsite announce decisions. Engine-free: speech, hover sounds, the focus-mode
 // flag and the per-frame typed characters come from the host through NavigatorHost.
 #include <functional>
@@ -30,7 +30,7 @@ struct NavigatorHost {
   std::function<bool(GraphDir)> edge_answered;
 };
 
-// What the typeahead needs from the keyboard this frame (the C# polled Unity directly).
+// What the typeahead needs from the keyboard this frame.
 struct TypeaheadInput {
   std::u16string_view typed;  // printable characters pressed this frame
   bool ctrl = false, alt = false, shift = false;
@@ -40,12 +40,12 @@ struct TypeaheadInput {
   double repeat_initial_delay = 0.4, repeat_interval = 0.06;
 };
 
-// The UI action ids the navigator understands (InputManager actions in the UI category use these keys).
+// The UI action ids the navigator understands: the host maps its keys and buttons to these and calls on_action.
 namespace ui_actions {
 inline constexpr std::string_view Up = "ui.up", Down = "ui.down", Left = "ui.left", Right = "ui.right";
 inline constexpr std::string_view Next = "ui.next", Prev = "ui.prev", Home = "ui.home", End = "ui.end";
 inline constexpr std::string_view RegionPrev = "ui.regionPrev", RegionNext = "ui.regionNext";
-// A page's sections (regions of the focused stop), wrapping: Tab / Shift+Tab, the triggers.
+// A page's sections (regions of the focused stop), wrapping.
 inline constexpr std::string_view SectionPrev = "ui.sectionPrev", SectionNext = "ui.sectionNext";
 inline constexpr std::string_view Activate = "ui.activate", Secondary = "ui.secondary", Back = "ui.back";
 inline constexpr std::string_view Tooltip = "ui.tooltip", TooltipDetail = "ui.tooltipDetail", Compare = "ui.compare";
@@ -55,21 +55,19 @@ class GraphNavigator {
  public:
   explicit GraphNavigator(NavigatorHost host);
 
-  // Focus = a focused NODE.
-  bool has_focus() const { return graph_ && graph_->current_node() != nullptr; }
   Screen* screen() const { return screen_; }
 
   // Bind to a screen. Re-attaching the SAME screen means "content changed" (focus and announce memory
   // survive); a new screen swaps to its own persistent state (created on first attach).
   void attach(Screen* screen);
-  // A screen closed (popped without keep_state_on_pop, or a child removed): drop its state.
+  // A screen closed and its focus is not to be kept for its next opening: drop its state.
   void screen_closed(Screen* screen);
-  // Drop focus back to the screen's unfocused state (exploration).
+  // Drop focus back to the screen's unfocused state (a start_unfocused screen).
   void blur();
   // The per-frame pull: rebuild + reconcile, establish initial focus when content appears, apply pending
   // focus requests, announce any focus-identity change exactly once, watch live parts.
   void ensure_focus();
-  // Announce the current focus in full (e.g. when focus mode engages).
+  // Announce the current focus in full (a screen's entry, after its title).
   void announce_current();
   // Seat focus without a word (the landing counts as spoken): a screen whose entry something else announces.
   void settle_silently();
@@ -88,12 +86,12 @@ class GraphNavigator {
   int section_count() const;   // distinct regions in the focused node's stop (0 when it is in none)
   const GraphNode* focused_node() const { return graph_ ? graph_->current_node() : nullptr; }   // this render's
 
-  // Input: returns true when consumed. Called by InputManager's UI dispatch with the action key.
+  // Input: returns true when consumed. Called by the host with the action id of the key or button pressed.
   bool on_action(std::string_view action_key);
-  // Per-frame type-ahead feed (after on_action dispatch).
+  // Type-ahead feed: the letters typed and the arrows held, for a screen that allows_typeahead().
   void tick_typeahead(const TypeaheadInput& in);
 
-  // Debug inspection (the /gui dump): one line per node as the announcer reads it, focused one prefixed '>'.
+  // Debug inspection: one line per node as the announcer reads it, focused one prefixed '>'.
   std::string dump();
 
  private:
@@ -135,8 +133,7 @@ class GraphNavigator {
   std::optional<ControlId> last_spoken_key_;
   std::vector<ControlId> last_spoken_path_;   // its context path, for when the node itself has vanished
   // The last spoken node, resolved by id in the CURRENT render. Never keep a GraphNode* across frames: the
-  // graph is rebuilt immediate-mode and a stored pointer dangles (crashed the game in the announcer's path
-  // walk, 2026-08-21). Null when that node is not in this render.
+  // graph is rebuilt immediate-mode and a stored pointer dangles. Null when that node is not in this render.
   const GraphNode* last_spoken_node() const { return graph_ && graph_->current() ? graph_->current()->node_at(last_spoken_key_) : nullptr; }
   std::optional<ControlId> pending_focus_;
   bool pending_announce_ = true;
@@ -150,8 +147,8 @@ class GraphNavigator {
   // typeahead
   TypeAheadSearch search_;
   // The search scope is captured by IDENTITY + text, never by node pointer: the graph is immediate-mode and a
-  // GraphNode* from the render you typed in is freed two rerenders later (arrowing through the results used to
-  // read freed memory and focus whatever the stale id resolved to -- the tab row included; fixed 2026-08-26).
+  // GraphNode* from the render you typed in is freed two rerenders later, while arrowing through the results
+  // rerenders on every step.
   struct SearchEntry { ControlId id; std::string text; };
   std::vector<SearchEntry> search_nodes_;
   std::optional<ControlId> search_focus_id_;
@@ -159,7 +156,6 @@ class GraphNavigator {
   int search_held_dir_ = 0;
   double search_repeat_in_ = 0;
   int search_column_ = -1;
-  bool last_shift_ = false;
 };
 
 }  // namespace p3a::ui

@@ -71,9 +71,9 @@ TEST_CASE("row: Left/Right repeat at the ends, Up/Down say nothing") {
   CHECK(h.act(ui_actions::Down) == "");
 }
 
-// Regression (2026-08-26): the search scope used to hold GraphNode* from the render you typed in; every arrow
-// through the results rerenders (focus_at_column), so by the second arrow those pointers were freed arena memory
-// and the focus landed on whatever the stale id resolved to (the tab row included). The scope is by ControlId now.
+// The search scope must not hold GraphNode* from the render the letter was typed in: every arrow through the
+// results rerenders (focus_at_column), so by the second arrow such pointers would be freed arena memory. The scope
+// is kept by ControlId.
 namespace {
 struct WordsScreen : Screen {
   int builds = 0;
@@ -149,9 +149,9 @@ TEST_CASE("on_focus fires on a user landing, once per change of node, not on an 
 }
 
 namespace {
-// A tab strip stop, then a page stop holding a plain line and two top-level tree groups (the skills window's
-// Constellations tab). Home/End on a group must stay inside the page stop: the groups and the tab nodes share a
-// null parent, and the sibling walk once ran into the tab strip (2026-08-27).
+// A tab strip stop, then a page stop holding a plain line and two top-level tree groups. Home/End on a group
+// must stay inside the page stop: the groups and the tab nodes share a null parent, and the sibling walk must
+// not run into the tab strip.
 struct TabbedTreeScreen : Screen {
   std::string_view key() const override { return "tabbed"; }
   bool is_active() override { return true; }
@@ -191,7 +191,7 @@ TEST_CASE("Home/End on a top-level tree group stay within the page stop, never t
 }
 
 namespace {
-// A titled list whose rows remove themselves on Enter (the stash screen's "your items").
+// A titled list whose rows remove themselves on Enter (an item sold or used up).
 struct VanishScreen : Screen {
   std::vector<std::string> items{"a", "b", "c"};
   std::string_view key() const override { return "vanish"; }

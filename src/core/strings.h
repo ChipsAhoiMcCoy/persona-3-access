@@ -407,8 +407,6 @@ inline constexpr const char* kNoAreaDescription = "No description for this place
 inline constexpr const char* kFloor = "floor";
 inline constexpr const char* kTartarus = "Tartarus";
 inline constexpr const char* kUnknownArea = "Unknown area";
-inline constexpr const char* kWallTonesOn = "Wall tones on";
-inline constexpr const char* kWallTonesOff = "Wall tones off";
 // Velvet Room (the menus are pictures: the mod's own words)
 inline constexpr const char* kVelvetMenu[] = {"Fusion", "Summon from the Compendium", "Register to the Compendium"};
 inline constexpr const char* kVelvetTop = "What do you wish for?";

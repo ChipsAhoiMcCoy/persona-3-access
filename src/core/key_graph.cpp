@@ -68,9 +68,9 @@ void KeyGraph::reconcile(GraphRender& render, GraphState& state) {
   std::optional<ControlId> resolved;
 
   if (old) {
-    // Tier 1: the same backing object, even if its structural key changed (it moved).
-    // (The C# scanned the node dictionary in hash order; declaration order is used here so a render
-    // that somehow carried the same reference twice resolves deterministically.)
+    // Tier 1: the same backing object, even if its structural key changed (it moved). Scanned in
+    // declaration order, so a render that somehow carried the same reference twice resolves
+    // deterministically.
     if (old->reference() != nullptr) {
       for (GraphNode* n : render.order())
         if (n->id.reference_matches(old->reference())) {
@@ -86,8 +86,7 @@ void KeyGraph::reconcile(GraphRender& render, GraphState& state) {
     }
 
     // Tier 3 -- the GENERAL row-vanish rule: land on the nearest survivor OF THE SAME LANDING GROUP
-    // (this list's rows), next-first then previous -- never a header, a lead line (the vendor's gold
-    // row) or another panel. Only nodes stamped with a land_group participate; the vanished node's
+    // (this list's rows), next-first then previous -- never a header, a lead line or another panel. Only nodes stamped with a land_group participate; the vanished node's
     // group was remembered at focus time.
     if (!resolved && !state.key_order.empty() && !state.last_land_group.empty()) {
       const int old_index = index_of(state.key_order, *old);
@@ -102,7 +101,7 @@ void KeyGraph::reconcile(GraphRender& render, GraphState& state) {
     }
 
     // Fallback: nearest survivor walking the previous order backward. The order interleaves row cells,
-    // so when a whole row vanished (an equipped item's row) the walk lands on the previous row's LAST
+    // so when a whole row vanished the walk lands on the previous row's LAST
     // cell -- a different column. Slide along that row to the column focus was on, so acting on rows in
     // sequence keeps your place in the table.
     if (!resolved && !state.key_order.empty()) {
@@ -119,7 +118,7 @@ void KeyGraph::reconcile(GraphRender& render, GraphState& state) {
   }
 
   // Nothing matched (or first render): the start node -- but prefer the SELECTED member of its stop
-  // (initial focus lands on the checked radio/tab, not the top of a long list).
+  // (initial focus lands on the item currently chosen, not the top of a long list).
   if (!resolved) {
     GraphNode* start_node = render.node_at(render.start_key);
     GraphNode* sel = start_node != nullptr ? selected_node_in_stop(render, start_node->stop_key, start_node) : nullptr;
@@ -491,8 +490,8 @@ MoveResult KeyGraph::move_to_sibling_edge(bool first) {
   GraphNode* target = nullptr;
   for (GraphNode* n : current_->order()) {
     if (n->parent != node->parent) continue;
-    // Same Tab-stop only: a top-level group and the tab strip share a null parent, and Home from a
-    // constellation header used to land on the first tab (2026-08-27).
+    // Same Tab-stop only: a top-level group and another stop's nodes share a null parent, and Home from
+    // such a group must not land in the other stop.
     if (n->stop_key != node->stop_key) continue;
     if (first) {
       target = n;
@@ -507,8 +506,8 @@ MoveResult KeyGraph::move_to_sibling_edge(bool first) {
   return result;
 }
 
-// Change a group's expansion: through its vtable override when declared (the adapter driving a retained
-// container), else the persistent set.
+// Change a group's expansion: through its vtable override when declared (a screen that keeps the state
+// itself), else the persistent set.
 void KeyGraph::set_expanded(GraphNode* group, bool expanded) {
   if (group->vtable != nullptr) {
     if (expanded && group->vtable->on_expand) {

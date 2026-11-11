@@ -87,8 +87,6 @@ TEST_CASE("area places named only by the game") {
   CHECK(has(describe(at(401, 102, 3, 31)), "golden sand"));   // Episode Aigis' Desert of Doors
   CHECK(has(describe(at(406, 101, 3, 31)), "burning torches"));   // a labyrinth's landing
   CHECK(has(describe(at(201, 102, 5, 8)), "gilded clock"));   // Tartarus's entrance hall
-  CHECK(known(123, 101));
-  CHECK(!known(150, 201));
 }
 
 TEST_CASE("area fields whose every area shares a description") {

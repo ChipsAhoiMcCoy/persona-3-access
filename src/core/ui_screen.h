@@ -1,6 +1,6 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks, itself ported from Dark Vision (WrathAccess) by Bradley Renshaw; both zlib, see LICENSES/. This is not the original software.
 #pragma once
-// The navigator's view of a screen, after Grim Dark's core/screen.h (itself from wotr-access): a screen declares a
+// The navigator's view of a screen: a screen declares a
 // graph over OUR model of what it shows (immediate mode, rebuilt per operation), and the navigator owns focus,
 // movement, type-ahead and every announcement. The game's drawn UI is never the state store: a screen reads the
 // game's objects for its model and drives the game (its cursor, confirm) to match the mod's focus.
@@ -30,11 +30,12 @@ class Screen {
   virtual void build(GraphBuilder&) {}
   // The screen's title (spoken by the host on entry; the navigator uses it for an unfocused screen's Tab).
   virtual std::string screen_name() const { return {}; }
-  // Whether Tab wraps from the last stop back to the first, and arrows from the last item to the first.
+  // Whether Tab wraps from the last stop back to the first (the arrows never wrap: an edge repeats the item).
   virtual bool wrap() const { return false; }
-  // Keep per-screen nav state (focus, stop memory, expansion) when the screen closes.
+  // Keep per-screen nav state (focus, stop memory, expansion) when the screen closes. The host reads this
+  // and calls GraphNavigator::screen_closed when it is false.
   virtual bool keep_state_on_pop() const { return false; }
-  // Start with no focused element: arrows bubble to global handlers and Tab enters the tree.
+  // Start with no focused element: the arrows are not taken and Tab enters the first stop.
   virtual bool start_unfocused() const { return false; }
   // Stand down input dispatch entirely (a text field reads raw keys itself).
   virtual bool captures_raw_input() const { return false; }

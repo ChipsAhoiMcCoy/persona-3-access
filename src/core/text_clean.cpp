@@ -25,10 +25,10 @@ std::string clean_text(std::string_view s) {
     // similar, seen 2026-10-27): drop it, so such a page is silent.
     if (c == '@') continue;
     // U+2022 BULLET (E2 80 A2) and U+30FB KATAKANA MIDDLE DOT (E3 83 BB) as list markers at a line start.
-    if (line_start && i + 2 < s.size() + 0 && c == 0xE2 && (unsigned char)s[i + 1] == 0x80 && (unsigned char)s[i + 2] == 0xA2) { i += 2; space = true; continue; }
-    if (line_start && i + 2 < s.size() + 0 && c == 0xE3 && (unsigned char)s[i + 1] == 0x83 && (unsigned char)s[i + 2] == 0xBB) { i += 2; space = true; continue; }
+    if (line_start && i + 2 < s.size() && c == 0xE2 && (unsigned char)s[i + 1] == 0x80 && (unsigned char)s[i + 2] == 0xA2) { i += 2; space = true; continue; }
+    if (line_start && i + 2 < s.size() && c == 0xE3 && (unsigned char)s[i + 1] == 0x83 && (unsigned char)s[i + 2] == 0xBB) { i += 2; space = true; continue; }
     // U+3000 IDEOGRAPHIC SPACE
-    if (i + 2 < s.size() + 0 && c == 0xE3 && (unsigned char)s[i + 1] == 0x80 && (unsigned char)s[i + 2] == 0x80) { i += 2; space = true; continue; }
+    if (i + 2 < s.size() && c == 0xE3 && (unsigned char)s[i + 1] == 0x80 && (unsigned char)s[i + 2] == 0x80) { i += 2; space = true; continue; }
     if (space && !out.empty() && !closes(s, i)) out += ' ';
     space = false;
     line_start = false;
@@ -40,9 +40,7 @@ bool has_words(std::string_view s) {
   for (unsigned char c : s) if (c >= 0x80 || (c >= '0' && c <= '9') || ((c | 0x20) >= 'a' && (c | 0x20) <= 'z')) return true;
   return false;
 }
-}  // namespace p3a::core
 
-namespace p3a::core {
 std::string first_sentence(std::string_view s) {
   for (size_t i = 0; i + 1 < s.size(); ++i) {
     if (s[i] == '.' && i > 0 && s[i - 1] == '.') continue;   // an ellipsis does not end a sentence
@@ -50,9 +48,7 @@ std::string first_sentence(std::string_view s) {
   }
   return std::string(s);
 }
-}  // namespace p3a::core
 
-namespace p3a::core {
 // Lines the mod joins ("<name>, 3 of 4", "<line>. <description>", a choice list) get a comma or a period after text
 // that already ends a sentence: "member., 3 of 4", "HP.. Slightly", "yo!. y'know". A screen reader says "dot" for
 // ".," (the player's report, 2026-10-30). The comma or the extra period goes; ellipses ("...", "......") stay.

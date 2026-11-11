@@ -16,14 +16,13 @@ namespace p3a::ui {
 ///
 /// **Menu mode** -- rows of controls, wired automatically: left/right within a row, up/down between
 /// consecutive rows (two rows sharing a non-empty row key get column navigation -- up/down preserves
-/// the position instead of snapping to the first item; ported from Tanglebeep's MenuBuilder, itself
-/// from Factorio Access's menu.lua). Items added outside an explicit row become single-item rows (a
-/// plain vertical menu).
+/// the position instead of snapping to the first item). Items added outside an explicit row become
+/// single-item rows (a plain vertical menu).
 ///
 /// **Raw mode** -- add_node() + connect() for arbitrary topologies.
 ///
 /// Orthogonal to both: begin_stop() groups nodes into Tab-stops (arrows never cross a stop; Tab cycles
-/// them), set_region() tags nodes with a region for Ctrl+arrow jumps, and the PARENT STACK builds the
+/// them), set_region() tags nodes with a region (a page's section, for the section jumps), and the PARENT STACK builds the
 /// presentation hierarchy: push_context() pushes a non-focusable structural level ("Difficulty
 /// settings, list" -- announced when focus enters from outside), while begin_group() pushes a
 /// focusable, EXPANDABLE group header (a tree section) whose children only emit while it's expanded --
@@ -31,12 +30,12 @@ namespace p3a::ui {
 /// so screens hold no tree state of their own. Nesting recurses; a collapsed ancestor suppresses
 /// everything beneath it.
 ///
-/// Ownership note (C++ addition): every node the builder makes -- including the non-focusable context
-/// parents that are never published -- is owned by the builder until build() hands the whole arena to
-/// the render, which then owns it. Parent pointers therefore stay valid exactly as long as the render.
+/// Ownership: every node the builder makes -- including the non-focusable context parents that are
+/// never published -- is owned by the builder until build() hands the whole arena to the render, which
+/// then owns it. Parent pointers therefore stay valid exactly as long as the render.
 ///
-/// Misuse throws, as in the C#: std::invalid_argument for the ArgumentNullException/ArgumentException
-/// cases, std::logic_error for the InvalidOperationException cases.
+/// Misuse throws: std::invalid_argument for a bad argument (a control with no announcement),
+/// std::logic_error for a call out of order (an unclosed row, a duplicate id, a pop with nothing pushed).
 class GraphBuilder {
  public:
   /// `expansion` is the persistent expanded-group set (GraphState::expanded); null = every group must
@@ -53,7 +52,7 @@ class GraphBuilder {
   /// the screen builds its stops in a fixed order.
   GraphBuilder& begin_stop(Key key = {});
 
-  /// Tag nodes added from here with a region (Ctrl+arrow jump target) within the current stop; an empty
+  /// Tag nodes added from here with a region (a section-jump target) within the current stop; an empty
   /// key clears. Region keys must be stable across rebuilds.
   GraphBuilder& set_region(Key key);
 
@@ -69,7 +68,7 @@ class GraphBuilder {
   /// Push a FOCUSABLE, expandable group header (a tree section): the header emits as a navigable node
   /// here, and the children declared before end_group() emit only while the group is expanded (a
   /// collapsed ancestor suppresses the whole subtree -- recursion just works). Expansion state:
-  /// `expanded` when given (the adapter passes the retained container's state), else the persistent
+  /// `expanded` when given (a screen that keeps the state itself), else the persistent
   /// expansion set the builder was constructed with, else `default_expanded`. The engine's tree
   /// operations (Right/Left) expand/collapse via the vtable's on_expand/on_collapse overrides when set,
   /// else by mutating the persistent set.
@@ -79,7 +78,7 @@ class GraphBuilder {
   GraphBuilder& end_group() { return pop_context(); }
 
   /// Whether a group id is expanded in the persistent set -- for screens that must avoid even BUILDING
-  /// a collapsed group's children (a lazy hierarchy whose child VMs materialize on first access).
+  /// a collapsed group's children (a hierarchy whose children are costly to read).
   /// Groups with an explicit `expanded` argument manage their own state instead.
   bool is_expanded(const ControlId& id) const;
 
@@ -96,9 +95,6 @@ class GraphBuilder {
   /// Add a control -- into the open row, or as its own single-item row. A no-op inside a collapsed
   /// group's subtree.
   GraphBuilder& add_item(ControlId id, NodeVtablePtr vtable);
-
-  /// Add a read-only line (label only; no actions).
-  GraphBuilder& add_label(ControlId id, std::function<std::string()> label);
 
   // ---- raw mode ----
 
@@ -166,11 +162,11 @@ class GraphBuilder {
 
   // Every node in DECLARATION order regardless of mode -- the render's node order (and so the Tab-stop
   // cycle) must interleave menu rows and raw nodes as the screen declared them, not rows-then-raw
-  // (which shoved sheet stops behind later buttons).
+  // (which would put a raw stop behind the menu stops declared after it).
   std::vector<GraphNode*> declared_;
 
   // The menu row each menu-mode node belongs to (absent for raw nodes) -- for stitching the vertical
-  // gap where a stop mixes menu rows with raw content (a sheet below filter controls).
+  // gap where a stop mixes menu rows with raw content (a grid below a list's rows).
   std::unordered_map<const GraphNode*, Row*> row_of_;
 
   // Shared.

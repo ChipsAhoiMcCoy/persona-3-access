@@ -12,15 +12,13 @@
 
 #include "core/control_id.h"
 
-// The data model of the UI navigation graph, ported from wotr-access (C#) src/UI/Graph/GraphTypes.cs.
-// Engine-free by construction: nothing here knows a game type. Where the C# used `object` for a
-// backing widget we use `const void*` (identity only); where it used Func/Action we use std::function.
+// The data model of the UI navigation graph. Engine-free by construction: nothing here knows a game
+// type. A backing object is a `const void*` (identity only); behaviours are std::function slots.
 //
-// Nullable-string convention across this port: a C# `string` that could be null is a std::string here,
-// and EMPTY means null. Every consumer in the C# tested it with string.IsNullOrEmpty (or compared it
-// to another possibly-null string), so the two states were never distinguished. Nullable RETURN values
-// of the announcer (compose/leaf_text/first_part_text) keep the distinction as std::optional<std::string>,
-// because there "nothing to say" is the documented result the caller branches on.
+// String convention: an optional string is a std::string, and EMPTY means "none" (no kind, no label,
+// no landing group). The announcer's RETURN values (compose/leaf_text/first_part_text) are
+// std::optional<std::string> instead, because there "nothing to say" is the documented result the
+// caller branches on.
 namespace p3a::ui {
 
 /// The four navigable directions between graph nodes (explicit edges). Tab-stop cycling and region
@@ -30,8 +28,9 @@ enum class GraphDir : int { Up = 0, Right = 1, Down = 2, Left = 3 };
 inline constexpr int kGraphDirCount = 4;
 
 /// The well-known announcement-part kinds. A part's kind is its identity for control-type ordering,
-/// node-over-type overriding, and the user's per-kind announcement settings -- the same keys the legacy
-/// per-announcement settings used, so the global toggles cover both systems.
+/// node-over-type overriding and the announcer's part filter. The announcer itself reads three of them:
+/// a tooltip part is spoken after the position, a position part replaces the auto-stamped one, and a
+/// non-empty selected part marks the member a stop lands on.
 namespace announcement_kinds {
 inline constexpr std::string_view kLabel = "label";
 inline constexpr std::string_view kRole = "role";
@@ -44,12 +43,11 @@ inline constexpr std::string_view kPosition = "position";
 
 /// One part of a control's spoken focus readout ("Hold position" / "toggle" / "on"), resolved live at
 /// speak time. A LIVE part is additionally watched while its node is focused: when its resolved text
-/// changes (an async toggle settling, a value the game flips), the navigator speaks just that part
-/// immediately -- state feedback without re-reading the whole control, and without per-element watcher
-/// machinery.
+/// changes (a value the game flips, a description arriving), the navigator speaks just that part --
+/// state feedback without re-reading the whole control.
 struct NodeAnnouncement {
-  /// The part's text, resolved live. An empty result (or an empty std::function -- the C# null Text)
-  /// at speak time = the part stays silent.
+  /// The part's text, resolved live. An empty result (or an empty std::function) at speak time = the
+  /// part stays silent.
   std::function<std::string()> text;
   /// Watch this part while the node is focused and speak it when its value changes.
   bool live = false;
@@ -63,20 +61,18 @@ struct NodeAnnouncement {
                             std::string_view part_kind = {})
       : text(std::move(text_fn)), live(is_live), kind(part_kind) {}
 
-  /// C#: NodeAnnouncement.Static -- a part whose text never changes.
+  /// A part whose text never changes.
   static NodeAnnouncement fixed(std::string text_value) {
     return NodeAnnouncement([t = std::move(text_value)] { return t; });
   }
 };
 
-/// A CONTROL TYPE -- "button", "toggle", "slider" -- as a registry value rather than a class (the
-/// legacy system derived type identity from proxy classes via attributes, which forced attribute unions
-/// and class collapsing to share settings). A type owns the speak ORDER of its announcement kinds and
-/// the parts COMMON to every control of the type (the localized role word); nodes contribute their
-/// specific parts, overriding a common part of the same kind. The user's per-type announcement settings
-/// key off `key`. Types are registry values outliving any render -- nodes point at them.
+/// A CONTROL TYPE -- "button", "toggle", "slider" -- as a value rather than a class. A type owns the
+/// speak ORDER of its announcement kinds and the parts COMMON to every control of the type (the role
+/// word); nodes contribute their specific parts, overriding a common part of the same kind. A type
+/// must outlive every render -- nodes point at it.
 struct ControlType {
-  /// Stable settings/registry key ("button", "toggle", "slider").
+  /// Stable key ("button", "toggle", "slider"), for a part filter to tell types apart.
   std::string key;
   /// The announcement kinds in speak order; parts with unknown/absent kinds append after, in
   /// declaration order.
@@ -96,26 +92,25 @@ struct NodeVtable {
   /// kind order applies; otherwise parts speak in declaration order.
   std::vector<NodeAnnouncement> announcements;
 
-  /// The control's type (registry value) -- supplies the role word, the speak order, and the per-type
-  /// announcement settings identity. Null = an untyped one-off.
+  /// The control's type -- supplies the role word and the speak order. Null = an untyped one-off.
   const ControlType* control_type = nullptr;
 
   /// Optional. The node's LANDING group -- the general row-vanish rule: when the focused node
   /// disappears on a rebuild, the reconcile fallback lands on the nearest surviving node of the SAME
-  /// group (next first, then previous), never on a header, lead line or another panel. Sheets stamp
-  /// their data rows with their key automatically; nodes without a group use the plain
-  /// nearest-survivor walk.
+  /// group (next first, then previous), never on a header, lead line or another panel. The builder
+  /// stamps every actionable item with its Tab-stop's key (GraphBuilder::add_item); nodes without a
+  /// group use the plain nearest-survivor walk.
   std::string land_group;
 
   /// Optional. Fires when the USER's movement lands on this node (arrows, Home/End, Tab into a stop, a type-ahead
-  /// result) -- not on a rebaseline or a programmatic focus. A tab strip uses it to open the tab under the cursor.
+  /// result) -- not on a rebaseline or a programmatic focus.
   std::function<void()> on_focus;
-  /// Optional. Primary activation -- the left-click equivalent (Enter).
+  /// Optional. Primary activation (the host's confirm: ui_actions::Activate).
   std::function<void()> on_activate;
-  /// Optional. Secondary activation -- the right-click equivalent (Backspace).
+  /// Optional. Secondary activation (ui_actions::Secondary).
   std::function<void()> on_secondary;
-  /// Optional. Read / open the control's tooltip (Space, F1). The action owns the whole behavior
-  /// (speak, or open the drill-in tooltip reader), so the core stays game-agnostic.
+  /// Optional. Read the control's details (ui_actions::Tooltip). The action owns the whole behavior, so
+  /// the core stays game-agnostic.
   std::function<void()> on_tooltip;
   /// Optional. The control's details as text (a description, stats): what the host reads on demand (P3R: the review
   /// key) and what on_tooltip speaks when it is unset.
@@ -123,23 +118,22 @@ struct NodeVtable {
   /// Optional. The control's details as lines the host walks one at a time on demand (P3R: the detail buffer, the
   /// right stick or Ctrl+Up / Down), the control's own line first.
   std::function<std::vector<std::string>()> detail_lines;
-  /// Optional. The long form of the tooltip (Ctrl+Space) -- what the game shows with its modifier held.
-  /// Falls back to on_tooltip when unset.
+  /// Optional. The long form of the details (ui_actions::TooltipDetail). Falls back to on_tooltip when
+  /// unset.
   std::function<void()> on_tooltip_detail;
-  /// Optional. Compare (Backslash): speak the equipped counterpart of this item (the slot it would go to). The
-  /// screen decides what "equipped counterpart" means; the core only dispatches.
+  /// Optional. Compare (ui_actions::Compare): speak this item's counterpart. The screen decides what
+  /// the counterpart is; the core only dispatches.
   std::function<void()> on_compare;
-  /// Optional. Horizontal value adjust (a slider): sign is -1 (decrease) / +1 (increase), large
-  /// requests a coarse step. When set, left/right do NOT navigate.
+  /// Optional. Horizontal value adjust (a setting's value): sign is -1 (decrease) / +1 (increase),
+  /// large requests a coarse step. When set, left/right do NOT navigate.
   std::function<void(int sign, bool large)> on_adjust;
 
   /// Optional. The control's state line, spoken IMMEDIATELY (interrupting) after an activation/adjust
   /// that changes state -- the synchronous feedback path for rapid key repeats. Asynchronous /
   /// game-driven changes ride the Live announcement watch instead.
   std::function<std::string()> state_text;
-  /// Optional. Plays this control's hover sound when focus lands on it, replacing the navigator's
-  /// default. A plain action so the core stays game-agnostic (some game views assign non-default hover
-  /// sounds in code, e.g. dialogue answers).
+  /// Optional. Plays this control's own sound when focus lands on it, replacing the navigator's
+  /// default (NavigatorHost::hover_sound). A plain action so the core stays game-agnostic.
   std::function<void()> hover_sound;
   /// Optional. The text type-ahead matches against; empty = the first announcement part (the label).
   /// (A cell whose label is a bare number can search as its row's name, etc.)
@@ -148,20 +142,20 @@ struct NodeVtable {
   bool exclude_from_search = false;
 
   /// Optional (expandable groups): override HOW expansion state changes. When empty the engine mutates
-  /// the persistent expansion set (GraphState::expanded); the adapter wires these to the retained
-  /// container's Expand/Collapse instead.
+  /// the persistent expansion set (GraphState::expanded); a screen that keeps the state itself sets
+  /// these instead.
   std::function<void()> on_expand;
   std::function<void()> on_collapse;
 
-  /// Set when this group's own announcements already include its expanded/collapsed state (the
-  /// adapter's composed element messages do), so the announcer doesn't append it again.
+  /// Set when this group's own announcements already include its expanded/collapsed state, so the
+  /// announcer doesn't append it again.
   bool speaks_own_expansion = false;
-  /// Set when this node's announcements already include its list position (the adapter's composed
-  /// element messages do), so the announcer doesn't append the auto-stamped one.
+  /// Set when this node's announcements already include its list position, or it should have none (a
+  /// lone prompt), so the announcer doesn't append the auto-stamped one.
   bool speaks_own_position = false;
 
   /// The node's LOGICAL COLUMN in a tabular row (0 = the row's primary), or -1 when not tabular.
-  /// Stamped by the sheet builder; the engine uses it to PRESERVE the column when focus jumps
+  /// Set by the screen that declares the table; the engine uses it to PRESERVE the column when focus jumps
   /// non-directionally -- the reconcile fallback after a row vanishes, and type-ahead landings -- by
   /// sliding along the destination row's Left/Right edges to the same column.
   int column = -1;
@@ -171,8 +165,7 @@ using NodeVtablePtr = std::shared_ptr<NodeVtable>;
 
 /// A directed edge to another node, with an optional spoken transition line (a "lane change" -- e.g.
 /// crossing into a new column band). Kept as plain data; contextual announcements are composed from
-/// node metadata by the announcer, not per-edge closures (GC discipline in the original; here it keeps
-/// renders cheap to throw away).
+/// node metadata by the announcer, not per-edge closures, which keeps renders cheap to throw away.
 struct Transition {
   ControlId destination;
   std::string label;  // spoken only while crossing this edge; empty = silent edge
@@ -185,15 +178,15 @@ struct Transition {
 /// tab-stop and region membership, expandability).
 ///
 /// Nodes are heap-allocated and owned by their GraphRender: several relations here are IDENTITY
-/// relations in the C# (`ReferenceEquals(n.Parent, group)`, "the group is the from-node"), so the
-/// addresses must be stable for the render's lifetime and comparable by pointer.
+/// relations (`n->parent == group`, "the group is the from-node"), so the addresses must be stable for
+/// the render's lifetime and comparable by pointer.
 class GraphNode {
  public:
   GraphNode(ControlId node_id, NodeVtablePtr node_vtable)
       : id(std::move(node_id)), vtable(std::move(node_vtable)) {}
 
   ControlId id;
-  NodeVtablePtr vtable;  // null is legal (the C# allowed a null Vtable on hand-built nodes)
+  NodeVtablePtr vtable;  // null is legal on a hand-built node (the builder never makes one)
 
   const Transition* transition(GraphDir dir) const {
     const auto& slot = transitions_[static_cast<std::size_t>(dir)];
@@ -228,8 +221,8 @@ class GraphNode {
   /// The Tab-stop this node belongs to. Nodes sharing a stop key form one stop; Tab cycles stops in
   /// first-appearance order, landing on the stop's remembered position.
   Key stop_key;
-  /// The region (within a stop) this node belongs to, or empty. Ctrl+Up/Down jumps between regions in
-  /// first-appearance order.
+  /// The region (within a stop) this node belongs to, or empty: a page's section. The region and section
+  /// actions jump between a stop's regions in first-appearance order.
   Key region_key;
 
   /// Auto-stamped sibling position (1-based) and count, from the builder: menu-mode nodes grouped by
@@ -253,7 +246,7 @@ class GraphNode {
 class GraphRender {
  public:
   /// Where focus starts with no prior position. Always set by GraphBuilder::build(); unset only on a
-  /// hand-built render (where the C# would have thrown on the first dictionary lookup).
+  /// hand-built render, which then leaves focus unset.
   std::optional<ControlId> start_key;
 
   /// Take ownership of a node without publishing it (the non-focusable context parents).
@@ -294,8 +287,7 @@ struct GraphState {
   /// The focused control's id (carries its reference for tier-1 recovery). Unset until first render.
   std::optional<ControlId> cur_key;
 
-  /// The down-right total order from the previous render. EMPTY on first render (the C# null: every use
-  /// was a null test followed by an index-of that returns -1 on an empty list anyway).
+  /// The down-right total order from the previous render. EMPTY on first render.
   std::vector<ControlId> key_order;
 
   /// If set, focus jumps here on the next render when present (consumed either way).

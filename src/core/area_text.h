@@ -22,5 +22,4 @@ Season season(int month, int day);   // the game's own season dates (4/27, 10/1,
 int january(int month, int day);     // January's decline: 1 for the 1st-14th, 2 from the 15th, else 0
 int floor_of(int major, int minor, float z);   // the storey at height z (cm) in a multi-storey area, else 0
 std::string describe(const Scene& s);   // "" when nothing is written for the area
-bool known(int major, int minor);       // a description exists for these field ids
 }  // namespace p3a::core::area

@@ -95,14 +95,13 @@ void GraphNavigator::mark_spoken(const GraphNode* node) {
   last_spoken_path_ = GraphAnnouncer::path_ids(node);
 }
 
-// The per-frame pull. This single path replaces the initial-focus debt, the per-callsite announce
-// decisions, and the stranded-panel special case of the old navigator.
+// The per-frame pull: the one place a landing is seated and announced, whatever caused it.
 void GraphNavigator::ensure_focus() {
   if (!screen_ || !graph_) return;
-  // Throttle the IDLE rebuild: every input path rerenders on its own before acting, so this per-frame
-  // pull only needs to catch content appearing, external focus drift, and live-state flips -- none of
-  // which need 60 Hz. (A full build each frame burned ~6 ms on big item tables in wotr-access.) On
-  // throttled frames still watch the focused node's live parts against the cached render.
+  // The IDLE rebuild runs every kIdleRenderEvery-th frame: every input path rerenders on its own before
+  // acting, so this per-frame pull only needs to catch content appearing, a focus the screen or the game
+  // moved, and live-state flips, and a full build each frame is costly on a long list. On the frames
+  // between, the focused node's live parts are still watched against the cached render.
   int frame = host_.frame_count ? host_.frame_count() : 0;
   bool must_render = !state_->cur_key || pending_focus_ || pending_stop_;
   if (!must_render && frame - last_idle_render_ < kIdleRenderEvery) {
@@ -112,7 +111,7 @@ void GraphNavigator::ensure_focus() {
   last_idle_render_ = frame;
 
   if (!state_->cur_key && !pending_focus_) {
-    // Unfocused screens (exploration) stay unfocused until Tab seats a cursor.
+    // A start_unfocused screen stays unfocused until Tab seats a cursor.
     if (screen_->start_unfocused()) return;
     if (!graph_->rerender()) return;  // no content yet; reconcile seats the start node once there is
   } else {
@@ -147,8 +146,8 @@ void GraphNavigator::ensure_focus() {
   watch_live(node);
 }
 
-// Watch the FOCUSED node's Live parts and speak a part when its value changes (an async toggle settling,
-// the game flipping a state). Baselines silently whenever focus lands on a new identity.
+// Watch the FOCUSED node's Live parts and speak a part when its value changes (a setting's value, a
+// description the game fills in late). Baselines silently whenever focus lands on a new identity.
 void GraphNavigator::watch_live(const GraphNode* node) {
   auto anns = GraphAnnouncer::effective_announcements(node);
   if (anns.empty()) return;
@@ -211,7 +210,7 @@ bool GraphNavigator::on_action(std::string_view key) {
   if (key == Home) return jump_edge(true);
   if (key == End) return jump_edge(false);
   const GraphNode* node = graph_ ? graph_->current_node() : nullptr;
-  // Region jumps consume only when the focused node is IN a region; elsewhere Ctrl+arrows bubble.
+  // Region and section jumps consume only when the focused node is IN a region; elsewhere the key is not taken.
   if (key == RegionPrev) return node && !node->region_key.empty() && region_jump(-1);
   if (key == RegionNext) return node && !node->region_key.empty() && region_jump(1);
   if (key == SectionPrev) return node && !node->region_key.empty() && region_jump(-1, true);
@@ -245,7 +244,7 @@ bool GraphNavigator::on_action(std::string_view key) {
 bool GraphNavigator::arrow(GraphDir dir) {
   const GraphNode* focus_node = graph_ ? graph_->current_node() : nullptr;
   if (!focus_node) return false;
-  // A focused slider/dropdown adjusts on Left/Right (priority over any navigation).
+  // A focused control with on_adjust (a setting's value) adjusts on Left/Right (priority over any navigation).
   if (dir == GraphDir::Left || dir == GraphDir::Right)
     if (vtable_adjust(dir == GraphDir::Right ? 1 : -1)) return true;
   // Edge-wired movement first (rows/grids/flattened tree rows all ride edges).
@@ -267,12 +266,12 @@ bool GraphNavigator::arrow(GraphDir dir) {
       case KeyGraph::TreeMove::None: break;
     }
   }
-  // Nothing moved: at the edge of the list, repeat the focused item rather than go silent (the user,
-  // 2026-08-22; wotr's sibling games do this). Only along the list's own axis: Left/Right in a vertical
-  // list are not an edge, they are nothing -- and Up/Down in a pure row likewise.
-  // Consume edges inside trees; bubble from plain lists so an unfocused screen's arrows fall through to
-  // the overlay. A bubbled press something else answers is not repeated: the repeat and then the answer were
-  // both said (the calendar's April 30, then May 1, 2026-11-01).
+  // Nothing moved: at the edge of the list, repeat the focused item rather than go silent. Only along
+  // the list's own axis: Left/Right in a vertical list are not an edge, they are nothing -- and Up/Down in
+  // a pure row likewise.
+  // Edges inside trees are consumed; from a plain list the press is not taken, so the host can hand it on
+  // (to the game's own list). A press something else answers is not repeated: the repeat and then the
+  // answer were both said (the calendar's April 30, then May 1, 2026-11-01).
   bool consumed = KeyGraph::in_tree(graph_->current_node());
   if (on_list_axis(focus_node, dir) && (consumed || !host_.edge_answered || !host_.edge_answered(dir))) repeat_focused();
   return consumed;
@@ -321,7 +320,7 @@ bool GraphNavigator::tab(int step) {
   int n = (int)stops.size();
   if (ni < 0 || ni >= n) {
     if (screen_ && screen_->start_unfocused()) {
-      blur();  // truly unfocused: a later re-entry stays in exploration
+      blur();  // truly unfocused: a later re-entry starts unfocused again
       std::string name = screen_->screen_name();
       if (!name.empty()) speak(name, true);
       return true;
@@ -332,7 +331,7 @@ bool GraphNavigator::tab(int step) {
   return land_on_stop(stops[(size_t)ni]);
 }
 
-// Remembered position -> SELECTED member -> first node (so Tab into a radio/tab group lands on the current pick).
+// Remembered position -> SELECTED member -> first node (so Tab into a list lands on the item currently chosen).
 bool GraphNavigator::land_on_stop(const Key& stop_key) {
   GraphNode* land = graph_->stop_landing(stop_key);
   if (!land || !graph_->focus(land->id)) return true;
@@ -348,8 +347,8 @@ void GraphNavigator::play_hover(const GraphNode* node) {
   if (node && node->vtable && node->vtable->hover_sound) { try { node->vtable->hover_sound(); } catch (...) {} }
   else if (host_.hover_sound) host_.hover_sound();
 }
-// A user landing on a node: the node's on_focus (a tab strip opens the tab under the cursor). Only on a CHANGE of
-// node -- repeating the focused item at a list edge is not a landing.
+// A user landing on a node: the node's on_focus. Only on a CHANGE of node -- repeating the focused item at a
+// list edge is not a landing.
 void GraphNavigator::fire_focus(const GraphNode* node) {
   if (!node || !node->vtable || !node->vtable->on_focus) return;
   if (last_spoken_key_ && *last_spoken_key_ == node->id) return;
@@ -417,8 +416,8 @@ bool GraphNavigator::vtable_adjust(int sign) {
 std::optional<std::string> GraphNavigator::compose_move(const GraphNode* from, const GraphNode* to, bool entry, std::string_view transition) {
   if (entry) return GraphAnnouncer::compose(nullptr, to, transition);
   // The node last spoken may have vanished (its row was removed by the action it just ran): its remembered path
-  // still says which levels we were inside, so the landing reads as a sibling move (2026-09-04: every Enter in a
-  // list repeated the list's title).
+  // still says which levels we were inside, so the landing reads as a sibling move, not as an entry that
+  // repeats the list's title.
   if (from == nullptr && last_spoken_key_ && !last_spoken_path_.empty()) return GraphAnnouncer::compose_from_path(last_spoken_path_, to, transition);
   return GraphAnnouncer::compose(from, to, transition);
 }
@@ -444,15 +443,15 @@ void GraphNavigator::tick_typeahead(const TypeaheadInput& in) {
   } else {
     search_held_dir_ = 0;
   }
-  // Typed text is UTF-16: a non-ASCII letter ("é", "ü", Cyrillic) is searched as itself -- it used to become '?'
-  // and match nothing (a non-English player's report, 2026-09-22). A surrogate pair is combined into one code point.
+  // Typed text is UTF-16: a non-ASCII letter ("é", "ü", Cyrillic) is searched as itself. A surrogate pair is
+  // combined into one code point.
   for (size_t k = 0; k < in.typed.size(); ++k) {
     std::uint32_t cp = in.typed[k];
     if (cp >= 0xD800 && cp <= 0xDBFF && k + 1 < in.typed.size() && in.typed[k + 1] >= 0xDC00 && in.typed[k + 1] <= 0xDFFF)
       cp = 0x10000 + ((cp - 0xD800) << 10) + (std::uint32_t)(in.typed[++k] - 0xDC00);
     else if (cp >= 0xD800 && cp <= 0xDFFF) continue;   // a lone surrogate: nothing to type
     if ((cp >= u'a' && cp <= u'z') || (cp >= u'A' && cp <= u'Z') || (cp >= u'0' && cp <= u'9') || cp > 0x7f) type_char(cp);
-    else if (cp == u' ' && search_.has_buffer()) type_char(' ');  // space only with an existing buffer: alone it stays the tooltip key
+    else if (cp == u' ' && search_.has_buffer()) type_char(' ');  // space only with an existing buffer: alone it is the host's key
   }
 }
 

@@ -75,3 +75,14 @@ TEST_CASE("a character of several bytes is one character") {
   CHECK(f.edited("Jos") == "\xC3\xA9");
   CHECK(f.edited("Jos\xC3\xA8") == "\xC3\xA8");
 }
+
+TEST_CASE("text that is not valid UTF-8 is read, not thrown on") {
+  TextField f;
+  f.open("");
+  CHECK(f.edited("\xA9") == "\xA9");   // a continuation byte with no lead byte before it
+  CHECK(f.caret() == 1);
+  CHECK(f.edited("\xA9" "b") == "b");
+  f.open("\xA9" "bc");
+  CHECK(f.edited("\x80" "bc") == "\x80" "bc");   // the stray byte itself changed: the walk back stops at the start
+  CHECK(f.pressed(Key::Home) == "\x80");
+}

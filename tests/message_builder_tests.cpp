@@ -22,6 +22,12 @@ TEST_CASE("no leading comma before the first item, empty fragments ignored") {
   CHECK(m.build() == "only");
 }
 
+TEST_CASE("a list item after plain fragments is set off by a comma") {
+  MessageBuilder m;
+  m.fragment("no").fragment("match").list_item().fragment("3 of 4");
+  CHECK(m.build() == "no match, 3 of 4");
+}
+
 TEST_CASE("single use") {
   MessageBuilder m;
   m.fragment("x");

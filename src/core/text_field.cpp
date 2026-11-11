@@ -47,7 +47,7 @@ std::string TextField::edited(const std::string& now) {
   while (start < keep && text_[start] == now[start]) ++start;
   size_t tail = 0;
   while (tail < text_.size() - start && tail < now.size() - start && text_[text_.size() - 1 - tail] == now[now.size() - 1 - tail]) ++tail;
-  while (continuation(now, start)) --start;
+  while (start > 0 && continuation(now, start)) --start;   // text that opens on a stray continuation byte stops at 0
   while (tail > 0 && continuation(now, now.size() - tail)) --tail;
   std::string removed = text_.substr(start, text_.size() - tail - start);
   std::string added = now.substr(start, now.size() - tail - start);

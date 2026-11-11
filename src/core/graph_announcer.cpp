@@ -17,7 +17,7 @@ std::vector<const GraphNode*> path_of(const GraphNode* node) {
 }
 
 bool has_kind(const std::vector<NodeAnnouncement>& anns, const std::string& kind) {
-  if (kind.empty()) return false;  // the C# null kind never matches
+  if (kind.empty()) return false;  // a kindless part never matches
   for (const NodeAnnouncement& a : anns)
     if (a.kind == kind) return true;
   return false;
@@ -39,7 +39,7 @@ bool duplicates_next(const std::string& label, const std::string& next) {
   return next.size() == label.size() || next[label.size()] == ',';
 }
 
-// A stand-in part handed to the part filter so the user's position-kind toggle governs the
+// A stand-in part handed to the part filter, so a filter that drops position-kind parts drops the
 // auto-stamped position too.
 const NodeAnnouncement& auto_position_probe() {
   static const NodeAnnouncement probe(nullptr, false, announcement_kinds::kPosition);
@@ -116,8 +116,7 @@ std::vector<NodeAnnouncement> GraphAnnouncer::effective_announcements(const Grap
   for (const NodeAnnouncement& a : vt->announcements) result.push_back(a);
 
   if (type != nullptr && !type->order.empty() && result.size() > 1) {
-    // Stable by construction: the C# built a composite (kind order index, declaration index) key
-    // because List.Sort is unstable and would have scrambled same-bucket (kindless) parts.
+    // A stable sort: parts of one bucket (the kindless ones) keep their declaration order.
     std::stable_sort(result.begin(), result.end(),
                      [type](const NodeAnnouncement& x, const NodeAnnouncement& y) {
                        return order_index(type->order, x.kind) < order_index(type->order, y.kind);
@@ -149,15 +148,14 @@ std::optional<std::string> GraphAnnouncer::leaf_text(const GraphNode* node) {
     if (a.text && a.kind != tooltip) push(a.text());
 
   const NodeVtable* vt = node != nullptr ? node->vtable.get() : nullptr;
-  // (The C# dereferenced node.Vtable unguarded on both branches below; a node with no vtable has no
-  // announcements to speak either, so guarding is a strict improvement.)
+  // (A node with no vtable has no announcements to speak either: both branches below skip it.)
   if (node != nullptr && node->expandable && vt != nullptr && !vt->speaks_own_expansion &&
       expanded_state_text) {
     push(expanded_state_text(node->expanded));
   }
 
   // The auto-stamped sibling position, unless the node carries its own (an explicit position-kind part,
-  // or the adapter's composed message). Honors the user's per-kind setting.
+  // or speaks_own_position). Honors the part filter.
   if (node != nullptr && node->position_count > 0 && position_text && vt != nullptr &&
       !vt->speaks_own_position && !has_kind(vt->announcements, std::string(announcement_kinds::kPosition)) &&
       (!part_filter || part_filter(vt->control_type, auto_position_probe()))) {

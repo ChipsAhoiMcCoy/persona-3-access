@@ -1,5 +1,5 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks, itself ported from Dark Vision (WrathAccess) by Bradley Renshaw; both zlib, see LICENSES/. This is not the original software.
-// Ported from wotr-access tests/KeyGraphTests.cs (xUnit -> doctest). Every case is carried over.
+// KeyGraph: moves, stops, regions, tree operations and where focus lands after a rebuild.
 #include "doctest.h"
 
 #include <string>
@@ -362,8 +362,7 @@ TEST_CASE("tab into a stop lands on the selected member when there is no memory"
 TEST_CASE("a raw block between menu rows stays reachable") {
   // Menu row, raw block (its own internal wiring), menu row -- all one stop. Menu wiring must BREAK at
   // the raw block (declaration order), and the stitcher wires the seams; otherwise the menu edges skip
-  // over the block and it becomes an unreachable island (the class progression grid between the skills
-  // list and the auto-level button).
+  // over the block and it becomes an unreachable island.
   GraphState state;
   KeyGraph g(
       [] {

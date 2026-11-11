@@ -111,11 +111,6 @@ int floor_of(int major, int minor, float z) {
   return 0;
 }
 
-bool known(int major, int minor) {
-  for (const Entry& e : kEntries) if (e.major == canonical(major) && e.minor == minor) return true;
-  return false;
-}
-
 std::string describe(const Scene& s) {
   const Entry* e = find(s);
   if (!e) return {};

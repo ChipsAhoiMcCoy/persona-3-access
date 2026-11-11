@@ -1,6 +1,6 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks, itself ported from Dark Vision (WrathAccess) by Bradley Renshaw; both zlib, see LICENSES/. This is not the original software.
-// Ported from wotr-access tests/GraphBuilderTests.cs (xUnit -> doctest). Every case is carried over.
-// Exception mapping: InvalidOperationException -> std::logic_error, ArgumentException -> std::invalid_argument.
+// GraphBuilder: the edges, stops, parents and positions a declaration gives.
+// Misuse throws std::logic_error (a call out of order) or std::invalid_argument (a bad argument).
 #include "doctest.h"
 
 #include <stdexcept>
@@ -211,7 +211,7 @@ TEST_CASE("regions are stamped") {
 
 TEST_CASE("mixed modes keep declaration order") {
   // A screen declaring list -> raw grid -> button must keep that Tab-stop order (raw nodes must NOT be
-  // appended after all menu rows -- that displaced sheet stops behind later buttons).
+  // appended after all menu rows -- that would put the grid's stop behind the button's).
   const GraphRenderPtr render = GraphBuilder()
                                     .add_item(id("list1"), vt("L1"))
                                     .begin_stop()
@@ -226,8 +226,8 @@ TEST_CASE("mixed modes keep declaration order") {
 }
 
 TEST_CASE("a mixed stop stitches menu to raw vertically") {
-  // A stop with menu controls above raw sheet content (the inventory stash: search/sort/filters over the
-  // item table) must be arrow-traversable across the mode boundary.
+  // A stop with menu controls above raw content (a search line and a row of filters over a table wired
+  // by hand) must be arrow-traversable across the mode boundary.
   const GraphRenderPtr render = GraphBuilder()
                                     .add_item(id("search"), vt("Search"))
                                     .start_row()
@@ -240,11 +240,11 @@ TEST_CASE("a mixed stop stitches menu to raw vertically") {
                                     .connect(id("r1"), GraphDir::Up, id("r0"))
                                     .build();
 
-  // Filter cells drop into the sheet's first row; the sheet's top links back up.
+  // Filter cells drop into the table's first row; the table's top links back up.
   CHECK(render->node_at(id("f1"))->transition(GraphDir::Down)->destination == id("r0"));
   CHECK(render->node_at(id("f2"))->transition(GraphDir::Down)->destination == id("r0"));
   CHECK(render->node_at(id("r0"))->transition(GraphDir::Up)->destination == id("f1"));
-  // The sheet's own wiring is untouched.
+  // The table's own wiring is untouched.
   CHECK(render->node_at(id("r0"))->transition(GraphDir::Down)->destination == id("r1"));
 }
 

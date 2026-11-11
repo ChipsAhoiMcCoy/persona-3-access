@@ -1,6 +1,6 @@
 #pragma once
 // A movie played against the real Schedule with a simulated narrator, frame by frame, far faster than real time:
-// the unit tests and tools' ad_sim (every movie's real cue list) use it. The narrator plays a cue for exactly its
+// the unit tests use it, and it can run a movie's real cue list under many playbacks. The narrator plays a cue for exactly its
 // length in unpaused time; the movie clock can pause, hitch, jump and stop where a scenario says.
 #include "core/ad_schedule.h"
 #include <cstdint>

@@ -61,14 +61,13 @@ void append_codepoint(std::string& out, std::uint32_t cp) {
 }
 
 // The ASCII folding of one code point, or null to pass it through unchanged. Entries are exactly the
-// characters NFD decomposes into base + NonSpacingMark (which the C# then dropped), plus the two
-// ligatures it special-cased. Characters NFD leaves alone (D-stroke, thorn, eszett, l-stroke, ...) pass
-// through here too, as they did there.
+// characters Unicode NFD decomposes into a base letter + a combining mark, plus the ligatures ae and
+// oe. Characters NFD leaves alone (D-stroke, thorn, eszett, l-stroke, ...) pass through.
 const char* ascii_fold(std::uint32_t cp) {
   switch (cp) {
     // Latin-1 Supplement.
     case 0xC0: case 0xC1: case 0xC2: case 0xC3: case 0xC4: case 0xC5: return "A";
-    case 0xC6: return "ae";  // the C# folded both cases of the ligature to lowercase
+    case 0xC6: return "ae";  // both cases of the ligature fold to lowercase
     case 0xC7: return "C";
     case 0xC8: case 0xC9: case 0xCA: case 0xCB: return "E";
     case 0xCC: case 0xCD: case 0xCE: case 0xCF: return "I";
@@ -183,7 +182,6 @@ void TypeAheadSearch::clear() {
   buffer_.clear();
   is_search_active_ = false;
   result_indices_.clear();
-  result_names_.clear();
   result_cursor_ = 0;
   announce_result_ = nullptr;
 }
@@ -229,7 +227,6 @@ void TypeAheadSearch::search(int item_count, const std::function<std::string(int
   const std::string trimmed = trim_end(buffer_str);
   if (!has_buffer() || item_count == 0 || trimmed.empty()) {
     result_indices_.clear();
-    result_names_.clear();
     result_cursor_ = 0;
     is_search_active_ = true;
     if (on_no_match) on_no_match(buffer_str);
@@ -238,9 +235,6 @@ void TypeAheadSearch::search(int item_count, const std::function<std::string(int
 
   for (int t = 0; t < kTierCount; t++) {
     tier_indices_[t].clear();
-    tier_names_[t].clear();
-    tier_positions_[t].clear();
-    tier_sort_lengths_[t].clear();
     tier_in_segment_[t].clear();
   }
   const std::string lower_buffer = text_util::to_lower_invariant(trimmed);
@@ -252,14 +246,11 @@ void TypeAheadSearch::search(int item_count, const std::function<std::string(int
     const int tier = match_tier(text_util::to_lower_invariant(name), lower_buffer, pos);
     if (tier >= 0) {
       tier_indices_[tier].push_back(i);
-      tier_names_[tier].push_back(name);
-      tier_positions_[tier].push_back(pos);
       // Matches inside the name (before the first comma) rank ahead of matches inside the appended
-      // metadata; sort length is likewise name-only.
+      // metadata.
       const std::size_t comma = name.find(',');
       const int name_len = comma == std::string::npos ? static_cast<int>(name.size())
                                                       : static_cast<int>(comma);
-      tier_sort_lengths_[tier].push_back(name_len);
       tier_in_segment_[tier].push_back(pos < name_len ? 0 : 1);
     }
   }
@@ -267,24 +258,18 @@ void TypeAheadSearch::search(int item_count, const std::function<std::string(int
   // Within a tier, entries stay in ITEM order (collected 0..n above) -- no length re-ranking. Merge:
   // name (pre-comma) matches across all tiers before metadata (post-comma) matches.
   work_indices_.clear();
-  work_names_.clear();
   for (int in_seg = 0; in_seg <= 1; in_seg++)
     for (int t = 0; t < kTierCount; t++)
       for (std::size_t i = 0; i < tier_indices_[t].size(); i++)
-        if (tier_in_segment_[t][i] == in_seg) {
-          work_indices_.push_back(tier_indices_[t][i]);
-          work_names_.push_back(tier_names_[t][i]);
-        }
+        if (tier_in_segment_[t][i] == in_seg) work_indices_.push_back(tier_indices_[t][i]);
 
   if (work_indices_.empty()) {
     result_indices_.clear();
-    result_names_.clear();
     result_cursor_ = 0;
     is_search_active_ = true;
     if (on_no_match) on_no_match(buffer_str);
   } else {
     result_indices_.swap(work_indices_);
-    result_names_.swap(work_names_);
     result_cursor_ = 0;
     is_search_active_ = true;
     announce_current_result();

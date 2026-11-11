@@ -1,6 +1,6 @@
 #pragma once
-// Audio description scheduling, engine-free (unit-tested in tests/ad_schedule_tests.cpp, and run over every movie's
-// real cue list by the ad_sim tool). The caller feeds it the movie clock and the narrator's state each frame and
+// Audio description scheduling, engine-free (unit-tested in tests/ad_schedule_tests.cpp through the simulated
+// playback of core/ad_sim.h). The caller feeds it the movie clock and the narrator's state each frame and
 // carries out the actions it returns; it decides which cue plays when, follows pauses, seeks and skips, and keeps
 // a record of how every cue ended, so a test can tell a cue that played in full from one cut short.
 #include <string>
@@ -42,7 +42,6 @@ class Schedule {
   State state(int i) const { return state_[i]; }
   const std::string& reason(int i) const { return reason_[i]; }
   size_t size() const { return cues_.size(); }
-  const Cue& cue(int i) const { return cues_[i]; }
 
  private:
   void cut(std::vector<Action>& out, const char* why);

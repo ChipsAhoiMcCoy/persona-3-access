@@ -1,5 +1,5 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks, itself ported from Dark Vision (WrathAccess) by Bradley Renshaw; both zlib, see LICENSES/. This is not the original software.
-// Ported from wotr-access tests/GraphAnnouncerTests.cs (xUnit -> doctest). Every case is carried over.
+// GraphAnnouncer: what a focus change reads, from the old and new parent paths.
 #include "doctest.h"
 
 #include <memory>
@@ -67,7 +67,7 @@ class Arena {
 // Readable failure output: the announcer returns nullopt for "nothing to say".
 std::string spoken(const std::optional<std::string>& s) { return s ? *s : std::string("<nothing>"); }
 
-// The announcer's hooks are process-wide statics (as in the C#); restore them however a case exits.
+// The announcer's hooks are process-wide statics; restore them however a case exits.
 struct ScopedHooks {
   ScopedHooks()
       : part_filter(GraphAnnouncer::part_filter),
@@ -140,8 +140,8 @@ TEST_CASE("an ascend reads the leaf only") {
 }
 
 TEST_CASE("descending from a group onto its child reads the child only") {
-  // The group is ON the child's chain AND is the from-node: the prefix swallows it -- the old retained-
-  // path behavior (stepping into your own group never re-announces the group).
+  // The group is ON the child's chain AND is the from-node: the prefix swallows it (stepping into your
+  // own group never re-announces the group).
   Arena a;
   GraphNode* group = a.node("Combat");
   group->expandable = true;
@@ -173,7 +173,7 @@ TEST_CASE("the expanded state word appends to groups") {
   CHECK(spoken(GraphAnnouncer::compose_full(group)) == "Combat, collapsed");
   group->expanded = true;
   CHECK(spoken(GraphAnnouncer::compose_full(group)) == "Combat, expanded");
-  group->vtable->speaks_own_expansion = true;  // adapter nodes carry their own state word
+  group->vtable->speaks_own_expansion = true;  // a group whose own parts carry the state word
   CHECK(spoken(GraphAnnouncer::compose_full(group)) == "Combat");
 }
 

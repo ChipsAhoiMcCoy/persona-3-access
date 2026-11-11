@@ -14,7 +14,7 @@ namespace p3a::ui {
 ///
 /// `from`/`to` point into the render they were read from. KeyGraph keeps the previous render alive
 /// across exactly one rebuild (see KeyGraph::rerender), so a result stays readable until the operation
-/// after the one that produced it -- which is all the C#'s GC-backed usage ever needed.
+/// after the one that produced it.
 struct MoveResult {
   bool moved = false;          // focus actually changed nodes
   GraphNode* from = nullptr;   // node before the operation (null on first landing)
@@ -23,8 +23,7 @@ struct MoveResult {
 };
 
 /// The navigation engine: a directed graph of controls rebuilt from a render callback on each
-/// operation, with focus persisting in an external GraphState. Ported from Tanglebeep (with
-/// permission), itself from Factorio Access's key-graph.lua. Two invariants carry over:
+/// operation, with focus persisting in an external GraphState. Two invariants:
 ///
 /// **Down-right total order** (compute_order): from the start node, go right until stuck, queueing each
 /// down -- visits a planar UI in reading order. Nodes down-right can't reach (later Tab-stops) are
@@ -34,8 +33,8 @@ struct MoveResult {
 /// survivor rather than jumping to the start -- following the backing object that moved (tier 1) or the
 /// logical control whose backing object was rebuilt (tier 2) first.
 ///
-/// Extensions over the original: Tab-stop cycling and region jumps as operations over node metadata
-/// (with per-stop remembered positions), and per-node secondary/tooltip/adjust behaviors.
+/// On top of the edges: Tab-stop cycling and region jumps as operations over node metadata (with
+/// per-stop remembered positions), and per-node secondary/tooltip/adjust behaviors.
 class KeyGraph {
  public:
   /// `state` is external and must outlive the graph (the screen owns it; it is the only thing that
@@ -90,8 +89,8 @@ class KeyGraph {
   MoveResult move_stop(int dir, bool wrap);
 
   /// Jump to the next/previous region within the current stop (declaration order), landing on the
-  /// region's first node.
-  // `wrap`: past the last region to the first (a page's sections), else no move at the ends.
+  /// region's first node. `wrap`: past the last region to the first (a page's sections), else no move
+  /// at the ends.
   MoveResult move_region(int dir, bool wrap = false);
 
   /// Move focus to a specific control (a node just revealed, a screen's chosen landing). False when it
@@ -103,15 +102,13 @@ class KeyGraph {
   bool focus_by_reference(const void* reference);
 
   /// Where focus lands when entering a stop with no active cursor: the remembered position, else the
-  /// SELECTED member (a radio/tab/list item currently checked -- the old RepresentativeChild behavior;
-  /// a boon on long lists), else the stop's first node.
+  /// SELECTED member (the item currently chosen -- a boon on long lists), else the stop's first node.
   GraphNode* stop_landing(const Key& stop_key) const;
   static GraphNode* stop_landing(const GraphRender& render, const GraphState& state, const Key& stop_key);
 
   /// The first node in a stop that reads as SELECTED -- carries a non-empty selected-kind announcement
-  /// part (SelectionItem / ChoiceOption / Tab / radio all declare one), or null.
-  // The node of the stop whose `selected` part is non-empty, among the siblings of `sibling_of` (a form's
-  // checked radio must not steal the landing from the edit field above it).
+  /// part -- among the siblings of `sibling_of` (a chosen item under another parent must not steal the
+  /// landing from the line above it), or null.
   static GraphNode* selected_node_in_stop(const GraphRender& render, const Key& stop_key, const GraphNode* sibling_of);
 
   // ---- tree operations (Right/Left semantics for expandable groups) ----
@@ -156,9 +153,9 @@ class KeyGraph {
   bool secondary();
   /// Run the focused control's tooltip behavior. False = it has none.
   bool tooltip();
-  /// Run the focused control's drag behavior. False = it has none.
+  /// Run the focused control's compare behavior. False = it has none.
   bool compare();
-  /// If the focused control adjusts horizontally (a slider), adjust and return true; false = the caller
+  /// If the focused control adjusts horizontally (a setting's value), adjust and return true; false = the caller
   /// should navigate instead.
   bool try_adjust(int sign, bool large);
 
@@ -171,9 +168,9 @@ class KeyGraph {
   std::function<GraphRenderPtr()> render_callback_;
   GraphState* state_;
   GraphRenderPtr current_;
-  // The render before `current_`, kept alive for one more operation. The C# leaned on the GC here: an
-  // operation reads a node, rebuilds, and then keeps using the node it read (tree_right does exactly
-  // that, and every MoveResult hands the caller nodes that a later rebuild would otherwise free).
+  // The render before `current_`, kept alive for one more operation: an operation reads a node,
+  // rebuilds, and then keeps using the node it read (tree_right does exactly that, and every MoveResult
+  // hands the caller nodes that a later rebuild would otherwise free).
   GraphRenderPtr previous_;
 };
 

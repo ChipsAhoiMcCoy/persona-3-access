@@ -12,10 +12,8 @@ MessageBuilder& MessageBuilder::fragment(std::string_view text) {
   check_not_built();
   if (text == " ") throw std::invalid_argument("fragment(\" \") is unnecessary: spaces are added between fragments automatically");
   if (text.empty()) return *this;
-  if (state_ == State::ListItem) {
-    if (!first_list_item_) text_ += ',';
-    first_list_item_ = false;
-  }
+  // A new list item is set off by a comma from whatever came before it: an earlier item, or plain fragments.
+  if (state_ == State::ListItem && !text_.empty()) text_ += ',';
   state_ = (state_ == State::ListItem || state_ == State::FragmentInList) ? State::FragmentInList : State::Fragment;
   if (!text_.empty()) text_ += ' ';
   text_.append(text);

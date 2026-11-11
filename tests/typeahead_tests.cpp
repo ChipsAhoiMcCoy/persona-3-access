@@ -1,7 +1,6 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks, itself ported from Dark Vision (WrathAccess) by Bradley Renshaw; both zlib, see LICENSES/. This is not the original software.
-// TypeAheadSearch had no tests in wotr-access; these are new, and exist because the C++ port had to
-// hand-write the case folding and diacritic folding that C# got from Unicode normalization (see
-// core/typeahead.h). They pin the six match tiers, the list-order/name-before-metadata ranking, and the
+// TypeAheadSearch: its case folding and diacritic folding are written by hand (see core/typeahead.h),
+// so these pin them, with the six match tiers, the list-order/name-before-metadata ranking, and the
 // repeat-letter cycle described in the class comment.
 #include "doctest.h"
 
@@ -123,9 +122,8 @@ TEST_CASE("result navigation wraps in both directions") {
   CHECK(hits.back() == 0);
 }
 
-// A non-English player's report (2026-09-22): typed non-ASCII letters reached the search as '?' and matched
-// nothing. The navigator now appends whole code points; the buffer stays valid UTF-8 through backspace and the
-// repeat-letter cycle.
+// A typed non-ASCII letter must reach the search as itself, not as '?'. The navigator appends whole code
+// points; the buffer stays valid UTF-8 through backspace and the repeat-letter cycle.
 TEST_CASE("a typed accented letter is searched as itself, and backspace removes it whole") {
   const std::vector<std::string> items = {"Autel", "\xC3\x89glise", "\xC3\xA9" "cole", "Ecurie"};   // Eglise, ecole (accented)
   TypeAheadSearch search;
