@@ -538,10 +538,13 @@ static bool named_as_action(const std::string& name) {
     if (name.rfind(verb, 0) == 0) return true;
   return false;
 }
-static std::string verb_for(const std::string& label) {
+// `of`: the point of interest the prompt belongs to, the nearest of that name (left alone when it is nobody's).
+static std::string verb_for(const std::string& label, WeakObj* of = nullptr) {
   for (auto& p : scan(800.0f)) {
-    if (!is_named(p.name, label)) continue;
     UObject* a = p.obj.resolve();
+    // A Twilight Fragment is listed under the mod's name for it; its prompt has the game's ("Something Shining").
+    if (!is_named(p.name, label) && !(p.kind == Kind::Fragment && a && hit_name(a) == label)) continue;
+    if (of) *of = p.obj;
     std::string icon = a ? icon_of(a) : "";
     // "Go to" only before a place the way leads to ("Go to: Iwatodai Station"). A label that already says what you do
     // ("Enter the Velvet Room", "Go Elsewhere", "Head Up") and a thing that is not an area change (Tartarus' "Giant
@@ -619,17 +622,21 @@ static void prompt_tick() {
       }
     }
   std::string& last = g_prompt;
+  static WeakObj prompt_of;   // the point of interest that prompt belongs to; none for a party member's
   std::string label = misc_check_label();
   if (label == last) return;
   if (label.empty()) {
     // The prompt hides and shows again while the hero closes in on the thing or person (Mitsuru's was said five times
     // walking up to her, 2026-11-03): it stays said until the hero is out of its reach. A following party member is
     // no point of interest: theirs stays said until another prompt shows.
-    if (!last.empty()) {
-      bool near_it = false, poi = false;
-      for (auto& p : scan(800.0f))
-        if (is_named(p.name, last)) { poi = true; if (p.dist <= 300.0f) near_it = true; }
-      if (poi && !near_it) last.clear();
+    // The thing is the one the prompt was said for, asked itself: looking it up by name in a fresh list every frame
+    // cost 0.1 ms a frame, and went on for good once the thing had left the list (an exit gone through, 2026-11-11).
+    if (!last.empty() && prompt_of.index >= 0) {
+      UObject* a = prompt_of.resolve();
+      world::FVector me, v{};
+      bool near_it = a && world::player_location(me) && guarded([&] { v = world::actor_location(a); }) &&
+                     std::hypot(v.x - me.x, v.y - me.y, v.z - me.z) <= 300.0f;
+      if (!near_it) { last.clear(); prompt_of = {}; }
     }
     return;
   }
@@ -637,7 +644,8 @@ static void prompt_tick() {
   // load) leaves the old place's prompt up for a few frames, and "Dorm Register" was said on the way out (2026-11-10).
   if (ue::known_build() && screens::faded_out()) return;
   last = label;
-  std::string verb = verb_for(label);
+  prompt_of = {};
+  std::string verb = verb_for(label, &prompt_of);
   // A Social Link partner's prompt also shows the link's arcana and rank.
   std::string link = verb == strings::kVerbTalk ? social::partner_rank(label) : std::string();
   speech::speak((verb.empty() ? label : verb + ": " + label) + (link.empty() ? "" : ", " + link), true);
