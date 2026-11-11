@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Battle
+- A physical skill's cost in the battle skill list was read as a percentage ("Akasha Arts, 140% HP") when the number is the HP it takes from that member. It now reads "Akasha Arts, 140 HP". The Persona pages keep the percentage ("22% HP"), which is what they show.
+
 ### Points of interest: what the list was missing
 - The two Twilight Fragments in the underground base of the August full moon were listed as "Something Shining", as plain objects. They are now "Twilight Fragment", with the fragment's sound on the sonar, like the ones in town.
 - A missing person waiting on a Tartarus floor was not in the list at all. They are now listed under People by the game's own name for them ("Missing Person", "Stray Cat", "Old Man in Pain"), sound on the sonar as a person, and leave the list once rescued. Not yet tested in the game.

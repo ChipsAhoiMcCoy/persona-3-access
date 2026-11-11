@@ -66,7 +66,8 @@ class BtlWords {
     p.set<int32_t>("attr", attr);
     return attack_names_[attr] = ftext_call(d, p);
   }
-  // "3 SP" / "8% HP" (physical skills cost a share of HP).
+  // "3 SP" / "121 HP": what the skill costs this member now (GetSkillCost has already turned a physical skill's
+  // share of maximum HP into HP: Aigis at 633 HP read 121 for a 19% skill).
   std::string skill_cost(int id, UObject* who) {
     UObject* d = db();
     UFunction* f = d ? find_function(class_of(d), "GetSkillCost") : nullptr;
@@ -78,7 +79,7 @@ class BtlWords {
     int v = p.ret<int32_t>();
     uint8_t* type = p.at<uint8_t>("cost");
     if (!type || *type == 0 || v <= 0) return {};
-    return *type == 1 ? std::format("{}% {}", v, strings::kHP) : std::format("{} {}", v, strings::kSP);
+    return *type == 1 ? std::format("{} {}", v, strings::kHP) : std::format("{} {}", v, strings::kSP);
   }
   std::string hp_sp(UObject* a) {
     return std::format("{} {} {} {}, {} {} {} {}", strings::kHP, unit_int("GetUnitHP", a), strings::kOf, unit_int("GetUnitMaxHP", a),
