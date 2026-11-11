@@ -1,7 +1,5 @@
 #include "nav.h"
-#include "audio.h"
 #include "core/approach.h"
-#include "core/sonar_cues.h"
 #include "core/strings.h"
 #include "devserver.h"
 #include "doors.h"

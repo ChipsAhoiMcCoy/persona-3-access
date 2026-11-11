@@ -18,7 +18,7 @@ constexpr float kGain = 0.87f;
 struct Slot {
   IPLBinauralEffect bin = nullptr;
   IPLDirectEffect direct = nullptr;
-  std::vector<float> a, b, l, r;   // mono in, mono after the air filter, the two ears
+  std::vector<float> a, b;   // mono in, mono after the air filter
   bool busy = false;
 };
 
@@ -100,7 +100,7 @@ bool init(int rate, int frame) {
   if (iplHRTFCreate(g_ctx, &g_as, &hs, &g_hrtf) != IPL_STATUS_SUCCESS) { log::write("hrtf: HRTF failed"); g_hrtf = nullptr; shutdown(); return false; }
   for (Slot& s : g_slot) {
     if (!make_effects(s.bin, s.direct)) { log::write("hrtf: effect creation failed"); shutdown(); return false; }
-    s.a.assign(frame, 0.0f); s.b.assign(frame, 0.0f); s.l.assign(frame, 0.0f); s.r.assign(frame, 0.0f);
+    s.a.assign(frame, 0.0f); s.b.assign(frame, 0.0f);
     s.busy = false;
   }
   g_ok = true;

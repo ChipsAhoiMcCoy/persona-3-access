@@ -14,7 +14,7 @@ struct Poi { ue::WeakObj obj; Kind kind; std::string name; ue::FVector loc; floa
 
 std::vector<Poi> scan(float radius_cm = -1);   // nearest first (game thread); -1 = the range setting
 std::string clock(float bearing_deg);                   // "12 o'clock" etc. (camera-relative)
-std::string describe(const Poi& p);                     // "Exit, 6 meters, 2 o'clock"
+std::string describe(const Poi& p);                     // "Iwatodai Station, 6 meters, 2 o'clock"
 
 // The selection the review keys walk: next/previous within the current category (nearest first), categories cycle
 // Exits -> Doors -> People -> Shops -> Objects -> Events -> Shadows, skipping empty ones. selected() re-resolves the object every call.
@@ -26,11 +26,13 @@ bool in_selected_category(const Poi& p);   // p belongs to the category the revi
 std::string hit_name(ue::UObject* hit);   // a hit actor's display name ("Bed"), or ""
 bool breakable(ue::UObject* dungeon_object);   // a FldDungeonObjectActor a strike can still break (not broken yet)
 std::string prompt();      // the interaction prompt label showing now ("Treasure Chest"), or ""
-std::string objective();   // the story objective last shown in the field ("Head to the faculty office"), or ""
-std::string objectives();  // the same with the line stacked under it, if one was shown
+// The story objective last shown in the field ("Head to the faculty office") with the lines stacked under it, or "".
+std::string objectives();
 std::string area_name();   // the current field area ("Iwatodai Station"), from the game's hit-name table
 bool area_ids(int& major, int& minor);   // the field's ids from its visible hit actors' levels (LV_F102_121 = 102, 121)
 int tartarus_floor();      // the Tartarus floor the player is on, else 0
-void tick();      // game thread: announces area changes
-void install();   // keys and dev routes
+// Game thread, while no screen or blocking message is up: item pickups, the Shadow cues (shadow::tick, while
+// exploring), the interaction prompt and the objectives, and the area on arrival.
+void tick();
+void install();   // dev routes /hits and /poi
 }  // namespace p3a::poi

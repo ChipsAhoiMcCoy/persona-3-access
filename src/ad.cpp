@@ -24,7 +24,6 @@
 #include <cstring>
 #include <format>
 #include <memory>
-#include <mutex>
 #include <thread>
 
 namespace p3a::ad {
@@ -59,7 +58,7 @@ int g_cur = -1;
 bool g_was_playing = false;
 std::string g_key;                  // the movie we last set up for (with or without descriptions)
 float g_base_volume = -1, g_volume = -1;
-std::mutex g_mu;                    // g_scene / g_runs for the dev routes (game thread writes)
+// All of the above is the game thread's: the dev routes read it through dev::on_game.
 
 int player_id() { static int id = watch::want("BP_MoviePlayer_C"); return id; }
 int track_player_id() { static int id = watch::want("BP_MoviePlayerEventSequenceTrack_C"); return id; }
@@ -176,10 +175,10 @@ Clock clock() {
 }
 
 // ---- the in-game test (/ad/test) ----
-// Plays movies through a movie player it spawns (BP_MoviePlayer_C via GameplayStatics), opened by file path
-// (Mana SetFile), and for each description seeks to half a second before it, then waits for the narrator to
-// finish it: the real clock, scheduler, decoder, mixer and ducking, with the dialogue between descriptions
-// skipped. A description passes when it ends Done with every sample played. Results: /ad/test (progress) and the
+// Plays movies through a movie player it spawns (BP_MoviePlayer_C via GameplayStatics), each chosen by its playlist
+// id (the data file's "#id" line; see arm), and for each description starts a fresh player half a second before it,
+// then waits for the narrator to finish it: the real clock, scheduler, decoder, mixer and ducking, with the
+// dialogue between descriptions skipped. A description passes when it ends Done with every sample played. Results: /ad/test (progress) and the
 // log ("ad test: ..."). mode=full plays a movie start to finish instead (no seeks).
 namespace {
 struct Test {
@@ -190,14 +189,12 @@ struct Test {
   enum Step { Open, WaitPlay, Seek, WaitCue, Next } step = Open;
   double fps = 0;   // measured from the movie's own clock before the first seek
   double seek_to = 0;
-  std::string path;   // the movie's file
-  std::string asset;  // its FileManaMovie asset ("#asset" line)
   int status = -1;   // the player's last Mana status (logged as it changes)
   int arm_frame = 0;
   bool armed = true;
-  bool cue_started = false;
+  bool cue_started = false;   // the current description has begun (its time limit runs from then)
   double last_clock = -1;
-  ULONGLONG clock_moved = 0;   // when the movie clock last changed (the watchdog)   // the current description has begun (its time limit runs from then)
+  ULONGLONG clock_moved = 0;   // when the movie clock last changed (the watchdog)
   int id = -1;   // the movie's playlist index (#id line)
   std::vector<double> ats;   // its descriptions' times (the scene is reloaded with each fresh player)
   int cues = 0;   // the movie's description count (the scene object is replaced each time the movie restarts)
@@ -342,18 +339,15 @@ void test_tick() {
     case Test::Open: {
       FILE* f = fopen((data_dir() + key + ".txt").c_str(), "rb");
       std::string path;
-      t.asset.clear();
       if (f) {
         char line[512] = {};
         if (fgets(line, sizeof line, f) && strncmp(line, "#file ", 6) == 0) path = line + 6;
-        if (fgets(line, sizeof line, f) && strncmp(line, "#asset ", 7) == 0) t.asset = line + 7;
-        if (fgets(line, sizeof line, f) && strncmp(line, "#id ", 4) == 0) t.id = atoi(line + 4);
+        // the second line ("#asset", the movie's asset path) is read past: the movie is chosen by its id
+        if (fgets(line, sizeof line, f) && fgets(line, sizeof line, f) && strncmp(line, "#id ", 4) == 0) t.id = atoi(line + 4);
         fclose(f);
       }
-      while (!t.asset.empty() && (t.asset.back() == '\n' || t.asset.back() == '\r')) t.asset.pop_back();
       while (!path.empty() && (path.back() == '\n' || path.back() == '\r')) path.pop_back();
       if (path.empty()) { test_fail(key + ": no #file line"); t.step = Test::Next; break; }
-      t.path = path;
       if (!open_movie(t, 0)) { test_fail(key + ": no movie player"); t.on = false; break; }
       t.now = key;
       t.cue = -1;
@@ -452,7 +446,7 @@ void tick() {
   bool playing = m != nullptr;
   if (!playing && !g_was_playing && g_sched.playing() < 0) return;   // nothing on, nothing finishing
   if (!settings::on(settings::AudioDescription)) {
-    if (g_was_playing) { stop_all(); g_was_playing = false; std::lock_guard lk(g_mu); g_scene.reset(); }
+    if (g_was_playing) { stop_all(); g_was_playing = false; g_scene.reset(); }
     return;
   }
   Clock c = playing ? clock() : Clock{};
@@ -461,7 +455,6 @@ void tick() {
     stop_all();
     g_key = key_of(c.movie);
     auto s = load_scene(g_key);
-    std::lock_guard lk(g_mu);
     g_scene = s;
     g_sched.load(s ? s->cues : std::vector<sched::Cue>{});
     g_runs.assign(g_sched.size(), Run{});
@@ -495,7 +488,7 @@ void tick() {
   if (g_sched.playing() < 0) g_cur = -1;
   log_endings(*s);
   if (!playing) {   // the movie is over: keep the scene until a last description has played out
-    if (g_sched.playing() < 0) { std::lock_guard lk(g_mu); g_scene.reset(); g_key.clear(); }
+    if (g_sched.playing() < 0) { g_scene.reset(); g_key.clear(); }
     return;
   }
   // the movie's own sound dips while a description speaks
@@ -563,8 +556,8 @@ void register_routes() {
     });
   }, "?start=1[&movie=filter][&mode=full] play described movies in game and check every description plays in full; no args: progress");
   dev::route("/ad/selftest",[](const dev::Request& r, int&) {
-    // Every packed clip of every movie decoded and played through the real mixer, muted bus, many at once
-    // (a parallel fast check of the shipped files, not of the timing): POST-free, runs on a worker thread.
+    // Every packed clip of every movie decoded and its length compared with the cue's (a fast check of the shipped
+    // files, not of the timing or the mixer). Runs on the server's thread: it touches no game state.
     std::string filter = dev::arg(r, "movie");
     return selftest(filter);
   }, "?movie=filter decode every packed description clip and report frames (shipping check)");

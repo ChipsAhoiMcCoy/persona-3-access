@@ -14,17 +14,12 @@
 #include "walltones.h"
 #include "audio.h"
 #include "devserver.h"
-#include "hooks.h"
-#include "log.h"
 #include "mod.h"
-#include "msg.h"
-#include "screens/screen.h"
 #include "world.h"
 #include <windows.h>
 #include <algorithm>
 #include <cmath>
 #include <format>
-#include <memory>
 #include <vector>
 
 namespace p3a::walltones {
@@ -158,7 +153,6 @@ void tick() {
 }
 
 void set_enabled(bool on) { g_enabled = on; if (!on) silence(); }
-bool enabled() { return g_enabled; }
 std::string status() {
   return std::format("walltones enabled={} range={:.0f} gain={:.2f} h0={:.0f} deg={:.0f} ahead={:.0f} right={:.0f} behind={:.0f} left={:.0f}\n", g_enabled, g_range, g_gain, g_h0, g_deg,
                      g_dist[0], g_dist[1], g_dist[2], g_dist[3]);

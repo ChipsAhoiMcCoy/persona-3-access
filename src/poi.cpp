@@ -1,11 +1,9 @@
 #include "poi.h"
 #include "party.h"
 #include "watch.h"
-#include "core/sonar_cues.h"
 #include "core/strings.h"
 #include "core/units.h"
 #include "core/text_clean.h"
-#include "audio.h"
 #include "msg.h"
 #include "screens/screen.h"
 #include "screens/util.h"
@@ -648,7 +646,6 @@ static std::string verb_for(const std::string& label, WeakObj* of = nullptr) {
 // The story objective (top right, in corner brackets: "Head to the faculty office") is drawn by the same DrawFont;
 // it is told apart by its brackets and spoken once per change.
 static std::string g_objective, g_sub_objective;
-std::string objective() { return g_objective; }
 std::string objectives() {
   if (g_sub_objective.empty() || g_objective.empty()) return g_objective;
   return g_objective + ". " + g_sub_objective;

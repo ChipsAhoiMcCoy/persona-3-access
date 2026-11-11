@@ -28,20 +28,6 @@ constexpr int kRate = 48000;
 constexpr int kPeriod = 480;   // 10 ms; miniaudio's fixed-size callback always delivers this many frames
 constexpr float kPi = 3.14159265358979f;
 
-struct Tone {
-  float freq;
-  float phase = 0;
-  float vol = 0;          // current (smoothed)
-  float target = 0;       // requested
-  float pan = 0;
-  int remaining = -1;     // samples left
-  int total = 0;          // pulse: samples at the start (the decay envelope's length)
-  int wave = 0;           // 0 sine, 1 triangle
-  bool dead = false;
-  bool spatial = false;   // from a place (spot): through an HRTF slot while 3D sound is on
-  Spot spot;
-  int slot = -1;          // the HRTF slot, held one block past death for the filter's tail
-};
 // Every gain change glides instead of stepping: a volume that jumps between two samples is a click, and the
 // drivers (wall tones every frame, 10 ms mixer blocks) change volumes in steps. One pole, ~15 ms time constant.
 constexpr float kGlide = 1.0f - 0.99861f;   // 1 - exp(-1 / (0.015 s * 48000))
@@ -61,7 +47,7 @@ struct Loop {
 constexpr ULONGLONG kLoopStaleMs = 250;  // the game stops ticking us while paused; the loops must not sing on
 
 // The narrator (audio description, src/ad.cpp): one mono sample at a time, centred, on the Narration bus. A new
-// one replaces the old; stop fades over 60 ms; pause holds the position. `played` counts the frames that reached
+// one replaces the old; stop fades out (kNarrFade: silent within 70 ms); pause holds the position. `played` counts the frames that reached
 // the output, so the caller can tell a clip that played in full from one cut short.
 struct Narr {
   int id = -1;
@@ -73,7 +59,7 @@ struct Narr {
   bool ended = false;       // reached the end of the sample
   bool active = false;
 };
-constexpr float kNarrFade = 1.0f - 0.99653f;   // 1 - exp(-1 / (0.006 s * 48000)): ~20 ms to settle
+constexpr float kNarrFade = 1.0f - 0.99653f;   // 1 - exp(-1 / (0.006 s * 48000)): ~20 ms to 5 %, ~70 ms to kSilent
 
 // A one-shot sample from a place (the sonar's sounds): read at `rate` with linear interpolation.
 struct Shot {
@@ -91,7 +77,6 @@ constexpr size_t kMaxShots = 32;   // more at once is a runaway caller: further 
 std::mutex g_mu;
 std::vector<Shot> g_shots;
 Narr g_narr;
-std::vector<Tone> g_tones;
 std::vector<Loop> g_loops;
 ma_device g_device;
 bool g_ready = false;
@@ -106,7 +91,7 @@ constexpr float kCeiling = 0.95f;
 constexpr float kRelease = 1.0f - 0.99979f;   // 1 - exp(-1 / (0.1 s * 48000))
 float g_limit = 1.0f;
 uint32_t g_limited_blocks = 0;   // dev: blocks in which the limiter worked
-// 3D sound: positional tones go through an HRTF slot. Fallbacks (no free slot, or a block of an unexpected size)
+// 3D sound: positional sounds go through an HRTF slot. Fallbacks (no free slot, or a block of an unexpected size)
 // pan instead and are counted for /audio.
 bool g_hrtf_on = true;
 uint32_t g_hrtf_fallbacks = 0;
@@ -135,7 +120,7 @@ void data_callback(ma_device*, void* out, const void*, ma_uint32 frames) {
   const bool hrtf_block = g_hrtf_on && hrtf::available() && (int)frames == hrtf::frame() && frames <= (ma_uint32)kMaxBlock;
   if (g_hrtf_on && hrtf::available() && !hrtf_block && !g_odd_block_logged) {
     g_odd_block_logged = true;
-    log::writef("audio: a {}-frame block (HRTF needs {}); positional tones pan for such blocks", frames, hrtf::frame());
+    log::writef("audio: a {}-frame block (HRTF needs {}); positional sounds pan for such blocks", frames, hrtf::frame());
   }
   // Per-bus gain ramps for this block: from where the last block ended to the target (the master folded in).
   float b_from[(int)Bus::Count], b_step[(int)Bus::Count];
@@ -146,49 +131,6 @@ void data_callback(ma_device*, void* out, const void*, ma_uint32 frames) {
     g_bus[b].cur = target;
   }
   auto bus_gain = [&](Bus b, ma_uint32 i) { return b_from[(int)b] + b_step[(int)b] * (float)(i + 1); };
-  for (Tone& t : g_tones) {
-    if (t.dead) {
-      // The block after a positional tone ends: its slot plays the filters' tail, then is free again.
-      if (t.slot >= 0) {
-        if (hrtf_block) {
-          std::fill(g_mono, g_mono + frames, 0.0f);
-          hrtf::process(t.slot, g_mono, dir_of(t.spot), g_ear_l, g_ear_r);
-          add_ears(o, frames);
-        }
-        hrtf::release(t.slot);
-        t.slot = -1;
-      }
-      continue;
-    }
-    if (t.spatial && hrtf_block && t.slot < 0) {
-      t.slot = hrtf::claim();
-      if (t.slot < 0) { ++g_hrtf_fallbacks; t.spatial = false; }   // all slots busy: this one pans
-    }
-    if (t.slot >= 0 && !hrtf_block) { hrtf::release(t.slot); t.slot = -1; }   // 3D sound switched off mid-tone
-    const bool ears = t.slot >= 0;
-    if (ears) std::fill(g_mono, g_mono + frames, 0.0f);
-    float l, r; pan_gains(t.spatial ? t.spot.pan : t.pan, l, r);
-    float step = 2.0f * kPi * t.freq / kRate;
-    for (ma_uint32 i = 0; i < frames; ++i) {
-      float target = t.target;
-      if (t.remaining >= 0) {
-        if (t.remaining == 0) { target = 0; if (t.vol < 0.001f) { t.dead = true; break; } }
-        else --t.remaining;
-        if (t.remaining < 240) target = 0;  // 5 ms fade out at the end of a beep
-      }
-      if (t.total > 0 && t.remaining > 0) target *= (float)t.remaining / (float)t.total;   // pulse: linear decay
-      t.vol += (target - t.vol) * 0.002f;   // ~10 ms smoothing
-      float w = t.wave == 1 ? (t.phase < kPi ? -1.0f + 2.0f * t.phase / kPi : 3.0f - 2.0f * t.phase / kPi) : std::sin(t.phase);
-      float s = w * t.vol * bus_gain(Bus::Cues, i);
-      t.phase += step; if (t.phase > 2.0f * kPi) t.phase -= 2.0f * kPi;
-      if (ears) g_mono[i] = s;
-      else { o[i * 2] += s * l; o[i * 2 + 1] += s * r; }
-    }
-    if (ears) {
-      hrtf::process(t.slot, g_mono, dir_of(t.spot), g_ear_l, g_ear_r);
-      add_ears(o, frames);
-    }
-  }
   for (Shot& sh : g_shots) {
     if (sh.dead) {
       // The block after a shot ends: its slot plays the filters' tail, then is free again.
@@ -233,7 +175,7 @@ void data_callback(ma_device*, void* out, const void*, ma_uint32 frames) {
     if (target <= 0.0f && lp.cur < kSilent) { lp.cur = 0; lp.pos = (lp.pos + frames) % lp.samples.size(); continue; }
     for (ma_uint32 i = 0; i < frames; ++i) {
       lp.cur += (target - lp.cur) * kGlide;
-      float s = lp.samples[lp.pos] * lp.cur * bus_gain(Bus::Walls, i);  // loops carry their own gain, not the master
+      float s = lp.samples[lp.pos] * lp.cur * bus_gain(Bus::Walls, i);  // the loop's own gain, then the Walls bus (the master in it)
       if (++lp.pos >= lp.samples.size()) lp.pos = 0;  // seamless wrap
       o[i * 2] += s * lp.gl; o[i * 2 + 1] += s * lp.gr;
     }
@@ -258,7 +200,6 @@ void data_callback(ma_device*, void* out, const void*, ma_uint32 frames) {
     g_limit += (1.0f - g_limit) * kRelease;
   }
   if (limited) ++g_limited_blocks;
-  std::erase_if(g_tones, [](const Tone& t) { return t.dead && t.slot < 0; });
   std::erase_if(g_shots, [](const Shot& s) { return s.dead && s.slot < 0; });
   LARGE_INTEGER t1, fq; QueryPerformanceCounter(&t1); QueryPerformanceFrequency(&fq);
   uint64_t us = (uint64_t)((t1.QuadPart - t0.QuadPart) * 1000000 / fq.QuadPart);
@@ -287,43 +228,11 @@ void shutdown() {
   ma_device_uninit(&g_device);   // no callback after this: the HRTF slots can go
   hrtf::shutdown();
   std::lock_guard lk(g_mu);
-  g_tones.clear();
   g_shots.clear();
   g_loops.clear();
   g_narr = Narr{};
 }
-bool ready() { return g_ready; }
 
-void beep(float freq, int ms, float volume, float pan) {
-  if (!g_ready) return;   // only the device callback drains g_tones
-  std::lock_guard lk(g_mu);
-  Tone t{freq};
-  t.target = volume; t.pan = pan; t.remaining = ms * kRate / 1000;
-  g_tones.push_back(t);
-}
-// A triangle-wave pulse: 10 ms rise (the tone smoothing), linear decay to silence over `ms`. The Shadow
-// pulse (src/poi.cpp): pitch and pan change per pulse, so it is synthesized, not a sample.
-void pulse(float freq, int ms, float volume, float pan) {
-  if (!g_ready) return;   // only the device callback drains g_tones
-  std::lock_guard lk(g_mu);
-  Tone t{freq};
-  t.target = volume; t.pan = pan; t.remaining = ms * kRate / 1000; t.total = t.remaining; t.wave = 1;
-  g_tones.push_back(t);
-}
-void beep(float freq, int ms, float volume, const Spot& at) {
-  if (!g_ready) return;   // only the device callback drains g_tones
-  std::lock_guard lk(g_mu);
-  Tone t{freq};
-  t.target = volume; t.pan = at.pan; t.remaining = ms * kRate / 1000; t.spatial = true; t.spot = at;
-  g_tones.push_back(t);
-}
-void pulse(float freq, int ms, float volume, const Spot& at) {
-  if (!g_ready) return;   // only the device callback drains g_tones
-  std::lock_guard lk(g_mu);
-  Tone t{freq};
-  t.target = volume; t.pan = at.pan; t.remaining = ms * kRate / 1000; t.total = t.remaining; t.wave = 1; t.spatial = true; t.spot = at;
-  g_tones.push_back(t);
-}
 void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate) {
   if (!g_ready || !pcm || pcm->size() < 2 || (int)bus < 0 || bus >= Bus::Count) return;   // only the device callback drains g_shots
   std::lock_guard lk(g_mu);
@@ -345,10 +254,8 @@ void follow(const std::function<Spot(float, float, float)>& where) {
   std::lock_guard lk(g_mu);
   int n = 0;
   for (Shot& s : g_shots) if (!s.dead && s.spot.placed) { s.spot = where(s.spot.wx, s.spot.wy, s.spot.wz); s.spot.placed = true; ++n; }
-  for (Tone& t : g_tones) if (!t.dead && t.spatial && t.spot.placed) { t.spot = where(t.spot.wx, t.spot.wy, t.spot.wz); t.spot.placed = true; ++n; }
   g_followed += n;
 }
-int followed() { return g_followed.load(); }
 void signal(int signal, float volume, const Spot& at, float rate) {
   static Pcm made[(int)core::SignalCue::Count];   // game thread only: made on first use
   if (signal < 0 || signal >= (int)core::SignalCue::Count) return;
@@ -367,7 +274,7 @@ void signal_here(int signal, float volume) {
 void set_hrtf(bool on) { std::lock_guard lk(g_mu); g_hrtf_on = on; }
 
 bool render_beep_wav(float freq, int ms, const Spot& at, const std::string& path) {
-  // The mixer's beep: sine, ~10 ms smoothing in, 5 ms fade out.
+  // A test beep: sine, ~10 ms smoothing in, 5 ms fade out.
   int n = ms * kRate / 1000;
   std::vector<float> mono(n + 2400);
   float vol = 0, phase = 0, step = 2.0f * kPi * freq / kRate;
@@ -468,7 +375,6 @@ std::string module_dir() {
   size_t slash = s.find_last_of('\\');
   return slash == std::string::npos ? std::string() : s.substr(0, slash + 1);
 }
-float master_volume() { return g_master; }
 void set_master_volume(float v) { std::lock_guard lk(g_mu); g_master = v < 0 ? 0 : v > 1 ? 1 : v; }
 void set_bus_volume(Bus b, float v) {
   if ((int)b < 0 || b >= Bus::Count) return;
@@ -480,10 +386,10 @@ std::string status() {
   std::lock_guard lk(g_mu);
   int loud = 0;
   for (const Loop& l : g_loops) if (l.cur >= kSilent) ++loud;
-  return std::format("audio ready={} master={:.2f} buses cues={:.2f} walls={:.2f} narration={:.2f} sonar={:.2f} tones={} shots={} loops={} ({} audible) limiter={:.2f} limited_blocks={}\n"
+  return std::format("audio ready={} master={:.2f} buses cues={:.2f} walls={:.2f} narration={:.2f} sonar={:.2f} shots={} loops={} ({} audible) limiter={:.2f} limited_blocks={}\n"
                      "hrtf {} slots {}/{} fallbacks={} air={:.1f} callback_max_us={} followed={}\n",
                      g_ready, g_master, g_bus[(int)Bus::Cues].target, g_bus[(int)Bus::Walls].target, g_bus[(int)Bus::Narration].target,
-                     g_bus[(int)Bus::Sonar].target, g_tones.size(), g_shots.size(), g_loops.size(), loud, g_limit, g_limited_blocks,
+                     g_bus[(int)Bus::Sonar].target, g_shots.size(), g_loops.size(), loud, g_limit, g_limited_blocks,
                      !hrtf::available() ? "unavailable" : g_hrtf_on ? "on" : "off", hrtf::slots_used(), hrtf::slot_count(), g_hrtf_fallbacks,
                      hrtf::air(), g_cb_max_us, g_followed.load());
 }

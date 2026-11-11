@@ -2,7 +2,6 @@
 #include "devserver.h"
 #include "hooks.h"
 #include "input.h"
-#include "log.h"
 #include "msg.h"
 #include "seh.h"
 #include "screens/screen.h"

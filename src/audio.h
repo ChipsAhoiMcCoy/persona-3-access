@@ -10,22 +10,16 @@
 namespace p3a::audio {
 bool init();
 void shutdown();
-bool ready();
-// A one-shot beep (freq in Hz, volume 0..1, pan -1 left .. +1 right), with a short fade in and out.
-void beep(float freq, int ms, float volume, float pan = 0.0f);
-void pulse(float freq, int ms, float volume, float pan = 0.0f);   // triangle wave, linear decay over ms (the Shadow pulse)
 // Where a sound is, from the listener (the hero, facing the camera's yaw; world::spot makes one): a unit direction
-// and the distance in metres. pan is the stereo fallback, the value the cues computed before (sin of the bearing).
+// and the distance in metres. pan is the stereo fallback (the sine of the bearing).
 // `placed`: the sound has a place in the world (wx, wy, wz, the game's units); while it plays, `follow` moves it in
 // the listener's ears as the hero walks and the camera turns. Without it the sound stays where it started.
 struct Spot { float right = 0, up = 0, ahead = 1, dist_m = 0, pan = 0; bool placed = false; float wx = 0, wy = 0, wz = 0; };
 // Once a frame (game thread): every playing sound with a place is heard from where the listener is now. `where`
 // turns a place into a Spot (world::spot from the hero).
 void follow(const std::function<Spot(float x, float y, float z)>& where);
-int followed();   // dev: how many times a playing sound was moved
-// The same, from a place: through Steam Audio's HRTF (src/hrtf.cpp) while 3D sound is on and available, else panned.
-void beep(float freq, int ms, float volume, const Spot& at);
-void pulse(float freq, int ms, float volume, const Spot& at);
+// A sound from a place goes through Steam Audio's HRTF (src/hrtf.cpp) while 3D sound is on and available, else it
+// is panned.
 void set_hrtf(bool on);   // the 3D sound setting
 // Dev: a beep rendered offline through the HRTF from `at` into a stereo 16-bit WAV (false = HRTF unavailable).
 bool render_beep_wav(float freq, int ms, const Spot& at, const std::string& path);
@@ -36,16 +30,15 @@ void set_loop_volume(int id, float volume);
 void set_loop_gain(int id, float gain);   // static trim multiplied with the volume (not clamped; loudness matching)
 // Directory of this DLL (assets live next to it), with a trailing backslash.
 std::string module_dir();
-float master_volume();
 void set_master_volume(float v);   // the player's Master volume: scales every bus
 // Buses: every sound plays on one, and each bus has its own volume (0..1, changes glide over one 10 ms block).
-// Cues = beeps and pulses; Walls = the looping channels. The master scales all of them; a new kind of sound gets
+// Cues = the mod's signals (signal, signal_here); Walls = the looping channels. The master scales all of them; a new kind of sound gets
 // its own bus (an entry here, a slider in settings.cpp). All voices' own volume changes glide (~15 ms) and the
 // output goes through a limiter rather than a hard clip, so nothing clicks or crackles.
 enum class Bus { Cues, Walls, Narration, Sonar, Count };
 void set_bus_volume(Bus b, float v);
 // A one-shot sample from a place: mono at the mixer rate (sample_rate), starting and ending on silence. Through the
-// HRTF like the positional beeps (panned without it). rate != 1 plays it faster or slower, pitch and length together.
+// HRTF (panned without it). rate != 1 plays it faster or slower, pitch and length together.
 using Pcm = std::shared_ptr<const std::vector<float>>;
 void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate = 1.0f);
 int sample_rate();

@@ -23,18 +23,20 @@ bool exploring();
 bool player_location(FVector& out);
 // Unit vectors on the ground plane for a camera-relative direction: 0 ahead, 1 right, 2 behind, 3 left.
 FVector dir_vector(int dir);
-// What blocks the player's body along `dir` (a capsule swept with the Pawn profile), within `range`.
+// What blocks a body going `from` -> `to`: sweep moves a capsule (radius, half height) with the Pawn profile, line
+// traces a line with the given profile. The player is never hit.
 // `people`: when given, characters (NPCs, any Pawn but the player) do not block: each one met is added to the list
 // and the trace runs again past it. Keep one list across a tick's traces so each person costs one retry.
 Hit sweep(const FVector& from, const FVector& to, float radius, float half_height, std::vector<ue::UObject*>* people = nullptr);
 Hit line(const FVector& from, const FVector& to, const char* profile = "Pawn", std::vector<ue::UObject*>* people = nullptr);
 std::string status();
 ue::FVector actor_location(ue::UObject* a);
-bool actor_visible_level(ue::UObject* a);
+bool actor_visible_level(ue::UObject* a);   // its level is the persistent level or a visible streamed one
 std::vector<std::string> visible_levels();   // the visible levels' map names ("LV_F103_101_BG_Night_Only")
 uint64_t levels_stamp();   // goes up whenever the set of visible levels is found changed
 bool project_to_nav(const ue::FVector& p, float extent, ue::FVector& out);   // nearest navmesh point within extent cm
-std::vector<ue::FVector> find_path(const ue::FVector& from, const ue::FVector& to, bool* partial = nullptr);           // its level is the persistent level or a visible streamed one
+// The navmesh path's points, empty when there is none; `partial`: it stops short of `to`.
+std::vector<ue::FVector> find_path(const ue::FVector& from, const ue::FVector& to, bool* partial = nullptr);
 float bearing(const ue::FVector& from, const ue::FVector& to);   // camera-relative degrees, 0 ahead, 90 right
 // Where `to` is heard from `from` (the hero): camera-relative direction with its height, and the distance.
 audio::Spot spot(const ue::FVector& from, const ue::FVector& to);

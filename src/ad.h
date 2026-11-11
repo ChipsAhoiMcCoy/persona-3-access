@@ -7,7 +7,7 @@ namespace p3a::ad {
 struct Clock {
   bool playing = false;
   bool paused = false;
-  std::string movie;   // the UManaMovie source's name, e.g. MS_Event_Main_100_030_M_Movi_VP9
+  std::string movie;   // the movie file's name less ".usm", e.g. MS_Event_Main_100_030_M_Movi_VP9 (else the source's name)
   double time = 0;     // GetTime: seconds into the movie
   int frame = -1;      // GetFrameNumber
   int audio_track = -1;   // 0 Japanese voices, 1 English
