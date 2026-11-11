@@ -385,7 +385,7 @@ void next_category(int delta) { announce_nearest(settle(scan(), delta, true)); }
 void announce_list() { announce_nearest(settle(scan(), 1, false)); }
 
 // The selection as it is now, from its own actor: a rescan could miss it (an Event trigger is only listed when nothing
-// else is near) and paid a navmesh query per far-off hit actor on every beacon ping.
+// else is near) and paid a navmesh query per far-off hit actor on every read.
 bool selected(Poi& out) {
   UObject* a = g_sel.resolve();
   if (!a || get_bool(a, "bHidden")) return false;   // a defeated or parked Shadow

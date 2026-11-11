@@ -249,8 +249,8 @@ inline constexpr const char* kPadLayer = "Hold both triggers, then";
 // The mod settings menu (settings.cpp)
 inline constexpr const char* kModSettings = "Mod settings";
 inline constexpr const char* kModSettingsClosed = "Mod settings closed";
-inline constexpr Hint kModSettingsKeys{"Up and down arrows choose, Tab and Shift+Tab change category, letters jump to a setting in it, left and right arrows change, Space changes, reads or plays, Control and the down arrow says what a setting does, Escape closes.",
-                                       "Up and down choose, LB and RB change category, left and right change, A changes, reads or plays, the right stick down says what a setting does, B closes."};
+inline constexpr Hint kModSettingsKeys{"Up and down arrows choose, Tab and Shift+Tab change category, letters jump to a setting in it, left and right arrows change, Space changes, reads or plays, Escape closes.",
+                                       "Up and down choose, LB and RB change category, left and right change, A changes, reads or plays, B closes."};
 // Its categories, in order.
 inline constexpr const char* kCatExploring = "Exploring";
 inline constexpr const char* kCatSonar = "Sonar";
@@ -258,21 +258,20 @@ inline constexpr const char* kCatSound = "Sound";
 inline constexpr const char* kCatDialogue = "Dialogue and movies";
 inline constexpr const char* kCatControls = "Controls and help";
 inline constexpr const char* kCatSoundTest = "Sound test";
-// What each setting does: the second line of its details (the right stick down, or Ctrl+Down).
+// What each setting does: read with its row, after the position.
 inline constexpr const char* kHelpWallTones = "A tone for each wall near you: ahead, behind, left and right. Each grows louder as the wall gets closer.";
 inline constexpr const char* kHelpSonar = "Every point of interest near you repeats its own sound from where it is, faster and louder the closer it is. F3 also switches it.";
 inline constexpr const char* kHelpSonarScope = "Which points the sonar plays: everything nearby, only the category the points of interest list is on, or only the point you selected there, at any distance.";
 inline constexpr const char* kHelpSonarRange = "How far away a thing can be and still sound.";
 inline constexpr const char* kHelpSonarKind = "Whether this kind of thing sounds. Changing it plays its sound.";
 inline constexpr const char* kHelpSonarVolume = "How loud the sonar's sounds are. Changing it plays one.";
-inline constexpr const char* kHelpBeacon = "A chirp from the direction of the path to the point of interest you selected.";
 inline constexpr const char* kHelpNearbyChimes = "A chime when a way out, a person or a thing comes within 8 meters. Only while the sonar is off.";
 inline constexpr const char* kHelpShadowAlerts = "In Tartarus: the Shadow's growl, the alarm when one notices you, the ring when your strike will reach, and whether a close Shadow faces you.";
 inline constexpr const char* kHelpHrtf = "The mod's sounds come from where their source is: ahead, behind, above or below. For headphones. Off pans them left and right only.";
 inline constexpr const char* kHelpBehindPitch = "Sounds whose source is behind you play lower.";
 inline constexpr const char* kHelpPoiRange = "How far the points of interest list reaches.";
 inline constexpr const char* kHelpMasterVolume = "Every sound the mod plays. The game's own sounds follow the game's settings.";
-inline constexpr const char* kHelpSoundVolume = "The beacon, the nearby chimes, the Shadow sounds and the controller layer's tick.";
+inline constexpr const char* kHelpSoundVolume = "The nearby chimes, the Shadow sounds and the controller layer's tick.";
 inline constexpr const char* kHelpWallVolume = "How loud the wall tones are.";
 inline constexpr const char* kHelpTriggerDelay = "How long one trigger waits for the other before it counts as the game's own press. Longer makes the mod's controller layer easier to open.";
 inline constexpr const char* kHelpEntryHints = "Menus say their keys after their first line. Off, F1 still reads them.";
@@ -294,7 +293,6 @@ inline constexpr SoundTest kSoundTests[] = {
     {"A sound to your left", "The person whistle, from your left."},
     {"A sound to your right", "The person whistle, from your right."},
     {"A sound behind you", "The person whistle, from behind you. Lower in pitch when that setting is on."},
-    {"Beacon", "The way to the selected point of interest. It comes from the direction of the path."},
     {"Nearby chime", "With the sonar off: something has come within 8 meters. It is that kind's sonar sound, played once."},
     {"Shadow growl", "A Shadow is within 30 meters. It repeats faster and louder as the Shadow closes in."},
     {"Shadow growl, hunting you", "The growl of a Shadow that has noticed you: higher, louder and faster."},
@@ -323,7 +321,6 @@ inline constexpr const char* kSetSonarThings = "Sonar: objects";
 inline constexpr const char* kSetSonarVolume = "Sonar volume";
 inline constexpr const char* kSonarOn = "Sonar on";
 inline constexpr const char* kSonarOff = "Sonar off";
-inline constexpr const char* kSetBeacon = "Beacon";
 inline constexpr const char* kSetNearbyChimes = "Nearby chimes";
 inline constexpr const char* kSetShadowAlerts = "Shadow alerts";
 inline constexpr const char* kSetHrtf = "3D sound for headphones";
@@ -391,8 +388,6 @@ inline constexpr const char* kNoPath = "No path";
 inline constexpr const char* kStuck = "Stuck, stopping";
 inline constexpr const char* kStopped = "Stopped";
 inline constexpr const char* kNotInField = "Not in the field";
-inline constexpr const char* kBeaconOn = "Beacon on";
-inline constexpr const char* kBeaconOff = "Beacon off";
 inline constexpr const char* kObjective = "Objective";
 inline constexpr const char* kNoObjective = "No objective shown yet";
 inline constexpr const char* kNothingToReview = "No menu or message to read";

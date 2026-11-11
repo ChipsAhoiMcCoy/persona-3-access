@@ -100,9 +100,7 @@ void install() {
   bind(VK_OEM_4, Shift, "poi.cat.prev", "Previous category", [] { poi::next_category(-1); });                    // Shift+[
   bind(VK_OEM_7, Shift, "party", "Party: each member's level, HP and SP", [] { speech::speak(party::summary(), true); });   // Shift+'
   bind(VK_OEM_7, None, "nav.walk", "Walk to the selected point of interest, or stop walking", walk_selected);     // '
-  // The beacon and wall tones are settings (F2); Shift+semicolon also flips the beacon.
   bind(VK_OEM_1, None, "area", "Describe the area: how the place around you looks", area::describe);           // ;
-  bind(VK_OEM_1, Shift, "nav.beacon", "Beacon toward the selected point of interest", nav::toggle_beacon);      // Shift+;
   // The same keys on a controller: hold both triggers, then (input.cpp keeps these buttons from the game meanwhile).
   struct PadKey { const char* name; uint16_t button; };
   const PadKey pad[] = {

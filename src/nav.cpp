@@ -13,7 +13,6 @@
 #include "screens/screen.h"
 #include "speech.h"
 #include "seh.h"
-#include "settings.h"
 #include "watch.h"
 #include "world.h"
 #include <algorithm>
@@ -30,7 +29,7 @@ static WeakObj g_target;
 static std::string g_name;
 static bool g_walking = false;
 static std::vector<FVector> g_path;
-static ULONGLONG g_path_at = 0, g_progress_at = 0, g_beacon_at = 0;
+static ULONGLONG g_path_at = 0, g_progress_at = 0;
 static FVector g_progress_pos{};
 static bool g_last_valid = false;   // the hero position of the previous walking tick is known
 static FVector g_detour{};
@@ -264,12 +263,6 @@ static bool next_waypoint(const FVector& me, FVector& out) {
   return true;
 }
 
-void toggle_beacon() {
-  // The beacon is a setting (F2), so it is remembered; the key flips it.
-  settings::set(settings::Beacon, !settings::on(settings::Beacon));
-  speech::speak(settings::on(settings::Beacon) ? strings::kBeaconOn : strings::kBeaconOff, true);
-}
-
 void tick() {
   FVector me;
   // A menu up over the field (an exit's "Where should I go?" crossed on the way, a scripted area map; 2026-10-28)
@@ -401,27 +394,10 @@ void tick() {
       g_progress_at = now; g_progress_pos = me;
     }
   }
-  if (settings::on(settings::Beacon) && in_field && world::exploring() && now - g_beacon_at > 600) {
-    g_beacon_at = now;
-    poi::Poi p;
-    if (poi::selected(p)) {
-      if (now - g_path_at > 1000) { g_target = p.obj; refresh_path(me); }
-      FVector wp;
-      if (next_waypoint(me, wp)) {
-        float b = world::bearing(me, wp) * 3.14159265f / 180.0f;
-        bool behind = std::cos(b) < -0.2f && settings::on(settings::BehindPitch);
-        float dist = flat(p.loc, me);
-        float vol = 0.6f + 0.7f * std::max(0.0f, 1.0f - dist / 3000.0f);
-        audio::Spot at = world::spot(me, wp);   // from the next waypoint, as far away as the target (air absorption)
-        at.dist_m = dist / 100.0f;
-        audio::signal((int)core::SignalCue::Beacon, vol, at, behind ? 0.67f : 1.0f);   // behind: a fifth lower
-      }
-    }
-  }
 }
 
 std::string status() {
-  return std::format("nav walking={} beacon={} target='{}' path={} held={:c}{:c}\n", g_walking, settings::on(settings::Beacon), g_name, g_path.size(),
+  return std::format("nav walking={} target='{}' path={} held={:c}{:c}\n", g_walking, g_name, g_path.size(),
                      g_held[0] ? (char)g_held[0] : '-', g_held[1] ? (char)g_held[1] : '-');
 }
 

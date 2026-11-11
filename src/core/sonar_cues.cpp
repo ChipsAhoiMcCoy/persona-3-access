@@ -142,22 +142,6 @@ std::vector<float> tick_mark(int rate) {
   return v;
 }
 
-// Beacon: a chirp rising an octave with two overtones, and a breath of noise at its start for the ears to place.
-std::vector<float> beacon_cue(int rate) {
-  const int n = frames(rate, 0.13);
-  std::vector<float> v(n);
-  Noise noise(0x2545f491);
-  double phase = 0;
-  for (int i = 0; i < n; ++i) {
-    double sec = (double)i / rate, t = std::min(1.0, sec / 0.07);   // the rise takes 70 ms, then it rings
-    phase += 2.0 * kPi * 660.0 * std::pow(2.0, t) / rate;
-    double tone = std::sin(phase) + 0.35 * std::sin(2.0 * phase) + 0.15 * std::sin(3.0 * phase);
-    double env = (1.0 - std::exp(-sec / 0.003)) * std::exp(-sec / 0.055);
-    v[i] = (float)(tone * env + noise.next() * 0.35 * std::exp(-sec / 0.004));
-  }
-  return v;
-}
-
 // Shadow: two low sawtooth voices a few hertz apart (they beat: the roughness) under a murmur of noise.
 std::vector<float> shadow_cue(int rate) {
   // 0.28 s (0.18 at first: over before it was noticed), and it flutters: the loudness shakes 38 times a second, a
@@ -296,7 +280,6 @@ std::vector<float> sonar_cue(SonarCue cue, int rate) {
 std::vector<float> signal_cue(SignalCue cue, int rate) {
   std::vector<float> v;
   switch (cue) {
-    case SignalCue::Beacon: v = beacon_cue(rate); break;
     case SignalCue::Shadow: v = shadow_cue(rate); break;
     case SignalCue::Ambush: v = ambush_cue(rate); break;
     case SignalCue::Reach: v = reach_cue(rate); break;

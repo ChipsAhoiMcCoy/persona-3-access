@@ -1,6 +1,6 @@
 # Persona 3 Access
 
-A screen-reader accessibility mod for Persona 3 Reload on Steam. It speaks the game through your screen reader and adds sound for getting around: wall tones, a sonar of the people, doors, exits and things around you, a guidance beacon, and an auto-walk to any place of interest.
+A screen-reader accessibility mod for Persona 3 Reload on Steam. It speaks the game through your screen reader and adds sound for getting around: wall tones, a sonar of the people, doors, exits and things around you, and an auto-walk to any place of interest.
 
 This is an unofficial fan project. It is not affiliated with or endorsed by Atlus or SEGA. It includes no game files, and you need your own copy of the game. Persona 3 Reload and related names and characters belong to their owners.
 
@@ -55,7 +55,6 @@ The game's own controls work as usual (keyboard or controller). The mod adds the
 - Apostrophe: Walk to the selected point of interest (press again, or any movement key, to stop)
 - Shift+Apostrophe: Party: each member's level, HP and SP
 - Semicolon: Describe the area: how the place around you looks (see below)
-- Shift+Semicolon: Beacon toward the selected point of interest on or off (also in the mod settings)
 
 ### On a controller
 
@@ -101,8 +100,7 @@ F2 (or both triggers and View) opens the mod's settings from anywhere; the game'
 its keys (F1 there). While the settings are open the game gets none of your keys or buttons, but it keeps running:
 in Tartarus, open them from the camp menu's Config to be safe. The settings are in five categories, each a short
 list of its own: Exploring, Sonar, Sound, Dialogue and movies, Controls and help. A sixth, Sound test, plays the
-mod's sounds (below). Every row says what it does on the details keys: the right stick down, or Ctrl+Down, reads
-it, and the stick up or Ctrl+Up goes back to the row. Tab and Shift+Tab (Page Down and
+mod's sounds (below). Every row says what it does after its name, value and position, with no further key. Tab and Shift+Tab (Page Down and
 Page Up; RB and LB) go to the next and previous category, wrapping, and its name is said as you land. It works like
 every other menu: the up and down arrows
 (D-pad) choose (at a category's first or last row a further press says the row again, without the cursor sound), Home and End jump to the first and last row, typing letters jumps to a setting in the category by name, left
@@ -111,15 +109,15 @@ Backspace or F2 (B or View) closes. Changes are saved at
 once, to `%LOCALAPPDATA%\P3RAccess\settings.ini`. The menu plays the game's own menu sounds: opening and closing
 (the camp menu's), the cursor on each move, and a sound on each value change.
 
-Exploring holds Wall tones, Beacon, Nearby chimes, Shadow alerts, Points of interest range and Wall tone volume.
+Exploring holds Wall tones, Nearby chimes, Shadow alerts, Points of interest range and Wall tone volume.
 Sonar holds everything named Sonar. Sound holds 3D sound for headphones, Lower pitch behind you, Mod master volume
 and Beeps and chimes volume. Dialogue and movies holds Voiced dialogue, When a line ends, Read cutscene subtitles and
 the two Audio description settings. Controls and help holds Controller trigger delay, Menu key hints on entry and
 Mod keys.
 
 Sound test is where to learn the mod's sounds. Space or Enter (A) on a row plays its sound, wherever you are and
-whatever is switched off, and the details keys say what the sound means. It holds the five sonar sounds, the tick
-that marks the selected point, the same sound from your left, your right and behind you, the beacon, the nearby
+whatever is switched off, and the row says what the sound means. It holds the five sonar sounds, the tick
+that marks the selected point, the same sound from your left, your right and behind you, the nearby
 chime, the Shadow's growl (plain and hunting you), the Shadow alarm and the sound of a Shadow losing you, the two
 strike-reach rings, the four wall tones and the controller layer's tick. They play at the volumes set under Sound.
 
@@ -128,15 +126,14 @@ strike-reach rings, the four wall tones and the controller layer's tick. They pl
 - Sonar plays: everything nearby, the list's category only, the selected point only (at any distance): narrows the sonar to the category the points of interest list is on, or to the one point you selected there, which then sounds however far away it is
 - Sonar range: 10 meters; 5, 15, 20, 30 or 40
 - Sonar: exits, Sonar: doors, Sonar: people, Sonar: shops, Sonar: objects: on, off: each kind of thing on its own. Changing one plays its sound, so this is also where to learn them
-- Beacon: off, on (also Shift+Semicolon): a chirp from the direction of the path to the selected point of interest
 - Nearby chimes: on, off: the chime when a way to another area, a person or a thing comes within 8 m. Only while the sonar is off: with it on, each thing's own sound tells you it has come near
 - Shadow alerts: on, off: in Tartarus, the Shadow pulse, the alarm when one notices you, the strike-reach ring (for Shadows and breakable objects) and the back-turned / facing-you cues
-- 3D sound for headphones: on, off: the sonar, the beacon, the nearby chimes and the Shadow cues come from where their source is, ahead, behind, above or below (Steam Audio's HRTF; far sounds are also a little duller). Off pans them left and right only, as before
-- Lower pitch behind you: on, off: the sonar's sounds, the beacon, the nearby chimes and the Shadow pulse play lower when their source is behind you
+- 3D sound for headphones: on, off: the sonar, the nearby chimes and the Shadow cues come from where their source is, ahead, behind, above or below (Steam Audio's HRTF; far sounds are also a little duller). Off pans them left and right only, as before
+- Lower pitch behind you: on, off: the sonar's sounds, the nearby chimes and the Shadow pulse play lower when their source is behind you
 - Points of interest range: 60 meters; 20, 40, 100 or 150
 - Mod master volume: 100 percent; 0 to 100 in steps of 10, like the game's volume sliders: every sound the mod plays (not the game's own sounds, which follow the game's settings)
 - Sonar volume: 80 percent; 0 to 100 in steps of 10: the sonar's sounds (changing it plays one)
-- Beeps and chimes volume: 60 percent; 0 to 100 in steps of 10: the beacon, the nearby chimes, the Shadow cues and the controller layer's tick
+- Beeps and chimes volume: 60 percent; 0 to 100 in steps of 10: the nearby chimes, the Shadow cues and the controller layer's tick
 - Wall tone volume: 100 percent; 0 to 100 in steps of 10: the wall tones
 - Controller trigger delay: 150 milliseconds; off, 100 or 250
 - Menu key hints on entry: off, on: menus say their keys after their first line, as they used to, besides F1
@@ -232,7 +229,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   Dorm, Hallway, floor 2"), the story objective when it changes ("Objective: Head to the faculty office"), the
   interaction prompt when you can use something ("Check: Vending Machine", "Go to: Iwatodai Station"; a prompt that already says what you do, like "Head to the Dorm" or "Enter the Velvet Room", and a device you operate are said by name alone; over a Social Link partner also their
   arcana and rank, "Talk: Kenji Tomochika, Magician, rank MAX"), item notices with every item and its count ("Got
-  Bead times 3, 500 yen"), wall tones, points of interest (people by name), auto-walk and beacon.
+  Bead times 3, 500 yen"), wall tones, points of interest (people by name) and auto-walk.
 - Describe the area (Semicolon, or both triggers and B): a written description of where you stand, as the
   game shows it now: every area of the town, the school, the dorm (each floor), Yakushima, Kyoto, the full-moon
   operations, Tartarus (each block) and Episode Aigis' Abyss of Time. Outdoors it follows the time of day and the
@@ -404,8 +401,6 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   left out unless you can walk there. The point selected in the points of interest list always has a place among
   them, marked by a short high tick before its sound. The sounds take turns: only one plays at a time, each after the one before it has finished, so they never play over one another. Whichever is most overdue for its own rhythm goes next, so the nearest things get the most turns, none is left out, and a thing that has just come into range goes first. With many things close by, each therefore repeats less often than it would alone. The sonar is silent in menus, conversations, story scenes and
   battles. Shadows are not part of it: they keep their own pulse.
-- Beacon: a short rising chirp every 0.6 seconds from the direction of the path to the selected place, louder as you
-  near it; a clearly lower chirp means it is behind you (Lower pitch behind you).
 - Shadow pulse: a low, rattling snarl from the nearest Shadow within 30 m, whatever its height, faster and louder as it closes in
   (from every 0.8 seconds at 30 m to one unbroken snarl beside you), lower when it is behind you. When a Shadow notices you, a harsh two-note alarm sounds from where it is, and its growl turns higher,
   louder and nearly twice as fast for as long as it hunts you; two soft falling notes mean it has lost you.
@@ -416,13 +411,13 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   advantage. No ring means a swing would miss. The same ring plays for a breakable object while your strike would
   break it (the game's own hit area again), unless a Shadow is in reach: then the ring is the Shadow's. It is part of
   Shadow alerts, so it is silent while that setting is off.
-- Sounds stay in place: a sound that has a place in the world (the sonar's, the beacon, the Shadow cues, the nearby
+- Sounds stay in place: a sound that has a place in the world (the sonar's, the Shadow cues, the nearby
   chimes) stays there for as long as it plays, so it shifts in your ears as you walk or turn the camera during it.
 - Nearby chimes: when a way to another area, a person or a thing comes within 8 m, its kind's sonar sound (the air,
   the knocks, the whistle, the bell or the plucked note) plays once from its direction, a little lower when it is behind you. It plays again
   once you have been more than 15 m away. The chimes are the sonar's quieter stand-in: they play only while the sonar is off.
 
-The sonar, the beacon, the chimes and the Shadow cues are positioned with Steam Audio (Valve, Apache 2.0; phonon.dll beside
+The sonar, the chimes and the Shadow cues are positioned with Steam Audio (Valve, Apache 2.0; phonon.dll beside
 the mod; its license and third-party notices are in the P3RAccess\licenses folder). Without phonon.dll they pan left and
 right as before. Headphones give the best sense of ahead and behind.
 

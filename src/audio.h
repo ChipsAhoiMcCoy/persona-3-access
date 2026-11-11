@@ -49,7 +49,7 @@ void set_bus_volume(Bus b, float v);
 using Pcm = std::shared_ptr<const std::vector<float>>;
 void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate = 1.0f);
 int sample_rate();
-// One of the mod's signals (core/sonar_cues.h: the beacon's chirp, the Shadow's growl, the ambush ticks, the layer's
+// One of the mod's signals (core/sonar_cues.h: the Shadow's growl, the ambush ticks, the layer's
 // tick) from a place, on the Cues bus. `signal` is the SignalCue's number.
 void signal(int signal, float volume, const Spot& at, float rate = 1.0f);
 // The same from no place at all: in the middle of the head, both ears alike (a cue about the player, not a thing).

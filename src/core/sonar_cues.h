@@ -23,7 +23,6 @@ inline constexpr float kSonarCueRms = 0.10f;   // what the spikiest of them (the
 
 // The mod's other signals, made the same way and at the same loudness (they were plain sine and triangle beeps):
 enum class SignalCue {
-  Beacon,   // the way to the selected point: a clean chirp that rises an octave
   Shadow,   // a Shadow near: a low, rattling snarl that dies away
   Ambush,   // the strike will land from behind: two quick glassy ticks, the second higher
   Layer,    // the controller's mod layer opened: one soft tick
