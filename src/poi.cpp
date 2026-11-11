@@ -43,6 +43,7 @@ static const char* kind_name(Kind k) {
     case Kind::Door: return strings::kPoiDoor;
     case Kind::Enemy: return strings::kPoiShadow;
     case Kind::Event: return strings::kPoiEvent;
+    case Kind::Fragment: return strings::kPoiFragment;
     default: return strings::kPoiThing;
   }
 }
@@ -186,10 +187,18 @@ static bool walkable(UObject* a, const world::FVector& me, const world::FVector&
   return ok;
 }
 
+// A Twilight Fragment lying in town: the hit the game names "Something Shining" over a glowing key-item mesh. All of
+// them (17 in the main game, more in Episode Aigis) are switched off by a flag FLD_RESOURCE_SPOT<n> once picked up,
+// and their scripts all give the same item. Tartarus has hits of that name too (medals): other flags.
+static bool fragment_spot(UObject* hit) {
+  auto* off = field<FName>(hit, "mOffFlagName_");
+  return off && off->index > 0 && fname(*off).starts_with("FLD_RESOURCE_SPOT");
+}
+
 bool breakable(UObject* a) {
   if (!a) return false;
   std::string cn = name_of(class_of(a));
-  if (cn.find("Broken") == std::string::npos || cn.find("Fragment") != std::string::npos || get_bool(a, "bHidden")) return false;
+  if (cn.find("Broken") == std::string::npos || get_bool(a, "bHidden")) return false;
   if (UObject* box = get<UObject*>(a, "Box")) {
     UFunction* f = find_function(class_of(box), "GetCollisionEnabled");
     if (f) { Params p(f); call(box, p); if (p.ret<uint8_t>() == 0) return false; }
@@ -280,6 +289,7 @@ std::vector<Poi> scan(float radius) {
     if (type == "AreaChange" || icon == "Goto") add(a, Kind::Exit, nm.empty() ? strings::kPoiExit : nm);
     else if (icon == "Shop") add(a, Kind::Shop, nm.empty() ? strings::kPoiShop : nm);
     else if (icon == "Speak" || icon == "Listen") add(a, Kind::Person, nm.empty() ? strings::kPoiPerson : nm);
+    else if (fragment_spot(a)) add(a, Kind::Fragment, strings::kPoiFragment);
     else if (nm.empty()) add(a, Kind::Thing, strings::kPoiThing);
     else add(a, check_kind(nm), nm);
   }
@@ -292,8 +302,15 @@ std::vector<Poi> scan(float radius) {
   }
   // Tartarus' breakable Shadow remains (BP_DOBJ_Broken*_C; strike them, Ctrl, for items). A broken one stays visible
   // but its Box stops colliding (NoCollision, 2026-10-27).
-  for (UObject* a : live("FldDungeonObjectActor"))
-    if (breakable(a)) add(a, Kind::Thing, strings::kPoiBreakable);
+  // One of them is a crystal that always gives a Twilight Fragment (BP_DOBJ_BrokenFragment_C,
+  // EDungeonObjType::BrokenFragment; its script is BF_BP_DOBJ_BrokenObject's "Hit_BrokenHakumei_Object"). It is built
+  // like the others (the same Box), and was left out of the breakables until 2026-11-11.
+  // UNTESTED: written from the game's data while the game was in use; verify on a floor that has one.
+  for (UObject* a : live("FldDungeonObjectActor")) {
+    if (!breakable(a)) continue;
+    if (name_of(class_of(a)).find("BrokenFragment") != std::string::npos) add(a, Kind::Fragment, strings::kPoiFragmentCrystal);
+    else add(a, Kind::Thing, strings::kPoiBreakable);
+  }
   // Shadows roaming a Tartarus floor (EnemySymbolBaseCore; parked or defeated ones are hidden).
   for (UObject* a : live("EnemySymbolBaseCore")) {
     if (get_bool(a, "bHidden")) continue;
@@ -324,7 +341,7 @@ std::string describe(const Poi& p) {
 // ---- the review selection ----
 // Categories (left and right) each hold their points of interest nearest first (up and down). Changing category, or
 // opening the controller's mod layer, selects the nearest; an empty category is skipped.
-enum class Cat { Exits, Doors, People, Shops, Things, Events, Shadows, Count };
+enum class Cat { Exits, Doors, People, Shops, Things, Fragments, Events, Shadows, Count };
 static const char* cat_name(Cat c) {
   switch (c) {
     case Cat::Exits: return strings::kCatExits;
@@ -332,6 +349,7 @@ static const char* cat_name(Cat c) {
     case Cat::People: return strings::kCatPeople;
     case Cat::Shops: return strings::kCatShops;
     case Cat::Things: return strings::kCatThings;
+    case Cat::Fragments: return strings::kCatFragments;
     case Cat::Events: return strings::kCatEvents;
     default: return strings::kCatShadows;
   }
@@ -347,6 +365,7 @@ static bool in_cat(const Poi& p, Cat c) {
     case Cat::People: return p.kind == Kind::Person;
     case Cat::Shops: return p.kind == Kind::Shop;
     case Cat::Things: return p.kind == Kind::Thing;
+    case Cat::Fragments: return p.kind == Kind::Fragment;
     case Cat::Events: return p.kind == Kind::Event;
     default: return p.kind == Kind::Enemy;
   }

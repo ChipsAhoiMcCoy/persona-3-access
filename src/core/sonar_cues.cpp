@@ -256,6 +256,29 @@ std::vector<float> event_cue(int rate, bool brief) {
   return v;
 }
 
+// Fragment: a sparkle, three chimes of glass rising a major chord (F7, A7, C8), each a pair of tones a few hertz
+// apart (it shimmers) under an inharmonic overtone, ringing into the next. Higher than anything else of the mod's,
+// and the only sound that climbs three steps. A tick of noise opens each chime: tones this high and pure are hard
+// to place by ear.
+std::vector<float> fragment_cue(int rate, bool brief) {
+  std::vector<float> v(frames(rate, brief ? kBrief : 0.15), 0.0f);
+  static const double hz[3] = {2794.0, 3520.0, 4186.0};
+  Noise noise(0x2545f491);
+  // The brief one is the last two chimes, close together: one alone is the shop's bell again.
+  for (int k = brief ? 1 : 0; k < 3; ++k) {
+    const int start = frames(rate, brief ? (k - 1) * 0.026 : k * 0.04);
+    const double tau = brief ? 0.012 : 0.030;
+    for (int i = 0; start + i < (int)v.size(); ++i) {
+      double sec = (double)i / rate;
+      double s = std::sin(2.0 * kPi * hz[k] * sec) + 0.8 * std::sin(2.0 * kPi * (hz[k] + 23.0) * sec);
+      if (hz[k] * 2.41 < rate * 0.45) s += 0.35 * std::sin(2.0 * kPi * hz[k] * 2.41 * sec) * std::exp(-sec / 0.008);
+      s = s * std::exp(-sec / tau) * (1.0 - std::exp(-sec / 0.0005)) + noise.next() * 0.6 * std::exp(-sec / 0.0015);
+      v[start + i] += (float)s;
+    }
+  }
+  return v;
+}
+
 // Silence at both ends (a few ms of fade, so nothing clicks), no DC, then the common loudness.
 void finish(std::vector<float>& v, int rate, float rms_target) {
   if (v.empty()) return;
@@ -284,6 +307,7 @@ std::vector<float> raw(SonarCue cue, int rate, bool brief) {
     case SonarCue::Person: return person_cue(rate, brief);
     case SonarCue::Shop: return shop_cue(rate, brief);
     case SonarCue::Event: return event_cue(rate, brief);
+    case SonarCue::Fragment: return fragment_cue(rate, brief);
     default: return thing_cue(rate, brief ? kBrief : 0.11);
   }
 }

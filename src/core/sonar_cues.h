@@ -13,12 +13,14 @@ enum class SonarCue {
   Shop,     // a shop or vendor: two strikes of a small bell, the second higher (a till)
   Thing,    // something to check or open: one bright plucked note
   Event,    // a spot that starts a fight or a scene when walked into: a quick trill of two hollow notes
+  Fragment, // a Twilight Fragment to pick up or strike loose: three rising chimes of glass, a sparkle
   Count
 };
 
 // The sound at `rate` Hz: starts and ends on silence, under 0.2 s, RMS kSonarCueRms (peak under 0.9).
 // brief: its clipped form for a thing too near for the whole sound to fit its rhythm, under 0.07 s: the first knock,
-// the first note, the bell's higher strike, a puff of the air, the pluck's start, one turn of the trill.
+// the first note, the bell's higher strike, a puff of the air, the pluck's start, one turn of the trill, the sparkle's
+// last two chimes.
 std::vector<float> sonar_cue(SonarCue cue, int rate, bool brief = false);
 inline constexpr float kSonarCueRms = 0.10f;   // what the spikiest of them (the pluck) reaches under the peak limit
 

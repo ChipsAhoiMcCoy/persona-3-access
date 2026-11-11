@@ -291,6 +291,7 @@ inline constexpr SoundTest kSoundTests[] = {
     {"Sonar: shop", "A shop or vendor. A small bell, struck twice."},
     {"Sonar: object", "Something to check or open. One plucked note."},
     {"Sonar: event", "A spot that starts a fight or a scene when you walk into it, such as a Gatekeeper. A quick trill."},
+    {"Sonar: Twilight Fragment", "A Twilight Fragment to pick up, or in Tartarus a crystal to strike for one. Three rising chimes of glass."},
     {"A sound behind you", "The person whistle, from behind you. Lower in pitch when that setting is on."},
     {"Shadow growl", "A Shadow is within 30 meters. It repeats faster and louder as the Shadow closes in."},
     {"Shadow growl, hunting you", "The growl of a Shadow that has noticed you: higher, louder and faster."},
@@ -317,6 +318,7 @@ inline constexpr const char* kSetSonarPeople = "Sonar: people";
 inline constexpr const char* kSetSonarShops = "Sonar: shops";
 inline constexpr const char* kSetSonarThings = "Sonar: objects";
 inline constexpr const char* kSetSonarEvents = "Sonar: events";
+inline constexpr const char* kSetSonarFragments = "Sonar: Twilight Fragments";
 inline constexpr const char* kSetSonarVolume = "Sonar volume";
 inline constexpr const char* kSonarOn = "Sonar on";
 inline constexpr const char* kSonarOff = "Sonar off";
@@ -372,12 +374,15 @@ inline constexpr const char* kPoiEvent = "Event";
 inline constexpr const char* kPoiGatekeeper = "Gatekeeper";   // the game's word for the boss of a border floor
 inline constexpr const char* kPoiShadow = "Shadow";
 inline constexpr const char* kPoiBreakable = "Breakable object";
+inline constexpr const char* kPoiFragment = "Twilight Fragment";                  // the game shows "Something Shining"
+inline constexpr const char* kPoiFragmentCrystal = "Twilight Fragment crystal";   // Tartarus: strike it for one
 inline constexpr const char* kCatExits = "Exits";
 inline constexpr const char* kCatPeople = "People";
 inline constexpr const char* kCatShops = "Shops";
 inline constexpr const char* kCatDoors = "Doors";
 inline constexpr const char* kCatThings = "Objects";
 inline constexpr const char* kCatEvents = "Events";
+inline constexpr const char* kCatFragments = "Twilight Fragments";
 inline constexpr const char* kCatShadows = "Shadows";
 inline constexpr const char* kShadowBackTurned = "Shadow close, back turned";
 inline constexpr const char* kShadowFacingYou = "Shadow close, facing you";

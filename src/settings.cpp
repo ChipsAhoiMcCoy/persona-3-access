@@ -42,6 +42,7 @@ static const Def kDefs[Count] = {
   {"sonar_shops", strings::kSetSonarShops, Unit::Toggle, {0, 1}, 1},
   {"sonar_objects", strings::kSetSonarThings, Unit::Toggle, {0, 1}, 1},
   {"sonar_events", strings::kSetSonarEvents, Unit::Toggle, {0, 1}, 1},
+  {"sonar_fragments", strings::kSetSonarFragments, Unit::Toggle, {0, 1}, 1},
   {"shadow_alerts", strings::kSetShadowAlerts, Unit::Toggle, {0, 1}, 1},
   {"hrtf", strings::kSetHrtf, Unit::Toggle, {0, 1}, 1},                    // the positional cues through Steam Audio
   {"behind_pitch", strings::kSetBehindPitch, Unit::Toggle, {0, 1}, 1},
@@ -154,7 +155,8 @@ static const char* help(Id id) {
     case Sonar: return strings::kHelpSonar;
     case SonarScope: return strings::kHelpSonarScope;
     case SonarRange: return strings::kHelpSonarRange;
-    case SonarExits: case SonarDoors: case SonarPeople: case SonarShops: case SonarThings: case SonarEvents: return strings::kHelpSonarKind;
+    case SonarExits: case SonarDoors: case SonarPeople: case SonarShops: case SonarThings: case SonarEvents: case SonarFragments:
+      return strings::kHelpSonarKind;
     case SonarVolume: return strings::kHelpSonarVolume;
     case ShadowAlerts: return strings::kHelpShadowAlerts;
     case Hrtf: return strings::kHelpHrtf;
@@ -179,23 +181,23 @@ static void play_test(int i) {
   using core::SignalCue;
   const audio::Spot ahead{};
   switch (i) {
-    case 0: case 1: case 2: case 3: case 4: case 5: sonar::demo(i); break;
-    case 6: sonar::demo(2, true); break;
-    case 7: audio::signal((int)SignalCue::Shadow, 1.4f, ahead); break;
-    case 8: audio::signal((int)SignalCue::Shadow, 1.7f, ahead, 1.3f); break;
-    case 9: audio::signal((int)SignalCue::Spotted, 1.4f, ahead); break;
-    case 10: audio::signal((int)SignalCue::Lost, 1.1f, ahead); break;
-    case 11: audio::signal_here((int)SignalCue::Reach, 1.2f); break;
-    case 12: audio::signal_here((int)SignalCue::Ambush, 1.2f); break;
-    case 13: case 14: case 15: case 16: walltones::demo(i - 13); break;
-    case 17: audio::signal((int)SignalCue::Layer, 0.9f, ahead); break;
+    case 0: case 1: case 2: case 3: case 4: case 5: case 6: sonar::demo(i); break;
+    case 7: sonar::demo(2, true); break;
+    case 8: audio::signal((int)SignalCue::Shadow, 1.4f, ahead); break;
+    case 9: audio::signal((int)SignalCue::Shadow, 1.7f, ahead, 1.3f); break;
+    case 10: audio::signal((int)SignalCue::Spotted, 1.4f, ahead); break;
+    case 11: audio::signal((int)SignalCue::Lost, 1.1f, ahead); break;
+    case 12: audio::signal_here((int)SignalCue::Reach, 1.2f); break;
+    case 13: audio::signal_here((int)SignalCue::Ambush, 1.2f); break;
+    case 14: case 15: case 16: case 17: walltones::demo(i - 14); break;
+    case 18: audio::signal((int)SignalCue::Layer, 0.9f, ahead); break;
   }
 }
 static Category category(Id id) {
   switch (id) {
     case WallTones: case WallVolume: case ShadowAlerts: case PoiRange: return CatExploring;
     case Sonar: case SonarScope: case SonarRange: case SonarExits: case SonarDoors: case SonarPeople: case SonarShops:
-    case SonarThings: case SonarEvents: case SonarVolume: return CatSonar;
+    case SonarThings: case SonarEvents: case SonarFragments: case SonarVolume: return CatSonar;
     case Hrtf: case BehindPitch: case MasterVolume: case SoundVolume: return CatSound;
     case VoicedLines: case VoiceEndSound: case Subtitles: case AudioDescription: case DescriptionVolume: return CatDialogue;
     default: return CatControls;   // TriggerDelay, EntryHints, and anything new until it is given a place

@@ -9,6 +9,11 @@
 - Inside 2 to 3 m a thing plays a clipped form of its sound so that it can repeat that fast: one knock, one whistled note, the higher bell strike, a puff of air, the start of the pluck.
 - With many things around, the near ones keep most of their speed and the far ones wait longer. The turns used to be shared so evenly that a thing beside you in a full room repeated less than once a second.
 
+### Twilight Fragments
+- Points of interest have a new category, Twilight Fragments, between Objects and Events. In town it lists the glowing blue fragments lying around ("Something Shining" on screen) as "Twilight Fragment"; they used to sit among the objects under the game's name. A fragment leaves the list once it is picked up.
+- In Tartarus it lists "Twilight Fragment crystal": the breakable object that always gives a fragment when struck. It was missing from the points of interest and from the sonar altogether, and it had no strike-reach ring. It has all three now.
+- Twilight Fragments have a sonar sound of their own: three high chimes of glass, rising, a sparkle. There is a "Sonar: Twilight Fragments" setting and a "Sonar: Twilight Fragment" row in the Sound test.
+
 ### Events: Gatekeepers and scenes you walk into
 - Points of interest have a new category, Events, between Objects and Shadows: spots that start a fight or a scene when you walk into them, with nothing to press. On a Tartarus Gatekeeper's floor it lists "Gatekeeper", where the fight starts, until the Gatekeeper is beaten.
 - Events have a sonar sound of their own, a quick trill between two hollow notes. They used to share the objects' plucked note. There is a "Sonar: events" setting and a "Sonar: event" row in the Sound test.
