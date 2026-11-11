@@ -103,7 +103,7 @@ in Tartarus, open them from the camp menu's Config to be safe. The settings are 
 list of its own: Exploring, Sonar, Sound, Dialogue and movies, Controls and help. Tab and Shift+Tab (Page Down and
 Page Up; RB and LB) go to the next and previous category, wrapping, and its name is said as you land. It works like
 every other menu: the up and down arrows
-(D-pad) choose and wrap, Home and End jump to the first and last row, typing letters jumps to a setting in the category by name, left
+(D-pad) choose (at a category's first or last row a further press says the row again, without the cursor sound), Home and End jump to the first and last row, typing letters jumps to a setting in the category by name, left
 and right change the value, Space or Enter (A) steps through the values, F1 (Menu) reads these keys, Escape,
 Backspace or F2 (B or View) closes. Changes are saved at
 once, to `%LOCALAPPDATA%\P3RAccess\settings.ini`. The menu plays the game's own menu sounds: opening and closing

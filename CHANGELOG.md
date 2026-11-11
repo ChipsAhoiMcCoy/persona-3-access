@@ -11,6 +11,7 @@
 - F1 mentions the details keys wherever the focused row has details.
 - Choosing who gets an item, casts or receives a skill, or changes gear no longer reads each member's level.
 - The mod settings are in five categories instead of one list of 27: Exploring, Sonar, Sound, Dialogue and movies, Controls and help. Tab and Shift+Tab, Page Down and Page Up, or RB and LB change category.
+- Mod settings: pressing on at the first or last row says the row again without the cursor sound, as the game's menus do.
 
 ### Fixes
 - After Shuffle Time, enemies finished by an All-Out Attack are no longer read as healed, down and defeated a second time.

@@ -19,6 +19,7 @@
 #include <cstdio>
 #include <format>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -189,15 +190,30 @@ struct Menu : ui::Screen {
 };
 static Menu g_menu;
 static int g_frame = 0;
+static std::optional<ui::ControlId> g_move_from;   // the focus before the key being handled
+static ui::GraphNavigator& nav();
+// The cursor sound, unless the press moved nothing: at a list's first or last row the row is said again without it,
+// as in the game's menus (the user's call, 2026-11-11).
+static void move_sound() {
+  auto at = nav().focused_id();
+  if (g_move_from && at && *g_move_from == *at) return;
+  voice::play_system_sound(voice::CueCursor);
+}
 static ui::GraphNavigator& nav() {
   static ui::GraphNavigator n(ui::NavigatorHost{[](std::string_view t, bool interrupt) { speech::speak(t, interrupt); },
-                                                [] { voice::play_system_sound(voice::CueCursor); },
+                                                [] { move_sound(); },
                                                 [] { return g_open; }, [] { return g_frame; }, {}});
   return n;
 }
 
 // One key through the navigator, then its pull (the navigator rebuilds and announces in ensure_focus).
-static void action(std::string_view a) { g_frame += 100; nav().on_action(a); nav().ensure_focus(); }
+static void action(std::string_view a) {
+  g_frame += 100;
+  g_move_from = nav().focused_id();
+  nav().on_action(a);
+  nav().ensure_focus();
+  g_move_from.reset();
+}
 // Up / Down while a type-ahead search is active walk its results (the navigator reads them as held keys, once per
 // change of direction): one press, then the release. With no search they do nothing and the action moves.
 static void arrow(std::string_view a, bool up) {
