@@ -105,10 +105,12 @@ inline constexpr const char* kTarget = "Target";
 inline constexpr const char* kSkills = "Skills";
 inline constexpr const char* kItems = "Items";
 inline constexpr const char* kChooseTarget = "Choose target";
-// A skill or item that takes a whole side at once: the one thing in the target list.
-inline constexpr const char* kAllEnemies = "All enemies";
-inline constexpr const char* kAllAllies = "All allies";
-inline constexpr const char* kAllUnits = "Everyone";
+// A skill or item that takes a whole side at once: a question, "Use Mazio Gem on all enemies?" with its buttons.
+inline constexpr const char* kUse = "Use";
+inline constexpr const char* kAllEnemies = "all enemies";
+inline constexpr const char* kAllAllies = "all allies";
+inline constexpr const char* kAllUnits = "everyone";
+inline constexpr Hint kAllTargetsKeys{"Space to confirm, Escape to cancel.", "A to confirm, B to cancel."};
 // EBtlDataAnalyze 0..6: normal, null, repel, drain, weak, resist, unknown
 inline constexpr const char* kAttrNames[] = {"Slash", "Strike", "Pierce", "Fire", "Ice", "Elec", "Wind", "Light", "Dark"};
 inline constexpr const char* kAffinity[] = {"", "nulls", "repels", "drains", "weak to", "resists", ""};

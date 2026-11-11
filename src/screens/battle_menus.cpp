@@ -170,11 +170,23 @@ class BattleTargets : public BattleList {
   // A skill or item that takes a whole side (TargetType, EBtlDataTargetType: 0 one target, else the list): the game
   // still steps TargetIndex through the list, but confirm acts on all of it (the target manager's targets are the
   // list, BP_BtlTargetSelect 12608), so the menu is one item that says so and the game's cursor stays where it is
-  // (each name alone read as a single target; the players' call, 2026-11-09).
+  // (each name alone read as a single target; the players' call, 2026-11-09). The item is a question with its
+  // buttons, as Guard's is, and names nobody: each hit says who it landed on (the user's call, 2026-11-11).
   bool all() {
     UObject* l = list_.get();
     auto* list = l ? field<TArray<UObject*>>(l, "targetList") : nullptr;
     return list && list->num > 1 && get<uint8_t>(l, "TargetType") != 0;
+  }
+  // What is being used: the GUI's CommandID, an item's id when the list came from the items (state 3), else a skill's
+  // (the game's own CheckItemID asks the same of the state before this one).
+  std::string command_name() {
+    UObject* l = list_.get();
+    UObject* gui = l ? get<UObject*>(l, "BtlGui") : nullptr;
+    FField* p = gui ? find_prop(class_of(gui), "CommandID") : nullptr;
+    int id = p ? get<int32_t>(gui, "CommandID") : -1;
+    if (id < 0) return {};
+    UObject* mgr = gui_state_mgr().get();
+    return mgr && call_ret<uint8_t>(mgr, "GetPrevState") == 3 ? items::name_of(id) : w_.skill_name(id);
   }
   Mirror& m_ = mirror("targets", [this] {
     UObject* l = list_.get();
@@ -202,7 +214,11 @@ class BattleTargets : public BattleList {
     };
   }
   const char* id() const override { return "battle_targets"; }
-  std::string title() override { return strings::kChooseTarget; }
+  // A whole side is a question, not a choice: it has no "Choose target" before it.
+  std::string title() override { return all() ? std::string() : strings::kChooseTarget; }
+  void on_enter() override {
+    screens::set_keys([this] { return std::string(all() ? strings::kAllTargetsKeys() : strings::kTargetKeys()); });
+  }
   void build(ui::GraphBuilder& b) override {
     UObject* l = list_.get();
     auto* list = l ? field<TArray<UObject*>>(l, "targetList") : nullptr;
@@ -211,18 +227,18 @@ class BattleTargets : public BattleList {
     if (all()) {
       std::vector<WeakObj> units;
       for (int i = 0; i < list->num; ++i) units.push_back(WeakObj::of(list->data[i]));
-      b.add_item(slot("targets.all", 0), game_item(m_, 0, [this, units] {
+      auto v = game_item(m_, 0, [this, units] {
         int enemies = 0;
-        std::string names;
-        for (auto& w : units) {
-          UObject* t = w.resolve();
-          if (!t) continue;
-          enemies += get_bool(t, "EnemyFlag") ? 1 : 0;
-          names += (names.empty() ? "" : ", ") + w_.unit_name(t);
-        }
+        for (auto& w : units)
+          if (UObject* t = w.resolve()) enemies += get_bool(t, "EnemyFlag") ? 1 : 0;
         const char* side = enemies == (int)units.size() ? strings::kAllEnemies : enemies == 0 ? strings::kAllAllies : strings::kAllUnits;
-        return std::format("{}: {}", side, names);
-      }));
+        std::string what = command_name();
+        std::string ask = what.empty() ? std::format("{} {} {}?", strings::kUse, strings::kOn, side)
+                                       : std::format("{} {} {} {}?", strings::kUse, what, strings::kOn, side);
+        return std::format("{} {}", ask, strings::kAllTargetsKeys());
+      });
+      v->speaks_own_position = true;   // one thing to answer: no "1 of 1"
+      b.add_item(slot("targets.all", 0), v);
       b.set_start(slot("targets.all", 0));
       return;
     }
