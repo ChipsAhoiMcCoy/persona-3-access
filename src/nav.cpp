@@ -309,8 +309,10 @@ static bool find_sidestep(const FVector& me, const FVector& wp, int skip, FVecto
 
 // The game shows a hit actor's prompt only while the hero faces the way its mHeroDirectType_ asks: Back = against
 // the actor's own forward (into the door; the faculty office door, yaw -90, wants the hero at yaw 90, measured
-// 2026-10-27), Front = along it, Left/Right = a quarter turn, Center = toward its location. Turn the hero that way
-// on arrival, as a sighted player would.
+// 2026-10-27), Front = along it, Left/Right = a quarter turn, Center = toward its location. BackNG (a seated Social
+// Link partner) is Center too, refused only from within 10 degrees of straight behind the actor (the game's check,
+// exe+0x11bf590; turned as Back, the hero stood beside Kenji's desk looking away and no prompt came, 2026-11-11).
+// Turn the hero that way on arrival, as a sighted player would.
 static void face(ue::UObject* t, const FVector& me) {
   // Things without a facing rule (Tartarus' breakables) are faced straight on, so a strike lands.
   ue::FField* p = ue::find_prop(ue::class_of(t), "mHeroDirectType_");
@@ -318,10 +320,10 @@ static void face(ue::UObject* t, const FVector& me) {
   ue::Params rp(ue::find_function(ue::class_of(t), "K2_GetActorRotation"));
   ue::call(t, rp);
   float yaw = rp.ret<ue::FRotator>().yaw;
-  if (type == "Back" || type == "BackNG") yaw += 180.0f;
+  if (type == "Back") yaw += 180.0f;
   else if (type == "Left") yaw -= 90.0f;
   else if (type == "Right") yaw += 90.0f;
-  else if (type == "Center") { FVector a = world::actor_location(t); yaw = std::atan2(a.y - me.y, a.x - me.x) * 180.0f / 3.14159265f; }
+  else if (type == "Center" || type == "BackNG") { FVector a = world::actor_location(t); yaw = std::atan2(a.y - me.y, a.x - me.x) * 180.0f / 3.14159265f; }
   else if (type != "Front") return;
   ue::UObject* hero = world::player();
   if (!hero) return;
