@@ -113,7 +113,7 @@ once, to `%LOCALAPPDATA%\P3RAccess\settings.ini`. The menu plays the game's own 
 - Sonar: exits, Sonar: doors, Sonar: people, Sonar: shops, Sonar: objects: on, off: each kind of thing on its own. Changing one plays its sound, so this is also where to learn them
 - Beacon: off, on (also Shift+Semicolon): a chirp from the direction of the path to the selected point of interest
 - Nearby chimes: on, off: the chime when a way to another area, a person or a thing comes within 8 m. Only while the sonar is off: with it on, each thing's own sound tells you it has come near
-- Shadow alerts: on, off: in Tartarus, the Shadow pulse, the alarm when one notices you, the strike-reach ring and the back-turned / facing-you cues
+- Shadow alerts: on, off: in Tartarus, the Shadow pulse, the alarm when one notices you, the strike-reach ring (for Shadows and breakable objects) and the back-turned / facing-you cues
 - 3D sound for headphones: on, off: the sonar, the beacon, the nearby chimes and the Shadow cues come from where their source is, ahead, behind, above or below (Steam Audio's HRTF; far sounds are also a little duller). Off pans them left and right only, as before
 - Lower pitch behind you: on, off: the sonar's sounds, the beacon, the nearby chimes and the Shadow pulse play lower when their source is behind you
 - Points of interest range: 60 meters; 20, 40, 100 or 150
@@ -276,7 +276,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   faster and louder as they close in. An alarm sounds when one notices you, and its growl stays urgent while it hunts you.
   Within 4 m you hear whether a Shadow has its back turned or is facing you. A blade's ring repeats while it is inside
   your strike's reach (strike with Ctrl and it connects); two quick high ticks instead mean you are also behind it:
-  strike for the advantage. Chest items are read as you
+  strike for the advantage. A breakable object rings the same way while your strike would break it. Chest items are read as you
   pick them up, and opened chests leave the list.
 - The camp menu's submenus (Item, Equip, Skill, System and others): the highlighted entry, its position and its
   description. In Equip's gear lists F (X / Square) reads the highlighted item again with its description. System > Tutorial lets you re-read every tutorial, in tabs (Battle, Dungeon, Daily Life,
@@ -371,7 +371,11 @@ F1 always gives the current screen's keys. These are in its hints but not descri
 - Strike reach: while a Shadow stands inside the reach of your strike (the game's own hit area, counted a little short so the ring never comes at its very edge: about 2.3 m ahead of
   you and 1.2 m to each side, measured to the Shadow's middle), a blade's short ring repeats from it: press the attack now and it connects. When you
   are behind the Shadow the ring is two quick high ticks instead, the second higher: the strike also brings the
-  advantage. No ring means a swing would miss.
+  advantage. No ring means a swing would miss. The same ring comes from a breakable object while your strike would
+  break it (the game's own hit area again), unless a Shadow is in reach: then the ring is the Shadow's. It is part of
+  Shadow alerts, so it is silent while that setting is off.
+- Sounds stay in place: a sound that has a place in the world (the sonar's, the beacon, the Shadow cues, the nearby
+  chimes) stays there for as long as it plays, so it shifts in your ears as you walk or turn the camera during it.
 - Nearby chimes: when a way to another area, a person or a thing comes within 8 m, its kind's sonar sound (the air,
   the knocks, the whistle, the bell or the plucked note) plays once from its direction, a little lower when it is behind you. It plays again
   once you have been more than 15 m away. The chimes are the sonar's quieter stand-in: they play only while the sonar is off.

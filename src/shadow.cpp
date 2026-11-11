@@ -17,6 +17,7 @@
 #include "core/strings.h"
 #include "devserver.h"
 #include "log.h"
+#include "poi.h"
 #include "seh.h"
 #include "settings.h"
 #include "speech.h"
@@ -145,12 +146,41 @@ bool in_reach(UObject* shadow, const FVector& at, bool& known) {
   return box_holds(b, at, r, hh);
 }
 
+// A breakable thing (Tartarus' Shadow remains) the strike would break now: the game's hit test takes them from the
+// same box as the Shadows (the actors overlapping AttackArea's AreaComp), so the engine's own overlap is asked.
+bool breakable_in_reach(const FVector& me, FVector& at) {
+  UObject* dc = dungeon_comp();
+  UObject* area = dc ? get<UObject*>(dc, "AttackArea") : nullptr;
+  UObject* box = area ? get<UObject*>(area, "AreaComp") : nullptr;
+  if (!box || get_bool(dc, "IsUsingLongRangeAttack")) return false;
+  UFunction* overlaps = find_function(class_of(box), "IsOverlappingActor");
+  if (!overlaps) return false;
+  UObject* found = nullptr;
+  float best = 500.0f;   // cm: nothing farther is in the box
+  guarded([&] {
+    for (UObject* a : live("FldDungeonObjectActor")) {
+      FVector v = world::actor_location(a);
+      float d = std::hypot(flat(v, me), v.z - me.z);
+      if (d >= best || !poi::breakable(a)) continue;
+      Params p(overlaps);
+      p.set<UObject*>("Other", a);
+      if (call(box, p) && p.ret<bool>()) { best = d; found = a; at = v; }
+    }
+  });
+  static WeakObj logged;
+  if (WeakObj w = WeakObj::of(found); found && !(w == logged)) {
+    logged = w;
+    log::writef("shadow: breakable #{} in the strike's reach at {:.1f} m", w.index, best / 100.0f);
+  }
+  return found != nullptr;
+}
+
 // Within 4 m the nearest Shadow's heading is spoken once ("back turned" / "facing you"). In reach of the strike a
 // blade's ring repeats; from behind it (the battle then starts with the advantage) two rising ticks instead.
-void close_cues(const Seen& s, const FVector& me) {
+// Returns the ring's cue while the Shadow is in reach, else -1.
+int close_cues(const Seen& s, const FVector& me) {
   static WeakObj told;
   static int told_state = -1;
-  static ULONGLONG rang_at = 0;
   float to_me = std::atan2(me.y - s.at.y, me.x - s.at.x) * 180.0f / kPi;
   bool back_turned = angle_diff(yaw_of(s.actor), to_me) > 110.0f;   // the hero is outside its front
   WeakObj w = WeakObj::of(s.actor);
@@ -163,7 +193,7 @@ void close_cues(const Seen& s, const FVector& me) {
   } else if (s.dist > 600.0f && w.index == told.index) {
     told_state = -1;
   }
-  if (s.dist > 800.0f) return;
+  if (s.dist > 800.0f) return -1;
   bool known = false;
   bool reach = in_reach(s.actor, s.at, known);
   if (!known) {
@@ -172,11 +202,7 @@ void close_cues(const Seen& s, const FVector& me) {
     float to_shadow = std::atan2(s.at.y - me.y, s.at.x - me.x) * 180.0f / kPi;
     reach = hero && back_turned && s.dist < 220.0f && angle_diff(yaw_of(hero), to_shadow) < 45.0f;
   }
-  ULONGLONG now = GetTickCount64();
-  if (reach && now - rang_at >= kReachMs) {
-    rang_at = now;
-    audio::signal((int)(back_turned ? SignalCue::Ambush : SignalCue::Reach), 1.2f, world::spot(me, s.at));
-  }
+  return !reach ? -1 : (int)(back_turned ? SignalCue::Ambush : SignalCue::Reach);
 }
 
 // What each Shadow knows of the hero, followed from the marks the game shows over it: the exclamation mark is the
@@ -219,10 +245,19 @@ void tick() {
   mind_cues(seen, me);
   const Seen* nearest = nullptr;
   for (const Seen& s : seen) if (!nearest || s.dist < nearest->dist) nearest = &s;
-  if (!nearest || nearest->dist > kPulseRange) return;
-  close_cues(*nearest, me);
-  static ULONGLONG next = 0;
+  const bool shadow_near = nearest && nearest->dist <= kPulseRange;
+  // The strike's ring: from the Shadow in reach, else from a breakable thing in reach.
+  int ring = shadow_near ? close_cues(*nearest, me) : -1;
+  FVector ring_at = shadow_near ? nearest->at : FVector{};
+  if (ring < 0 && breakable_in_reach(me, ring_at)) ring = (int)SignalCue::Reach;
   ULONGLONG now = GetTickCount64();
+  static ULONGLONG rang_at = 0;
+  if (ring >= 0 && now - rang_at >= kReachMs) {
+    rang_at = now;
+    audio::signal(ring, 1.2f, world::spot(me, ring_at));
+  }
+  if (!shadow_near) return;
+  static ULONGLONG next = 0;
   if (now < next) return;
   float closeness = 1.0f - nearest->dist / kPulseRange;
   bool hunted = hunting(nearest->actor);
@@ -256,6 +291,14 @@ void install() {
         s += std::format("strike box centre ({:.0f}, {:.0f}, {:.0f}) extent ({:.0f}, {:.0f}, {:.0f}) yaw {:.0f}, {:.0f} cm from the hero\n", b.center.x, b.center.y,
                          b.center.z, b.extent.x, b.extent.y, b.extent.z, b.yaw, flat(b.center, me));
       else s += "no strike box\n";
+      for (UObject* a : live("FldDungeonObjectActor")) {
+        if (!poi::breakable(a)) continue;
+        FVector v = world::actor_location(a);
+        bool engine = false;
+        if (comp) { Params p(find_function(class_of(comp), "IsOverlappingActor")); p.set<UObject*>("Other", a); if (call(comp, p)) engine = p.ret<bool>(); }
+        s += std::format("  breakable {} #{} {:.0f} cm bearing {:.0f} engine overlap={}\n", name_of(a), index_of(a), std::hypot(flat(v, me), v.z - me.z), world::bearing(me, v), engine);
+      }
+      if (FVector at; breakable_in_reach(me, at)) s += "  a breakable is in the strike's reach\n";
       for (const Seen& e : look(me)) {
         bool known = false;
         bool reach = in_reach(e.actor, e.at, known);

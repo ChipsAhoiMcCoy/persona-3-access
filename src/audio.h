@@ -3,6 +3,7 @@
 // The mod's own sounds (wall-tone loops and positional cues): a small mixer on miniaudio's
 // default output. Everything is thread-safe and cheap enough to call every frame.
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -15,7 +16,13 @@ void beep(float freq, int ms, float volume, float pan = 0.0f);
 void pulse(float freq, int ms, float volume, float pan = 0.0f);   // triangle wave, linear decay over ms (the Shadow pulse)
 // Where a sound is, from the listener (the hero, facing the camera's yaw; world::spot makes one): a unit direction
 // and the distance in metres. pan is the stereo fallback, the value the cues computed before (sin of the bearing).
-struct Spot { float right = 0, up = 0, ahead = 1, dist_m = 0, pan = 0; };
+// `placed`: the sound has a place in the world (wx, wy, wz, the game's units); while it plays, `follow` moves it in
+// the listener's ears as the hero walks and the camera turns. Without it the sound stays where it started.
+struct Spot { float right = 0, up = 0, ahead = 1, dist_m = 0, pan = 0; bool placed = false; float wx = 0, wy = 0, wz = 0; };
+// Once a frame (game thread): every playing sound with a place is heard from where the listener is now. `where`
+// turns a place into a Spot (world::spot from the hero).
+void follow(const std::function<Spot(float x, float y, float z)>& where);
+int followed();   // dev: how many times a playing sound was moved
 // The same, from a place: through Steam Audio's HRTF (src/hrtf.cpp) while 3D sound is on and available, else panned.
 void beep(float freq, int ms, float volume, const Spot& at);
 void pulse(float freq, int ms, float volume, const Spot& at);

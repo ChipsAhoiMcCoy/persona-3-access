@@ -11,6 +11,7 @@
 #include <miniaudio.h>
 #include <windows.h>
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdio>
 #include <format>
@@ -336,6 +337,18 @@ void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate) {
   g_shots.push_back(std::move(s));
 }
 int sample_rate() { return kRate; }
+// A sound's volume and pitch stay as they started (the sonar's level for its distance, the lower pitch from behind):
+// only where it is heard from moves. The HRTF takes a new direction per 10 ms block and blends from the last one.
+std::atomic<int> g_followed{0};
+void follow(const std::function<Spot(float, float, float)>& where) {
+  if (!g_ready) return;
+  std::lock_guard lk(g_mu);
+  int n = 0;
+  for (Shot& s : g_shots) if (!s.dead && s.spot.placed) { s.spot = where(s.spot.wx, s.spot.wy, s.spot.wz); s.spot.placed = true; ++n; }
+  for (Tone& t : g_tones) if (!t.dead && t.spatial && t.spot.placed) { t.spot = where(t.spot.wx, t.spot.wy, t.spot.wz); t.spot.placed = true; ++n; }
+  g_followed += n;
+}
+int followed() { return g_followed.load(); }
 void signal(int signal, float volume, const Spot& at, float rate) {
   static Pcm made[(int)core::SignalCue::Count];   // game thread only: made on first use
   if (signal < 0 || signal >= (int)core::SignalCue::Count) return;
@@ -459,10 +472,10 @@ std::string status() {
   int loud = 0;
   for (const Loop& l : g_loops) if (l.cur >= kSilent) ++loud;
   return std::format("audio ready={} master={:.2f} buses cues={:.2f} walls={:.2f} narration={:.2f} sonar={:.2f} tones={} shots={} loops={} ({} audible) limiter={:.2f} limited_blocks={}\n"
-                     "hrtf {} slots {}/{} fallbacks={} air={:.1f} callback_max_us={}\n",
+                     "hrtf {} slots {}/{} fallbacks={} air={:.1f} callback_max_us={} followed={}\n",
                      g_ready, g_master, g_bus[(int)Bus::Cues].target, g_bus[(int)Bus::Walls].target, g_bus[(int)Bus::Narration].target,
                      g_bus[(int)Bus::Sonar].target, g_tones.size(), g_shots.size(), g_loops.size(), loud, g_limit, g_limited_blocks,
                      !hrtf::available() ? "unavailable" : g_hrtf_on ? "on" : "off", hrtf::slots_used(), hrtf::slot_count(), g_hrtf_fallbacks,
-                     hrtf::air(), g_cb_max_us);
+                     hrtf::air(), g_cb_max_us, g_followed.load());
 }
 }  // namespace p3a::audio

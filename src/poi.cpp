@@ -185,6 +185,17 @@ static bool walkable(UObject* a, const world::FVector& me, const world::FVector&
   return ok;
 }
 
+bool breakable(UObject* a) {
+  if (!a) return false;
+  std::string cn = name_of(class_of(a));
+  if (cn.find("Broken") == std::string::npos || cn.find("Fragment") != std::string::npos || get_bool(a, "bHidden")) return false;
+  if (UObject* box = get<UObject*>(a, "Box")) {
+    UFunction* f = find_function(class_of(box), "GetCollisionEnabled");
+    if (f) { Params p(f); call(box, p); if (p.ret<uint8_t>() == 0) return false; }
+  }
+  return true;
+}
+
 std::vector<Poi> scan(float radius) {
   if (radius < 0) radius = settings::get(settings::PoiRange) * 100.0f;
   std::vector<Poi> out;
@@ -268,15 +279,8 @@ std::vector<Poi> scan(float radius) {
   }
   // Tartarus' breakable Shadow remains (BP_DOBJ_Broken*_C; strike them, Ctrl, for items). A broken one stays visible
   // but its Box stops colliding (NoCollision, 2026-10-27).
-  for (UObject* a : live("FldDungeonObjectActor")) {
-    std::string cn = name_of(class_of(a));
-    if (cn.find("Broken") == std::string::npos || cn.find("Fragment") != std::string::npos || get_bool(a, "bHidden")) continue;
-    if (UObject* box = get<UObject*>(a, "Box")) {
-      UFunction* f = find_function(class_of(box), "GetCollisionEnabled");
-      if (f) { Params p(f); call(box, p); if (p.ret<uint8_t>() == 0) continue; }
-    }
-    add(a, Kind::Thing, strings::kPoiBreakable);
-  }
+  for (UObject* a : live("FldDungeonObjectActor"))
+    if (breakable(a)) add(a, Kind::Thing, strings::kPoiBreakable);
   // Shadows roaming a Tartarus floor (EnemySymbolBaseCore; parked or defeated ones are hidden).
   for (UObject* a : live("EnemySymbolBaseCore")) {
     if (get_bool(a, "bHidden")) continue;

@@ -90,6 +90,8 @@ void tick() {
     call(cm, r);
     g_cam_yaw = r.ret<FRotator>().yaw;
   }
+  // The sounds that are playing stay at their places while the hero walks and the camera turns.
+  if (FVector me; player_location(me)) audio::follow([&](float x, float y, float z) { return spot(me, FVector{x, y, z}); });
   // A mode change (daily -> dark hour -> dungeon) swaps the active player actor: re-pick it now and then.
   static ULONGLONG last_check = 0;
   ULONGLONG now = GetTickCount64();
@@ -266,6 +268,7 @@ audio::Spot spot(const FVector& from, const FVector& to) {
   s.up = std::sin(e);
   s.dist_m = std::sqrt(flat * flat + dz * dz) / 100.0f;
   s.pan = std::sin(b);
+  s.placed = true; s.wx = to.x; s.wy = to.y; s.wz = to.z;   // audio::follow keeps it there while it plays
   return s;
 }
 

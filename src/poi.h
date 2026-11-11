@@ -21,6 +21,7 @@ void announce_list();            // the current category (or the next with somet
 bool selected(Poi& out);
 bool in_selected_category(const Poi& p);   // p belongs to the category the review keys are on
 std::string hit_name(ue::UObject* hit);   // a hit actor's display name ("Bed"), or ""
+bool breakable(ue::UObject* dungeon_object);   // a FldDungeonObjectActor a strike can still break (not broken yet)
 std::string prompt();      // the interaction prompt label showing now ("Treasure Chest"), or ""
 std::string objective();   // the story objective last shown in the field ("Head to the faculty office"), or ""
 std::string objectives();  // the same with the line stacked under it, if one was shown
