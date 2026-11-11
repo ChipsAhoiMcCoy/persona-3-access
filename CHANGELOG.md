@@ -6,7 +6,7 @@
 - Every point of interest near you now repeats its own sound from where it is, faster and louder the closer it is: exits a rising breath of air, doors two knocks, people a two-note whistle, shops a small bell, objects a plucked note. On by default; F3 (both triggers and R3 on a controller) turns it on or off.
 - It works with the points of interest list: the point you selected is marked by a short tick before its sound and always has a place among the sounds, and each point you land on in the list plays its sound once from where it is, however far.
 - New mod settings: Sonar, Sonar plays (everything nearby, the list's category only, or the selected point only at any distance), Sonar range, a switch for each kind (changing one plays its sound), and Sonar volume.
-- It reaches 20 m unless you change it, and a thing sounds the moment it comes into range.
+- It reaches 10 m unless you change it (up to 40), and a thing sounds the moment it comes into range.
 - The nearby chimes now play only while the sonar is off.
 
 ### Menus

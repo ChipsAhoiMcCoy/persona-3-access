@@ -109,7 +109,7 @@ once, to `%LOCALAPPDATA%\P3RAccess\settings.ini`. The menu plays the game's own 
 - Wall tones: on, off
 - Sonar: on, off (also F3): every point of interest near you repeats its own sound from where it is, faster and louder the closer it is (see Sounds)
 - Sonar plays: everything nearby, the list's category only, the selected point only (at any distance): narrows the sonar to the category the points of interest list is on, or to the one point you selected there, which then sounds however far away it is
-- Sonar range: 20 meters; 5, 10, 15, 30 or 40
+- Sonar range: 10 meters; 5, 15, 20, 30 or 40
 - Sonar: exits, Sonar: doors, Sonar: people, Sonar: shops, Sonar: objects: on, off: each kind of thing on its own. Changing one plays its sound, so this is also where to learn them
 - Beacon: off, on (also Shift+Semicolon): a chirp from the direction of the path to the selected point of interest
 - Nearby chimes: on, off: the chime when a way to another area, a person or a thing comes within 8 m. Only while the sonar is off: with it on, each thing's own sound tells you it has come near
@@ -352,7 +352,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
 - Wall tones: four looping tones tell you how close walls are: ahead and behind (centered, different pitches),
   right (right ear) and left (left ear). Louder means closer; silence means open space. Each tone measures how far
   holding that direction would actually take you: a wall you would just slide along stays quiet.
-- Sonar: every point of interest within range (20 m unless you change it) repeats its own sound from where it is, starting the moment it comes into range.
+- Sonar: every point of interest within range (10 m unless you change it) repeats its own sound from where it is, starting the moment it comes into range.
   The closer it is, the faster it repeats (from about once a second at the edge to three times a
   second beside you) and the louder it is, so walking toward a sound makes it quicken. Each kind has a sound of its
   own: exits (ways into another area) a rising breath of air over a low thump, doors two knocks on wood, people a
