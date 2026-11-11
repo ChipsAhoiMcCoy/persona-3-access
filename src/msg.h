@@ -47,7 +47,7 @@ void game_free(void* p);
 // An FString the game allocated (a UFunction's return, BmdPageToFString's output): its text, and the buffer freed.
 std::string take_fstring(ue::FString& s);
 void* game_malloc(size_t n);   // GMalloc->Malloc (null before install): memory the engine may free or grow itself
-std::string page_string(void* page);   // an FCurrentBmdPage rendered to text ("" on any fault)
+std::string page_string(void* page);   // an FCurrentBmdPage rendered and cleaned ("" on any fault; msg_render.cpp)
 // Every line of dialogue and thought spoken this session and each answer chosen, oldest first (what the game's
 // log lists; game thread).
 const std::vector<std::string>& history();

@@ -10,6 +10,7 @@
 // +0x50 (the question). The game builds the item's description as BMD dialog <id & 0xFFF> when it is highlighted.
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "core/speech_text.h"
 #include "core/strings.h"
 #include "core/text_clean.h"
 #include "items.h"
@@ -32,13 +33,18 @@ class GenericSelectScreen : public MenuScreen {
     UObject* d = draw_.get();
     return d ? (uint8_t*)get<UObject*>(d, "PSystem") : nullptr;
   }
+  // Entry i's object in the system's array (+0x28, TSharedPtr entries: object, refcount), or null.
+  static uint8_t* entry(uint8_t* sys, int i) {
+    auto* arr = sys ? (TArray<void*[2]>*)(sys + 0x28) : nullptr;
+    return arr && arr->data && i >= 0 && i < arr->num ? (uint8_t*)arr->data[i][0] : nullptr;
+  }
   std::vector<std::string> entries(uint8_t* sys) {
     std::vector<std::string> out;
     auto* arr = (TArray<void*[2]>*)(sys + 0x28);
     if (!arr->data || arr->num <= 0 || arr->num > 64) return out;
     bool items = item_list(sys);
     for (int i = 0; i < arr->num; ++i) {
-      uint8_t* obj = (uint8_t*)arr->data[i][0];
+      uint8_t* obj = entry(sys, i);
       if (!obj) out.push_back({});
       else if (items) out.push_back(items::name_of(*(uint16_t*)(obj + 0x8)));
       else out.push_back(msg::page_string(*(void**)(obj + 0x8)));
@@ -52,22 +58,16 @@ class GenericSelectScreen : public MenuScreen {
     int c = a ? ListCursor(a + 0x2A4).index() : d ? *(int32_t*)((uint8_t*)d + 0x374) + *(int32_t*)((uint8_t*)d + 0x378) : -1;
     return c >= 0 && c < (int)names_.size() ? c : -1;
   }
-  static std::string sentence(std::string s) {   // ends with a stop ("...?" keeps its own)
-    if (!s.empty() && s.back() != '.' && s.back() != '?' && s.back() != '!') s += '.';
-    return s;
-  }
   int item_id(uint8_t* sys, int i) {
-    auto* arr = (TArray<void*[2]>*)(sys + 0x28);
-    if (!arr->data || i < 0 || i >= arr->num || !arr->data[i][0]) return -1;
-    return *(uint16_t*)((uint8_t*)arr->data[i][0] + 0x8);
+    uint8_t* obj = entry(sys, i);
+    return obj ? *(uint16_t*)(obj + 0x8) : -1;
   }
+  // The activity and the question as one line: the activity ends with a stop ("...?" keeps its own).
   std::string heading(uint8_t* sys) {
-    if (item_list(sys)) {
-      std::string a = to_utf8(*(FString*)(sys + 0x40)), q = to_utf8(*(FString*)(sys + 0x50));
-      return a.empty() ? q : q.empty() ? a : sentence(a) + " " + q;
-    }
-    std::string a = msg::page_string(*(void**)(sys + 0x48)), q = msg::page_string(*(void**)(sys + 0x50));
-    return a.empty() ? q : q.empty() ? a : sentence(a) + " " + q;
+    std::string a, q;
+    if (item_list(sys)) { a = to_utf8(*(FString*)(sys + 0x40)); q = to_utf8(*(FString*)(sys + 0x50)); }
+    else { a = msg::page_string(*(void**)(sys + 0x48)); q = msg::page_string(*(void**)(sys + 0x50)); }
+    return a.empty() ? q : q.empty() ? a : core::sentence(a) + " " + q;
   }
   // The item variant's description: the game builds it as BMD dialog <id & 0xFFF> once its cursor is on the item.
   // Other lists show an INFO line for the highlighted entry (the game over list's "Start over from the beginning of
@@ -76,10 +76,9 @@ class GenericSelectScreen : public MenuScreen {
   // entry's for a moment after a move: the wrong line was read, then the right one (2026-11-10).
   std::string description(int i) {
     if (items_.empty()) {
-      uint8_t* sys = system();
-      auto* arr = sys ? (TArray<void*[2]>*)(sys + 0x28) : nullptr;
-      if (!arr || !arr->data || i < 0 || i >= arr->num || !arr->data[i][0]) return {};
-      void* page = *(void**)((uint8_t*)arr->data[i][0] + 0x18);
+      uint8_t* obj = entry(system(), i);
+      if (!obj) return {};
+      void* page = *(void**)(obj + 0x18);
       return page ? core::clean_text(msg::page_string(page)) : std::string();
     }
     if (i < 0 || i >= (int)items_.size() || items_[i] < 0) return {};
@@ -110,7 +109,7 @@ class GenericSelectScreen : public MenuScreen {
   const char* id() const override { return "generic_select"; }
   int priority() const override { return 20; }
   bool active() override { return system() != nullptr; }
-  std::string title() override { return sentence(heading_); }
+  std::string title() override { return core::sentence(heading_); }
   // The list is read as it opens, before its title and first entry are spoken, and forgotten as it closes: the model
   // kept from the last list spoke the Velvet Room's "Talk. What should I ask about?, Fusion Basics, 1 of 7" over the
   // cafe's coffee (2026-10-31).

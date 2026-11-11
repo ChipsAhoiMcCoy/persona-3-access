@@ -4,6 +4,7 @@
 // cursor follows. The answers are the ones msg reads (msg::current().choices).
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "core/speech_text.h"
 #include "msg.h"
 #include <format>
 
@@ -14,15 +15,6 @@ class ChoiceScreen : public MenuScreen {
     msg::Current c = msg::current();
     return c.open && c.choice >= 0 && c.choice < (int)c.choices.size() ? c.choice : -1;
   });
-  static bool complete(const msg::Current& c) {
-    if (c.choices.empty()) return false;
-    for (auto& x : c.choices) if (x.empty()) return false;
-    return true;
-  }
-  static std::string answer(std::string a) {   // an answer's own full stop goes ("Nice to meet you." read as a dot)
-    if (a.size() >= 2 && a.back() == '.' && a[a.size() - 2] != '.') a.pop_back();
-    return a;
-  }
  public:
   // The USelItem's ListCursor (+0x60) written, then the cursor sound, as its tick's move does. It takes moves in its
   // states 5 and 6 while the global input lock (exe+0x56ac964) is off. (One subclass's tick plays cue 0x13 instead.)
@@ -42,7 +34,7 @@ class ChoiceScreen : public MenuScreen {
   const char* id() const override { return "choice"; }
   int priority() const override { return 35; }   // under the log (40), which opens over it
   bool over_messages() const override { return true; }
-  bool active() override { msg::Current c = msg::current(); return c.open && c.choice >= 0 && complete(c); }
+  bool active() override { msg::Current c = msg::current(); return c.open && c.choice >= 0 && core::all_filled(c.choices); }
   bool announce_entry() override { return false; }
   // F1 over a choice list: the screen is over the message window, so the keys are its own to name (it answered "No
   // keys to tell here", 2026-11-10).
@@ -50,20 +42,21 @@ class ChoiceScreen : public MenuScreen {
   // The review key: the question, then the focused answer.
   std::string describe() override {
     msg::Current c = msg::current();
-    std::string q = c.speaker.empty() ? c.text : c.speaker + ": " + c.text;
+    std::string q = core::spoken_line(c.speaker, c.text);
     std::string a = MenuScreen::describe();
     return q.empty() ? a : a.empty() ? q : q + ". " + a;
   }
   void build(ui::GraphBuilder& b) override {
     msg::Current c = msg::current();
-    if (!complete(c)) return;
+    if (!core::all_filled(c.choices)) return;
     // A new list is a new key: its answers, joined.
     std::string key = "choice";
     for (auto& x : c.choices) key += "|" + x;
     list_.key = std::format("choice.{}", std::hash<std::string>{}(key) & 0xFFFFFF);
     b.begin_stop(list_.key);
     for (int i = 0; i < (int)c.choices.size(); ++i) {
-      std::string a = answer(c.choices[i]);
+      // An answer's own full stop goes ("Nice to meet you." before its position was read as a dot).
+      std::string a = core::without_own_stop(c.choices[i]);
       b.add_item(slot(list_.key, i), game_item(list_, i, [a] { return a; }));
     }
     if (c.choice >= 0) b.set_start(slot(list_.key, c.choice));

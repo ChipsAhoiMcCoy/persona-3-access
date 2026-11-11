@@ -23,7 +23,7 @@ namespace p3a::screens {
 using namespace ue;
 
 class MailScreen : public MenuScreen {
-  Finder draw_{"MailDraw"};
+  Finder draw_{"MailDraw"}, actor_{"MailActor"};
   bool reading_ = false;
   std::string said_;
   struct Mail { std::string sender, title, body; bool fresh = false; };
@@ -58,8 +58,7 @@ class MailScreen : public MenuScreen {
     // The sender, when no page of its own was built (the "Unknown Sender" of a mail with none): AMailActor +0x350 is
     // the list (0x30 each: +0x8 the sender's page).
     if (m.sender.empty()) {
-      static const int actor_id = watch::want("MailActor");
-      if (UObject* a = watch::get(actor_id)) {
+      if (UObject* a = actor_.get()) {
         auto* arr = (TArray<uint8_t>*)((uint8_t*)a + 0x350);
         if (arr->data && i < arr->num && arr->num < 500) guarded([&] { m.sender = msg::page_string(*(void**)(arr->data + (size_t)i * 0x30 + 0x8)); });
       }
@@ -81,27 +80,23 @@ class MailScreen : public MenuScreen {
     auto* items = d ? field<TArray<uint8_t>>(d, "MailListItems") : nullptr;
     return si && items && *si >= 0 && *si < items->num && !flag(d, "bIsStartMailAnim") ? *si : -1;
   });
+  // The actor while its list takes moves (its state +0x294 at 4, bit 0x10 of +0x388 clear), else null.
+  uint8_t* list_actor() {
+    auto* a = (uint8_t*)actor_.get();
+    return a && *(int32_t*)(a + 0x294) == 4 && !(*(uint32_t*)(a + 0x388) & 0x10) ? a : nullptr;
+  }
  public:
   MailScreen() {
     // The list's row / top (u16 AMailActor +0x37A / +0x37C, five rows shown over +0x358), then its sound (cue 0x1FB),
     // as the actor's state 4 moves them; the actor copies them to the draw (SelectedIndex) and clears the NEW mark of
     // the mail left every frame. Not the mail's mouse handler: that also opens the mail.
-    list_.ready = [] {
-      static const int actor_id = watch::want("MailActor");
-      auto* a = (uint8_t*)watch::get(actor_id);
-      return a && *(int32_t*)(a + 0x294) == 4 && !(*(uint32_t*)(a + 0x388) & 0x10);
-    };
-    list_.set = [](int i) {
-      static const int actor_id = watch::want("MailActor");
-      auto* a = (uint8_t*)watch::get(actor_id);
-      if (!a || *(int32_t*)(a + 0x294) != 4 || (*(uint32_t*)(a + 0x388) & 0x10)) return false;
+    list_.ready = [this] { return list_actor() != nullptr; };
+    list_.set = [this](int i) {
+      uint8_t* a = list_actor();
+      if (!a) return false;
       int n = *(int32_t*)(a + 0x358);
       if (i < 0 || i >= n) return false;
-      int v = n < 5 ? n : 5, top = *(uint16_t*)(a + 0x37C);
-      if (i < top) top = i;
-      else if (i >= top + v) top = i - v + 1;
-      if (top > n - v) top = n - v;
-      if (top < 0) top = 0;
+      int top = core::scroll_top(i, *(uint16_t*)(a + 0x37C), 5, n);
       if (top + *(uint16_t*)(a + 0x37A) == i && top == *(uint16_t*)(a + 0x37C)) return true;
       *(uint16_t*)(a + 0x37C) = (uint16_t)top;
       *(uint16_t*)(a + 0x37A) = (uint16_t)(i - top);

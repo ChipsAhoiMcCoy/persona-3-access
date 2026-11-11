@@ -17,14 +17,21 @@ namespace p3a::screens {
 using namespace ue;
 
 static Finder g_title_actor{"TitleActor"};
-// The title actor's current state class without its "TitleState" prefix ("Select", "NewGame"), or "".
-static std::string title_state() {
-  UObject* s = get<UObject*>(g_title_actor.get(), "CurrentTitleState");
+// The title actor's current state object (a UTitleState*), or null.
+static UObject* title_state_obj() { return get<UObject*>(g_title_actor.get(), "CurrentTitleState"); }
+// A state's class without its "TitleState" prefix ("Select", "NewGame"), or "" for none.
+static std::string title_state(UObject* s) {
   if (!s) return {};
   std::string n = name_of(class_of(s));
   return n.rfind("TitleState", 0) == 0 ? n.substr(10) : n;
 }
-static bool title_state_is(const char* s) { std::string t = title_state(); return t == s || t == std::string(s) + "_Astrea"; }
+static bool title_state_is(const char* s) { std::string t = title_state(title_state_obj()); return t == s || t == std::string(s) + "_Astrea"; }
+// The title menu's item count, from the last index its state holds (UTitleStateSelect +0xa0), and an item's label.
+static int title_count(UObject* state) {
+  int last = state ? *(int*)((uint8_t*)state + 0xa0) : 3;
+  return last >= 1 && last <= 5 ? last + 1 : 4;
+}
+static std::string title_item(int i) { return i < 4 ? strings::kTitleItems[i] : std::format("item {}", i + 1); }
 
 bool title_opening() { return title_state_is("OP"); }
 // The opening movie takes a press as a skip only once its state has run 1 s (UTitleStateOP +0x44, the time since it
@@ -33,7 +40,7 @@ bool title_opening() { return title_state_is("OP"); }
 // is current says it (the movie screen takes over once the movie plays), once per showing.
 static bool g_opening_said = false;
 bool opening_line_due() {
-  UObject* s = get<UObject*>(g_title_actor.get(), "CurrentTitleState");
+  UObject* s = title_state_obj();
   std::string n = s ? name_of(class_of(s)) : "";
   if (n != "TitleStateOP" && n != "TitleStateOP_Astrea") { g_opening_said = false; return false; }
   if (g_opening_said || *(float*)((uint8_t*)s + 0x44) < 1.0f) return false;
@@ -70,25 +77,18 @@ static void hold_notice(UObject* s, bool caution, UObject* actor, bool& pressed)
 }
 
 class TitleScreen : public Screen {
-  Finder actor_{"TitleActor"};
   std::string state_;
   int cursor_ = -1;
   bool notice_pressed_ = false;
 
-  UObject* state_obj() { return get<UObject*>(actor_.get(), "CurrentTitleState"); }
-  static std::string short_state(UObject* s) {
-    std::string n = name_of(class_of(s));
-    return n.rfind("TitleState", 0) == 0 ? n.substr(10) : n;
-  }
-
  public:
   const char* id() const override { return "title"; }
-  bool active() override { return state_obj() != nullptr; }
+  bool active() override { return title_state_obj() != nullptr; }
   // Entering again reads the state again (after a message window).
   void enter() override { state_.clear(); cursor_ = -1; }
   void tick() override {
-    UObject* s = state_obj();
-    std::string st = short_state(s);
+    UObject* s = title_state_obj();
+    std::string st = title_state(s);
     if (opening_line_due()) speech::speak(strings::kTitleOpening, true);
     if (st != state_) {
       state_ = st;
@@ -98,7 +98,7 @@ class TitleScreen : public Screen {
       if (st == "Caution") { screens::set_keys(strings::kNoticeKeys); speech::speak(strings::kTitleCaution, true); }
       else if (st == "PhotosensitiveCaution") { screens::set_keys(strings::kNoticeKeys); speech::speak(strings::kTitlePhotosensitive, true); }
     }
-    if (st == "Caution" || st == "PhotosensitiveCaution") hold_notice(s, st == "Caution", actor_.get(), notice_pressed_);
+    if (st == "Caution" || st == "PhotosensitiveCaution") hold_notice(s, st == "Caution", g_title_actor.get(), notice_pressed_);
     // The logos before the opening movie (about 13 s with nothing else on screen): UTitleStateLogo +0x44 is the one
     // shown, 0 Atlus, 1 P-Studio, 2 Unreal Engine, 3 fading out (measured 2026-10-28). cursor_ holds the last read.
     // Only the first interrupts: a description still running when the next logo comes is finished, not cut.
@@ -112,7 +112,7 @@ class TitleScreen : public Screen {
     // after the state starts; the line used to come with the state, and a key pressed on hearing it did nothing
     // (measured and read from both states' tick, 2026-10-29). cursor_ 1 = said.
     if ((st == "PressWait" || st == "PressWait_Astrea") && cursor_ < 0 && *((uint8_t*)s + 0x4c) &&
-        *((uint8_t*)actor_.get() + 0x3da)) {
+        *((uint8_t*)g_title_actor.get() + 0x3da)) {
       screens::set_keys(strings::kPressAnyKey);
       speech::speak(st == "PressWait" ? strings::kTitlePressAny : strings::kTitlePressAnyAstrea, true);   // _Astrea: Episode Aigis
       cursor_ = 1;
@@ -132,33 +132,26 @@ static bool select_set(uint8_t* s, int i) { return s && ((bool (*)(void*, void*,
 // slides its items in for about 2 s before it takes a key: its step at +0x490 is 1 meanwhile, 2 once up/down and
 // confirm count (read from UTitleStateSelect's tick). The screen opens at 2: a press on hearing it counts.
 class TitleMenuScreen : public MenuScreen {
-  Finder actor_{"TitleActor"};
-  Mirror& list_ = mirror("title", [this] { UObject* a = actor_.get(); return a ? *(int*)((uint8_t*)a + 0x4cc) : -1; });
-  uint8_t* sel() { UObject* a = actor_.get(); return a ? (uint8_t*)a + 0x478 : nullptr; }
-  UObject* state_obj() { return get<UObject*>(actor_.get(), "CurrentTitleState"); }
-  int count() {
-    UObject* sel = state_obj();
-    int last = sel ? *(int*)((uint8_t*)sel + 0xa0) : 3;
-    return last >= 1 && last <= 5 ? last + 1 : 4;
-  }
+  Mirror& list_ = mirror("title", [] { UObject* a = g_title_actor.get(); return a ? *(int*)((uint8_t*)a + 0x4cc) : -1; });
+  static uint8_t* sel() { UObject* a = g_title_actor.get(); return a ? (uint8_t*)a + 0x478 : nullptr; }
  public:
   TitleMenuScreen() {
-    list_.ready = [this] { return select_ready(sel()); };
-    list_.set = [this](int i) { return select_set(sel(), i); };
+    list_.ready = [] { return select_ready(sel()); };
+    list_.set = [](int i) { return select_set(sel(), i); };
   }
   const char* id() const override { return "title_menu"; }
   int priority() const override { return 1; }
   bool active() override {
-    UObject* a = actor_.get();
-    return a && state_obj() && (title_state_is("Select")) && *(int*)((uint8_t*)a + 0x490) == 2;
+    uint8_t* s = sel();
+    return s && title_state_is("Select") && *(int32_t*)(s + 0x18) == 2;   // the menu's step: ATitleActor +0x490
   }
   std::string title() override { return strings::kTitleMenu; }
   void on_enter() override { screens::set_keys(strings::kChooseKeys); }
   void build(ui::GraphBuilder& b) override {
     b.begin_stop("title");
-    int n = count();
+    int n = title_count(title_state_obj());
     for (int i = 0; i < n; ++i) {
-      std::string label = i < 4 ? strings::kTitleItems[i] : std::format("item {}", i + 1);
+      std::string label = title_item(i);
       b.add_item(slot("title", i), game_item(list_, i, [label] { return label; }));
     }
     if (int c = list_.cursor(); c >= 0) b.set_start(slot("title", c));

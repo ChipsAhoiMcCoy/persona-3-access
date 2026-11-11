@@ -130,7 +130,7 @@ static std::string as_list(uint8_t* first, const std::string& joined) {
   return spaced == joined ? listed : std::string{};   // the letter records must say what the renderer said
 }
 
-std::string page_text(void* page) {
+std::string page_string(void* page) {
   if (!page || !g_page_to_string) return {};
   std::string out;
   uint8_t* first = nullptr;
@@ -152,7 +152,6 @@ std::string page_text(void* page) {
   }
   return out;
 }
-std::string page_string(void* page) { return page_text(page); }
 
 // The choice list of a USelItem: entries (+0x50) are BMD line nodes -- +0x28 the first letter (a linked list of
 // letter records), +0x40 the next line (null here). BmdPageToFString takes exactly such a line and walks the letters

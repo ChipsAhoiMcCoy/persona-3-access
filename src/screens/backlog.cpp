@@ -5,6 +5,7 @@
 // session (msg::history), counted from the newest; entries older than this session are said to be so.
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "core/speech_text.h"
 #include "core/strings.h"
 #include "log.h"
 #include "msg.h"
@@ -77,7 +78,7 @@ class BacklogScreen : public MenuScreen {
     screens::set_keys(strings::kLogKeys);
     msg::Current m = msg::current();
     auto& h = msg::history();
-    bool on_screen = m.open && !h.empty() && h.back() == (m.speaker.empty() ? m.text : m.speaker + ": " + m.text);
+    bool on_screen = m.open && !h.empty() && h.back() == core::spoken_line(m.speaker, m.text);
     if (on_screen && !m.voice_done) skip_ = 1;
     log::writef("backlog: opened, {} records, page on screen {}{}, skip {}", h.size(), on_screen ? "is the newest" : "not recorded",
                 m.voice_done ? " (voice ended)" : "", skip_);
