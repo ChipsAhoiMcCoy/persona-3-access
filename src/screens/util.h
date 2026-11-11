@@ -2,6 +2,7 @@
 #include "ue/ue.h"
 #include "ue/scan.h"
 #include "watch.h"
+#include "core/list_window.h"
 #include <windows.h>
 #include <string>
 
@@ -30,12 +31,7 @@ struct ListCursor {
   bool set(int i) const {
     int n = count(), v = p ? *(int32_t*)(p + 8) : 0;
     if (!p || i < 0 || i >= n) return false;
-    if (v <= 0 || v > n) v = n;
-    int top = *(int32_t*)(p + 0x28);
-    if (i < top) top = i;
-    else if (i >= top + v) top = i - v + 1;
-    if (top > n - v) top = n - v;
-    if (top < 0) top = 0;
+    int top = core::scroll_top(i, *(int32_t*)(p + 0x28), v, n);
     *(int32_t*)(p + 0x28) = top;
     *(int32_t*)(p + 0x24) = i - top;
     return true;
@@ -65,4 +61,20 @@ inline bool write_cursor(ListCursor lc, int i, void* draw = nullptr, uintptr_t b
 
 // Whether a UUserWidget runs no animation (an opening slide drops the game's input): the default Mirror::ready.
 inline bool widget_idle(ue::UObject* w) { return !w || !ue::call_ret<bool>(w, "IsAnyAnimationPlaying"); }
+
+// Native reads at an offset (a menu's own fields, which no reflected property covers).
+// A TArray at `base + off`, or null when it is empty or its count is not a plausible one.
+template <class T> ue::TArray<T>* arr(void* base, int off) {
+  auto* a = (ue::TArray<T>*)((uint8_t*)base + off);
+  return a->data && a->num > 0 && a->num < 2000 ? a : nullptr;
+}
+// An int at `base + off`; -1 for a null base.
+inline int i32(void* base, int off) { return base ? *(int32_t*)((uint8_t*)base + off) : -1; }
+// A game function by its rva (a mirror's `set` calls what the game's own move calls).
+template <class F> F fn(uintptr_t rva) { return (F)(scan::exe_base() + rva); }
+// A ListCursor's row on screen (+0x24), given the cursor's address.
+inline int row_of(uint8_t* lc) { return *(int32_t*)(lc + 0x24); }
+// Whether a menu's open timer has run its opening: `elapsed` (the menu's own float, seconds) against the frame count
+// the game asks of the UI layer `layer` (exe+0x12e13b0), at 30 frames a second. What the game's confirm waits for.
+inline bool open_timer_done(float elapsed, void* layer) { return elapsed >= fn<int (*)(void*)>(0x12e13b0)(layer) * (1.f / 30); }
 }  // namespace p3a::screens

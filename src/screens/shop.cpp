@@ -74,12 +74,7 @@ class ShopScreen : public MenuScreen {
   // Write a u16 row / top pair (the lists' cursors) for index i, then the cursor sound.
   bool write_rows(int row_off, int i, int count, int shown) {
     if (!s() || i < 0 || i >= count) return false;
-    if (shown <= 0 || shown > count) shown = count;
-    int top = *(uint16_t*)(s() + row_off + 2);
-    if (i < top) top = i;
-    else if (i >= top + shown) top = i - shown + 1;
-    if (top > count - shown) top = count - shown;
-    if (top < 0) top = 0;
+    int top = core::scroll_top(i, *(uint16_t*)(s() + row_off + 2), shown, count);
     *(uint16_t*)(s() + row_off + 2) = (uint16_t)top;
     *(uint16_t*)(s() + row_off) = (uint16_t)(i - top);
     cursor_sound();

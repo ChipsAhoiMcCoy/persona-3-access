@@ -132,11 +132,7 @@ class VelvetScreen : public MenuScreen {
       if (!p || scene() != 4 || step() != 6) return false;
       int n = *(int32_t*)(p + 0x478);
       if (i < 0 || i >= n) return false;
-      int v = n < 6 ? n : 6, top = *(int32_t*)(p + 0x488);
-      if (i < top) top = i;
-      else if (i >= top + v) top = i - v + 1;
-      if (top > n - v) top = n - v;
-      if (top < 0) top = 0;
+      int top = core::scroll_top(i, *(int32_t*)(p + 0x488), 6, n);
       cursor_sound();
       ((void (*)(void*, int, int))(scan::exe_base() + 0x14c9c70))(p, top, i - top);
       return true;
