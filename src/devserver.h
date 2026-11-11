@@ -2,6 +2,7 @@
 #include <functional>
 #include <map>
 #include <string>
+#include "core/query.h"
 
 namespace p3a::dev {
 // Loopback HTTP server for driving and observing the mod while the game runs (the dev loop, after Grim Dark's).
@@ -10,8 +11,9 @@ namespace p3a::dev {
 // Routes are plain-text GET (a POST body arrives as `body`). Each request runs on its own thread, so handlers may
 // run concurrently; anything that touches game objects must go through hooks::run_on_game_thread. A handler whose
 // game-thread job timed out is answered 503 whatever it returned. "+" in a query is a literal plus, not a space.
-using Query = std::map<std::string, std::string>;
-struct Request { std::string path; Query q; std::string body; };
+// The request's text and its parsing are core/query (engine-free, unit-tested).
+using Query = core::Query;
+using Request = core::Request;
 using Handler = std::function<std::string(const Request&, int& status)>;
 
 void route(const std::string& path, Handler h, const char* help = "");
@@ -25,5 +27,5 @@ double arg_num(const Request& r, const char* key, double def = 0);
 bool has(const Request& r, const char* key);
 // Runs fn on the game thread and returns its text (a timed-out job is answered 503 whatever this returns).
 std::string on_game(std::function<std::string()> fn);
-bool contains_ci(const std::string& haystack, const std::string& needle);   // case-insensitive substring
+using core::contains_ci;   // case-insensitive substring (haystack, needle)
 }  // namespace p3a::dev

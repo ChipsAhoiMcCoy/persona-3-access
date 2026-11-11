@@ -28,42 +28,13 @@ void route(const std::string& path, Handler h, const char* help) {
   g_routes[path] = Route{std::move(h), help ? help : ""};
 }
 
-// "+" is NOT a space here: every client encodes spaces as %20, and key chords (k=w+d) arrive intact.
-static std::string url_decode(std::string_view s) {
-  std::string o;
-  for (size_t i = 0; i < s.size(); ++i) {
-    if (s[i] == '%' && i + 2 < s.size()) { o += (char)strtol(std::string(s.substr(i + 1, 2)).c_str(), nullptr, 16); i += 2; }
-    else o += s[i];
-  }
-  return o;
-}
-static Query parse_query(std::string_view q) {
-  Query m;
-  size_t p = 0;
-  while (p <= q.size()) {
-    size_t e = q.find('&', p); if (e == std::string_view::npos) e = q.size();
-    std::string_view kv = q.substr(p, e - p);
-    size_t eq = kv.find('=');
-    if (!kv.empty()) m[url_decode(kv.substr(0, eq))] = eq == std::string_view::npos ? "1" : url_decode(kv.substr(eq + 1));
-    p = e + 1;
-  }
-  return m;
-}
-static Request parse_target(const std::string& target) {
-  Request req;
-  size_t qm = target.find('?');
-  req.path = target.substr(0, qm);
-  if (req.path.empty() || req.path[0] != '/') req.path = "/" + req.path;
-  if (qm != std::string::npos) req.q = parse_query(std::string_view(target).substr(qm + 1));
-  return req;
-}
+using core::parse_target;
 
 std::string arg(const Request& r, const char* key, const char* def) { auto it = r.q.find(key); return it == r.q.end() ? def : it->second; }
 bool has(const Request& r, const char* key) { return r.q.count(key) > 0; }
 long long arg_int(const Request& r, const char* key, long long def) {
   auto it = r.q.find(key); if (it == r.q.end() || it->second.empty()) return def;
-  const std::string& s = it->second;
-  return strtoll(s.c_str(), nullptr, s.rfind("0x", 0) == 0 || s.rfind("-0x", 0) == 0 ? 16 : 10);
+  return core::parse_int(it->second);
 }
 double arg_num(const Request& r, const char* key, double def) { auto it = r.q.find(key); return it == r.q.end() || it->second.empty() ? def : atof(it->second.c_str()); }
 
@@ -93,9 +64,6 @@ static std::string dispatch(const Request& req, int& status) {
 // A route called from inside another (/state, /wait, /batch): "screen", "/world?range=300".
 static std::string call(const std::string& target, int& status) {
   try { return dispatch(parse_target(target), status); } catch (const std::exception& e) { status = 500; return std::string("exception: ") + e.what() + "\n"; }
-}
-bool contains_ci(const std::string& h, const std::string& n) {
-  return std::search(h.begin(), h.end(), n.begin(), n.end(), [](char a, char b) { return tolower((unsigned char)a) == tolower((unsigned char)b); }) != h.end();
 }
 std::string on_game(std::function<std::string()> fn) {
   auto out = std::make_shared<std::string>("game thread did not run the job\n");
