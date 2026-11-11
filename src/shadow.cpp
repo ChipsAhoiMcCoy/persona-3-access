@@ -2,9 +2,10 @@
 //  - AEnemySymbolBaseCore: the roaming Shadow's actor (hidden while parked or defeated).
 //  - AFldEnemyManager.Enemies: one FFldEnemyHolder { Actor, EnemyComp } per Shadow (Actor is that same actor). A
 //    UFldEnemyNormalComp has CurrentMarkEffectParam, the mark over its head (its Asset is ExclamationEffect's or
-//    QuestionEffect's), and TrackingTarget (an FFldPlayerHolder whose Pawn is whom it is after). Read from the
-//    classes' layout, not yet watched in play: UNTESTED which moments set and clear them, so the mark alone starts
-//    the alarm (mind_cues).
+//    QuestionEffect's), and TrackingTarget (an FFldPlayerHolder whose Pawn is whom it is after). Watched on floor 2
+//    (2026-11-10): at rest no mark and no target; the exclamation mark came up as each Shadow noticed the hero (at
+//    3.4 m and 7.3 m, running at them), and the target was the hero while it chased. Losing him (the question mark,
+//    the target let go) is UNTESTED.
 //  - UFldPlayerDungeonComp.AttackArea: an AFldCharArea whose box (AreaComp) rides in front of the hero. The strike's
 //    hit test is that box's overlapping actors, so "inside the box" is "the strike connects". Measured on floor 5
 //    (2026-11-10): centre 84 cm ahead of the hero, extent 90 x 60 x 50, so it reaches 1.7 m ahead and 0.6 m to each
@@ -15,6 +16,7 @@
 #include "core/sonar_cues.h"
 #include "core/strings.h"
 #include "devserver.h"
+#include "log.h"
 #include "seh.h"
 #include "settings.h"
 #include "speech.h"
@@ -33,7 +35,9 @@ using core::SignalCue;
 using world::FVector;
 
 constexpr float kPi = 3.14159265f;
-constexpr float kPulseRange = 1500.0f;   // cm: the growl
+// cm: the growl. 15 m at first, and only for a Shadow within 3 m of the hero's height: it was not heard until it was
+// about to strike (the user, 2026-11-10). A Tartarus floor has raised and sunken parts, so height filters nothing now.
+constexpr float kPulseRange = 3000.0f;
 constexpr float kMindRange = 4000.0f;    // cm: how far off a Shadow's noticing is told
 constexpr ULONGLONG kReachMs = 380;      // the ring's rhythm while in reach
 
@@ -84,8 +88,7 @@ std::vector<Seen> look(const FVector& me) {
     if (get_bool(a, "bHidden")) continue;
     FVector v{};
     if (!guarded([&] { v = world::actor_location(a); })) continue;
-    if (std::fabs(v.z - me.z) > 300.0f) continue;
-    out.push_back({a, v, flat(v, me), Raw{}});
+    out.push_back({a, v, std::hypot(flat(v, me), v.z - me.z), Raw{}});
   }
   if (out.empty()) return out;
   // A holder's Actor is the Shadow's own actor (floor 5's guardian, 2026-11-10).
@@ -119,11 +122,13 @@ void body_of(UObject* shadow, float& radius, float& half_height) {
   Params r(find_function(class_of(cap), "GetScaledCapsuleRadius")), h(find_function(class_of(cap), "GetScaledCapsuleHalfHeight"));
   if (call(cap, r) && call(cap, h)) { radius = r.ret<float>(); half_height = h.ret<float>(); }
 }
-// The body's middle inside the box grown by the body, less a hand's width so the edge is not called a hit.
+// The body's middle inside the box grown by part of the body. A roaming Shadow's capsule is 1 m in radius (floor 2,
+// 2026-11-10); only six tenths of it is counted, so the ring means the strike is well inside its reach, not at the
+// edge of it, and a Shadow that takes a step back is still hit.
 bool box_holds(const Box& b, const FVector& p, float radius, float half_height) {
   float a = -b.yaw * kPi / 180.0f, dx = p.x - b.center.x, dy = p.y - b.center.y;
   float lx = dx * std::cos(a) - dy * std::sin(a), ly = dx * std::sin(a) + dy * std::cos(a);
-  const float grow = std::max(radius - 10.0f, 0.0f);
+  const float grow = radius * 0.6f;
   return std::fabs(lx) <= b.extent.x + grow && std::fabs(ly) <= b.extent.y + grow && std::fabs(p.z - b.center.z) <= b.extent.z + half_height;
 }
 // The strike would connect with this Shadow now. `known` false: the game's hit area could not be read.
@@ -198,8 +203,8 @@ void mind_cues(const std::vector<Seen>& seen, const FVector& me) {
       else if (m.tracked) m.hunting = false;   // it held him as its target and has let go
     }
     m.last = s.raw.mark;
-    if (m.hunting && !was) audio::signal((int)SignalCue::Spotted, 1.4f, world::spot(me, s.at));
-    else if (was && !m.hunting) audio::signal((int)SignalCue::Lost, 1.1f, world::spot(me, s.at));
+    if (m.hunting && !was) { audio::signal((int)SignalCue::Spotted, 1.4f, world::spot(me, s.at)); log::writef("shadow: #{} noticed the hero at {:.1f} m", std::get<0>(key), s.dist / 100.0f); }
+    else if (was && !m.hunting) { audio::signal((int)SignalCue::Lost, 1.1f, world::spot(me, s.at)); log::writef("shadow: #{} lost the hero", std::get<0>(key)); }
     now_known[key] = m;
   }
   g_minds.swap(now_known);
@@ -223,9 +228,15 @@ void tick() {
   bool hunted = hunting(nearest->actor);
   bool behind = std::cos(world::bearing(me, nearest->at) * kPi / 180.0f) < -0.2f && settings::on(settings::BehindPitch);
   // Hunting the hero: higher, louder and nearly twice as fast.
-  audio::signal((int)SignalCue::Shadow, 0.5f + 1.0f * closeness + (hunted ? 0.3f : 0.0f), world::spot(me, nearest->at),
+  audio::signal((int)SignalCue::Shadow, 1.0f + 0.8f * closeness + (hunted ? 0.3f : 0.0f), world::spot(me, nearest->at),
                 (behind ? 0.7f : 1.0f) * (hunted ? 1.3f : 1.0f));
-  next = now + (ULONGLONG)((250 + 900 * (1.0f - closeness)) * (hunted ? 0.55f : 1.0f));
+  next = now + (ULONGLONG)((220 + 780 * (1.0f - closeness)) * (hunted ? 0.55f : 1.0f));
+  // A Shadow's first growl is logged with its distance (how early the player could have heard it).
+  static WeakObj growled;
+  if (WeakObj w = WeakObj::of(nearest->actor); !(w == growled)) {
+    growled = w;
+    log::writef("shadow: #{} first growls at {:.1f} m{}", w.index, nearest->dist / 100.0f, hunted ? ", hunting" : "");
+  }
 }
 
 void install() {

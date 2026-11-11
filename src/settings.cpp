@@ -31,7 +31,9 @@ static const Def kDefs[Count] = {
   {"sonar", strings::kSetSonar, Unit::Toggle, {0, 1}, 1},                    // every nearby point of interest sounds (sonar.cpp)
   {"sonar_scope", strings::kSetSonarScope, Unit::Choice, {ScopeAll, ScopeCategory, ScopeSelected}, ScopeAll,
    {strings::kScopeAll, strings::kScopeCategory, strings::kScopeSelected}},
-  {"sonar_range", strings::kSetSonarRange, Unit::Meters, {5, 8, 10, 15, 20, 30}, 10},
+  // 10 m at first (key sonar_range): at a run that is two seconds' warning. The new key lets the new default reach
+  // a file that already holds the old one.
+  {"sonar_distance", strings::kSetSonarRange, Unit::Meters, {5, 10, 15, 20, 30, 40}, 20},
   {"sonar_exits", strings::kSetSonarExits, Unit::Toggle, {0, 1}, 1},
   {"sonar_doors", strings::kSetSonarDoors, Unit::Toggle, {0, 1}, 1},
   {"sonar_people", strings::kSetSonarPeople, Unit::Toggle, {0, 1}, 1},

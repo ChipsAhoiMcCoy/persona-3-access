@@ -9,7 +9,7 @@ namespace p3a::core {
 enum class SonarCue {
   Exit,     // a way into another area: a breath of air rising through an opening, over a low thump
   Door,     // a room's door: two knocks on wood
-  Person,   // someone to talk to: a short voiced "hm", rising
+  Person,   // someone to talk to: a two-note whistle, the second note lower ("yoo-hoo")
   Shop,     // a shop or vendor: two strikes of a small bell, the second higher (a till)
   Thing,    // something to check or open: one bright plucked note
   Count

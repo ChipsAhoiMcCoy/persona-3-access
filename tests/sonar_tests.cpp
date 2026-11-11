@@ -32,8 +32,22 @@ TEST_CASE("sonar field: a near thing pulses more often than a far one") {
   auto fired = run(f, {{1, 1.0f, 0}, {2, 10.0f, 0}}, 10.0);
   CHECK(fired[1] >= 30);   // every 0.30 s
   CHECK(fired[1] <= 34);
-  CHECK(fired[2] >= 6);    // every 1.40 s
-  CHECK(fired[2] <= 8);
+  CHECK(fired[2] >= 9);    // every 1.00 s
+  CHECK(fired[2] <= 11);
+}
+
+TEST_CASE("sonar field: a thing that arrives in a running field pulses at once") {
+  SonarField f;
+  run(f, {{1, 5.0f, 0}}, 2.0);
+  for (auto& p : f.update({{1, 5.0f, 0}, {2, 10.0f, 1}}, 2.0)) CHECK(p.id != 2);   // seen this frame: due now, sounds next
+  bool fired = false;
+  for (auto& p : f.update({{1, 5.0f, 0}, {2, 10.0f, 1}}, 2.01)) fired = fired || p.id == 2;
+  CHECK(fired);
+  // An empty field that has been running counts too: the first thing on a quiet floor.
+  SonarField g;
+  g.update({}, 0.0);
+  g.update({{3, 10.0f, 0}}, 1.0);
+  CHECK(g.update({{3, 10.0f, 0}}, 1.01).size() == 1);
 }
 
 TEST_CASE("sonar field: a new thing is seeded, not fired, and pulses within one period") {
@@ -118,6 +132,27 @@ TEST_CASE("signal cues: short, clean at both ends, the sonar's loudness") {
     CHECK(rms < kSonarCueRms * 1.01);
     CHECK(signal_cue((SignalCue)k, rate) == v);
   }
+}
+
+// The share of a sound's energy above `hz` (a two-pole high-pass, then the energies compared).
+static double share_above(const std::vector<float>& v, double hz, int rate) {
+  const double a = std::exp(-2.0 * 3.14159265358979 * hz / rate);
+  double lp1 = 0, lp2 = 0, all = 0, high = 0;
+  for (float s : v) {
+    lp1 = a * lp1 + (1 - a) * s;
+    lp2 = a * lp2 + (1 - a) * lp1;
+    double h = s - lp2;
+    all += (double)s * s; high += h * h;
+  }
+  return all > 0 ? high / all : 0;
+}
+
+TEST_CASE("signal cues: the Shadow's growl is carried where ears and small headphones hear it") {
+  const int rate = 48000;
+  std::vector<float> growl = signal_cue(SignalCue::Shadow, rate);
+  double share = share_above(growl, 400.0, rate);
+  MESSAGE("growl: share of energy above 400 Hz " << share);
+  CHECK(share > 0.5);
 }
 
 TEST_CASE("sonar cues: each kind is a different sound") {

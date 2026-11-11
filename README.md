@@ -109,7 +109,7 @@ once, to `%LOCALAPPDATA%\P3RAccess\settings.ini`. The menu plays the game's own 
 - Wall tones: on, off
 - Sonar: on, off (also F3): every point of interest near you repeats its own sound from where it is, faster and louder the closer it is (see Sounds)
 - Sonar plays: everything nearby, the list's category only, the selected point only (at any distance): narrows the sonar to the category the points of interest list is on, or to the one point you selected there, which then sounds however far away it is
-- Sonar range: 10 meters; 5, 8, 15, 20 or 30
+- Sonar range: 20 meters; 5, 10, 15, 30 or 40
 - Sonar: exits, Sonar: doors, Sonar: people, Sonar: shops, Sonar: objects: on, off: each kind of thing on its own. Changing one plays its sound, so this is also where to learn them
 - Beacon: off, on (also Shift+Semicolon): a chirp from the direction of the path to the selected point of interest
 - Nearby chimes: on, off: the chime when a way to another area, a person or a thing comes within 8 m. Only while the sonar is off: with it on, each thing's own sound tells you it has come near
@@ -272,7 +272,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   page, and Tab jumps its sections). Space or Enter goes on and stops the reading; pressed before the game takes it, it
   is kept until it does. Enemies that fall together are said in one line ("2 Cowardly
   Maya defeated"), and the All-Out Attack prompt is said once with its buttons (Space to attack, Escape to hold back).
-- Tartarus: Shadows are points of interest (their own category) and growl from their direction when within 15 m,
+- Tartarus: Shadows are points of interest (their own category) and growl from their direction when within 30 m,
   faster and louder as they close in. An alarm sounds when one notices you, and its growl stays urgent while it hunts you.
   Within 4 m you hear whether a Shadow has its back turned or is facing you. A blade's ring repeats while it is inside
   your strike's reach (strike with Ctrl and it connects); two quick high ticks instead mean you are also behind it:
@@ -352,11 +352,11 @@ F1 always gives the current screen's keys. These are in its hints but not descri
 - Wall tones: four looping tones tell you how close walls are: ahead and behind (centered, different pitches),
   right (right ear) and left (left ear). Louder means closer; silence means open space. Each tone measures how far
   holding that direction would actually take you: a wall you would just slide along stays quiet.
-- Sonar: every point of interest within range (10 m unless you change it) repeats its own sound from where it is.
-  The closer it is, the faster it repeats (from about once every second and a half at the edge to three times a
+- Sonar: every point of interest within range (20 m unless you change it) repeats its own sound from where it is, starting the moment it comes into range.
+  The closer it is, the faster it repeats (from about once a second at the edge to three times a
   second beside you) and the louder it is, so walking toward a sound makes it quicken. Each kind has a sound of its
   own: exits (ways into another area) a rising breath of air over a low thump, doors two knocks on wood, people a
-  short voiced "hm" that rises, shops two strikes of a small bell, and objects (things to check or open) a bright
+  two-note whistle (the second note lower, a "yoo-hoo"), shops two strikes of a small bell, and objects (things to check or open) a bright
   plucked note. Directions follow the camera: a sound straight ahead is where pushing forward walks, and turning the
   camera turns the whole field around you. A sound played lower is behind you (Lower pitch behind you). To keep
   crowded places readable only the six nearest things sound, at most three of one kind; things on another floor are
@@ -365,15 +365,15 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   battles. Shadows are not part of it: they keep their own pulse.
 - Beacon: a short rising chirp every 0.6 seconds from the direction of the path to the selected place, louder as you
   near it; a clearly lower chirp means it is behind you (Lower pitch behind you).
-- Shadow pulse: a low, rough growl from a Shadow within 15 m, faster and louder as it closes in, lower when it is
+- Shadow pulse: a rough growl from the nearest Shadow within 30 m, whatever its height, faster and louder as it closes in, lower when it is
   behind you. When a Shadow notices you, a harsh two-note alarm sounds from where it is, and its growl turns higher,
   louder and nearly twice as fast for as long as it hunts you; two soft falling notes mean it has lost you.
-- Strike reach: while a Shadow stands inside the reach of your strike (the game's own hit area: about 1.7 m ahead of
-  you and 0.6 m to each side), a blade's short ring repeats from it: press the attack now and it connects. When you
+- Strike reach: while a Shadow stands inside the reach of your strike (the game's own hit area, counted a little short so the ring never comes at its very edge: about 2.3 m ahead of
+  you and 1.2 m to each side, measured to the Shadow's middle), a blade's short ring repeats from it: press the attack now and it connects. When you
   are behind the Shadow the ring is two quick high ticks instead, the second higher: the strike also brings the
   advantage. No ring means a swing would miss.
 - Nearby chimes: when a way to another area, a person or a thing comes within 8 m, its kind's sonar sound (the air,
-  the knocks, the "hm", the bell or the plucked note) plays once from its direction, a little lower when it is behind you. It plays again
+  the knocks, the whistle, the bell or the plucked note) plays once from its direction, a little lower when it is behind you. It plays again
   once you have been more than 15 m away. The chimes are the sonar's quieter stand-in: they play only while the sonar is off.
 
 The sonar, the beacon, the chimes and the Shadow cues are positioned with Steam Audio (Valve, Apache 2.0; phonon.dll beside

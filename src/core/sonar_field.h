@@ -14,7 +14,7 @@ namespace p3a::core {
 
 struct FieldParams {
   double period_near = 0.30;   // seconds between pulses at dist_near and closer
-  double period_far = 1.40;    // seconds at dist_far and beyond
+  double period_far = 1.00;    // seconds at dist_far and beyond (1.4 at first: too sparse to notice at a run)
   float dist_near = 1.5f;      // metres
   float dist_far = 10.0f;      // metres (the host sets it to the sonar's range)
   double grace_s = 1.5;        // an id missing from the items keeps its phase grid this long (the range's edge,
@@ -28,9 +28,9 @@ class SonarField {
   struct Item { unsigned id; float dist; int kind; };
   struct Ping { unsigned id; int kind; };
   // Advance to now_s over the current item set. Returns the ids whose sound pulses this frame (0 or more).
-  // A newly seen id is seeded a phase-offset into its period (so a wave of arrivals staggers) and does not fire on
-  // its first frame; an id absent from `items` keeps its grid for grace_s (an overdue one fires once on its return,
-  // then continues on the grid), after which it is forgotten.
+  // The ids there at the first update after a reset are seeded a phase-offset into their periods (so they stagger);
+  // an id that arrives later pulses on the next update. An id absent from `items` keeps its grid for grace_s (an
+  // overdue one fires once on its return, then continues on the grid), after which it is forgotten.
   std::vector<Ping> update(const std::vector<Item>& items, double now_s);
   void reset();
   FieldParams& params() { return params_; }
@@ -44,6 +44,7 @@ class SonarField {
   // lies within collide_s of it; a bounded walk, so a dense field costs at most a few windows of delay.
   double push_clear(double due, unsigned id, int kind, const std::unordered_map<unsigned, Slot>& keep) const;
   std::unordered_map<unsigned, Slot> next_at_;
+  bool started_ = false;   // updated since the last reset: a new id is an arrival, not part of the opening set
 };
 
 }  // namespace p3a::core

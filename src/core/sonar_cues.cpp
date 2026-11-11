@@ -67,22 +67,27 @@ std::vector<float> door_cue(int rate) {
   return v;
 }
 
-// Person: a voiced source (harmonics of a rising pitch) through three formants, an open "uh" turning up.
+// Person: someone whistling for you, two notes, the second a third lower ("yoo-hoo"). Each note is a nearly pure
+// tone that scoops up into its pitch, with a little vibrato and the breath around it (noise through a band at the
+// note's pitch, which also gives the ears something to place). It was a synthetic voiced "hm" at first: strange to
+// hear (the user, 2026-11-10).
 std::vector<float> person_cue(int rate) {
-  const int n = frames(rate, 0.17);
-  std::vector<float> v(n);
-  BandPass f1, f2, f3;
-  double phase = 0;
-  for (int i = 0; i < n; ++i) {
-    double t = (double)i / n, sec = (double)i / rate;
-    double f0 = 170.0 + 75.0 * t * t;   // 170 -> 245 Hz: a questioning rise
-    phase += 2.0 * kPi * f0 / rate;
-    double src = 0;
-    for (int k = 1; k * f0 < 5000.0; ++k) src += std::sin(k * phase) / k;   // a band-limited sawtooth
-    float x = (float)src;
-    float y = f1.run(x, 620.0, 5.0, rate) + 0.7f * f2.run(x, 1150.0, 7.0, rate) + 0.35f * f3.run(x, 2600.0, 8.0, rate);
-    double env = (1.0 - std::exp(-sec / 0.012)) * std::min(1.0, (n - i) / (rate * 0.05));
-    v[i] = y * (float)env;
+  const int n = frames(rate, 0.22);
+  std::vector<float> v(n, 0.0f);
+  static const struct { double at, len, hz; } notes[] = {{0.0, 0.085, 1568.0}, {0.105, 0.115, 1319.0}};   // G6, E6
+  Noise noise(0x6a09e667);
+  for (const auto& note : notes) {
+    BandPass breath;
+    const int start = frames(rate, note.at), count = frames(rate, note.len);
+    double phase = 0;
+    for (int i = 0; i < count && start + i < n; ++i) {
+      double sec = (double)i / rate;
+      double hz = note.hz * (1.0 - 0.06 * std::exp(-sec / 0.012)) * (1.0 + 0.004 * std::sin(2.0 * kPi * 6.0 * sec));
+      phase += 2.0 * kPi * hz / rate;
+      double env = (1.0 - std::exp(-sec / 0.010)) * std::min(1.0, (count - i) / (rate * 0.025));
+      double tone = std::sin(phase) + 0.08 * std::sin(2.0 * phase);
+      v[start + i] += (float)(tone * env) + breath.run(noise.next(), hz, 6.0, rate) * (float)(1.2 * env);
+    }
   }
   return v;
 }
@@ -162,12 +167,15 @@ std::vector<float> shadow_cue(int rate) {
   double pa = 0, pb = 0;
   for (int i = 0; i < n; ++i) {
     double sec = (double)i / rate, t = (double)i / n;
-    double fa = 82.0 - 10.0 * t, fb = 88.5 - 10.0 * t;   // sinking a little: something heavy
+    // Sinking a little: something heavy. An octave's worth of the weight is given up to be heard: at 82 Hz most of
+    // it sat under what small headphones play and under where the ear is keen, and it went unnoticed until close.
+    double fa = 110.0 - 12.0 * t, fb = 117.5 - 12.0 * t;
     pa += 2.0 * kPi * fa / rate; pb += 2.0 * kPi * fb / rate;
     double s = 0;
-    for (int k = 1; k * fb < 3000.0; ++k) s += (std::sin(k * pa) + std::sin(k * pb)) / std::pow((double)k, 1.15);
+    // The overtones fall off slowly (a snarl, not a hum), so the 500 Hz - 3 kHz band carries it.
+    for (int k = 1; k * fb < 4500.0; ++k) s += (std::sin(k * pa) + std::sin(k * pb)) / std::pow((double)k, 0.75);
     double env = (1.0 - std::exp(-sec / 0.008)) * (1.0 - t);   // quick in, a straight fade out
-    v[i] = (float)(s * env) + murmur.run(noise.next(), 900.0, 1.2, rate) * (float)(1.5 * env);
+    v[i] = (float)(s * env) + murmur.run(noise.next(), 1400.0, 1.0, rate) * (float)(2.5 * env);
   }
   return v;
 }

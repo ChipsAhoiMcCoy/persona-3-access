@@ -42,21 +42,29 @@ std::vector<SonarField::Ping> SonarField::update(const std::vector<Item>& items,
   std::vector<Ping> out;
   std::unordered_map<unsigned, Slot> keep;
   keep.reserve(items.size() + next_at_.size());
+  const bool running = started_;
+  started_ = true;
   for (const Item& it : items) {
     double T = params_.period_for(it.dist);
     if (T < 0.01) T = 0.01;
     auto found = next_at_.find(it.id);
     double due;
     if (found == next_at_.end()) {
-      due = push_clear(now + hash01(it.id) * T, it.id, it.kind, keep);   // first pulse a fraction in; seeding, not firing, this frame
+      // A thing that comes into a running field sounds at once (the next frame): waiting out a fraction of its slow
+      // far-off period, the player was nearly on it before its first pulse. A field starting up (after a reset: a
+      // menu closed, a floor loaded) staggers what is already there instead, so they do not all sound together.
+      double first = running ? now : now + hash01(it.id) * T;
+      due = push_clear(first, it.id, it.kind, keep);
     } else {
       due = found->second.due;
       if (now >= due) {
         out.push_back({it.id, it.kind});
         do { due += T; } while (due <= now);   // advance whole periods: burst-proof, keeps the phase grid
         due = push_clear(due, it.id, it.kind, keep);   // and off any same-kind neighbour it would have landed on
-      } else if (due - now > T) {
-        due = now + T;   // it came closer: the next pulse is never further off than one period at this distance
+      } else if (due - now > T * 1.25) {
+        // It came closer: the next pulse is not left waiting on the far-off period it was scheduled by. (The margin
+        // leaves alone a due that push_clear only nudged past a neighbour.)
+        due = push_clear(now + T, it.id, it.kind, keep);
       }
     }
     keep.emplace(it.id, Slot{due, now, it.kind});
@@ -68,6 +76,6 @@ std::vector<SonarField::Ping> SonarField::update(const std::vector<Item>& items,
   return out;
 }
 
-void SonarField::reset() { next_at_.clear(); }
+void SonarField::reset() { next_at_.clear(); started_ = false; }
 
 }  // namespace p3a::core

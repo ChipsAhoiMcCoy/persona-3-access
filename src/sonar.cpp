@@ -4,6 +4,7 @@
 #include "core/sonar_field.h"
 #include "core/strings.h"
 #include "devserver.h"
+#include "log.h"
 #include "msg.h"
 #include "screens/screen.h"
 #include "speech.h"
@@ -27,7 +28,9 @@ constexpr const char* kKindName[kKinds] = {"exit", "door", "person", "shop", "ob
 constexpr size_t kMaxSources = 6;      // the nearest things that sound at once
 constexpr int kMaxPerKind = 3;         // of one kind: a corridor of students must not drown the door beside you
 constexpr float kNearM = 1.5f;         // at and under this: the fastest rhythm, full volume
-constexpr float kEdgeDb = 14.0f;       // how much quieter a thing is at the range's edge (and beyond, when selected)
+// How much quieter a thing is at the range's edge (and beyond, when selected). 14 at first: with the far-off sound's
+// duller treble on top, a thing was not noticed until the player was nearly on it (the user, 2026-11-10).
+constexpr float kEdgeDb = 8.0f;
 constexpr float kBehindRate = 0.84f;   // "Lower pitch behind you": three semitones down, as the chimes
 constexpr ULONGLONG kRescanMs = 250;   // how often the list of things is read again (their sounds are placed per pulse)
 
@@ -144,9 +147,20 @@ void tick() {
   std::vector<core::SonarField::Item> items;
   items.reserve(g_sources.size());
   for (const Source& s : g_sources) items.push_back({(unsigned)s.obj.index, dist_m(me, s.loc), s.kind});
+  // What sounded last tick and no longer does is forgotten; a thing's first sound is logged with its distance (how
+  // early the player could have heard it).
+  static std::vector<unsigned> heard;
+  std::erase_if(heard, [&](unsigned id) { return std::none_of(items.begin(), items.end(), [&](const auto& it) { return it.id == id; }); });
   for (const core::SonarField::Ping& p : g_field.update(items, now_s()))
     for (const Source& s : g_sources)
-      if ((unsigned)s.obj.index == p.id) { emit(s.kind, me, s.loc, s.selected); break; }
+      if ((unsigned)s.obj.index == p.id) {
+        emit(s.kind, me, s.loc, s.selected);
+        if (std::find(heard.begin(), heard.end(), p.id) == heard.end()) {
+          heard.push_back(p.id);
+          log::writef("sonar: {} #{} first sounds at {:.1f} m", kKindName[s.kind], s.obj.index, dist_m(me, s.loc));
+        }
+        break;
+      }
 }
 
 void toggle() {
