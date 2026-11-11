@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Points of interest: what the list was missing
+- The two Twilight Fragments in the underground base of the August full moon were listed as "Something Shining", as plain objects. They are now "Twilight Fragment", with the fragment's sound on the sonar, like the ones in town.
+
 ### Points of interest: only the part of the map you are in
 - Some places are two areas in one map with a closed door between them, like the school's Gym Hallway and the Corridor outside it. Everything past the door was listed and sounded on the sonar, and the auto-walk to it ran into the door and said "Stuck, stopping". Things past a closed door are now left out of the points of interest list and the sonar until you go through the door's exit; then that side's things are listed and the other side's are left out.
 - The exit that takes you through the door stays in the list.

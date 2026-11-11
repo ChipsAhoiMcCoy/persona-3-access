@@ -188,12 +188,15 @@ static bool walkable(UObject* a, const world::FVector& me, const world::FVector&
   return ok;
 }
 
-// A Twilight Fragment lying in town: the hit the game names "Something Shining" over a glowing key-item mesh. All of
-// them (17 in the main game, more in Episode Aigis) are switched off by a flag FLD_RESOURCE_SPOT<n> once picked up,
-// and their scripts all give the same item. Tartarus has hits of that name too (medals): other flags.
+// A Twilight Fragment lying in town: the hit the game names "Something Shining" over a glowing key-item mesh. They
+// are switched off by a flag FLD_RESOURCE_SPOT<n> once picked up, and their scripts all give the same item. The two
+// in the August full-moon base are the same thing under another flag, FLD_MOON_MILITARY_R_MEDAL_<n>_GOT ("medal" is
+// the game's internal word for a Twilight Fragment; their scripts give that item too).
 static bool fragment_spot(UObject* hit) {
   auto* off = field<FName>(hit, "mOffFlagName_");
-  return off && off->index > 0 && fname(*off).starts_with("FLD_RESOURCE_SPOT");
+  if (!off || off->index <= 0) return false;
+  std::string flag = fname(*off);
+  return flag.starts_with("FLD_RESOURCE_SPOT") || flag.starts_with("FLD_MOON_MILITARY_R_MEDAL");
 }
 
 bool breakable(UObject* a) {

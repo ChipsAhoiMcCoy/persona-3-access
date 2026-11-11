@@ -186,7 +186,8 @@ line on screen is read.
 Points of interest come in categories: exits (each leads to another area and is named for where it goes:
 "Gekkoukan High School" there is the way into the school, not out of it), doors (rooms you check to go in: classrooms,
 offices, restrooms, the dorm's bedrooms), people, shops (businesses, food, vendors and vending machines), objects
-(everything else you can check; among them the glowing blue Twilight Fragments lying around town, which the game
+(everything else you can check; among them the glowing blue Twilight Fragments lying around town and in the
+underground base of the August full moon, which the game
 labels "Something Shining" and the list calls "Twilight Fragment", and in Tartarus the crystals you strike to get
 one, "Twilight Fragment crystal"; one that is picked up or broken leaves the list), events (spots that start a fight or a scene when you walk into them, with nothing
 to press: a Tartarus Gatekeeper's floor lists "Gatekeeper" until it is beaten) and, in Tartarus, Shadows. Each
