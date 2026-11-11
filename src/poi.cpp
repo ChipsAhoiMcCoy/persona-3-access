@@ -199,6 +199,19 @@ static bool fragment_spot(UObject* hit) {
   return flag.starts_with("FLD_RESOURCE_SPOT") || flag.starts_with("FLD_MOON_MILITARY_R_MEDAL");
 }
 
+// A Tartarus chest's kind. Every chest shares one hit and one name ("Treasure Chest"); the kind is on the dungeon
+// object the hit belongs to (FldDungeonObjectActor.ObjType, EDungeonObjType; its hits are m_pHitActorList). The
+// locked ones cost Twilight Fragments to open: TBoxMedal1/2/3 take 1/2/3 (the chest's script, SUB_TBOX_MEDAL).
+// Seen on Adamah floor 240 (2026-11-11): TBoxPrimField is a plain black chest, TBoxRare a silver case under purple
+// sparks, TBoxJewelry a gold case under a gold glow (it held a Diamond). Locked chests: UNTESTED, none met.
+static std::string chest_name(const std::string& type, const std::string& game_name) {
+  if (type == "TBoxRare") return strings::kPoiChestRare;
+  if (type == "TBoxJewelry") return strings::kPoiChestGold;
+  int cost = type == "TBoxMedal1" ? 1 : type == "TBoxMedal2" ? 2 : type == "TBoxMedal3" ? 3 : 0;
+  if (cost) return std::format("{}, {} {}", strings::kPoiChestLocked, cost, cost == 1 ? strings::kPoiFragment : strings::kPoiFragments);
+  return game_name;
+}
+
 // A roaming Shadow's kind, the game's own (UFldEnemyComp.EnemyType, EFldEnemyType, on the component the enemy
 // manager holds beside the actor; the actor's class says the same: BP_FldEmNormal / Strong / Rare / Death). "Rare
 // Shadow" and "the Reaper" are the game's words for them (Mitsuru's and Fuuka's lines); "Strong" is the type's name.
@@ -273,6 +286,17 @@ std::vector<Poi> scan(float radius) {
     }
     return w;
   };
+  std::map<UObject*, std::string> chests;   // a chest's hit -> its dungeon object's type
+  for (UObject* o : live("FldDungeonObjectActor")) {
+    FField* tp = find_prop(class_of(o), "ObjType");
+    auto* hits = field<TArray<UObject*>>(o, "m_pHitActorList");
+    if (!tp || !hits) continue;
+    guarded([&] {
+      std::string type = enum_name(prop_inner_object(tp), *((uint8_t*)o + prop_offset(tp)));
+      if (!type.starts_with("TBox") || !hits->data || hits->num <= 0 || hits->num > 16) return;
+      for (int i = 0; i < hits->num; ++i) if (hits->data[i]) chests[hits->data[i]] = type;
+    });
+  }
   // A missing person on this Tartarus floor (UFldDungeonMissingController.m_pMissingPerson, a BP_FldMisNPC_<n>_C;
   // the rescue scene's script destroys the actor and clears the pointer, DUNGEON_DESTROY_MISSING_NPC).
   static const int missing_id = watch::want("FldDungeonMissingController");
@@ -339,6 +363,7 @@ std::vector<Poi> scan(float radius) {
     else if (int idx = get<int32_t>(a, "mNameIndex_", -1); ((idx >= 10009006 && idx <= 10009009) || idx == 10009012) && !nm.empty()) add(a, Kind::Exit, nm);
     else if (fragment_spot(a)) add(a, Kind::Fragment, strings::kPoiFragment);
     else if (nm.empty()) add(a, Kind::Thing, strings::kPoiThing);
+    else if (auto c = chests.find(a); c != chests.end()) add(a, Kind::Thing, chest_name(c->second, nm));
     else add(a, check_kind(nm), nm);
   }
   for (UObject* a : live("FldNpcActor")) {
@@ -593,8 +618,10 @@ static bool named_as_action(const std::string& name) {
 static std::string verb_for(const std::string& label, WeakObj* of = nullptr) {
   for (auto& p : scan(800.0f)) {
     UObject* a = p.obj.resolve();
-    // A Twilight Fragment is listed under the mod's name for it; its prompt has the game's ("Something Shining").
-    if (!is_named(p.name, label) && !(p.kind == Kind::Fragment && a && hit_name(a) == label)) continue;
+    // A Twilight Fragment and a rare or locked chest are listed under the mod's name for them; their prompts have
+    // the game's ("Something Shining", "Treasure Chest").
+    if (!is_named(p.name, label) &&
+        !((p.kind == Kind::Fragment || p.kind == Kind::Thing) && a && is_a(a, "FldHitCore") && hit_name(a) == label)) continue;
     if (of) *of = p.obj;
     std::string icon = a ? icon_of(a) : "";
     // "Go to" only before a place the way leads to ("Go to: Iwatodai Station"). A label that already says what you do

@@ -349,6 +349,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   (Paulownia Mall, from July): its menu (Fuse Equipment, Trade Card, Trade Item), each entry with how many you own,
   its stats and what the trade needs ("needs Topaz 3, you have 1"), then its description. Be Blue V is a part-time
   job, read as choices. Money gained or spent anywhere is announced.
+- Tartarus: chests are listed by kind ("Treasure Chest", "Rare Treasure Chest", "Gold Treasure Chest", and "Locked Treasure Chest, 2 Twilight Fragments" with what it costs to open).
 - Tartarus: Shadows are listed by kind ("Shadow", "Strong Shadow", "Rare Shadow", "The Reaper").
 - Tartarus: a missing person waiting on a floor is listed under People ("Missing Person", "Stray Cat") until rescued; walk into them to rescue them (not yet tested in the game).
 - Tartarus: the block and floor ("Thebel, floor 3"), breakable objects as points of interest (broken ones leave the list; a crystal that gives a Twilight Fragment is listed as "Twilight Fragment crystal"), stairs ("Head Up") and the Monad door ("Enter Door") under Exits.
