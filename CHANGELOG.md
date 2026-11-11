@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Battle
+- When a Persona with eight skills levelled up after a battle and had to forget one to learn the new skill, the list of skills was not presented: only "This Persona cannot learn any more skills" was read, and Enter forgot whichever skill the game's cursor was on. The list is now a menu, as it already was with a skill card: the new skill first, then the eight slots with their costs; Enter asks "Forget ...?", and the level-up page follows.
 - A physical skill's cost in the battle skill list was read as a percentage ("Akasha Arts, 140% HP") when the number is the HP it takes from that member. It now reads "Akasha Arts, 140 HP". The Persona pages keep the percentage ("22% HP"), which is what they show.
 
 ### Points of interest: what the list was missing

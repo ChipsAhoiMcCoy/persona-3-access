@@ -80,8 +80,10 @@ class SkillLearnScreen : public MenuScreen {
     };
   }
   const char* id() const override { return "skill_learn"; }
-  // Over the camp Item list and the Velvet Room (a fusion's level up); never up with the plain Persona status page.
-  int priority() const override { return 20; }
+  // Over the camp Item list, the Velvet Room (a fusion's level up) and the victory screen, whose Persona page (27) it
+  // is part of: there the result screen stayed in front with nothing to say while the game waited on the slot list
+  // (Satan at level 89 with eight skills, 2026-11-11). Never up with the plain Persona status page.
+  int priority() const override { return 28; }
   bool active() override {
     UObject* p = ps_.get();
     return p && !persona::status_page_up(p) && learning(p) && persona::shown_status();   // Sequence_ clears on close
