@@ -1,22 +1,20 @@
 // The log (B in the field): the game's record of recent dialogue, thoughts and answers, newest at the bottom.
-// BP_UIBackLogDraw_C lives only while it is open; native layout (measured 2026-10-28): draw +0x5DC the cursor
-// (0 = oldest .. count-1 = newest, where it opens), AUIBackLog +0x324 the number of entries. Its text storage is
-// unmapped, so each entry is read from the mod's own record of the session (msg::history), counted from the newest;
-// entries older than this session are said to be so.
+// BP_UIBackLogDraw_C lives only while it is open; native layout (measured 2026-10-28): AUIBackLog +0x320 the
+// ListCursor (0 = oldest .. count-1 = newest, where it opens; the draw's +0x5DC is a copy that follows it late),
+// +0x324 the number of entries. Its text storage is unmapped, so each entry is read from the mod's own record of the
+// session (msg::history), counted from the newest; entries older than this session are said to be so.
 #include "screens/menu.h"
 #include "screens/util.h"
 #include "core/strings.h"
 #include "log.h"
 #include "msg.h"
-#include "speech.h"
-#include <format>
 
 namespace p3a::screens {
 using namespace ue;
 
 // A bespoke menu: the entries oldest first, as the game lists them. The game's cursor is AUIBackLog's ListCursor
-// (+0x320, its count +0x324); a write is followed by exe+0x12a3a80(log), the rest of its move (the draw's cursor
-// +0x55C, the voice replay hint, the sound). The list does not wrap. Opened from the field the log holds a pause
+// (+0x320, its count +0x324); a write is followed by exe+0x12a3a80(log), the rest of its move (the draw's index
+// +0x55C, which it sets to row + top, the voice replay hint, the sound). The list does not wrap. Opened from the field the log holds a pause
 // (+0x2F0 set, its handle +0x2E0) and steps +0x2F4: 0-1 fading in, 2 open, 3-5 closing (FUN_1412ab830, which takes
 // moves in every one but 5); it takes the mod's moves while open. +0x2F0 is set for the whole time it is open (moves
 // waited on it and never reached the game, 2026-10-31).

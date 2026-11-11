@@ -1,5 +1,6 @@
 // The dictionary (camp System > Dictionary). AUIDictionary lives only while it is open; native layout (measured
-// 2026-10-28): +0x294 the cursor over the whole list, +0x298 the top row shown, +0x29D 1 while the list has focus,
+// 2026-10-28): +0x294 the cursor over the whole list, +0x298 the top row shown (both copied from the ListCursor at
+// +0x2B0 by the game's move; the menu reads +0x294 and writes the ListCursor), +0x29D 1 while the list has focus,
 // +0x2A0 TArray of FDictionaryTableData (0x30 each: Title FString at +0x10) of the terms unlocked so far.
 // A term opens as a message window (MsgDictionary: the term as speaker, its text as the page), which msg reads.
 #include "screens/menu.h"
@@ -7,7 +8,6 @@
 #include "core/strings.h"
 #include "core/text_clean.h"
 #include "msg.h"
-#include <format>
 
 namespace p3a::screens {
 using namespace ue;

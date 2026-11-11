@@ -1,5 +1,5 @@
 // Config (System > Config). Native: AUIConfiguration holds the state (+0x294: 5 on the tab list, 6 in a tab's rows,
-// 24 once closed; measured 2026-10-28), its DrawActor (BP_UIConfiguration_C) answers reflected calls:
+// 11 / 12 / 13 a BGM playlist (battle, boss, dungeon), 19 closing, 24 once closed; measured 2026-10-28), its DrawActor (BP_UIConfiguration_C) answers reflected calls:
 // GetCursorIndex, GetListNum, IsConfigTypeMode (the tab list) and GetIndexedDrawConfigParam(i) -> FDrawConfigParam
 // (Type, Title, Description, Value, bFlag, bEnable, ListType, ListMaxNum, SelectedLabel). The highlight that marks
 // a value is a sprite, so values come from that struct, not from the drawn text.
@@ -7,13 +7,9 @@
 #include "screens/util.h"
 #include "core/strings.h"
 #include "core/text_clean.h"
-#include "hooks.h"
-#include "input.h"
 #include "log.h"
 #include "msg.h"
-#include "speech.h"
 #include "ue/scan.h"
-#include <algorithm>
 #include <format>
 #include <vector>
 
@@ -127,9 +123,7 @@ class ConfigScreen : public MenuScreen {
     while (!d.empty() && (d.back() == '.' || d.back() == ' ')) d.pop_back();
     return d;
   }
-  // The BGM playlist (Change Battle / Boss Battle / Dungeon BGM, D on the row; state 11): BgmParams (reflected:
-  // Title, bNewFlag, bIsFavoriteFlag) indexed by GetBgmListTopIndex + GetBgmCursorIndex (measured 2026-10-28).
-  // The BGM playlist's entry: title, favourite, new.
+  // The BGM playlist's entry (BgmParams[i]): title, favourite, new.
   std::string bgm_entry(UObject* d, int i) {
     auto* arr = field<TArray<uint8_t>>(d, "BgmParams");
     FField* ap = find_prop(class_of(d), "BgmParams");

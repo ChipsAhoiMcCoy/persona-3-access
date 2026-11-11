@@ -1,6 +1,6 @@
-// The tutorial library (camp System > Tutorial): titles are drawn as text in one colour; AUITutorial +0x2A4 is the
-// cursor (measured 2026-10-27), +0x278 the tab Q and E switch (0 Battle .. 4 System; the tab names are pictures;
-// measured 2026-10-29). A tab with nothing in it draws one line, "There are no tutorials to display."
+// The tutorial library (camp System > Tutorial): titles are drawn as text in one colour; AUITutorial +0x280 is the
+// list's ListCursor (its row on screen is +0x2A4, measured 2026-10-27; the index is row + top), +0x278 the tab Q and
+// E switch (0 Battle .. 4 System; the tab names are pictures; measured 2026-10-29). A tab with nothing in it draws one line, "There are no tutorials to display."
 // The tutorial itself opens as a message window (msg reads it).
 #include "screens/menu.h"
 #include "screens/util.h"
@@ -8,10 +8,7 @@
 #include "core/text_clean.h"
 #include "msg.h"
 #include "ue/scan.h"
-#include <algorithm>
-#include <cmath>
 #include <format>
-#include <vector>
 
 namespace p3a::screens {
 using namespace ue;

@@ -1,4 +1,4 @@
-// Save and load lists (ASaveLoadDraw, reflected): CursorIndex, AllSlotNum, OpenType (TYPE_FIELD / TYPE_CAMP = save or load by BootMode,
+// Save and load lists (ASaveLoadDraw, reflected): CurrentIndex (the slot under the cursor), AllSlotNum, OpenType (TYPE_FIELD / TYPE_CAMP = save or load by BootMode,
 // TYPE_TITLE = load) and SaveSlotItems: per slot SlotNo, Month, Day, Week, TimeZone, PLV, PTimeHour/Min, PlayerName,
 // LocationName, bHasData. The list itself is sprites. System > Rewind shows the same actor with BootMode 3: its items
 // are the autosaved days to go back to (AllSlotNum keeps the save list's 15; measured 2026-10-28).

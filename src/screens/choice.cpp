@@ -1,5 +1,5 @@
-// A message window's choice list (USelItem, msg.cpp: +0x40 selIndex, +0x48 selCount) as a bespoke menu over the
-// window. The window reads the question and then the focused answer with its position (msg's say_after keeps that
+// A message window's choice list (USelItem, msg.cpp: +0x28 its state, +0x60 its ListCursor) as a bespoke menu over
+// the window. The window reads the question and then the focused answer with its position (msg's say_after keeps that
 // order around voiced lines), so entering the menu says nothing more; moves and Enter are the menu's, and the game's
 // cursor follows. The answers are the ones msg reads (msg::current().choices).
 #include "screens/menu.h"

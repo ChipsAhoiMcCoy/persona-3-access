@@ -126,12 +126,6 @@ void forget_pages(const void* buf) {
   std::lock_guard lk(g_bmd_mu);
   for (auto i = g_live.begin(); i != g_live.end();) i = i->first.first == buf ? g_live.erase(i) : std::next(i);
 }
-uint64_t created_seq_before(unsigned ms) {
-  std::lock_guard lk(g_bmd_mu);
-  ULONGLONG now = GetTickCount64();
-  for (auto it = g_created.rbegin(); it != g_created.rend(); ++it) if (now - it->ms > ms) return it->seq;
-  return g_created.empty() ? g_created_seq : g_created.front().seq - 1;
-}
 
 // The hooks need the page renderer (msg::install found it): pages are rendered as they are recorded.
 void install_pages(bool renderer) {

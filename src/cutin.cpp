@@ -12,7 +12,6 @@
 #include "cutin.h"
 #include "core/strings.h"
 #include "devserver.h"
-#include "hooks.h"
 #include "log.h"
 #include "msg.h"
 #include "seh.h"

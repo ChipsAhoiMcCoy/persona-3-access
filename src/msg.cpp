@@ -3,7 +3,8 @@
 //   UMsgProcItem +0x48 pMsgItem, +0x50 pSelItem (both reflected)
 //   UMsgItem     +0x28 FCurrentBmdPage* CurrentPage, +0x30 CurrentSpeaker, +0x88 mpMsgProcWindow (reflected)
 //   FCurrentBmdPage +0x28 FCurrentBmdCharacterOverview* CharacterData; overview +0x48 Next = the first line
-//   USelItem     +0x40 selIndex, +0x48 selCount, +0x50 TArray<SelBoxStruct2*> entries
+//   USelItem     +0x40 selIndex (the cursor's row on screen), +0x48 selCount, +0x50 TArray<SelBoxStruct2*> entries,
+//                +0x60 its ListCursor (the answer under the cursor: row + top)
 //   BmdPageToFString(FString* out, first line) renders a page to plain text (the game allocates out's buffer).
 #include "msg.h"
 #include "msg_render.h"
@@ -11,7 +12,6 @@
 #include "core/strings.h"
 #include "devserver.h"
 #include "hooks.h"
-#include "screens/screen.h"
 #include "screens/util.h"
 #include "input.h"
 #include "log.h"
@@ -25,15 +25,10 @@
 #include <format>
 #include <map>
 #include <set>
-#include <deque>
-#include <tuple>
 #include <utility>
 #include <algorithm>
 #include <memory>
 #include <mutex>
-#include <cctype>
-#include <climits>
-#include <cstring>
 #include <vector>
 
 namespace p3a::msg {
@@ -42,10 +37,10 @@ static void** g_gmalloc;   // FMalloc** (GMalloc)
 static int g_free_slot = -1;
 static std::mutex g_mu;
 static Current g_current;
-struct Seen { void* page = nullptr; void* speaker = nullptr; uint32_t sel = 0xFFFFFFFF; void* sel_obj = nullptr; uint64_t seq = 0; std::string spoken, chosen; std::set<std::string> said;
-              ULONGLONG spoken_ms = 0; int tut_page = -1; };
-// A window without text this long has closed: the game reuses its proc and page for the next notice (the camp
-// Persona list's "already equipped", the same text each Enter, was read only the first time, 2026-10-31).
+struct Seen { void* page = nullptr; void* sel_obj = nullptr; uint64_t seq = 0; std::string spoken, chosen; std::set<std::string> said;
+              int tut_page = -1; };
+// What a window said is forgotten when it closes (tick): the game reuses its proc and page for the next notice (the
+// camp Persona list's "already equipped", the same text each Enter, was read only the first time, 2026-10-31).
 static std::map<UObject*, Seen> g_seen;   // keyed by UMsgProcItem (live this tick only)
 static uint64_t g_pages_spoken = 0;
 
@@ -60,11 +55,9 @@ static std::string no_digits(const std::string& t) {
   }
   return out;
 }
-// The last page a window spoke (digits blanked) and when: the same text again within a moment is the same notice
-// (the countdown prompt was read twice 300 ms apart as it opened).
+// The last line said (digits blanked), until the message session ends: a notice read twice as one window opens is
+// said once (the countdown prompt was read twice as it opened); the same notice opened again later is a new one.
 static std::string g_last_key;
-// The last line said, until the message session ends: a notice read twice as one window opens is said once; the same
-// notice opened again later is a new one.
 static bool just_said(const std::string& t) { return no_digits(t) == g_last_key; }
 static void mark_said(const std::string& t) { g_last_key = no_digits(t); }
 
@@ -304,7 +297,7 @@ void tick() {
         // The next page of a window is often built (and spoken from its buffer, below) a frame before it becomes
         // CurrentPage: then it is not said again (the shrine fortune's thoughts, 2026-10-28).
         bool echo = page != s.page && !s.spoken.empty() && text == s.spoken;
-        if (echo) { s.page = page; s.speaker = speaker; }
+        if (echo) s.page = page;
         // System questions answer with the key-help buttons, not a choice list (TODO: the window's own yes/no flag).
         auto hinted = [&](const std::string& t) {
           // A question may end in a note: "...keep these changes? (Settings will revert in 10 seconds.)".
@@ -328,7 +321,6 @@ void tick() {
             ++g_pages_spoken;
             say_dialogue(line, named ? who : std::string(), cur.kind, page, cue);
             if (!g_hush) g_last_speaker = who;   // an unspoken line named nobody: the next line still names its speaker
-            s.spoken_ms = GetTickCount64();
             remember(cur.kind, hinted(who.empty() ? text : who + ": " + text));   // the log always names the speaker
             log_if_icons((uintptr_t)page, text);
             mark_said(line);
@@ -349,7 +341,6 @@ void tick() {
               std::string line = tut_pages > tut_page && tut_pages < 64 ? std::format("{}, {} of {}", t, tut_page + 1, tut_pages) : t;
               ++g_pages_spoken;
               speech::speak(line, true);
-              s.spoken_ms = GetTickCount64();
               mark_said(line);
               s.spoken = t;
               s.said.insert(no_digits(t));
@@ -366,7 +357,6 @@ void tick() {
               std::string said = hinted(c.text);
               if (tut_page > 0 && tut_page < tut_pages && tut_pages < 64) said += std::format(", {} {} {}", tut_page + 1, strings::kOf, tut_pages);
               say_dialogue(said, {}, cur.kind, page, cue);   // the same speaker goes on: not named again
-              s.spoken_ms = GetTickCount64();
               mark_said(said);
               remember(cur.kind, who.empty() ? c.text : who + ": " + c.text);
               if (c.obj) log_if_icons((uintptr_t)c.obj, c.text);
@@ -382,7 +372,6 @@ void tick() {
           if (text != s.spoken && !s.said.count(no_digits(text)) && !title) {
             ++g_pages_spoken;
             say_dialogue(hinted(text), {}, cur.kind, page, cue);
-            s.spoken_ms = GetTickCount64();
             mark_said(hinted(text));
             remember(cur.kind, who.empty() ? text : who + ": " + text);
             s.spoken = text;
@@ -394,7 +383,7 @@ void tick() {
         }
         // Only a page that had text counts as seen: a fresh page is often empty for a frame or two before its text is
         // laid out, and marking it seen then silenced it for good (the dorm arrival thought, 2026-10-27).
-        s.page = page; s.speaker = speaker; s.tut_page = tut_page;
+        s.page = page; s.tut_page = tut_page;
         if (page == g_wait_page) wait_showing = true;   // after this page's own say_dialogue, which may arm it
         if (page == g_pending.page) pending_showing = true;
       }
@@ -404,7 +393,7 @@ void tick() {
     int proc_state = 0;
     guarded([&] { proc_state = *(int32_t*)((uint8_t*)proc + 0x30); });
     if (!has_text && s.page && (!item || !is_live(item) || proc_state >= 7)) {
-      s.page = s.speaker = nullptr; s.spoken.clear(); s.said.clear(); s.tut_page = -1;
+      s.page = nullptr; s.spoken.clear(); s.said.clear(); s.tut_page = -1;
     }
     if (sel && is_live(sel)) {
       choosing = true;
@@ -420,12 +409,10 @@ void tick() {
         // has its text -- the entries are empty for a frame or two after the list appears, like pages.
         if (complete) {
           if (idx < ch.size()) say_after(choice_line(ch, idx));
-          s.sel = idx; s.sel_obj = sel;
+          s.sel_obj = sel;
         }
-      } else {
-        // Moves are the choice menu's (screens/choice.cpp): it speaks them from its own focus.
-        s.sel = idx;
       }
+      // Moves are the choice menu's (screens/choice.cpp): it speaks them from its own focus.
       if (idx < ch.size() && !ch[idx].empty()) s.chosen = ch[idx];
     } else if (s.sel_obj) {   // the choice list closed: the answer goes in the log
       remember("Choice", s.chosen);

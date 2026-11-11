@@ -19,7 +19,6 @@
 #include "world.h"
 #include "screens/util.h"
 #include "ue/scan.h"
-#include <cstring>
 #include <format>
 #include <string>
 

@@ -33,9 +33,6 @@ std::vector<Created> created_since(uint64_t seq);
 // ring of created pages, a page built again unchanged (a list reopened) is still here.
 std::vector<Created> pages_of(const void* buf);
 uint64_t created_seq();
-// The seq to count from for "pages built in the last ms": a screen that starts counting on entry takes the pages its
-// opening built, not the history before it (a camp submenu's first help line was the title's "Load this save data?").
-uint64_t created_seq_before(unsigned ms);
 // Pages rebuilt within the last max_age_ms (what BMD text is on screen now), oldest first; seq is when its text was built.
 std::vector<Created> visible(unsigned max_age_ms = 200);
 // Forget the pages of one message buffer: the next build of each is a new page, read at once (a page object reused

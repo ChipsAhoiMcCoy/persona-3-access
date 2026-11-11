@@ -15,10 +15,7 @@
 #include "items.h"
 #include "msg.h"
 #include "textcap.h"
-#include <windows.h>
-#include <algorithm>
 #include <format>
-#include <map>
 #include <vector>
 
 namespace p3a::screens {

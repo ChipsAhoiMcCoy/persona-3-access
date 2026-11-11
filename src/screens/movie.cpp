@@ -4,7 +4,6 @@
 #include "screens/util.h"
 #include "core/strings.h"
 #include "speech.h"
-#include <format>
 
 namespace p3a::screens {
 using namespace ue;

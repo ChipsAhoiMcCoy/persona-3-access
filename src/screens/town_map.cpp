@@ -13,8 +13,6 @@
 #include "screens/menu.h"
 #include "screens/util.h"
 #include "core/strings.h"
-#include "input.h"
-#include "keys.h"
 #include "log.h"
 #include "poi.h"
 #include "seh.h"
@@ -24,8 +22,6 @@
 #include "world.h"
 #include "core/text_clean.h"
 #include "ue/scan.h"
-#include <windows.h>
-#include <xinput.h>
 #include <algorithm>
 #include <cmath>
 #include <vector>

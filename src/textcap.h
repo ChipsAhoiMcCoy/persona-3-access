@@ -5,7 +5,8 @@
 
 namespace p3a::textcap {
 // Captures strings the game draws through its native UI font routines (AUIDrawBaseActor::DrawFont / DrawFont2 /
-// FontDrawEx). A dev discovery tool (/text) and the last-resort name source; screens read the game's own objects.
+// FontDrawEx). A dev discovery tool (/text) and the last-resort source: screens read the game's own objects, and
+// come here only for rows that exist nowhere but drawn (the town map's info, which entries of a SELECT list show).
 struct Item { float x, y; uint32_t color; std::string text; uint64_t seen_ms; int source; };
 bool install();
 void remove();

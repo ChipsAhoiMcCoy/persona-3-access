@@ -9,7 +9,6 @@
 #include <format>
 #include <algorithm>
 #include <map>
-#include <cstring>
 #include <mutex>
 
 namespace p3a::textcap {
