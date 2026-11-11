@@ -258,9 +258,25 @@ std::vector<Poi> scan(float radius) {
     }
     return w;
   };
+  // A missing person on this Tartarus floor (UFldDungeonMissingController.m_pMissingPerson, a BP_FldMisNPC_<n>_C;
+  // the rescue scene's script destroys the actor and clears the pointer, DUNGEON_DESTROY_MISSING_NPC).
+  static const int missing_id = watch::want("FldDungeonMissingController");
+  UObject* missing = nullptr;
+  if (UObject* mc = watch::get(missing_id)) missing = get<UObject*>(mc, "m_pMissingPerson");
+  if (missing && (!is_live(missing) || get_bool(missing, "bHidden"))) missing = nullptr;
   for (UObject* a : live("FldHitCore")) {
     if (!world::actor_visible_level(a) || is_a(a, "FldNpcActor")) continue;
     std::string icon = icon_of(a);
+    // The missing person's only hit has no icon: a sphere that starts the rescue when walked into
+    // (BP_DHIT_MISNPC_C, overlap BP_FldHit_MISNPC_01_HERO_C). Named by the game's hit-name table: "Stray Cat",
+    // "Old Man in Pain", else "Missing Person" (row 10009013).
+    // UNTESTED: written from the game's data; no missing person was met in a dev game.
+    if (icon == "None" && missing && name_of(get<UObject*>(a, "mOverlapBluePrint_")) == "BP_FldHit_MISNPC_01_HERO_C") {
+      std::string nm = hit_name(a);
+      if (nm.empty()) nm = kin_name({"DT_FldDungeonHitName"}, 10009013);
+      add(a, Kind::Person, nm.empty() ? strings::kPoiMissingPerson : nm);
+      continue;
+    }
     if (icon == "None") continue;
     // Story triggers: unnamed boxes that only run a blueprint when walked through (the first Tartarus floor's
     // tutorial gates, 2026-10-27). Nothing there to use, but where the story leads: kept for an area with nothing
