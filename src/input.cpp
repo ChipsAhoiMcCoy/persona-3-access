@@ -3,6 +3,7 @@
 #include "hooks.h"
 #include "keys.h"
 #include "settings.h"
+#include "core/pad_layer.h"
 #include "core/strings.h"
 #include "log.h"
 #include <windows.h>
@@ -69,14 +70,9 @@ static std::string module_of(void* p);
 // then runs its mod key, the D-pad repeating while held. A trigger pressed alone reaches the game a moment late
 // (settings::TriggerDelay, 150 ms by default), so the first trigger of a two-trigger press does nothing in the game
 // (RT dashes, LT shifts the turn in battle); a shorter tap is replayed for the game. Anything held when the layer
-// closes stays hidden until it is released.
-constexpr uint32_t kLT = 0x10000, kRT = 0x20000, kTriggers = kLT | kRT;
-struct Layer {
-  bool on = false;
-  uint32_t prev = 0, hidden = 0, pend = 0, replay = 0, held = 0;
-  ULONGLONG pend_at = 0, replay_until = 0, repeat_at = 0;
-};
-static Layer g_layer[4];
+// closes stays hidden until it is released. The state machine is core::PadLayer (engine-free, unit-tested); this file
+// reads the pad and the clock for it and hands its events on.
+static core::PadLayer g_layer[4];
 static std::mutex g_layer_mu;
 static std::vector<std::pair<uint16_t, bool>> g_layer_events;   // (button, repeat); button 0 = the layer opened
 static std::atomic<bool> g_layer_open{false};
@@ -96,70 +92,21 @@ void set_modal(bool on) { g_modal = on; }
 bool modal() { return g_modal; }
 static void layer_event(uint16_t button, bool repeat) { std::lock_guard lk(g_layer_mu); g_layer_events.push_back({button, repeat}); }
 
-static void layer_filter(Layer& L, XINPUT_GAMEPAD& g) {
-  ULONGLONG now = GetTickCount64();
-  // A trigger counts as held past 100 of 255 and until it falls under 40 (no flicker at the threshold).
-  uint32_t trig = 0;
-  for (auto [bit, v] : {std::pair{kLT, g.bLeftTrigger}, std::pair{kRT, g.bRightTrigger}})
-    if (v > 100 || (v >= 40 && (L.prev & bit))) trig |= bit;
-  uint32_t s = g.wButtons | trig, pressed = s & ~L.prev;
-  L.hidden &= s;   // released: no longer hidden
-  bool both = (s & kTriggers) == kTriggers;
-  if (g_modal) {
-    // A mod menu: the game sees nothing (sticks included); each new button goes to the menu. Triggers still held
-    // when it closes count as the layer already open, so closing it from the layer does not announce the layer again.
-    L.on = both; L.pend = 0;
-    L.hidden |= s;
-    for (uint32_t bit = 1; bit <= 0x8000; bit <<= 1)
-      if (pressed & bit) { layer_event((uint16_t)bit, false); L.held = bit; L.repeat_at = now + 450; }
-    if (L.held && (s & L.held) && now >= L.repeat_at) { layer_event((uint16_t)L.held, true); L.repeat_at = now + 130; }
-    L.prev = s;
-    g.wButtons = 0; g.bLeftTrigger = g.bRightTrigger = 0;
-    g.sThumbLX = g.sThumbLY = g.sThumbRX = g.sThumbRY = 0;
-    return;
-  }
-  const ULONGLONG grace = (ULONGLONG)settings::get(settings::TriggerDelay);
-  if (both && !L.on) { L.on = true; L.pend = 0; layer_event(0, false); }
-  else if (!both && L.on) L.on = false;
-  if (L.on) {
-    L.hidden |= s;
-    for (uint32_t bit = 1; bit <= 0x8000; bit <<= 1)
-      if (pressed & bit) { layer_event((uint16_t)bit, false); L.held = bit; L.repeat_at = now + 450; }
-    if (L.held && (s & L.held) && now >= L.repeat_at) { layer_event((uint16_t)L.held, true); L.repeat_at = now + 130; }
-  } else {
-    L.held = 0;
-    // One trigger alone: held back for a moment in case the other follows.
-    if (uint32_t t = pressed & kTriggers & ~L.hidden; t && !(s & kTriggers & ~t)) { L.pend = t; L.pend_at = now; }
-    // A menu with sections claims a lone trigger once the other has had a moment to follow (the layer): the jump
-    // fires on the press, not the release (an analog trigger takes a while to travel back), and the trigger stays
-    // hidden from the game until let go.
-    constexpr ULONGLONG kTapWindow = 50;
-    bool claim = g_claim_taps && &L == &g_layer[0];
-    if (claim && L.pend && now - L.pend_at >= (grace < kTapWindow ? grace : kTapWindow)) {
-      g_tap = L.pend == kLT ? -1 : 1;
-      L.hidden |= L.pend;
-      L.pend = 0;
-    }
-    if (L.pend && !(s & L.pend)) {   // let go within the grace: the game gets a short press after all
-      if (now - L.pend_at < grace) {
-        if (claim) g_tap = L.pend == kLT ? -1 : 1;   // a menu's section jump instead
-        else { L.replay = L.pend; L.replay_until = now + 80; }
-      }
-      L.pend = 0;
-    }
-    if (L.pend && now - L.pend_at >= grace) L.pend = 0;
-  }
-  L.prev = s;
-  uint32_t hide = L.hidden | L.pend;
-  g.wButtons &= ~(WORD)(hide & 0xFFFF);
-  if (hide & kLT) g.bLeftTrigger = 0;
-  if (hide & kRT) g.bRightTrigger = 0;
-  if (L.replay && now < L.replay_until) {
-    if (L.replay & kLT) g.bLeftTrigger = 255;
-    if (L.replay & kRT) g.bRightTrigger = 255;
-  } else {
-    L.replay = 0;
-  }
+// One polled state through the layer: the game's copy is rewritten, the layer's buttons become events for tick(),
+// and a lone trigger a menu with sections claimed (slot 0 only) becomes its tap.
+static void layer_filter(core::PadLayer& L, XINPUT_GAMEPAD& g) {
+  core::PadState s{g.wButtons, g.bLeftTrigger, g.bRightTrigger, g.sThumbLX, g.sThumbLY, g.sThumbRX, g.sThumbRY};
+  core::PadLayerOptions o;
+  o.modal = g_modal;
+  o.claim_taps = g_claim_taps && &L == &g_layer[0];
+  o.grace_ms = (uint64_t)settings::get(settings::TriggerDelay);
+  core::PadLayerOutput out;
+  L.filter(s, GetTickCount64(), o, out);
+  for (int i = 0; i < out.count; ++i) layer_event(out.events[i].button, out.events[i].repeat);
+  if (out.tap) g_tap = out.tap;
+  g.wButtons = s.buttons;
+  g.bLeftTrigger = s.lt; g.bRightTrigger = s.rt;
+  g.sThumbLX = s.lx; g.sThumbLY = s.ly; g.sThumbRX = s.rx; g.sThumbRY = s.ry;
 }
 
 static DWORD WINAPI get_state_hook(DWORD user, XINPUT_STATE* st) {
@@ -189,7 +136,7 @@ static DWORD WINAPI get_state_hook(DWORD user, XINPUT_STATE* st) {
   }
   bool active = mask || lx || ly || ry;
   if (r != ERROR_SUCCESS) {
-    if (user != 0 || (!g_vpad && !active)) { g_layer[user] = Layer{}; return r; }
+    if (user != 0 || (!g_vpad && !active)) { g_layer[user] = core::PadLayer{}; return r; }
     ZeroMemory(st, sizeof *st);
     r = ERROR_SUCCESS;
   }
