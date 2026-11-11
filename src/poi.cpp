@@ -295,6 +295,12 @@ std::vector<Poi> scan(float radius) {
       std::string flag = fname(*off);
       if (!flag.empty() && flag != "None" && flag_on(flag)) continue;
     }
+    // The game's own "is this hit on" test fails on a second flag too, mIgnoreFlagName_ (a few unnamed triggers).
+    // UNTESTED: from the game's code; none of those triggers was met with its flag on.
+    if (auto* ig = field<FName>(a, "mIgnoreFlagName_"); ig && ig->index > 0) {
+      std::string flag = fname(*ig);
+      if (!flag.empty() && flag != "None" && flag_on(flag)) continue;
+    }
     if (trigger) {
       // A Gatekeeper's floor: the box that starts its fight (BP_FldHit_Tartarus_GateKeeper, the Abyss of Time's too),
       // off once it is beaten (FLD_BATTLE_DEFEAT_GK_*, checked above). Always listed: it is what the floor is for.
