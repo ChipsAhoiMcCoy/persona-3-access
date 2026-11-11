@@ -538,6 +538,7 @@ void MenuScreen::say_entry() {
 
 void MenuScreen::focus(const ui::ControlId& id, bool interrupt) { if (g_active == this) nav().focus_node(id, true, interrupt); }
 void MenuScreen::focus_quietly(const ui::ControlId& id) { if (g_active == this) nav().focus_node(id, false); }
+void MenuScreen::say(std::string_view text, bool interrupt) { say_line(text, interrupt); }
 void MenuScreen::say_focus() { if (g_active == this) { nav().ensure_focus(); g_entry_line = true; nav().announce_current(); } }
 int MenuScreen::focused_row(const std::string& key) const {
   auto id = g_active == this ? nav().remembered_focus() : std::nullopt;   // build() runs with no render to ask

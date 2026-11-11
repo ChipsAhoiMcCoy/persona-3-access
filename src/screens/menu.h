@@ -144,6 +144,9 @@ class MenuScreen : public Screen, public ui::Screen {
   void focus_quietly(const ui::ControlId& id);
   // Say the focused item again, interrupting (the focus may not have moved: the player came back to it from the game).
   void say_focus();
+  // A line of the screen's own (a page that changed, a result, a notice). It goes the way every menu line goes: not
+  // said twice until the player presses something or something else speaks.
+  static void say(std::string_view text, bool interrupt = false);
   std::optional<ui::ControlId> focused() const;
  public:
   // Whether the focused item's list keeps the presses at its ends (Mirror::keep_edges).
