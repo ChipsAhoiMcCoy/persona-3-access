@@ -54,6 +54,11 @@ void say_line(std::string_view text, bool interrupt) {
   spoken = speech::count();
 }
 bool g_held_repeat = false;   // the press being handled is a held key's or D-pad's repeat
+// The device of the player's last press in a menu: 0 the keyboard, 1 the controller, -1 none yet. What the menu then
+// presses in the game for that press (a step, the confirm) goes out on the same device, also ticks later. Asking
+// input::pad_in_use() at that moment instead sent a keyboard confirm out as the pad's A whenever a controller had
+// stirred since the key (a stick at rest near its edge, a pad in use elsewhere).
+int g_device = -1;
 
 ui::GraphNavigator& nav() {
   static ui::GraphNavigator n(ui::NavigatorHost{
@@ -154,6 +159,7 @@ bool on_key(uint32_t vk, int mods, bool repeat) {
   if (repeat && mods == keys::None && (vk == VK_RETURN || vk == VK_SPACE)) return true;
   g_held_repeat = repeat;
   struct HeldEnd { ~HeldEnd() { g_held_repeat = false; } } held_end;
+  g_device = 0;
   player_moved();
   if (mods == keys::None && (vk == VK_RETURN || vk == VK_SPACE || vk == VK_ESCAPE || vk == VK_BACK)) armed_press();
   using namespace ui::ui_actions;
@@ -202,6 +208,7 @@ constexpr uint16_t kPadMask = XINPUT_GAMEPAD_DPAD_UP | XINPUT_GAMEPAD_DPAD_DOWN 
 void pad_button(uint16_t b) {
   using namespace ui::ui_actions;
   if (!g_active->takes_input()) return;   // like on_key: dropped, as the game drops it
+  g_device = 1;
   player_moved();
   auto& n = nav();
   bool taken = true;
@@ -541,7 +548,8 @@ bool MenuScreen::edges_to_game() {
 }
 
 void MenuScreen::press_game(uint32_t vk, uint32_t pad_button) {
-  if (input::pad_in_use() && pad_button) input::press(pad_button, 60, 40);
+  const bool pad = g_device < 0 ? input::pad_in_use() : g_device == 1;
+  if (pad && pad_button) input::press(pad_button, 60, 40);
   else input::inject_key(vk);
 }
 

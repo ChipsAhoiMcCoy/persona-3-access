@@ -98,10 +98,14 @@ static bool filter(UINT msg, WPARAM w, LPARAM l) {
     if (g_menu && !synthetic && msg == WM_KEYDOWN) {
       MenuKey h = g_menu;
       bool taken = false;
-      if (!guarded([&] { taken = h(vk, mods, repeat); })) log::write("keys: menu key faulted");
       // A menu's key is the player on the keyboard too: the menu steps the game with keys, not pad buttons, and the
-      // hints name keys (input::pad_in_use).
-      if (taken) { g_swallowing[vk] = true; if (!repeat) g_game_key_ms = GetTickCount64(); return true; }
+      // hints name keys (input::pad_in_use). Counted before the menu acts on it, so anything the menu's handler asks
+      // about the device already sees this key.
+      const uint64_t key_was = g_game_key_ms;
+      if (!repeat) g_game_key_ms = GetTickCount64();
+      if (!guarded([&] { taken = h(vk, mods, repeat); })) log::write("keys: menu key faulted");
+      if (taken) { g_swallowing[vk] = true; return true; }
+      g_game_key_ms = key_was;
     }
     if (g_capture && !synthetic && msg == WM_KEYDOWN && mods == None) {
       CaptureKey h = g_capture;
