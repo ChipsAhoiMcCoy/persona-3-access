@@ -96,7 +96,7 @@ TEST_CASE("sonar field: a field starting up staggers what is already there") {
 TEST_CASE("sonar field: among things equally due the host's first goes first") {
   SonarField f;
   f.update({}, 0.0);
-  // Two arrivals in one frame: the marked one, though farther.
+  // Two arrivals in one frame: the host's first, though farther.
   auto p = f.update({{1, 2.0f, 0, 0.2f, false}, {2, 8.0f, 0, 0.2f, true}}, 1.0);
   REQUIRE(p.size() == 1);
   CHECK(p[0].id == 2);
@@ -141,10 +141,6 @@ TEST_CASE("sonar cues: short, clean at both ends, one loudness") {
     CHECK(rms < kSonarCueRms * 1.01);
     // The same sound every time.
     CHECK(sonar_cue((SonarCue)k, rate) == v);
-    // The marked one is the same sound after a tick.
-    std::vector<float> m = sonar_cue_marked((SonarCue)k, rate);
-    REQUIRE(m.size() > v.size());
-    CHECK(std::equal(v.begin(), v.end(), m.end() - (ptrdiff_t)v.size()));
   }
 }
 

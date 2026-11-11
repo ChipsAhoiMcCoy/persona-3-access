@@ -178,19 +178,16 @@ static void play_test(int i) {
   using core::SignalCue;
   const audio::Spot ahead{};
   switch (i) {
-    case 0: case 1: case 2: case 3: case 4: sonar::demo(i, false); break;
+    case 0: case 1: case 2: case 3: case 4: sonar::demo(i); break;
     case 5: sonar::demo(2, true); break;
-    case 6: sonar::demo(2, false, 1); break;
-    case 7: sonar::demo(2, false, 2); break;
-    case 8: sonar::demo(2, false, 3); break;
-    case 9: audio::signal((int)SignalCue::Shadow, 1.4f, ahead); break;
-    case 10: audio::signal((int)SignalCue::Shadow, 1.7f, ahead, 1.3f); break;
-    case 11: audio::signal((int)SignalCue::Spotted, 1.4f, ahead); break;
-    case 12: audio::signal((int)SignalCue::Lost, 1.1f, ahead); break;
-    case 13: audio::signal_here((int)SignalCue::Reach, 1.2f); break;
-    case 14: audio::signal_here((int)SignalCue::Ambush, 1.2f); break;
-    case 15: case 16: case 17: case 18: walltones::demo(i - 15); break;
-    case 19: audio::signal((int)SignalCue::Layer, 0.9f, ahead); break;
+    case 6: audio::signal((int)SignalCue::Shadow, 1.4f, ahead); break;
+    case 7: audio::signal((int)SignalCue::Shadow, 1.7f, ahead, 1.3f); break;
+    case 8: audio::signal((int)SignalCue::Spotted, 1.4f, ahead); break;
+    case 9: audio::signal((int)SignalCue::Lost, 1.1f, ahead); break;
+    case 10: audio::signal_here((int)SignalCue::Reach, 1.2f); break;
+    case 11: audio::signal_here((int)SignalCue::Ambush, 1.2f); break;
+    case 12: case 13: case 14: case 15: walltones::demo(i - 12); break;
+    case 16: audio::signal((int)SignalCue::Layer, 0.9f, ahead); break;
   }
 }
 static Category category(Id id) {

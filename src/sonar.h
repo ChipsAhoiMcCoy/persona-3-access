@@ -13,8 +13,8 @@ namespace p3a::sonar {
 //    than three of one kind;
 //  - floors of one building are stacked: another floor's things are left out unless the navmesh walks there
 //    (poi::scan's rule).
-// It works with the points of interest list ("the radar"): the selected point is marked with a tick before its sound
-// and always has a place among those that sound; choosing a point in the list plays its sound once from where it is,
+// It works with the points of interest list ("the radar"): the selected point
+// always has a place among those that sound; choosing a point in the list plays its sound once from where it is,
 // however far; and the "Sonar plays" setting narrows the field to the list's category or to the selected point alone
 // (heard at any distance: a homing sound). Shadows keep their own pulse (poi.cpp).
 void tick();                       // game thread
@@ -23,8 +23,8 @@ void selected(const poi::Poi& p);  // the list chose this point: its sound once,
 // The settings menu changed `id`: the sound that shows the change (a kind's own, or one at the new volume), played
 // straight ahead. False when the option has no sound to show.
 bool preview(settings::Id id);
-// The settings menu's sound test: kind 0 exit .. 4 object, plain or with the selected point's tick, from `side`
-// (0 ahead, 1 the left, 2 the right, 3 behind: lower when that setting is on), on the sonar's volume.
-void demo(int kind, bool marked, int side = 0);
+// The settings menu's sound test: kind 0 exit .. 4 object, from ahead or from behind (lower when that
+// setting is on), on the sonar's volume.
+void demo(int kind, bool behind = false);
 void install();                    // dev route /sonar
 }  // namespace p3a::sonar

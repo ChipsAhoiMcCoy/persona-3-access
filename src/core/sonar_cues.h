@@ -17,8 +17,6 @@ enum class SonarCue {
 
 // The sound at `rate` Hz: starts and ends on silence, under 0.3 s, RMS kSonarCueRms (peak under 0.9).
 std::vector<float> sonar_cue(SonarCue cue, int rate);
-// The same after a short high tick: the thing the player has selected.
-std::vector<float> sonar_cue_marked(SonarCue cue, int rate);
 inline constexpr float kSonarCueRms = 0.10f;   // what the spikiest of them (the pluck) reaches under the peak limit
 
 // The mod's other signals, made the same way and at the same loudness (they were plain sine and triangle beeps):

@@ -60,15 +60,12 @@ bool kind_on(int kind) {
   return kind >= 0 && kind < kKinds && settings::on(ids[kind]);
 }
 
-// The sounds, made once at the mixer's rate: [kind][plain, marked].
-audio::Pcm cue(int kind, bool marked) {
-  static audio::Pcm made[kKinds][2];
+// The sounds, made once at the mixer's rate.
+audio::Pcm cue(int kind) {
+  static audio::Pcm made[kKinds];
   if (kind < 0 || kind >= kKinds) return nullptr;
-  audio::Pcm& p = made[kind][marked ? 1 : 0];
-  if (!p) {
-    const int rate = audio::sample_rate();
-    p = std::make_shared<const std::vector<float>>(marked ? core::sonar_cue_marked((SonarCue)kind, rate) : core::sonar_cue((SonarCue)kind, rate));
-  }
+  audio::Pcm& p = made[kind];
+  if (!p) p = std::make_shared<const std::vector<float>>(core::sonar_cue((SonarCue)kind, audio::sample_rate()));
   return p;
 }
 
@@ -80,8 +77,8 @@ float gain_at(float dist_m) {
   return std::pow(10.0f, -kEdgeDb * u / 20.0f);
 }
 
-void emit(int kind, const FVector& me, const FVector& at, bool marked) {
-  audio::Pcm pcm = cue(kind, marked);
+void emit(int kind, const FVector& me, const FVector& at) {
+  audio::Pcm pcm = cue(kind);
   if (!pcm) return;
   audio::Spot s = world::spot(me, at);
   bool behind = s.ahead < -0.2f && settings::on(settings::BehindPitch);
@@ -101,7 +98,7 @@ void rescan() {
   bool has_sel = poi::selected(sel) && cue_of(sel.kind) >= 0;
   const int scope = settings::get(settings::SonarScope);
   if (scope == settings::ScopeSelected) {
-    if (has_sel) g_sources.push_back({sel.obj, cue_of(sel.kind), sel.loc, false});   // alone: it needs no mark
+    if (has_sel) g_sources.push_back({sel.obj, cue_of(sel.kind), sel.loc, false});
     return;
   }
   int per_kind[kKinds] = {};
@@ -150,7 +147,7 @@ void tick() {
   for (const Source& s : g_sources) {
     if (!any_distance && dist_m(me, s.loc) > range_m()) continue;   // read ahead of the range: not in it yet
     // How long its sound will last as played now (lower, so longer, from behind): the line is held that long.
-    audio::Pcm pcm = cue(s.kind, s.selected);
+    audio::Pcm pcm = cue(s.kind);
     bool behind = world::spot(me, s.loc).ahead < -0.2f && settings::on(settings::BehindPitch);
     float len = pcm ? (float)pcm->size() / (float)audio::sample_rate() / (behind ? kBehindRate : 1.0f) : 0.2f;
     items.push_back({(unsigned)s.obj.index, dist_m(me, s.loc), s.kind, len, s.selected});
@@ -162,7 +159,7 @@ void tick() {
   for (const core::SonarField::Ping& p : g_field.update(items, now_s()))
     for (const Source& s : g_sources)
       if ((unsigned)s.obj.index == p.id) {
-        emit(s.kind, me, s.loc, s.selected);
+        emit(s.kind, me, s.loc);
         if (std::find(heard.begin(), heard.end(), p.id) == heard.end()) {
           heard.push_back(p.id);
           log::writef("sonar: {} #{} first sounds at {:.1f} m", kKindName[s.kind], s.obj.index, dist_m(me, s.loc));
@@ -181,25 +178,23 @@ void selected(const poi::Poi& p) {
   FVector me;
   int kind = cue_of(p.kind);
   if (kind < 0 || !world::player_location(me)) return;
-  emit(kind, me, p.loc, false);
+  emit(kind, me, p.loc);
 }
 
 bool preview(settings::Id id) {
   int kind = id == settings::SonarExits ? 0 : id == settings::SonarDoors ? 1 : id == settings::SonarPeople ? 2 :
              id == settings::SonarShops ? 3 : id == settings::SonarThings ? 4 : id == settings::SonarVolume ? (int)SonarCue::Thing : -1;
   if (kind < 0) return false;
-  audio::play(cue(kind, false), 1.0f, audio::Spot{}, audio::Bus::Sonar);   // straight ahead, at arm's length
+  audio::play(cue(kind), 1.0f, audio::Spot{}, audio::Bus::Sonar);   // straight ahead, at arm's length
   return true;
 }
 
-void demo(int kind, bool marked, int side) {
+void demo(int kind, bool behind) {
   audio::Spot s{};   // straight ahead
   s.dist_m = 2.0f;
-  if (side == 1) { s.right = -1; s.ahead = 0; s.pan = -1; }
-  else if (side == 2) { s.right = 1; s.ahead = 0; s.pan = 1; }
-  else if (side == 3) s.ahead = -1;
-  bool lower = side == 3 && settings::on(settings::BehindPitch);
-  audio::play(cue(kind, marked), 1.0f, s, audio::Bus::Sonar, lower ? kBehindRate : 1.0f);
+  if (behind) s.ahead = -1;
+  bool lower = behind && settings::on(settings::BehindPitch);
+  audio::play(cue(kind), 1.0f, s, audio::Bus::Sonar, lower ? kBehindRate : 1.0f);
 }
 
 void install() {
@@ -208,7 +203,7 @@ void install() {
     std::string play = dev::arg(r, "play"), trim = dev::arg(r, "trim");
     return dev::on_game([play, trim] {
       for (int k = 0; k < kKinds; ++k) {
-        if (play == kKindName[k]) audio::play(cue(k, false), 1.0f, audio::Spot{}, audio::Bus::Sonar);
+        if (play == kKindName[k]) audio::play(cue(k), 1.0f, audio::Spot{}, audio::Bus::Sonar);
         if (size_t c = trim.find(','); c != std::string::npos && trim.substr(0, c) == kKindName[k]) g_trim_db[k] = (float)atof(trim.c_str() + c + 1);
       }
       std::string s = std::format("sonar on={} scope={} range={} m in_field={} sources={} tracked={} fired={}\ntrims dB:", settings::on(settings::Sonar),

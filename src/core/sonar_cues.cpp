@@ -130,18 +130,6 @@ std::vector<float> thing_cue(int rate) {
   return v;
 }
 
-// The selected thing's mark: a very short high tick.
-std::vector<float> tick_mark(int rate) {
-  const int n = frames(rate, 0.03);
-  std::vector<float> v(n);
-  for (int i = 0; i < n; ++i) {
-    double sec = (double)i / rate;
-    v[i] = (float)((std::sin(2.0 * kPi * 3100.0 * sec) + 0.5 * std::sin(2.0 * kPi * 4650.0 * sec)) * std::exp(-sec / 0.005) *
-                   (1.0 - std::exp(-sec / 0.0004)));
-  }
-  return v;
-}
-
 // Shadow: two low sawtooth voices a few hertz apart (they beat: the roughness) under a murmur of noise.
 std::vector<float> shadow_cue(int rate) {
   // 0.28 s (0.18 at first: over before it was noticed), and it flutters: the loudness shakes 38 times a second, a
@@ -288,18 +276,6 @@ std::vector<float> signal_cue(SignalCue cue, int rate) {
     default: v = layer_cue(rate); break;
   }
   finish(v, rate, kSonarCueRms);
-  return v;
-}
-
-std::vector<float> sonar_cue_marked(SonarCue cue, int rate) {
-  std::vector<float> mark = tick_mark(rate), body = sonar_cue(cue, rate);
-  finish(mark, rate, kSonarCueRms);
-  for (float& s : mark) s *= 0.6f;   // all attack: at the cues' RMS it would stand well above them
-  std::vector<float> v;
-  v.reserve(mark.size() + frames(rate, 0.035) + body.size());
-  v.insert(v.end(), mark.begin(), mark.end());
-  v.insert(v.end(), (size_t)frames(rate, 0.035), 0.0f);
-  v.insert(v.end(), body.begin(), body.end());
   return v;
 }
 

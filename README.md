@@ -116,8 +116,7 @@ the two Audio description settings. Controls and help holds Controller trigger d
 Mod keys.
 
 Sound test is where to learn the mod's sounds. Space or Enter (A) on a row plays its sound, wherever you are and
-whatever is switched off, and the row says what the sound means. It holds the five sonar sounds, the tick
-that marks the selected point, the same sound from your left, your right and behind you,
+whatever is switched off, and the row says what the sound means. It holds the five sonar sounds, one of them from behind you,
 the Shadow's growl (plain and hunting you), the Shadow alarm and the sound of a Shadow losing you, the two
 strike-reach rings, the four wall tones and the controller layer's tick. They play at the volumes set under Sound.
 
@@ -191,8 +190,7 @@ offices, restrooms, the dorm's bedrooms), people, shops (businesses, food, vendo
 category with nothing in it is skipped. The sonar has one sound for each of the first five
 (see Sounds). Points are spoken with their name, distance, clock direction and position: "Iwatodai Station, 6 meters, 2 o'clock, 1 of 3". The category is said first when you change category or open the controller layer.
 12 o'clock is straight ahead (where pushing forward walks), 3 o'clock is to your right.
-With the sonar on, each point you land on in the list also plays its kind's sound once from where it is, however far,
-and the one you have selected is marked among the sonar's sounds by a short high tick before its own.
+With the sonar on, each point you land on in the list also plays its kind's sound once from where it is, however far.
 
 ### More keys in particular screens
 
@@ -398,7 +396,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   camera turns the whole field around you. A sound played lower is behind you (Lower pitch behind you). To keep
   crowded places readable only the six nearest things sound, at most three of one kind; things on another floor are
   left out unless you can walk there. The point selected in the points of interest list always has a place among
-  them, marked by a short high tick before its sound. The sounds take turns: only one plays at a time, each after the one before it has finished, so they never play over one another. Whichever is most overdue for its own rhythm goes next, so the nearest things get the most turns, none is left out, and a thing that has just come into range goes first. With many things close by, each therefore repeats less often than it would alone. The sonar is silent in menus, conversations, story scenes and
+  them. The sounds take turns: only one plays at a time, each after the one before it has finished, so they never play over one another. Whichever is most overdue for its own rhythm goes next, so the nearest things get the most turns, none is left out, and a thing that has just come into range goes first. With many things close by, each therefore repeats less often than it would alone. The sonar is silent in menus, conversations, story scenes and
   battles. Shadows are not part of it: they keep their own pulse.
 - Shadow pulse: a low, rattling snarl from the nearest Shadow within 30 m, whatever its height, faster and louder as it closes in
   (from every 0.8 seconds at 30 m to one unbroken snarl beside you), lower when it is behind you. When a Shadow notices you, a harsh two-note alarm sounds from where it is, and its growl turns higher,
