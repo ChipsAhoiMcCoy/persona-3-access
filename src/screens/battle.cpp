@@ -222,13 +222,13 @@ class BattleScreen : public Screen {
   // whoever is left is defeated now.
   // Who has the advantage, once per battle before anything of it is read: the battle's FBtlEncountParam.Preemptive
   // (EBtlEncountPreemptive: 1 Enemy, 2 Ally; it read Ally after a strike that started the fight, 2026-11-11), which
-  // the game shows as a splash (BP_BtlGuiEncountAlert).
+  // the game shows as a splash (BP_BtlGuiEncountAlert) on a battle's first wave only (EncountIndex 0).
   void say_advantage(UObject* core) {
     WeakObj w = WeakObj::of(core);
     if (w == advantage_of_) return;
     advantage_of_ = w;
     auto* param = field<uint8_t>(core, "EncountParameter");
-    int pre = param ? param[4] : 0;
+    int pre = param && get<int32_t>(core, "EncountIndex") == 0 ? param[4] : 0;
     if (pre == 2) speech::speak(strings::kAdvantageParty, false);
     else if (pre == 1) speech::speak(strings::kAdvantageEnemy, false);
   }

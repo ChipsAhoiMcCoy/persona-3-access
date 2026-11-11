@@ -6,6 +6,7 @@
 #include "screens/util.h"
 #include "core/battle_text.h"
 #include "core/strings.h"
+#include "msg.h"
 #include "party.h"
 #include <format>
 #include <map>
@@ -48,7 +49,7 @@ class BtlWords {
     return t ? ue::text(*t) : std::string();
   }
   std::map<ue::WeakObj::Key, std::string> unit_names_;   // by object index + full name
-  std::map<int, std::string> skill_names_, attack_names_, persona_names_;
+  std::map<int, std::string> skill_names_, attack_names_, persona_names_, item_names_;
   // A name the database gives for an id (the function's one int parameter is `param`), fetched once.
   std::string cached_text(std::map<int, std::string>& cache, const char* fn, const char* param, int id) {
     if (auto it = cache.find(id); it != cache.end()) return it->second;
@@ -127,6 +128,62 @@ class BtlWords {
     if (has_support(a, first[i])) return first[i];
     return second[i] >= 0 && has_support(a, second[i]) ? second[i] : -1;
   }
+  // What the Analyze screen shows of an enemy besides its affinities, each behind the screen's own gate
+  // (UBtlGuiAnalyzeComponent CheckShowStatus / CheckShowArcana / CheckShowAttackAttr / CheckShowSkill / CheckShowItem,
+  // which BP_BtlGuiAnalyze asks before it draws a panel): its maximum HP and SP, its arcana (GetUnitArcana), how its
+  // plain attack hits (the actor's GetAttackAttr), its skills (GetSkillList's eight slots) and what it drops
+  // (GetEnemyDropItem 0..3). Seen on a Cowardly Maya not yet analyzed (2026-11-11): Magician, HP 83, SP 20, Strike
+  // Attack, skills unknown. Nothing while Analyze is not up: the component is the screen's.
+  std::vector<std::string> analysis(ue::UObject* a) {
+    std::vector<std::string> out;
+    static Finder comp{"BtlGuiAnalyzeComponent"};
+    ue::UObject* c = comp.get();
+    ue::UObject* d = db();
+    if (!c || !d || !a) return out;
+    auto shows = [&](const char* gate) {
+      ue::UFunction* f = ue::find_function(ue::class_of(c), gate);
+      if (!f) return false;
+      ue::Params p(f);
+      p.set<ue::UObject*>("Actor", a);
+      ue::call(c, p);
+      return p.ret<bool>();
+    };
+    if (shows("CheckShowStatus"))
+      out.push_back(std::format("{} {} {}, {} {} {}", strings::kMaxWord, strings::kHP, unit_int("GetUnitMaxHP", a), strings::kMaxWordLower, strings::kSP, unit_int("GetUnitMaxSP", a)));
+    if (shows("CheckShowArcana"))
+      if (int arc = unit_int("GetUnitArcana", a); arc > 0 && arc < (int)std::size(strings::kArcana))
+        out.push_back(std::format("{} {}", strings::kArcanaWord, strings::kArcana[arc]));
+    if (shows("CheckShowAttackAttr"))
+      if (std::string n = attack_name(ue::call_ret<uint8_t>(a, "GetAttackAttr")); !n.empty()) out.push_back(std::format("{} {}", strings::kAttackType, n));
+    if (shows("CheckShowSkill"))
+      if (ue::UFunction* f = ue::find_function(ue::class_of(d), "GetSkillList")) {
+        ue::Params p(f);
+        p.set<ue::UObject*>("Actor", a);
+        ue::call(d, p);
+        std::string names;
+        if (auto* ids = p.at<ue::TArray<int32_t>>("Output")) {
+          for (int i = 0; ids->data && i < ids->num && i < 8; ++i)
+            if (ids->data[i] > 0)
+              if (std::string n = skill_name(ids->data[i]); !n.empty()) names += (names.empty() ? "" : ", ") + n;
+          if (ids->data) msg::game_free(ids->data);   // the game allocated the list
+        }
+        if (!names.empty()) out.push_back(std::format("{}: {}", strings::kSkills, names));
+      }
+    if (shows("CheckShowItem"))
+      if (ue::UFunction* f = ue::find_function(ue::class_of(d), "GetEnemyDropItem")) {
+        std::string names;
+        for (int i = 0; i < 4; ++i) {
+          ue::Params p(f);
+          p.set<ue::UObject*>("Actor", a);
+          p.set<int32_t>("Index", i);
+          ue::call(d, p);
+          if (int id = p.ret<int32_t>(); id > 0)
+            if (std::string n = cached_text(item_names_, "GetItemName", "ItemId", id); !n.empty()) names += (names.empty() ? "" : ", ") + n;
+        }
+        if (!names.empty()) out.push_back(std::format("{}: {}", strings::kDrops, names));
+      }
+    return out;
+  }
   // Everything known about a unit, one line each: what the right stick (Ctrl+Up / Down) walks through. The first line
   // is who it is; what the game hides from a sighted player about a Shadow stays hidden (its stats, HP as a number).
   std::vector<std::string> details(ue::UObject* a) {
@@ -171,6 +228,7 @@ class BtlWords {
     effect(has_support(a, 14), 14, strings::kAilmentsDoubled);
     if (out.size() == before) out.push_back(strings::kNoEffects);
     for (auto& l : affinity_groups(a)) out.push_back(l);
+    if (foe) for (auto& l : analysis(a)) out.push_back(l);
     if (!foe) {
       if (int pid = unit_int("GetPersonaEquipID", a); pid > 0) out.push_back(std::format("{} {}", strings::kPersonaWord, persona_name(pid)));
       static const char* stats[] = {"GetStatusStrength", "GetStatusMagic", "GetStatusEndurance", "GetStatusSpeed", "GetStatusLuck"};

@@ -181,6 +181,12 @@ inline constexpr Hint kSurveyKeys{"Up and down arrows go through everyone, Space
 inline constexpr Hint kAllOutKeys{"Space to attack, Escape to hold back.", "A to attack, B to hold back."};
 inline constexpr Hint kGuardKeys{"Space to guard, Escape to cancel.", "A to guard, B to cancel."};
 inline constexpr const char* kAnalyze = "Analyze";
+// Analyze's other panels, in the detail buffer: "Arcana Magician", "Skills: Agi, Rakunda", "Drops: Mask of Cruelty".
+inline constexpr const char* kArcanaWord = "Arcana";
+inline constexpr const char* kDrops = "Drops";
+inline constexpr const char* kMaxWord = "Max";              // "Max HP 83, max SP 20"
+inline constexpr const char* kMaxWordLower = "max";
+inline constexpr const char* kAttackType = "Attack type";   // then the game's name for it: "Attack type Strike Attack"
 inline constexpr const char* kSurveyTitle = "Survey";
 inline constexpr const char* kAllOutTitle = "All-Out Attack?";
 inline constexpr const char* kGuardTitle = "Guard?";

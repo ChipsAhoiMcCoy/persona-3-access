@@ -294,6 +294,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   read back, for any member you control), damage, healing and defeats (on the one target you chose yourself the number alone, "14 damage"; with the name everywhere else). Battle keys: Space attack, E skills, R items, C guard, Q analyze, W tactics,
   Tab rush, A and D or the left and right arrows change target (the target never wraps around: at the first or last enemy a further press says who you are still on; the same in Analyze and in target lists; a skill or item that hits a whole side asks once and says the buttons, "Use Mazio Gem on all enemies? Space to confirm, Escape to cancel.", and each hit then says who it landed on), S survey (the up and down arrows go through everyone in the battle), F assist (the navigator's advice). Anyone in focus says their ailments with their health ("Jin, 96%, Down, Poisoned"). The details of who is in focus (the target on the command wheel or a target list, whoever Survey, Shift or Tactics is on, the acting member in their items; in the skill list the skill, what it does, then the acting member): they start at the top each time you land on someone, and Ctrl+Down or the right stick down moves down through them line by line, Ctrl+Up or the stick up back toward the top: name and level, HP, SP, each ailment with the turns it can still last, each buff and debuff with its turns left, guarding, the affinities you have found, and for a party member their Persona, stats and Theurgy gauge. After a 1 More, B (Shift) passes the turn: each member is read with HP and SP. C asks "Guard?" before guarding and says the buttons (Space to guard, Escape to cancel), and when a member's Theurgy gauge is full the turn summary says "Theurgy ready, T": T opens the Theurgy list (left and right arrows
   choose, each read with its effect, Space uses it); in skill lists Space confirms, Q and E change Persona, F shows the Persona's status page, Escape goes back.
+  A battle opens with who has the advantage ("S.E.E.S. advantage" when you struck first, "Shadow advantage" when you were caught). In Analyze the details also read the enemy's maximum HP and SP, arcana, attack type, skills and drops, as far as the game shows them.
   Backslash repeats the turn summary. The navigator's and the party's remarks during a battle ("Two targets! You can
   handle them!") are not read, so they never cut off the battle's own news; they stay in the log (B, after the battle).
   The same goes for the party's voiced chatter while you explore: the game's voices play, the mod does not read it over
@@ -314,7 +315,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   Maya defeated"), and the All-Out Attack prompt is said once with its buttons (Space to attack, Escape to hold back).
 - Tartarus: Shadows are points of interest (their own category) and growl from their direction when within 30 m,
   faster and louder as they close in. An alarm sounds when one notices you, and its growl stays urgent while it hunts you.
-  Within 4 m you hear whether a Shadow has its back turned or is facing you. A blade's ring repeats while it is inside
+  Within 4 m you hear whether a Shadow has its back turned or is facing you (each said once as you close in). A blade's ring repeats while it is inside
   your strike's reach (strike with Ctrl and it connects); two quick high ticks instead mean you are also behind it:
   strike for the advantage. A breakable object rings the same way while your strike would break it. Chest items are read as you
   pick them up, and opened chests leave the list.
@@ -349,6 +350,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   (Paulownia Mall, from July): its menu (Fuse Equipment, Trade Card, Trade Item), each entry with how many you own,
   its stats and what the trade needs ("needs Topaz 3, you have 1"), then its description. Be Blue V is a part-time
   job, read as choices. Money gained or spent anywhere is announced.
+- People in the points of interest list carry what the icon over their head says: "talked to" once you have heard them out today, "Social Link" when a link can move forward, "Social Link, reversed", "hangout", "Linked Episode", "request", "study group", "walk". No word after the name means they have something new to say.
 - Tartarus: chests are listed by kind ("Treasure Chest", "Rare Treasure Chest", "Gold Treasure Chest", and "Locked Treasure Chest, 2 Twilight Fragments" with what it costs to open).
 - Tartarus: Shadows are listed by kind ("Shadow", "Strong Shadow", "Rare Shadow", "The Reaper").
 - Tartarus: a missing person waiting on a floor is listed under People ("Missing Person", "Stray Cat") until rescued; walk into them to rescue them (not yet tested in the game).
