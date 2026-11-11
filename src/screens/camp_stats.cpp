@@ -15,7 +15,7 @@
 #include "party.h"
 #include "persona.h"
 #include "stats.h"
-#include "textcap.h"
+#include "seh.h"
 #include <algorithm>
 #include <cctype>
 #include <format>
@@ -28,11 +28,23 @@ class CampStats : public MenuScreen, private CampStatsUi {
   int mode() { UObject* sc = scene(); return sc && is_a(sc, "CmpStatusCharacterList") ? i32(sc, 0x48) : -1; }
   Mirror& list_ = mirror("stats", [this] { int md = mode(); return md == 1 || md == 3 ? ListCursor(ui() + 0x68).index() : -1; });
   Mirror& order_ = mirror("stats.order", [this] { return mode() == 4 ? cursor_at(scene(), 0xA0).index() : -1; });
-  std::vector<std::string> orders_;   // the tactics' names as the order list draws them (on_tick): known once it was listed
   int tactic(int id) { uint8_t* u = party::unit_work(id); return u ? *(uint8_t*)(u + 0x296) : -1; }
+  // An order's name, the game's own: row 3 + order of its battle name table (UDatBtlCommonNameTable.Data, an FText
+  // Name per row; rows 3-7 are what the battle's Tactics menu lists through GetBtlCommonText). The fixed English names
+  // stand in while the table is not loaded.
   std::string tactic_name(int t) {
-    if (t >= 0 && t < (int)orders_.size()) return orders_[t];
-    return t >= 0 && t < 5 ? strings::kTacticNames[t] : std::string();
+    if (t < 0 || t >= 5) return {};
+    static const int table = watch::want("DatBtlCommonNameTable");
+    std::string s;
+    if (UObject* dat = watch::get(table)) {
+      FField* dp = find_prop(class_of(dat), "Data");
+      auto* rows = field<TArray<uint8_t>>(dat, "Data");
+      UStruct* st = dp ? (UStruct*)prop_inner_object(prop_inner_prop(dp)) : nullptr;
+      int size = st ? struct_size(st) : 0, name = st ? offset_of(st, "Name") : -1;
+      if (rows && rows->data && size > 0 && name >= 0 && 3 + t < rows->num)
+        guarded([&] { s = text(*(FText*)(rows->data + (size_t)(3 + t) * size + name)); });
+    }
+    return s.empty() ? std::string(strings::kTacticNames[t]) : s;
   }
   // The UI layer has input (FUN_1412d5f90, the gate the scene's own moves pass).
   bool input_on() { uint8_t* u = ui(); return u && fn<bool (*)(void*)>(0x12d5f90)(*(void**)(u + 0x330)); }
@@ -90,20 +102,6 @@ class CampStats : public MenuScreen, private CampStatsUi {
       for (auto& l : persona::detail_lines(e)) out.push_back(l);
     }
     return out;
-  }
-  void on_tick() override {
-    if (mode() != 4) return;
-    // The order list is drawn on the right (x ~1204, from y 310): its names, top to bottom.
-    std::vector<textcap::Item> rows;
-    for (auto& t : textcap::snapshot(100))
-      if (t.source == 2 && t.x > 1100 && t.y >= 290 && core::has_words(t.text)) rows.push_back(t);
-    std::sort(rows.begin(), rows.end(), [](auto& a, auto& b) { return a.y < b.y; });
-    std::vector<std::string> names;
-    for (auto& r : rows) {
-      std::string n = core::clean_text(r.text);
-      if (std::find(names.begin(), names.end(), n) == names.end()) names.push_back(n);
-    }
-    if (names.size() >= 2) orders_ = names;
   }
   void build(ui::GraphBuilder& b) override {
     uint8_t* u = ui();
