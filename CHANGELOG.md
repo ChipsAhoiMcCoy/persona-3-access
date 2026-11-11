@@ -3,7 +3,8 @@
 ## Unreleased
 
 ### Shops
-- A vending machine's sold-out drink starts with "Out of stock" ("Out of stock, Nastea, 110 yen, 3 owned"). It ended with "not now", which did not say why Enter did nothing. A machine holds a few of each drink and refills once a week.
+- A row you cannot buy says why, where it said "not now": "out of stock", "carrying the maximum" (99 of it) or "not enough yen" ("Nastea, 110 yen, 3 owned, out of stock").
+- A vending machine holds a few of each drink and refills once a week. Its rows say how many are left ("Fountain Dew, 110 yen, 0 owned, 2 left"); the game shows only a sold-out mark.
 
 ### Sonar: nearness is heard
 - A thing repeats much faster as you close in: about once a second at 10 m, twice at 5 m, three times at 3 m, five times at 2 m and eight times a second at 1 m. It was three times a second at best and once a second at the range's edge.

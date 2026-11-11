@@ -119,9 +119,17 @@ class ShopScreen : public MenuScreen {
       }
       n += t;
     }
-    // A simple shop's row holds what is left of its stock (u16 +0x1E, the week's, from the save); the game's count
-    // (+6) is the least of that, what the money buys and what can still be carried. Sold out is said first.
-    if (!can && st == 7 && is_a(shop(), "FclSimpleShop") && !*(uint16_t*)(e + 0x1E)) return std::format("{}, {}", strings::kOutOfStock, n);
+    // A buy row's count (+6) is the least of three (exe+0x1401050): its stock (+0x1E), what the money buys and what
+    // can still be carried (99). The stock is a simple shop's alone (the week's, from the save; 99 = never runs out,
+    // exe+0x1404bd0 does not count it down); the other shops write 99. The row says which of the three stops it.
+    if (st == 7) {
+      int stock = *(uint16_t*)(e + 0x1E), have = known ? items::owned(in) : -1, yen = stats::money();
+      if (stock > 0 && stock < 99) n += std::format(", {} {}", stock, strings::kLeft);
+      if (can) return n;
+      const char* why = !stock ? strings::kOutOfStock : have >= 99 ? strings::kCarryingMax
+                      : price > 0 && yen >= 0 && yen < price ? strings::kNotEnoughYen : strings::kCannotBuy;
+      return n + ", " + why;
+    }
     if (!can) n += std::string(", ") + (st == 0x14 ? strings::kUnavailable : strings::kCannotBuy);
     return n;
   }
