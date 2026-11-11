@@ -185,6 +185,9 @@ inline constexpr const char* kSurveyTitle = "Survey";
 inline constexpr const char* kAllOutTitle = "All-Out Attack?";
 inline constexpr const char* kGuardTitle = "Guard?";
 // Said with a turn's line and after "1 More!", without their keys: F1 names those (kKeyTheurgy, kKeyShift).
+// Who moves first, as the splash at a battle's start shows it (its pictures: S.E.E.S. / Shadow, Advantage).
+inline constexpr const char* kAdvantageParty = "S.E.E.S. advantage";
+inline constexpr const char* kAdvantageEnemy = "Shadow advantage";
 inline constexpr const char* kTheurgyReadyWords = "Theurgy ready";
 inline constexpr const char* kShiftAvailableWords = "Shift available";
 // A shop's quantity as it opens, before the number; its keys are kHowMany's (F1).
@@ -423,6 +426,17 @@ inline constexpr const char* kNothingSelected = "Nothing selected";
 inline constexpr const char* kOClock = "o'clock";                 // after the hour, a direction by the clock face: "2 o'clock"
 inline constexpr const char* kMonad = "Monad";                    // the area key's name for the section behind a Monad door
 inline constexpr const char* kMonadChambers = "Monad Chambers";   // the same in Episode Aigis' Abyss of Time
+// What the icon over a person says, after their name in the list ("Akihiko Sanada, talked to"). A plain talk or
+// listen icon says nothing.
+inline constexpr const char* kIconTalked = "talked to";
+inline constexpr const char* kIconHeard = "heard";
+inline constexpr const char* kIconLink = "Social Link";
+inline constexpr const char* kIconLinkReversed = "Social Link, reversed";
+inline constexpr const char* kIconHangout = "hangout";
+inline constexpr const char* kIconEpisode = "Linked Episode";
+inline constexpr const char* kIconRequest = "request";
+inline constexpr const char* kIconStudy = "study group";
+inline constexpr const char* kIconWalk = "walk";
 // Navigation
 inline constexpr const char* kNoPath = "No path";
 inline constexpr const char* kStuck = "Stuck, stopping";

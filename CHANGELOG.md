@@ -11,10 +11,12 @@
 - The point of interest list keys (the bracket keys) say "Not in the field" in a menu, a conversation or a battle, where the list is not about what is on screen.
 
 ### Battle
+- A battle now opens with who has the advantage, as the splash on screen shows it: "S.E.E.S. advantage" when you struck first, "Shadow advantage" when the Shadow caught you. Nothing is said for an even start.
 - When a Persona with eight skills levelled up after a battle and had to forget one to learn the new skill, the list of skills was not presented: only "This Persona cannot learn any more skills" was read, and Enter forgot whichever skill the game's cursor was on. The list is now a menu, as it already was with a skill card: the new skill first, then the eight slots with their costs; Enter asks "Forget ...?", and the level-up page follows.
 - A physical skill's cost in the battle skill list was read as a percentage ("Akasha Arts, 140% HP") when the number is the HP it takes from that member. It now reads "Akasha Arts, 140 HP". The Persona pages keep the percentage ("22% HP"), which is what they show.
 
 ### Points of interest: what the list was missing
+- The icon the game floats over a person is now read after their name in the list: "Akihiko Sanada, talked to" once you have heard what they have to say today, "Social Link" when a link can move forward, "Social Link, reversed", "hangout", "Linked Episode", "request", "study group" and "walk". A person with nothing after the name has something new to say.
 - The two Twilight Fragments in the underground base of the August full moon were listed as "Something Shining", as plain objects. They are now "Twilight Fragment", with the fragment's sound on the sonar, like the ones in town.
 - A missing person waiting on a Tartarus floor was not in the list at all. They are now listed under People by the game's own name for them ("Missing Person", "Stray Cat", "Old Man in Pain"), sound on the sonar as a person, and leave the list once rescued. Not yet tested in the game.
 - Tartarus' Monad door ("Enter Door") was listed under Objects with the object sound. It is a way onward: it is now under Exits with the exit sound, and so are the doors inside the passage ("Exit Door", "Proceed Onward", "Go Back"; those three not yet tested in the game).

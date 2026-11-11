@@ -112,6 +112,7 @@ class BattleScreen : public Screen {
   }
   std::map<WeakObj::Key, Unit> units_;
   std::set<WeakObj::Key> won_enemies_;   // the enemies left when the battle was won (watch())
+  WeakObj advantage_of_;                 // the battle whose advantage line was said
   std::string banner_;
   WeakObj banner_action_;     // whose action it was up under
   bool banner_gone_ = true;   // none drawn since banner_: the same words now are a new banner
@@ -219,7 +220,20 @@ class BattleScreen : public Screen {
   // away, after Shuffle Time ("2 Muttering Tiara defeated" came after the cards, 2026-11-09): a deal with a card still
   // to take (the next battle's comes on the same actor, its last deal's picks all made) means the battle is won, and
   // whoever is left is defeated now.
+  // Who has the advantage, once per battle before anything of it is read: the battle's FBtlEncountParam.Preemptive
+  // (EBtlEncountPreemptive: 1 Enemy, 2 Ally; it read Ally after a strike that started the fight, 2026-11-11), which
+  // the game shows as a splash (BP_BtlGuiEncountAlert).
+  void say_advantage(UObject* core) {
+    WeakObj w = WeakObj::of(core);
+    if (w == advantage_of_) return;
+    advantage_of_ = w;
+    auto* param = field<uint8_t>(core, "EncountParameter");
+    int pre = param ? param[4] : 0;
+    if (pre == 2) speech::speak(strings::kAdvantageParty, false);
+    else if (pre == 1) speech::speak(strings::kAdvantageEnemy, false);
+  }
   void watch_units(UObject* core, int st, UObject* action_now) {
+    say_advantage(core);
     UObject* deal = shuffle_ui();
     int picks = deal ? get<int32_t>(deal, "EnableSelectNum") : 0;
     bool won = picks > 0 && get<int32_t>(deal, "SelectedCardNum") < picks;
