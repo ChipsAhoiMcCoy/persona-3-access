@@ -9,7 +9,6 @@
 #include "core/strings.h"
 #include "persona.h"
 #include "speech.h"
-#include <windows.h>
 #include <format>
 
 namespace p3a::screens {

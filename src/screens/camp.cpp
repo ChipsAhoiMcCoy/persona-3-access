@@ -5,7 +5,6 @@
 #include "screens/util.h"
 #include "core/strings.h"
 #include "party.h"
-#include <format>
 
 namespace p3a::screens {
 using namespace ue;
@@ -46,7 +45,8 @@ class CampScreen : public MenuScreen {
   // The root's ListCursor is +0x48 (+0x3c is its row, copied every frame). The draw reads the cursor each frame; the
   // move (FUN_141328720) adds the row copy, the help line's fade (draw +0x88, +0x7BC) and the sound.
   CampScreen() {
-    // Input in states 1-3; a confirm only once the root's timer (+0x40) has run a third of a second.
+    // The game takes input in states 1-3 (this screen is up in 2-4, active()); the list counts as ready, for moves and
+    // the confirm alike, once the root's timer (+0x40) has run a third of a second.
     list_.ready = [this] {
       auto* r = (uint8_t*)root_.get();
       int st = r ? *(int32_t*)(r + 0x38) : 0;
@@ -65,12 +65,14 @@ class CampScreen : public MenuScreen {
   const char* id() const override { return "camp"; }
   int priority() const override { return 15; }
   // The save key (H) opens the save list under a camp pause too, without the root menu: UCmpRoot +0x38 is the
-  // root's state, 0 unless the menu itself is open (3 while idle on it; measured 2026-10-27).
-  // +0x38 is 3 while idle on the list, and stays 3 while a submenu is open: state 4 asks the camp manager for the
-  // submenu and goes straight back to 3 (FUN_141328720; 5-8 closing). So the root is in front only while no submenu
-  // is open; it read "Equip, 3 of 9" again whenever a submenu passed between its own states (2026-11-01).
-  // State 2 is the opening slide, which already takes moves (FUN_141328720 falls through to the list's input; only
-  // the confirm waits for the timer): the menu is up from it, else moves there were only the game's sound.
+  // root's state, 0 unless the menu itself is open (measured 2026-10-27).
+  // It is 3 while idle on the list, and stays 3 while a submenu is open: state 4 asks the camp manager for the
+  // submenu and goes straight back to 3 (FUN_141328720; 5-8 closing). So the state alone does not say the root is in
+  // front: no submenu may be open either (camp_submenu_open), else it read "Equip, 3 of 9" again whenever a submenu
+  // passed between its own states (2026-11-01).
+  // State 2 is the opening slide, in which the game already takes moves (FUN_141328720 falls through to the list's
+  // input; only its confirm waits for the timer): the screen is up from it. The mod's own moves and confirm wait for
+  // the timer (list_.ready).
   bool active() override {
     UObject* r = camp_open() ? root_.get() : nullptr;
     int st = r ? *(int32_t*)((uint8_t*)r + 0x38) : 0;

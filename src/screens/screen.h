@@ -23,7 +23,7 @@ class Screen {
   virtual void background() {}                 // every mod tick, current or not, even under a message window
   virtual bool over_messages() const { return false; }   // opens over a message window (the log): runs under one too
   // A message window over this screen is one page of its own (a Dictionary term), never the first of a chain of
-  // notices: once it closes, re-enter at once instead of waiting 700 ms for another window.
+  // notices: once it closes, re-enter at once instead of waiting for its message session to end.
   virtual bool own_messages() { return false; }
   // The screen itself opens another window after this one (the victory screen's notices come one at a time from its
   // own state machine, not one message session): it stays quiet between them.
@@ -54,5 +54,5 @@ bool title_opening();
 bool opening_line_due();
 std::string status();
 std::string perf(bool reset);   // each screen's active() and tick() cost (/perf)
-void register_all();       // every screen the mod models (screens.cpp)
+void register_all();       // every screen the mod models (register.cpp)
 }  // namespace p3a::screens

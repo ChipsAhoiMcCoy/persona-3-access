@@ -1,13 +1,12 @@
-// The Persona status page outside battle (F on the camp Persona list): APersonaStatus stays after it closes;
-// +0x528 is 1 while it is shown (2 once closed; measured 2026-10-28). The page is sprites: it is read from the entry
-// it shows (persona::shown_status) with the game's affinity table. Q and E switch Personas.
+// The game's plain Persona status page: APersonaStatus stays after it closes; +0x528 is 1 while it is shown (2 once
+// closed; measured 2026-10-28; persona::status_page_up). The page is sprites: it is read from the entry it shows
+// (persona::shown_status) with the game's affinity table. Q and E switch Personas. The camp's Persona list reads the
+// same page for its own rows (build_status_page) and keeps the game's F / X from opening this one over it.
 #include "screens/menu.h"
-#include "bmdfile.h"
-#include "core/text_clean.h"
-#include "msg.h"
 #include "screens/util.h"
 #include "core/strings.h"
 #include "persona.h"
+#include <cctype>
 #include <format>
 
 namespace p3a::screens {
@@ -93,9 +92,9 @@ void build_status_page(ui::GraphBuilder& b, const uint8_t* e, const std::string&
 }
 
 // A bespoke page (menu.h, build_status_page): the Persona's name, each stat, each skill, what it learns later and its
-// affinities, as lines to move through. Q and E (the game's) switch the Persona;
-// Enter and the rest reach the game. Up wherever the plain page is shown: the camp, and in battle (GUI state 12, F on a skill list; a second instance). Skill
-// learning has its own screen.
+// affinities, as lines to move through. Q and E (the game's) switch the Persona; Enter and the rest reach the game.
+// Up wherever the game shows its plain page (+0x528 == 1), and in battle (GUI state 12, F on a skill list; a second
+// instance). Skill learning has its own screen.
 class PersonaStatusScreen : public MenuScreen {
   Finder ps_{"PersonaStatus"};
   Finder gui_{"BtlGuiStateManager"};
@@ -104,7 +103,7 @@ class PersonaStatusScreen : public MenuScreen {
  public:
   explicit PersonaStatusScreen(bool battle) : battle_(battle) {}
   const char* id() const override { return battle_ ? "battle_persona" : "persona_status"; }
-  // Over the camp submenus and the Velvet Room; in battle, over its lists.
+  // Over whatever menu the page was opened from (the camp submenus are 17); in battle, over its lists.
   int priority() const override { return battle_ ? 26 : 20; }
   bool active() override {
     if (battle_) { UObject* g = gui_.get(); return g && get<uint8_t>(g, "nowState") == 12 && persona::shown_status(); }

@@ -1,6 +1,5 @@
-// The camp submenus as bespoke menus (menu.h), modelled from the game's own objects (2026-10-30
-// the offsets below are this build's). Every list uses the generic ListCursor
-// (util.h): index = row + top.
+// The camp submenus as bespoke menus (menu.h), modelled from the game's own objects (the offsets below are this
+// build's, measured 2026-10-30). Every list uses the generic ListCursor (util.h): index = row + top.
 //
 //   Item     UCmpItem +0x38 state (3 list, 4 member, 6 Persona), +0x44 category, +0x188 UCmpItemSystem:
 //            +0x788 TArray<{u32 id, u8 count at +4, ...}> (0x10 each), +0x768 TArray<i16> party ids,
@@ -42,10 +41,10 @@
 #include <algorithm>
 #include <climits>
 #include <chrono>
-#include <cmath>
 #include <format>
 #include <map>
 #include <tuple>
+#include <unordered_map>
 
 namespace p3a::screens {
 void build_status_page(ui::GraphBuilder& b, const uint8_t* e, const std::string& lead, const std::string& bonus,
@@ -532,7 +531,7 @@ class CampStats : public MenuScreen {
   int mode() { UObject* sc = scene(); return sc && is_a(sc, "CmpStatusCharacterList") ? i32(sc, 0x48) : -1; }
   Mirror& list_ = mirror("stats", [this] { int md = mode(); return md == 1 || md == 3 ? ListCursor(ui() + 0x68).index() : -1; });
   Mirror& order_ = mirror("stats.order", [this] { return mode() == 4 ? cursor_at(scene(), 0xA0).index() : -1; });
-  std::vector<std::string> orders_;   // the tactics' names as drawn (sprites have none in memory): seen once listed
+  std::vector<std::string> orders_;   // the tactics' names as the order list draws them (on_tick): known once it was listed
   int tactic(int id) { uint8_t* u = party::unit_work(id); return u ? *(uint8_t*)(u + 0x296) : -1; }
   std::string tactic_name(int t) {
     if (t >= 0 && t < (int)orders_.size()) return orders_[t];
@@ -840,7 +839,7 @@ class CampQuest : public MenuScreen {
     auto* list = r ? arr<uint32_t>(r, 0xB48) : nullptr;
     auto f = bmdfile::load("BMD_DisappearHelp");
     // Each case's state from DisappearDataAsset (a TMap: elements of 0x30, key at +0, flags Active, Success,
-    // Failed, Npc, InfoOn, Award at +8; missing.cpp), and its name only once InfoOn is set.
+    // Failed, Npc, InfoOn, Award at +8), and its name only once InfoOn is set.
     std::map<int, const int32_t*> flags;
     if (UObject* d = quests_data_.get()) {
       auto* map = (TArray<uint8_t>*)((uint8_t*)d + 0x30);

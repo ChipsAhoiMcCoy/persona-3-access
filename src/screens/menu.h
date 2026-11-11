@@ -21,6 +21,7 @@
 #include "core/ui_screen.h"
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>

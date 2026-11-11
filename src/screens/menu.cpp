@@ -7,7 +7,6 @@
 #include "core/navigator.h"
 #include "core/strings.h"
 #include "devserver.h"
-#include "hooks.h"
 #include "input.h"
 #include "keys.h"
 #include "log.h"
@@ -16,7 +15,6 @@
 #include "speech.h"
 #include <windows.h>
 #include <xinput.h>
-#include <cstring>
 #include <format>
 #include <set>
 
@@ -29,7 +27,7 @@ bool g_entry_line = false;        // the next navigator line opens the screen: i
 // interrupts. NVDA stops speech on any key press by itself; a pad press stops nothing, so the member's first skill
 // waited behind their name (2026-10-31). Only a line spoken with the focus somewhere new counts (a live part of the
 // row pressed on still queues). It lasts until that landing or the player's next move.
-ULONGLONG g_press_at = 0;
+bool g_press_armed = false;
 std::optional<ui::ControlId> g_press_on;   // the focus when it was pressed
 void armed_press();
 uint64_t g_frame = 0;
@@ -67,9 +65,9 @@ ui::GraphNavigator& nav() {
         // drifts or a stuck key read one line again and again until it was let go).
         if (g_held_repeat && g_move_from && nav().focused_id() == g_move_from) return;
         if (g_entry_line) { interrupt = true; g_entry_line = false; }
-        if (g_press_at) {
+        if (g_press_armed) {
           auto at = nav().focused_id();
-          if (at != g_press_on) { interrupt = true; g_press_at = 0; }
+          if (at != g_press_on) { interrupt = true; g_press_armed = false; }
         }
         say_line(text, interrupt);
       },
@@ -118,11 +116,11 @@ void player_moved() {
   ++g_moves;
   if (g_active) g_active->stop_following();
   g_move_from = nav().focused_id();
-  g_press_at = 0;   // a move speaks for itself (interrupting)
+  g_press_armed = false;   // a move speaks for itself (interrupting)
 }
 
 void armed_press() {
-  g_press_at = GetTickCount64();
+  g_press_armed = true;
   g_press_on = nav().focused_id();
 }
 
@@ -226,7 +224,7 @@ void pad_button(uint16_t b) {
 }
 void pad_tick(bool on) {
   static bool swallowing = false;
-  // A trigger press jumps a page's sections (input.cpp: fired once the other trigger has had 50 ms to follow for the
+  // A trigger press jumps a page's sections (input.cpp: fired once the other trigger has had the trigger delay to follow for the
   // mod layer; the game does not see it).
   bool taps = on && sections() && !triggers_are_game();
   input::claim_trigger_taps(taps);
@@ -317,7 +315,7 @@ struct MenuHost {
       if (m.cursor) guarded([&] { c = m.cursor(); });
       // A new list under this mirror (a category, a member, a Persona switched in the game): the game put its cursor
       // where it wants it; the focus goes there once the cursor is up, not the other way round -- unless the player
-      // moves first (g_moved clears it).
+      // moves first (player_moved: stop_following clears it).
       if (m.key != m.last_key) {
         m.follow = !m.last_key.empty();
         m.last_key = m.key;
@@ -533,7 +531,7 @@ void MenuScreen::say_entry() {
     say_line(entry_title_, cut);
     g_entry_line = false;
     entry_title_.clear();
-    g_press_at = 0;   // the title answers the press: the landing queues after it (it cut "Skills" off, 2026-11-05)
+    g_press_armed = false;   // the title answers the press: the landing queues after it (it cut "Skills" off, 2026-11-05)
   }
   if (entry_say_) nav().announce_current();
 }
