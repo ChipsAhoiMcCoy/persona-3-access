@@ -87,7 +87,7 @@ static void base_routes() {
     return std::format("audio_muted={} ok={}\n", on, audio::mute_process(on));
   }, "?on=1|0 the process's audio session");
   dev::route("/audio", [](const dev::Request& r, int&) {
-    const char* names[] = {"cues", "walls"};
+    const char* names[(int)audio::Bus::Count] = {"cues", "walls", "narration", "sonar"};   // one per bus
     for (int b = 0; b < (int)audio::Bus::Count; ++b)
       if (dev::has(r, names[b])) audio::set_bus_volume((audio::Bus)b, (float)dev::arg_num(r, names[b], 1.0));
     if (dev::has(r, "air")) hrtf::set_air((float)dev::arg_num(r, "air", 10.0));

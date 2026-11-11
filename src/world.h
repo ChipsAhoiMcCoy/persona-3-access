@@ -16,6 +16,10 @@ ue::UObject* player();               // the active field player character (BP_Fl
 // The story's own state (AtlEvtSubsystem): a scene (event) is playing; it is being fast-forwarded (Tab, or Menu).
 bool scene_playing();
 bool scene_fast();
+// The player is walking the field with nothing over it: a hero, and no menu or shop, no conversation, no battle, no
+// story scene, no faded-out screen, no mod menu. Every sound of the field (wall tones, the sonar, the chimes, the
+// Shadow cues, the beacon) plays only while this holds.
+bool exploring();
 bool player_location(FVector& out);
 // Unit vectors on the ground plane for a camera-relative direction: 0 ahead, 1 right, 2 behind, 3 left.
 FVector dir_vector(int dir);

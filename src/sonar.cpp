@@ -33,6 +33,7 @@ constexpr float kNearM = 1.5f;         // at and under this: the fastest rhythm,
 constexpr float kEdgeDb = 8.0f;
 constexpr float kBehindRate = 0.84f;   // "Lower pitch behind you": three semitones down, as the chimes
 constexpr ULONGLONG kRescanMs = 250;   // how often the list of things is read again (their sounds are placed per pulse)
+constexpr float kLookAheadCm = 300.0f; // how far past the range that reading looks
 
 // Per-kind level trims in dB (the cues are made at one RMS; a kind that still stands out is trimmed here; dev:
 // /sonar?trim=kind,dB).
@@ -90,10 +91,7 @@ void emit(int kind, const FVector& me, const FVector& at, bool marked) {
 }
 
 // The field is heard while the player walks it: a hero, no message window, no menu, no battle, no story scene.
-bool in_field() {
-  static const int battle = watch::want("BtlCoreComponent");
-  return world::player() && !screens::current() && !msg::current().blocking && !watch::get(battle) && !world::scene_playing();
-}
+bool in_field() { return world::exploring(); }
 
 // Which things sound: the nearest of the kinds switched on, a few of each, and the list's selected point whatever
 // its kind. Their places are read here; direction and distance are worked out again at every pulse.
@@ -108,7 +106,9 @@ void rescan() {
   }
   int per_kind[kKinds] = {};
   bool sel_listed = false;
-  for (const poi::Poi& p : poi::scan(range_m() * 100.0f)) {   // nearest first
+  // Read a little past the range: the list is read four times a second, and at a run (7 m/s in Tartarus) a thing
+  // found only at the next reading first sounded a metre or two inside the range. tick() holds it until it is in.
+  for (const poi::Poi& p : poi::scan(range_m() * 100.0f + kLookAheadCm)) {   // nearest first
     int kind = cue_of(p.kind);
     if (kind < 0) continue;
     bool is_sel = has_sel && p.obj == sel.obj;
@@ -146,7 +146,15 @@ void tick() {
   g_field.params().dist_far = std::max(range_m(), kNearM + 0.5f);
   std::vector<core::SonarField::Item> items;
   items.reserve(g_sources.size());
-  for (const Source& s : g_sources) items.push_back({(unsigned)s.obj.index, dist_m(me, s.loc), s.kind});
+  const bool any_distance = settings::get(settings::SonarScope) == settings::ScopeSelected;
+  for (const Source& s : g_sources) {
+    if (!any_distance && dist_m(me, s.loc) > range_m()) continue;   // read ahead of the range: not in it yet
+    // How long its sound will last as played now (lower, so longer, from behind): the line is held that long.
+    audio::Pcm pcm = cue(s.kind, s.selected);
+    bool behind = world::spot(me, s.loc).ahead < -0.2f && settings::on(settings::BehindPitch);
+    float len = pcm ? (float)pcm->size() / (float)audio::sample_rate() / (behind ? kBehindRate : 1.0f) : 0.2f;
+    items.push_back({(unsigned)s.obj.index, dist_m(me, s.loc), s.kind, len, s.selected});
+  }
   // What sounded last tick and no longer does is forgotten; a thing's first sound is logged with its distance (how
   // early the player could have heard it).
   static std::vector<unsigned> heard;

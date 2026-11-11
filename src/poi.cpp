@@ -649,8 +649,12 @@ static void proximity_chimes() {
 void tick() {
   if (screens::current() || msg::current().blocking) return;   // a menu, notice or message has the floor
   pickup_tick();
-  shadow::tick();
-  proximity_chimes();
+  // The field's sounds only while the player walks it: a battle between turns has no screen up, and a story scene
+  // no blocking window, yet neither is the place for them.
+  if (world::exploring()) {
+    shadow::tick();
+    proximity_chimes();
+  }
   prompt_tick();
   // The area is said on arrival: when the hero is a new actor (a field loaded) or the place banner changes (the game
   // sets it on every arrival, a floor or room of the same field included); until the hit actors that name it have

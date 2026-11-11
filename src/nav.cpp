@@ -265,7 +265,7 @@ void tick() {
       g_progress_at = now; g_progress_pos = me;
     }
   }
-  if (settings::on(settings::Beacon) && in_field && now - g_beacon_at > 600) {
+  if (settings::on(settings::Beacon) && in_field && world::exploring() && now - g_beacon_at > 600) {
     g_beacon_at = now;
     poi::Poi p;
     if (poi::selected(p)) {

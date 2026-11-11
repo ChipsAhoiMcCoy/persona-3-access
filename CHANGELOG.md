@@ -7,6 +7,7 @@
 - It works with the points of interest list: the point you selected is marked by a short tick before its sound and always has a place among the sounds, and each point you land on in the list plays its sound once from where it is, however far.
 - New mod settings: Sonar, Sonar plays (everything nearby, the list's category only, or the selected point only at any distance), Sonar range, a switch for each kind (changing one plays its sound), and Sonar volume.
 - It reaches 10 m unless you change it (up to 40), and a thing sounds the moment it comes into range.
+- Its sounds take turns: one at a time, each after the last has finished, the most overdue first, so they never play over one another however many things are near.
 - The nearby chimes now play only while the sonar is off.
 
 ### Menus
@@ -18,6 +19,7 @@
 - A Shadow that notices you sounds a harsh two-note alarm from where it is, and its growl is higher, louder and faster while it hunts you. Two soft falling notes mean it has lost you.
 
 ### Sounds
+- None of the mod's field sounds play in a battle, a story scene, a conversation, a menu or shop, behind a faded-out screen, or while the mod's settings are open. The wall tones and the nearby chimes used to go on through battles and scenes; the wall tones, the sonar, the chimes, the Shadow cues and the beacon now all follow one rule.
 - The mod's plain beeps are replaced by sounds made to match the sonar's. The beacon is a short rising chirp, the Shadow pulse a low, rough growl, the "strike from behind" cue two quick high ticks, and the controller layer's tick is softer.
 - A nearby chime is now its kind's sonar sound, played once, instead of a beep at one of five pitches.
 

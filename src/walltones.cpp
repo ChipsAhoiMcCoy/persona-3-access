@@ -121,13 +121,9 @@ static float probe(const FVector& p, int d) {
   return std::min(std::max(along, 0.0f), g_range);
 }
 
-// The tones play while the player walks the field: a player exists, no message window and no modelled menu is up.
-static bool walking() {
-  if (!world::player()) return false;
-  if (msg::current().blocking) return false;
-  if (screens::current()) return false;
-  return true;
-}
+// The tones play while the player walks the field with nothing over it (not in a menu, a conversation, a battle or
+// a story scene).
+static bool walking() { return world::exploring(); }
 
 void tick() {
   if (!g_enabled || !walking()) { silence(); return; }

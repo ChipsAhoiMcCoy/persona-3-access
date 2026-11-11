@@ -7,12 +7,18 @@
 using namespace p3a::core;
 
 namespace {
-// Runs the field for `seconds` in 10 ms frames over fixed items; returns how often each id pulsed.
-std::map<unsigned, int> run(SonarField& f, const std::vector<SonarField::Item>& items, double seconds, double from = 0.0) {
-  std::map<unsigned, int> fired;
+struct Fired { unsigned id; double at; };
+// Runs the field for `seconds` in 10 ms frames over fixed items; returns every sound's start in order.
+std::vector<Fired> run(SonarField& f, const std::vector<SonarField::Item>& items, double seconds, double from = 0.0) {
+  std::vector<Fired> fired;
   for (double t = from; t < from + seconds; t += 0.01)
-    for (auto& p : f.update(items, t)) ++fired[p.id];
+    for (auto& p : f.update(items, t)) fired.push_back({p.id, t});
   return fired;
+}
+std::map<unsigned, int> counts(const std::vector<Fired>& fired) {
+  std::map<unsigned, int> n;
+  for (auto& x : fired) ++n[x.id];
+  return n;
 }
 }  // namespace
 
@@ -27,58 +33,87 @@ TEST_CASE("sonar field: the period shrinks with distance, logarithmically") {
   CHECK(close > far_off * 2);
 }
 
-TEST_CASE("sonar field: a near thing pulses more often than a far one") {
-  SonarField f;
-  auto fired = run(f, {{1, 1.0f, 0}, {2, 10.0f, 0}}, 10.0);
-  CHECK(fired[1] >= 30);   // every 0.30 s
-  CHECK(fired[1] <= 34);
-  CHECK(fired[2] >= 9);    // every 1.00 s
-  CHECK(fired[2] <= 11);
+TEST_CASE("sonar field: a thing alone keeps its own rate") {
+  SonarField a, b;
+  CHECK(counts(run(a, {{1, 1.0f, 0, 0.2f}}, 10.0))[1] >= 31);   // every 0.30 s
+  CHECK(counts(run(a, {{1, 1.0f, 0, 0.2f}}, 10.0, 10.0))[1] <= 34);
+  int far_n = counts(run(b, {{2, 10.0f, 0, 0.2f}}, 10.0))[2];
+  CHECK(far_n >= 9);    // every 1.00 s
+  CHECK(far_n <= 11);
 }
 
-TEST_CASE("sonar field: a thing that arrives in a running field pulses at once") {
+TEST_CASE("sonar field: no sound starts before the one before it is over") {
   SonarField f;
-  run(f, {{1, 5.0f, 0}}, 2.0);
-  for (auto& p : f.update({{1, 5.0f, 0}, {2, 10.0f, 1}}, 2.0)) CHECK(p.id != 2);   // seen this frame: due now, sounds next
-  bool fired = false;
-  for (auto& p : f.update({{1, 5.0f, 0}, {2, 10.0f, 1}}, 2.01)) fired = fired || p.id == 2;
-  CHECK(fired);
-  // An empty field that has been running counts too: the first thing on a quiet floor.
+  // Six things beside the player, each wanting three turns a second, sounds of 0.2 s.
+  std::vector<SonarField::Item> items;
+  for (unsigned i = 1; i <= 6; ++i) items.push_back({i, 1.0f, (int)(i % 3), 0.2f});
+  auto fired = run(f, items, 20.0);
+  REQUIRE(fired.size() > 20);
+  for (size_t i = 1; i < fired.size(); ++i) CHECK(fired[i].at - fired[i - 1].at >= 0.2 + f.params().gap_s - 0.011);
+  // The line is kept moving: about four sounds a second.
+  CHECK(fired.size() >= 75);
+  // And every one of them gets its turn, evenly at one distance.
+  auto n = counts(fired);
+  CHECK(n.size() == 6);
+  for (auto& [id, c] : n) { CAPTURE(id); CHECK(c >= 12); CHECK(c <= 15); }
+}
+
+TEST_CASE("sonar field: in a crowd the near thing gets more turns than the far one, and none is starved") {
+  SonarField f;
+  std::vector<SonarField::Item> items = {{1, 1.0f, 0, 0.2f}, {2, 1.0f, 0, 0.2f}, {3, 9.0f, 0, 0.2f}, {4, 9.0f, 0, 0.2f},
+                                         {5, 9.0f, 0, 0.2f}, {6, 9.0f, 0, 0.2f}};
+  auto n = counts(run(f, items, 30.0));
+  CHECK(n.size() == 6);
+  CHECK(n[1] > n[3] * 2);
+  CHECK(n[2] > n[4] * 2);
+  CHECK(n[6] >= 10);   // the far ones still sound, a few seconds apart at worst
+}
+
+TEST_CASE("sonar field: a thing that arrives in a running field goes next") {
+  SonarField f;
+  std::vector<SonarField::Item> items;
+  for (unsigned i = 1; i <= 5; ++i) items.push_back({i, 1.0f, 0, 0.2f});
+  run(f, items, 5.0);
+  items.push_back({9, 9.0f, 1, 0.2f});
+  auto fired = run(f, items, 1.0, 5.0);
+  REQUIRE(!fired.empty());
+  CHECK(fired[0].id == 9);        // ahead of the five that are all overdue
+  CHECK(fired[0].at < 5.0 + 0.26);   // as soon as the sound in progress is over
+  // An empty field that has been running counts too: the first thing on a quiet floor sounds at once.
   SonarField g;
   g.update({}, 0.0);
-  g.update({{3, 10.0f, 0}}, 1.0);
-  CHECK(g.update({{3, 10.0f, 0}}, 1.01).size() == 1);
+  CHECK(g.update({{3, 10.0f, 0, 0.2f}}, 1.0).size() == 1);
 }
 
-TEST_CASE("sonar field: a new thing is seeded, not fired, and pulses within one period") {
+TEST_CASE("sonar field: a field starting up staggers what is already there") {
   SonarField f;
-  CHECK(f.update({{7, 10.0f, 0}}, 0.0).empty());
+  CHECK(f.update({{7, 10.0f, 0, 0.2f}}, 0.0).empty());
   int n = 0;
-  for (double t = 0.01; t <= f.params().period_far + 0.01; t += 0.01) n += (int)f.update({{7, 10.0f, 0}}, t).size();
+  for (double t = 0.01; t <= f.params().period_far + 0.01; t += 0.01) n += (int)f.update({{7, 10.0f, 0, 0.2f}}, t).size();
   CHECK(n == 1);
 }
 
-TEST_CASE("sonar field: two things of one kind at one distance never pulse together") {
+TEST_CASE("sonar field: among things equally due the host's first goes first") {
   SonarField f;
-  std::vector<SonarField::Item> items = {{1, 4.0f, 0}, {2, 4.0f, 0}, {3, 4.0f, 0}, {4, 4.0f, 0}};
-  int together = 0;
-  for (double t = 0; t < 20.0; t += 0.01)
-    if (f.update(items, t).size() > 1) ++together;
-  CHECK(together == 0);
+  f.update({}, 0.0);
+  // Two arrivals in one frame: the marked one, though farther.
+  auto p = f.update({{1, 2.0f, 0, 0.2f, false}, {2, 8.0f, 0, 0.2f, true}}, 1.0);
+  REQUIRE(p.size() == 1);
+  CHECK(p[0].id == 2);
 }
 
 TEST_CASE("sonar field: a thing that comes closer does not wait out its old, slow period") {
   SonarField f;
-  // Seeded far away, then at once beside the player: the next pulse comes within the near period.
-  f.update({{9, 10.0f, 0}}, 0.0);
+  f.update({}, 0.0);
+  REQUIRE(f.update({{9, 10.0f, 0, 0.1f}}, 1.0).size() == 1);   // sounded far off: next in a second
   int n = 0;
-  for (double t = 0.01; t <= f.params().period_near + 0.02; t += 0.01) n += (int)f.update({{9, 1.0f, 0}}, t).size();
-  CHECK(n >= 1);
+  for (double t = 1.01; t <= 1.0 + f.params().period_near + 0.02; t += 0.01) n += (int)f.update({{9, 1.0f, 0, 0.1f}}, t).size();
+  CHECK(n == 1);
 }
 
-TEST_CASE("sonar field: a thing gone for a moment keeps its rhythm, gone for long is forgotten") {
+TEST_CASE("sonar field: a thing gone for a moment keeps its place, gone for long is forgotten") {
   SonarField f;
-  run(f, {{5, 10.0f, 0}}, 3.0);
+  run(f, {{5, 10.0f, 0, 0.2f}}, 3.0);
   f.update({}, 3.0);
   CHECK(f.tracked() == 1);   // within the grace
   f.update({}, 3.0 + f.params().grace_s + 0.1);
@@ -149,10 +184,7 @@ static double share_above(const std::vector<float>& v, double hz, int rate) {
 
 TEST_CASE("signal cues: the Shadow's growl is carried where ears and small headphones hear it") {
   const int rate = 48000;
-  std::vector<float> growl = signal_cue(SignalCue::Shadow, rate);
-  double share = share_above(growl, 400.0, rate);
-  MESSAGE("growl: share of energy above 400 Hz " << share);
-  CHECK(share > 0.5);
+  CHECK(share_above(signal_cue(SignalCue::Shadow, rate), 400.0, rate) > 0.5);
 }
 
 TEST_CASE("sonar cues: each kind is a different sound") {

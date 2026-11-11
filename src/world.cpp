@@ -1,8 +1,11 @@
 #include "world.h"
 #include "devserver.h"
 #include "hooks.h"
+#include "input.h"
 #include "log.h"
+#include "msg.h"
 #include "seh.h"
+#include "screens/screen.h"
 #include "screens/util.h"
 #include "watch.h"
 #include <cmath>
@@ -48,6 +51,23 @@ static bool scene_flag(const char* fn_name) {
 bool scene_playing() { return scene_flag("IsPlayingEvent"); }
 bool scene_fast() { return scene_flag("IsHighSpeed"); }
 
+// A battle keeps the field's hero and, between turns, shows no screen: only its own component says it is on
+// (BtlCoreComponent, as the auto-walk checks). The wall tones and the nearby chimes went on through battles and
+// story scenes until every field sound asked here (the user, 2026-11-10).
+static uint64_t g_frame = 0;   // world::tick's count: exploring() is worked out once per frame, on its first asking
+static bool exploring_now() {
+  static const int battle = watch::want("BtlCoreComponent");
+  if (!player() || screens::current() || msg::current().blocking || watch::get(battle) || input::modal()) return false;
+  if (scene_playing()) return false;
+  return !(ue::known_build() && screens::faded_out());
+}
+bool exploring() {
+  static uint64_t at = ~0ull;
+  static bool value = false;
+  if (at != g_frame) { at = g_frame; value = exploring_now(); }
+  return value;
+}
+
 bool player_location(FVector& out) {
   UObject* p = player();
   if (!p) return false;
@@ -60,6 +80,7 @@ bool player_location(FVector& out) {
 }
 
 void tick() {
+  ++g_frame;
   UObject* cm = g_cam_mgr.resolve();
   if (!cm) { cm = get<UObject*>(player_controller(), "PlayerCameraManager"); g_cam_mgr = WeakObj::of(cm); }
   if (cm) {

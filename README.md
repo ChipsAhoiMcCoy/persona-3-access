@@ -361,7 +361,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   camera turns the whole field around you. A sound played lower is behind you (Lower pitch behind you). To keep
   crowded places readable only the six nearest things sound, at most three of one kind; things on another floor are
   left out unless you can walk there. The point selected in the points of interest list always has a place among
-  them, marked by a short high tick before its sound. The sonar is silent in menus, conversations, story scenes and
+  them, marked by a short high tick before its sound. The sounds take turns: only one plays at a time, each after the one before it has finished, so they never play over one another. Whichever is most overdue for its own rhythm goes next, so the nearest things get the most turns, none is left out, and a thing that has just come into range goes first. With many things close by, each therefore repeats less often than it would alone. The sonar is silent in menus, conversations, story scenes and
   battles. Shadows are not part of it: they keep their own pulse.
 - Beacon: a short rising chirp every 0.6 seconds from the direction of the path to the selected place, louder as you
   near it; a clearly lower chirp means it is behind you (Lower pitch behind you).
