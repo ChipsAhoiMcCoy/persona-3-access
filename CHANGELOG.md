@@ -26,6 +26,7 @@
 - A nearby chime is now its kind's sonar sound, played once, instead of a beep at one of five pitches.
 
 ### Battles
+- The hero's level-up page on the victory screen no longer reads the equipped Persona and its level. Among your new level, HP and SP it sounded as if the Persona had levelled too. A Persona that does level up is still announced on its own line.
 - The target no longer wraps around on the command wheel or in Analyze. At the first or last enemy, a further press says who you are still on, so you can tell the leftmost from the rightmost.
 - A skill or item that hits a whole side is now one choice in the target list: "All enemies" or "All allies" with their names, instead of a single enemy's name.
 - Damage or healing on the one target you chose yourself is said as the number alone: "14 damage", "healed 53". The name stays wherever you did not pick the target: enemies' and allies' own actions, anything that hits several, and an attack sent back at you.

@@ -122,7 +122,9 @@ class BattleResultScreen : public MenuScreen {
     }
     return out;
   }
-  // The hero's page: level, HP and SP (now, of the new maximum), EXP to the next level, the equipped Persona.
+  // The hero's page: level, HP and SP (now, of the new maximum), EXP to the next level. The page also draws the
+  // equipped Persona and its level; it is not said: among the hero's new numbers it was heard as the Persona having
+  // risen (the user, 2026-11-10), and one that did rise has its own line on the page before.
   std::vector<std::string> hero(UObject* ui) {
     std::vector<std::string> out;
     UFunction* f = find_function(class_of(ui), "GetHeroInfo");
@@ -132,15 +134,14 @@ class BattleResultScreen : public MenuScreen {
     if (!call(ui, p)) return out;
     auto* r = p.at<uint8_t>("ReturnValue");
     if (!r) return out;
-    std::string name = take(r), persona_name = take(r + 0x30);
+    std::string name = take(r);
+    take(r + 0x30);   // the Persona's name: the game's string, freed
     Params q(lv);
     call(ui, q);
     out.push_back(std::format("{} {}, {} {}", strings::kLevelUp, name, strings::kLevel, q.ret<int32_t>("Level")));
     out.push_back(std::format("HP {} {} {}", *(int32_t*)(r + 0x10), strings::kOf, *(int32_t*)(r + 0x14)));
     out.push_back(std::format("SP {} {} {}", *(int32_t*)(r + 0x18), strings::kOf, *(int32_t*)(r + 0x1C)));
     out.push_back(std::format("{} {}", *(int64_t*)(r + 0x20), strings::kExpToNext));
-    if (!persona_name.empty())
-      out.push_back(std::format("{} {}, {} {}", strings::kResultPersona, persona_name, strings::kLevel, *(int32_t*)(r + 0x2C)));
     return out;
   }
   // The Persona status page on screen (state 7): the result UI's status actor once its entry is set. That entry is

@@ -267,7 +267,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   through the list. The victory screen reads each thing as its own line, after the last blow's news, and you can go
   back through them with the arrows: the EXP, the money, each item found, then each member's and Persona's level up as
   it slides in (these never move you off the line you are on), the hero's own level-up page (HP, SP, EXP to the next
-  level, the equipped Persona; read again after a notice that cuts it off), and the status page of a Persona that
+  level; read again after a notice that cuts it off), and the status page of a Persona that
   learned a skill (its new level, the skill learned and which stats rose are read out; the arrows go through the whole
   page, and Tab jumps its sections). Space or Enter goes on and stops the reading; pressed before the game takes it, it
   is kept until it does. Enemies that fall together are said in one line ("2 Cowardly

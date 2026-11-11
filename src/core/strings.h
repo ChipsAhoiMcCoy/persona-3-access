@@ -120,7 +120,6 @@ inline constexpr const char* kVictory = "Victory";
 inline constexpr const char* kExp = "EXP";
 inline constexpr const char* kYen = "yen";
 inline constexpr const char* kLevelUp = "Level up!";
-inline constexpr const char* kResultPersona = "Persona";   // the hero's level-up page: "Persona Nekomata, level 7"
 // EBtlDataBadStatus 0..13
 inline constexpr const char* kBadStatus[] = {"is dizzy", "is charmed", "is distressed", "panics", "is afraid", "is enraged", "is frozen", "is shocked",
                                             "is poisoned", "", "", "", "", "is down"};
