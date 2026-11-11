@@ -11,10 +11,12 @@
 #include "msg.h"
 #include "seh.h"
 #include <windows.h>
+#include <algorithm>
 #include <atomic>
 #include <cstddef>
 #include <cstring>
 #include <format>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 #include <utility>

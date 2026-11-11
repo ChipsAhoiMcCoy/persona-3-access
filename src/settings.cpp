@@ -295,8 +295,6 @@ static void typed(char16_t c) {
   nav().ensure_focus();
 }
 
-bool is_open() { return g_open; }
-
 static void on_key(uint32_t vk, bool repeat) {
   using namespace ui::ui_actions;
   switch (vk) {

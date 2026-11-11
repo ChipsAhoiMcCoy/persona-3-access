@@ -9,7 +9,7 @@ bool read(Stats& out);
 std::string rank_name(const Stats& s, int stat);   // "Slacker"
 std::string describe();                             // "Academics Slacker, Charm Plain, Courage Timid. 3000 yen"
 int money();                                        // the wallet, or -1
-void tick();                                        // announces a rank up
+void tick();                                        // announces a stat going up or ranking up, and yen gained or spent
 int last_up();                                      // the stat whose points rose last and no Stats up! panel has shown, or -1
 void up_shown();                                    // a Stats up! panel has shown it
 void* flow_command(const char* name);               // a flowscript command's function, by its name (P3R.exe's command table)

@@ -19,5 +19,5 @@ void tick();                             // announces new links, rank ups, point
 // shows ("Magician Social Link, Kenji Tomochika, rank 1").
 struct Card { std::string what, line; };
 Card card(int arcana, int rank);
-void install();                          // /social dev route
+void install();                          // hooks CMM_RANKUP (the rank card's flowscript command); /social dev route
 }  // namespace p3a::social

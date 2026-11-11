@@ -28,7 +28,7 @@ void set_capture(CaptureKey key);
 // bindings; true swallows it. Keys the mod injects for the game (input::inject_key) never reach it.
 using MenuKey = std::function<bool(uint32_t vk, int mods, bool repeat)>;
 void set_menu(MenuKey key);
-// True while a mod-owned key is physically down (the game's own keys are not tracked).
+// The player's own presses of keys the game gets, as the window procedure sees them (keys the mod posts are not counted).
 bool movement_key_down();   // W/A/S/D or the arrow keys, from the real keyboard: cancels auto-walk
 uint64_t game_key_ms();     // when the player last pressed a key the game gets (not a mod key), or 0
 uint32_t movement_presses(uint32_t vk);   // how many times that movement key has been pressed (no auto-repeats)

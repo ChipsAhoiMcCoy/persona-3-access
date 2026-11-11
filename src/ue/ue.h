@@ -39,7 +39,6 @@ struct WeakObj {
 };
 
 bool init();          // locate GObjects / GNames / ProcessEvent; false if this build is not understood
-bool ready();
 // Whether this P3R.exe is the build the mod's native addresses and object layouts were measured on. Reflection and
 // signatures work on any build; a fixed address or offset on another (the demo, another update) reads, calls or writes
 // the wrong thing: crashes, frozen games and menus stuck on the wrong row (a player's log, 2026-11-05).
@@ -52,15 +51,17 @@ std::string status();
 // ---- names and strings ----
 std::string fname(FName n);
 std::string fname(int32_t index, int32_t number = 0);
-int32_t fname_index(std::string_view s);  // -1 if the name was never made (cached lookup by scanning the pool)
+// The name's index in the pool (found by scanning it, then cached), or -1: the name was never made, it is stored
+// wide, or it was looked for and missed within the last 10 seconds.
+int32_t fname_index(std::string_view s);
 std::string to_utf8(const FString& s);
 std::string to_utf8(const char16_t* s, int len = -1);
 std::u16string to_u16(std::string_view utf8);
 std::string text(const FText& t);        // an FText's display string
-FString make_fstring(const std::u16string& s);
+FString make_fstring(const std::u16string& s);  // points into `s`: valid while `s` lives (for passing parameters)
 // An FText a UFunction returned into one of our parameter buffers owns a shared reference: release it, or every call
 // leaks one (UEditableText::GetText polled per tick, 2026-10-27). Thread-safe TSharedRef semantics (UE 4.27).
-void release_text(FText& t);  // points into `s`: valid while `s` lives (for passing parameters)
+void release_text(FText& t);
 
 // ---- objects ----
 int32_t num_objects();
@@ -161,7 +162,8 @@ T call_ret(UObject* o, std::string_view fn, T missing = T{}) {
   return p.ret<T>();
 }
 
-// The ProcessEvent hook: calls hooks::pump on the game thread (the fallback frame before the window exists).
+// The ProcessEvent hook: calls hooks::pump on the game thread while the PeekMessageW pump has not ticked for 250 ms
+// (the fallback frame: a load that stops pumping messages).
 bool install_hooks();
 void remove_hooks();
 

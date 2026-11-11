@@ -5,7 +5,6 @@
 #include "stats.h"
 #include "core/strings.h"
 #include "devserver.h"
-#include "gametext.h"
 #include "hooks.h"
 #include "log.h"
 #include "seh.h"
@@ -15,6 +14,7 @@
 #include "ue/scan.h"
 #include <cstring>
 #include <format>
+#include <memory>
 
 namespace p3a::stats {
 using namespace ue;

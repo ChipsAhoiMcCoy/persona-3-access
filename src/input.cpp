@@ -74,7 +74,7 @@ constexpr uint32_t kLT = 0x10000, kRT = 0x20000, kTriggers = kLT | kRT;
 struct Layer {
   bool on = false;
   uint32_t prev = 0, hidden = 0, pend = 0, replay = 0, held = 0;
-  ULONGLONG pend_at = 0, replay_until = 0, held_at = 0, repeat_at = 0;
+  ULONGLONG pend_at = 0, replay_until = 0, repeat_at = 0;
 };
 static Layer g_layer[4];
 static std::mutex g_layer_mu;
@@ -111,7 +111,7 @@ static void layer_filter(Layer& L, XINPUT_GAMEPAD& g) {
     L.on = both; L.pend = 0;
     L.hidden |= s;
     for (uint32_t bit = 1; bit <= 0x8000; bit <<= 1)
-      if (pressed & bit) { layer_event((uint16_t)bit, false); L.held = bit; L.held_at = now; L.repeat_at = now + 450; }
+      if (pressed & bit) { layer_event((uint16_t)bit, false); L.held = bit; L.repeat_at = now + 450; }
     if (L.held && (s & L.held) && now >= L.repeat_at) { layer_event((uint16_t)L.held, true); L.repeat_at = now + 130; }
     L.prev = s;
     g.wButtons = 0; g.bLeftTrigger = g.bRightTrigger = 0;
@@ -124,7 +124,7 @@ static void layer_filter(Layer& L, XINPUT_GAMEPAD& g) {
   if (L.on) {
     L.hidden |= s;
     for (uint32_t bit = 1; bit <= 0x8000; bit <<= 1)
-      if (pressed & bit) { layer_event((uint16_t)bit, false); L.held = bit; L.held_at = now; L.repeat_at = now + 450; }
+      if (pressed & bit) { layer_event((uint16_t)bit, false); L.held = bit; L.repeat_at = now + 450; }
     if (L.held && (s & L.held) && now >= L.repeat_at) { layer_event((uint16_t)L.held, true); L.repeat_at = now + 130; }
   } else {
     L.held = 0;

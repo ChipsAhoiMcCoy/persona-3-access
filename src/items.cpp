@@ -3,7 +3,6 @@
 // gives them by item name.
 #include "items.h"
 #include "bmdfile.h"
-#include "core/text_clean.h"
 #include "core/strings.h"
 #include "party.h"
 #include "seh.h"
@@ -34,7 +33,6 @@ static void load() {
   g_loaded = WeakObj::of(dat);
   g_cache.clear();
   g_names.clear();
-  if (!dat) return;
   static const char* cats[] = {"Weapon", "Armor", "Shoes", "Accs", "Common", "Material", "Skillcard", "Evitem", "Costume"};
   // Where each category's counts start in the item bag (one byte per item, by its place in the name list).
   static const int bags[] = {0, 0x400, 0x800, 0xC00, 0xE00, 0x1300, 0x1700, 0x1200, 0x1B00};

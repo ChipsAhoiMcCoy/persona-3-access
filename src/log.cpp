@@ -9,10 +9,10 @@ namespace p3a::log {
 static FILE* g_file;
 static std::mutex g_mu;
 static std::wstring g_path;
-static LineRing g_ring(2000);
 
 std::wstring path() { return g_path; }
-LineRing& ring() { return g_ring; }
+// Built on first use: a line logged from another file's static initializer finds it ready.
+LineRing& ring() { static LineRing r(2000); return r; }
 
 void init() {
   wchar_t base[MAX_PATH];
@@ -55,7 +55,7 @@ void init() {
 void write(std::string_view line) {
   SYSTEMTIME t; GetLocalTime(&t);
   std::string stamped = std::format("{:02}:{:02}:{:02}.{:03} {}", t.wHour, t.wMinute, t.wSecond, t.wMilliseconds, line);
-  g_ring.push(stamped);
+  ring().push(stamped);
   std::lock_guard lk(g_mu);
   if (!g_file) return;
   fprintf(g_file, "%s\n", stamped.c_str());

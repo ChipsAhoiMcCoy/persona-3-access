@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cstring>
 #include <format>
+#include <memory>
 
 namespace p3a::social {
 using namespace ue;

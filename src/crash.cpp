@@ -7,9 +7,9 @@
 #include <cstring>
 #include "log.h"
 
-// Why a vectored handler and not SetUnhandledExceptionFilter: the game installs its own reporter, and the fault
-// that motivated this (VM report 2026-09-14: the cast tracker called through a freed object's vtable, the garbage
-// corrupted the heap, ntdll fast-failed the process) never reached any unhandled filter. A first-chance VEH sees
+// Why a vectored handler and not SetUnhandledExceptionFilter: the game installs its own reporter, and the kind of
+// fault this is for (a call through a freed object's vtable, the garbage corrupts the heap, ntdll fast-fails the
+// process) never reaches any unhandled filter. A first-chance VEH sees
 // every exception on its own thread before any frame handler. It also sees the faults our __try probes and
 // IsBadReadPtr take on purpose, so ordinary codes are deduplicated per (code, address) and capped; the codes that
 // mean the process is about to die are always written.
@@ -46,7 +46,7 @@ const Module* module_of(uintptr_t a) {
   for (int i = 0; i < g_nmods; ++i) if (a >= g_mods[i].lo && a < g_mods[i].hi) return &g_mods[i];
   return nullptr;
 }
-// "Game.dll+0x1234" for a known module, "image@<base>+0x.." for one loaded after the snapshot, false otherwise.
+// "P3R.exe+0x1234" for a known module, "image@<base>+0x.." for one loaded after the snapshot, false otherwise.
 bool describe(uintptr_t a, char* out, size_t n) {
   if (const Module* m = module_of(a)) { snprintf(out, n, "%s+0x%llx", m->name, (unsigned long long)(a - m->lo)); return true; }
   MEMORY_BASIC_INFORMATION mbi{};

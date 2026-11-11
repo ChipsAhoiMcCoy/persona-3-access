@@ -23,13 +23,6 @@ int env_int(const wchar_t* name, int def) {
   wchar_t v[16];
   return GetEnvironmentVariableW(name, v, 16) > 0 ? _wtoi(v) : def;
 }
-std::wstring mod_dir() {
-  HMODULE self = nullptr;
-  GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&mod_dir, &self);
-  wchar_t p[MAX_PATH]; GetModuleFileNameW(self, p, MAX_PATH);
-  std::wstring s(p);
-  return s.substr(0, s.find_last_of(L'\\') + 1);
-}
 // The loaded copy's path and link time: the dev client checks them to confirm a hot reload took.
 static HMODULE self_module() {
   HMODULE self = nullptr;

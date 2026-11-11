@@ -17,5 +17,5 @@ void set_muted(bool m);  // muted: nothing reaches the backend, but history stil
 bool muted();
 std::string timing();   // the backend's slowest speak call (/health)
 std::vector<uint64_t> bench(int n);   // dev: n interrupting calls with a single space, each call's microseconds
-LineRing& history();     // every line ever passed to speak(), for the dev server
+LineRing& history();     // the last 500 lines passed to speak(), for the dev server
 }  // namespace p3a::speech

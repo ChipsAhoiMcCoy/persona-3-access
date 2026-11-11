@@ -31,13 +31,12 @@
 #include "voice.h"
 #include "watch.h"
 #include "ue/routes.h"
-#include "ue/scan.h"
 #include "ue/ue.h"
 #include "core/strings.h"
 #include <windows.h>
-#include <utility>
-#include <thread>
+#include <format>
 #include <memory>
+#include <utility>
 
 namespace p3a::mod {
 static bool g_ue_up = false;

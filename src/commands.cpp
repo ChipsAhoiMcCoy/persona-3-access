@@ -18,12 +18,10 @@
 #include "stats.h"
 #include "social.h"
 #include "sonar.h"
-#include "walltones.h"
 #include "world.h"
 #include <windows.h>
 #include <xinput.h>
 #include <format>
-#include <cmath>
 
 namespace p3a::commands {
 static void where_am_i() {

@@ -10,7 +10,6 @@ struct Member { int id = 0; std::string name; int level = 0, hp = 0, max_hp = 0,
 std::string name(int id);              // first name ("Yukari"); the hero's own as the player entered it
 std::vector<Member> members();         // the active party in order (leader first)
 bool member(int id, Member& out);
-// A party member by first name (case-insensitive; the camp draws "makoto" as entered), from the active party.
 const uint8_t* persona_entry(int id);  // the member's equipped Persona entry (FDatUnitPersonaEntry), or null
 uint8_t* global_work();                // the UGlobalWork object (the save data), or null
 uint8_t* unit_work(int id);            // its FDatUnitWork for character id 1..10 (+0x1B0 + 0x2B4 * id), or null

@@ -12,6 +12,7 @@
 #include <windows.h>
 #include <format>
 #include <map>
+#include <memory>
 
 namespace p3a::gametext {
 using namespace ue;

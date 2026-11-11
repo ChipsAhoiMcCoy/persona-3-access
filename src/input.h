@@ -24,7 +24,7 @@ void set_swallow(uint16_t mask);
 // stick pushed left (stick_sides bit 0) or right (bit 1), are hidden from the game while the cursor is there.
 void block_ends(uint16_t buttons, int stick_sides);
 
-// Keyboard to the game window via PostMessage (dev loop only: synthetic, works unfocused).
+// Keyboard to the game window via PostMessage (works unfocused): the dev loop's keys and the auto-walk's movement keys.
 // synthetic = the mod's own navigator (marked so the key filter does not treat it as the player taking over).
 void post_key(uint32_t vk, bool down, bool synthetic = false);
 // A key press for the game on the player's behalf (a bespoke menu stepping the game's cursor): down now, up hold_ms

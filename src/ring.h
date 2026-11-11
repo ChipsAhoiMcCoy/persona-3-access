@@ -1,8 +1,10 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks; zlib, see LICENSES/. This is not the original software.
 #pragma once
+#include <cstdint>
 #include <deque>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 // A bounded ring of lines with stable monotonic indices, so a client can ask "everything since N".

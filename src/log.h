@@ -6,7 +6,7 @@
 #include "ring.h"
 
 namespace p3a::log {
-void init();  // %LOCALAPPDATA%\P3RAccess\p3access.log (truncated per load)
+void init();  // %LOCALAPPDATA%\P3RAccess\p3access.log (a new process keeps the old one aside; a hot reload into a player's session appends)
 void write(std::string_view line);
 template <typename... A>
 void writef(std::format_string<A...> fmt, A&&... a) { write(std::format(fmt, std::forward<A>(a)...)); }

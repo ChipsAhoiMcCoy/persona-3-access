@@ -15,7 +15,6 @@ static PrismContext* g_ctx;
 static PrismBackend* g_backend;
 static std::mutex g_mu;
 static bool g_muted = false;
-static LineRing g_history(500);
 static uint64_t g_speak_us_max = 0;   // the slowest backend call (under g_mu)
 
 static void prism_log(void*, PrismLogLevel level, const char* source, const char* message) {
@@ -57,7 +56,7 @@ void speak(std::string_view utf8, bool interrupt) {
   ++g_count;
   std::string s = core::tidy_joins(utf8);   // no ".," where the mod joined a position or a description on
   log::writef("[speak{}] {}", interrupt ? "!" : "", s);
-  g_history.push(s);
+  history().push(s);
   std::lock_guard lk(g_mu);
   if (!g_backend || g_muted) return;
   // The call runs on the game thread (a screen reader's RPC): its worst time shows in /health, a slow one in the log.
@@ -103,7 +102,8 @@ int speaking() {
 }
 void set_muted(bool m) { g_muted = m; }
 bool muted() { return g_muted; }
-LineRing& history() { return g_history; }
+// Built on first use: a line spoken from another file's static initializer finds it ready.
+LineRing& history() { static LineRing r(500); return r; }
 
 void shutdown() {
   std::lock_guard lk(g_mu);

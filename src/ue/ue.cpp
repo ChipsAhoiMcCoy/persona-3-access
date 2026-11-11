@@ -6,7 +6,6 @@
 #include "seh.h"
 #include <windows.h>
 #include <format>
-#include <atomic>
 #include <map>
 #include <mutex>
 #include <unordered_map>
@@ -18,9 +17,9 @@ constexpr int kObjFlags = 0x08, kObjIndex = 0x0C, kObjClass = 0x10, kObjName = 0
 constexpr int kFieldNext = 0x28;
 constexpr int kStructSuper = 0x40, kStructChildren = 0x48, kStructChildProps = 0x50, kStructSize = 0x58;
 constexpr int kClassCastFlags = 0xD0, kClassCDO = 0x118;
-constexpr int kFuncFlags = 0xB0, kFuncNumParms = 0xB4, kFuncParmsSize = 0xB6, kFuncRetOffset = 0xB8;
-constexpr int kFFieldClass = 0x08, kFFieldNext = 0x20, kFFieldName = 0x28, kFFieldFlags = 0x30;
-constexpr int kPropArrayDim = 0x38, kPropElemSize = 0x3C, kPropFlags = 0x40, kPropOffset = 0x4C, kPropExtra = 0x78;
+constexpr int kFuncFlags = 0xB0, kFuncParmsSize = 0xB6;
+constexpr int kFFieldClass = 0x08, kFFieldNext = 0x20, kFFieldName = 0x28;
+constexpr int kPropElemSize = 0x3C, kPropOffset = 0x4C, kPropExtra = 0x78;
 constexpr int kEnumNames = 0x40;
 constexpr int kItemSize = 0x18, kItemFlags = 0x08;
 constexpr int kTextDataSource = 0x28;
@@ -549,6 +548,5 @@ bool known_build() {
 }
 bool exit_requested() { return g_exit_flag && *g_exit_flag; }
 
-bool ready() { return g_ready; }
 std::string status() { return std::format("ue ready={} objects={} world={}", g_ready, num_objects(), full_name(gworld())); }
 }  // namespace p3a::ue

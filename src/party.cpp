@@ -6,7 +6,6 @@
 #include "party.h"
 #include "core/strings.h"
 #include "devserver.h"
-#include "hooks.h"
 #include "log.h"
 #include "screens/screen.h"
 #include "speech.h"

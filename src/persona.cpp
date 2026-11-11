@@ -5,7 +5,6 @@
 // 2026-10-27: Orpheus 3 and Apsaras 2).
 #include "persona.h"
 #include "bmdfile.h"
-#include "core/text_clean.h"
 #include "core/strings.h"
 #include "devserver.h"
 #include "hooks.h"
