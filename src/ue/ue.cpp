@@ -246,15 +246,6 @@ UObject* find_first(UClass* c) {
   return nullptr;
 }
 UObject* find_first(std::string_view cn) { return find_first(find_class(cn)); }
-UObject* CachedFind::get(std::string_view cn) {
-  if (UObject* o = w.resolve()) return o;
-  ULONGLONG now = GetTickCount64();
-  if (miss_ms && now - miss_ms < 1000) return nullptr;
-  UObject* o = find_first(cn);
-  w = WeakObj::of(o);
-  miss_ms = o ? 0 : now;
-  return o;
-}
 UObject* cdo_of(UClass* c) { return c ? rd<UObject*>(c, off::kClassCDO) : nullptr; }
 
 // ---- properties ----
@@ -324,6 +315,11 @@ std::string enum_name(UObject* e, int64_t v) {
     if (*(int64_t*)(pr + 8) == v) { std::string s = fname(*(FName*)pr); size_t c = s.rfind("::"); return c == std::string::npos ? s : s.substr(c + 2); }
   }
   return std::to_string(v);
+}
+std::string enum_prop_name(UObject* obj, const char* prop) {
+  FField* p = obj ? find_prop(class_of(obj), prop) : nullptr;
+  if (!p) return {};
+  return enum_name(prop_inner_object(p), *((uint8_t*)obj + prop_offset(p)));
 }
 
 // Through find_prop's cache: the old map here, keyed by the raw class pointer, could answer for a different class

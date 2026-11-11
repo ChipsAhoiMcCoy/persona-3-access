@@ -123,6 +123,7 @@ void init(bool speech_ok) {
   social::install();
   persona::install();
   party::install();
+  items::install();
   dev::route("/screen", [](const dev::Request&, int&) {
     return dev::on_game([] { auto* s = screens::current(); return screens::status() + "\n" + (s ? s->describe() : std::string()) + "\n"; });
   }, "current modelled screen and its description");

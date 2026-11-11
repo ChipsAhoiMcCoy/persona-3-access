@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include "ue/ue.h"
 
 namespace p3a::party {
 // The party from the save data (UGlobalWork: FDatUnitWork per character, p3rpc.nativetypes): who is in it
@@ -13,7 +14,12 @@ bool member(int id, Member& out);
 const uint8_t* persona_entry(int id);  // the member's equipped Persona entry (FDatUnitPersonaEntry), or null
 uint8_t* global_work();                // the UGlobalWork object (the save data), or null
 uint8_t* unit_work(int id);            // its FDatUnitWork for character id 1..10 (+0x1B0 + 0x2B4 * id), or null
-bool flag(int id);                     // a story flag (GlobalWorkBpLib.GWorkFlagChkValue)
+// GlobalWorkBpLib, the save data's function library: one of its static functions by name ("GWorkGetMoney"), run with
+// its int32 "Index" parameter set when `index` is given. Read the results from the returned block; its `fn` is null
+// (nothing was called) when the function is absent.
+ue::Params gwork(const char* fn);
+ue::Params gwork(const char* fn, int index);
+bool flag(int id);                     // a story flag (GlobalWorkBpLib.GWorkFlagChkValue); false for id 0
 std::string line(const Member& m, bool level = true);   // "Yukari, level 2, HP 74 of 80, SP 61 of 65"
 std::string summary();                 // every member's line
 // Outside battle and the camp menu, a member's HP or SP changing is spoken (Auto-Recover, the entrance clock, field

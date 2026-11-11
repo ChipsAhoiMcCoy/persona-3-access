@@ -23,9 +23,11 @@
 namespace p3a::persona {
 using namespace ue;
 
+// The data assets below come from the object watcher (a class wanted for the first time is filled by one sweep, so
+// an asset loaded long before is found; after that no lookup scans the objects).
 static UObject* dat() {
-  static CachedFind w;
-  return w.get("DatPersona");
+  static const int id = watch::want("DatPersona");
+  return watch::get(id);
 }
 
 std::string name(int id) {
@@ -58,8 +60,8 @@ std::string affinities(int id) {
 }
 
 std::vector<std::string> affinity_groups(int id) {
-  static CachedFind w;
-  UObject* t = w.get("DatAffinityTable");
+  static const int table_id = watch::want("DatAffinityTable");
+  UObject* t = watch::get(table_id);
   auto* rows = t ? field<TArray<uint8_t>>(t, "Data") : nullptr;
   if (!rows || id <= 0 || id >= rows->num) return {};
   const uint16_t* a = (const uint16_t*)(rows->data + id * 38);
@@ -152,8 +154,8 @@ std::string skill_help(int id) {
   return bmdfile::text(f->dialogs[id].pages[0]);
 }
 std::string skill_name(int id) {
-  static CachedFind w;
-  UObject* t = w.get("DatSkillNameTable");
+  static const int table_id = watch::want("DatSkillNameTable");
+  UObject* t = watch::get(table_id);
   auto* rows = t ? field<TArray<FText>>(t, "Data") : nullptr;
   if (!rows || id <= 0 || id >= rows->num) return {};
   std::string s;
@@ -162,8 +164,8 @@ std::string skill_name(int id) {
 }
 
 std::string skill_cost(int id) {
-  static CachedFind w;
-  UObject* t = w.get("DatSkillNormalTable");
+  static const int table_id = watch::want("DatSkillNormalTable");
+  UObject* t = watch::get(table_id);
   if (!t) return {};
   FField* dp = find_prop(class_of(t), "Data");
   auto* rows = field<TArray<uint8_t>>(t, "Data");
@@ -287,6 +289,8 @@ std::string describe(int id, int level) {
 }
 
 void install() {
+  // Wanted before the first tick, so that tick's one sweep fills them with every other class's.
+  for (const char* c : {"DatPersona", "DatAffinityTable", "DatSkillNameTable", "DatSkillNormalTable"}) watch::want(c);
   dev::route("/persona", [](const dev::Request& r, int&) {
     // /persona the hero's stock | ?id=N one Persona's data
     auto out = std::make_shared<std::string>("timeout\n");

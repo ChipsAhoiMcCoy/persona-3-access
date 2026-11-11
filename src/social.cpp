@@ -17,6 +17,7 @@
 #include "hooks.h"
 #include "log.h"
 #include "msg.h"
+#include "party.h"
 #include "seh.h"
 #include "screens/screen.h"
 #include "speech.h"
@@ -58,19 +59,7 @@ std::vector<Link> read() {
 
 std::string arcana_name(int id) { return id >= 1 && id <= 22 ? strings::kArcana[id] : std::to_string(id); }
 
-// GlobalWorkBpLib.GWorkFlagChkValue(Index): one story flag.
-static bool flag(int id) {
-  static UClass* lib = nullptr;
-  static UFunction* fn = nullptr;
-  if (!fn || !is_live(fn)) { lib = find_class("GlobalWorkBpLib"); fn = lib ? find_function(lib, "GWorkFlagChkValue") : nullptr; }
-  if (!fn) return false;
-  Params p(fn);
-  p.set<int32_t>("Index", id);
-  call(cdo_of(lib), p);
-  uint8_t* v = p.at<uint8_t>("OnOff");
-  return v && enum_name(prop_inner_object(find_prop(fn, "OnOff")), *v) == "On";
-}
-bool reversed(int id) { return id >= 1 && id <= 22 && flag(0x1000003F + id); }
+bool reversed(int id) { return id >= 1 && id <= 22 && party::flag(0x1000003F + id); }
 
 // A column of the arcana's row in DT_CommunityFormat_Name (rows "<id 2 digits><Japanese arcana>").
 static std::string community_field(int id, const char* column) {
@@ -137,7 +126,7 @@ static int points_needed(const Link& l) {
       uint8_t* r = rows->data + i * 0x1C;
       int rank = *(int16_t*)r, pts = *(int16_t*)(r + 2);
       uint32_t f = *(uint32_t*)(r + 0xC);
-      if (rank != l.rank + 1 || (f && !flag((int)f))) continue;
+      if (rank != l.rank + 1 || (f && !party::flag((int)f))) continue;
       if (need < 0 || pts < need) need = pts;
     }
   });

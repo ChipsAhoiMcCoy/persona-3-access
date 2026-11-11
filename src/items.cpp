@@ -6,6 +6,7 @@
 #include "core/strings.h"
 #include "party.h"
 #include "seh.h"
+#include "watch.h"
 #include <windows.h>
 #include <format>
 #include <map>
@@ -15,11 +16,13 @@ using namespace ue;
 
 static std::map<std::string, Info> g_cache;
 static std::map<int, std::string> g_names;   // by item id
-static CachedFind g_dat;
 static WeakObj g_loaded;   // the DatItem g_cache was read from
 
+void install() { watch::want("DatItem"); }   // before the first tick: that tick's one sweep fills it
+
 static void load() {
-  UObject* dat = g_dat.get("DatItem");
+  static const int dat_id = watch::want("DatItem");   // the object watcher's: no object scan per lookup
+  UObject* dat = watch::get(dat_id);
   if (!dat || (WeakObj::of(dat) == g_loaded && !g_cache.empty())) return;
   // Its tables can be missing at first: read again once the set of tables it has changes (one appears), not on
   // every call.

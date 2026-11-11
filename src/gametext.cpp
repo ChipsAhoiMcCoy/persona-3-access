@@ -106,26 +106,21 @@ const char* weekday(int y) {
 namespace p3a::calendar {
 using namespace ue;
 
-static UFunction* fn(const char* name) {
-  static std::map<std::string, UFunction*> cache;
-  UFunction*& f = cache[name];
-  if (!f || !is_live(f)) f = find_function(find_class("CldBpFuncLib"), name);
-  return f;
-}
-static UObject* lib() { return cdo_of(find_class("CldBpFuncLib")); }
-
+// CldBpFuncLib's getters, each run on the library's default object; class and functions are looked up by name per
+// call (the lookups are cached). A getter that is missing leaves its field at the default.
 Now now() {
   Now n;
-  UObject* l = lib();
-  UFunction* md = fn("GetNowTotalToDayMon");
+  UClass* c = find_class("CldBpFuncLib");
+  UObject* l = cdo_of(c);
+  UFunction* md = c ? find_function(c, "GetNowTotalToDayMon") : nullptr;
   if (!l || !md) return n;
   Params p(md); call(l, p);
   n.month = p.ret<int32_t>("Month"); n.day = p.ret<int32_t>("Day");
-  if (UFunction* f = fn("GetNowTimeZone")) { Params q(f); call(l, q); n.time_zone = q.ret<uint8_t>(); }
-  if (UFunction* f = fn("GetNowYoubi")) { Params q(f); call(l, q); n.weekday = q.ret<int32_t>(); }
-  if (UFunction* f = fn("GetNowYasumi")) { Params q(f); call(l, q); n.holiday = q.ret<bool>(); }
-  if (UFunction* f = fn("GetNowMoonAge")) { Params q(f); call(l, q); n.moon = q.ret<int32_t>(); }
-  if (UFunction* f = fn("GetNowTotalDay")) { Params q(f); call(l, q); n.total = q.ret<int32_t>(); }
+  n.time_zone = call_ret<uint8_t>(l, "GetNowTimeZone", (uint8_t)n.time_zone);
+  n.weekday = call_ret<int32_t>(l, "GetNowYoubi", n.weekday);
+  n.holiday = call_ret<bool>(l, "GetNowYasumi", n.holiday);
+  n.moon = call_ret<int32_t>(l, "GetNowMoonAge", n.moon);
+  n.total = call_ret<int32_t>(l, "GetNowTotalDay", n.total);
   n.valid = n.month >= 1 && n.month <= 12 && n.day >= 1;
   return n;
 }

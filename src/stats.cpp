@@ -7,6 +7,7 @@
 #include "devserver.h"
 #include "hooks.h"
 #include "log.h"
+#include "party.h"
 #include "seh.h"
 #include "screens/screen.h"
 #include "speech.h"
@@ -153,13 +154,8 @@ void tick() {
 
 // UGlobalWorkBpLib::GWorkGetMoney -- the wallet.
 int money() {
-  static UClass* lib = nullptr;
-  static UFunction* fn = nullptr;
-  if (!fn || !is_live(fn)) { lib = find_class("GlobalWorkBpLib"); fn = lib ? find_function(lib, "GWorkGetMoney") : nullptr; }
-  if (!fn) return -1;
-  Params p(fn);
-  call(cdo_of(lib), p);
-  return p.ret<int32_t>();
+  Params p = party::gwork("GWorkGetMoney");
+  return p.fn ? p.ret<int32_t>() : -1;
 }
 
 std::string describe() {

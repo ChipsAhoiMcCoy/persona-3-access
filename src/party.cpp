@@ -22,9 +22,15 @@ using namespace ue;
 using UnitCalc_t = int (*)(const uint8_t* unit);
 static UnitCalc_t g_max_hp, g_max_sp;
 
+// From the object watcher: a class's first lookup is filled by a sweep, so an instance made before then is found.
 uint8_t* global_work() {
-  static CachedFind w;
-  return (uint8_t*)w.get("GlobalWork");
+  static const int id = watch::want("GlobalWork");
+  return (uint8_t*)watch::get(id);
+}
+
+Params gwork(const char* fn) { return call_static("GlobalWorkBpLib", fn); }
+Params gwork(const char* fn, int index) {
+  return call_static("GlobalWorkBpLib", fn, [index](Params& p) { p.set<int32_t>("Index", index); });
 }
 
 uint8_t* unit_work(int id) {
@@ -57,8 +63,8 @@ std::string name(int id) {
     if (g) guarded([&] { const char* p = (const char*)g + 0xC728; size_t n = strnlen(p, 32); if (n < 32) s.assign(p, n); });
     if (!s.empty()) { s[0] = (char)toupper((unsigned char)s[0]); return s; }
   }
-  static CachedFind table;
-  UObject* t = table.get("DatPlayerFirstNameTable");
+  static const int table_id = watch::want("DatPlayerFirstNameTable");
+  UObject* t = watch::get(table_id);
   auto* data = t ? field<TArray<uint8_t>>(t, "Data") : nullptr;
   FField* dp = t ? find_prop(class_of(t), "Data") : nullptr;
   if (!data || !dp) return {};
@@ -93,13 +99,9 @@ bool member(int id, Member& m) {
 
 std::vector<Member> members() {
   std::vector<Member> out;
-  UClass* lib = find_class("GlobalWorkBpLib");
-  UFunction* fn = lib ? find_function(lib, "GWorkGetPartyID") : nullptr;
-  if (!fn) return out;
   for (int i = 0; i < 4; ++i) {
-    Params p(fn);
-    p.set<int32_t>("Index", i);
-    call(cdo_of(lib), p);
+    Params p = gwork("GWorkGetPartyID", i);
+    if (!p.fn) return out;
     int id = p.ret<int32_t>();
     Member m;
     if (id > 0 && member(id, m)) out.push_back(m);
@@ -163,6 +165,9 @@ void tick() {
 }
 
 void install() {
+  // Wanted before the first tick, so that tick's one sweep fills them with every other class's.
+  watch::want("GlobalWork");
+  watch::want("DatPlayerFirstNameTable");
   g_max_hp = resolve("GetUnitMaxHP");
   g_max_sp = resolve("GetUnitMaxSP");
   log::writef("party: max HP routine {}, max SP routine {}", (void*)g_max_hp, (void*)g_max_sp);
@@ -171,14 +176,9 @@ void install() {
   }, "the party: level, HP and SP of each member");
 }
 bool flag(int id) {
-  static UClass* lib = nullptr;
-  static UFunction* fn = nullptr;
-  if (!fn || !is_live(fn)) { lib = find_class("GlobalWorkBpLib"); fn = lib ? find_function(lib, "GWorkFlagChkValue") : nullptr; }
-  if (!fn || !id) return false;
-  Params p(fn);
-  p.set<int32_t>("Index", id);
-  call(cdo_of(lib), p);
-  uint8_t* v = p.at<uint8_t>("OnOff");
-  return v && enum_name(prop_inner_object(find_prop(fn, "OnOff")), *v) == "On";
+  if (!id) return false;
+  Params p = gwork("GWorkFlagChkValue", id);
+  uint8_t* v = p.fn ? p.at<uint8_t>("OnOff") : nullptr;
+  return v && enum_name(prop_inner_object(find_prop(p.fn, "OnOff")), *v) == "On";
 }
 }  // namespace p3a::party

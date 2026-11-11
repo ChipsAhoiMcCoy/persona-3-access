@@ -82,13 +82,6 @@ UClass* find_class(std::string_view short_name);       // "MsgManager", "BP_BtlT
 UObject* find_object(std::string_view path);            // "/Script/xrd777.Default__MsgManager"
 UObject* find_first(UClass* c);                         // first live non-CDO instance
 UObject* find_first(std::string_view class_name);
-// A long-lived object found by class (a data table, GlobalWork): kept as a WeakObj, and while it is missing the
-// scan (~1 ms) runs at most once a second, so a per-row or per-tick caller never scans every call.
-struct CachedFind {
-  WeakObj w;
-  unsigned long long miss_ms = 0;
-  UObject* get(std::string_view class_name);
-};
 std::vector<UObject*> find_all(UClass* c);
 std::vector<UObject*> find_all(std::string_view class_name);
 UObject* cdo_of(UClass* c);
@@ -105,6 +98,8 @@ UObject* prop_inner_object(FField* p);   // StructProperty -> UScriptStruct, Obj
 FField* prop_inner_prop(FField* p);      // ArrayProperty -> inner property
 bool prop_bool(FField* p, const void* container);
 std::string enum_name(UObject* uenum, int64_t value);
+// The name of the value an object's enum (or byte) property holds ("AreaChange"); "" when it has no such property.
+std::string enum_prop_name(UObject* obj, const char* prop);
 int32_t struct_size(UStruct* s);
 
 // Offset of `prop` in `cls`, cached by (class, name); -1 if absent. Use field<T>() for typed access.
@@ -160,6 +155,20 @@ T call_ret(UObject* o, std::string_view fn, T missing = T{}) {
   Params p(f);
   call(o, p);
   return p.ret<T>();
+}
+// A function library's static UFunction ("GlobalWorkBpLib", "GWorkGetMoney"), run on the class's default object:
+// `fill(p)` sets its parameters first. Returns the parameter block to read the results from; its `fn` is null, and
+// nothing was called, when the class or the function is absent. Class and function are looked up by name on every
+// call (both lookups are cached), so no pointer to either is kept between calls.
+template <typename F>
+Params call_static(std::string_view class_name, std::string_view fn, F&& fill) {
+  UClass* c = find_class(class_name);
+  Params p(c ? find_function(c, fn) : nullptr);
+  if (p.fn) { fill(p); call(cdo_of(c), p); }
+  return p;
+}
+inline Params call_static(std::string_view class_name, std::string_view fn) {
+  return call_static(class_name, fn, [](Params&) {});
 }
 
 // The ProcessEvent hook: calls hooks::pump on the game thread while the PeekMessageW pump has not ticked for 250 ms
