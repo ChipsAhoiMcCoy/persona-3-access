@@ -2,8 +2,11 @@
 
 ## Unreleased
 
+### Mail
+- Fixed: the phone's mail list read "Mail 1" in place of the sender and subject about every other time it was opened, and a mail opened from such a list read only the sender's name, without its subject or text.
+
 ### Town map
-- Each destination says who is there now, after its name and position: the Social Links you can spend time with ("Social Links here: Kenji Tomochika (Magician), rank 1, ready to rank up") and the other characters the map marks. A link you have not started yet is listed too, as the game marks it, under the game's own name for it ("Bookstore (Hierophant), not started yet"). The game shows them as card icons; nothing read them before.
+- Each destination says who is there now, after its name and position: the Social Links you can spend time with ("Social Links here: Kenji Tomochika (Magician), rank 1, ready to rank up") and the other characters the map marks. A link you have not started yet is listed too, as the game marks it, under the game's own name for it ("Bookstore (Hierophant)"). The game shows them as card icons; nothing read them before.
 
 ### Shops
 - A row you cannot buy says why, where it said "not now": "out of stock", "carrying the maximum" (99 of it) or "not enough yen" ("Nastea, 110 yen, 3 owned, out of stock").

@@ -108,6 +108,13 @@ std::vector<Created> visible(unsigned max_age_ms) {
   std::sort(out.begin(), out.end(), [](const Created& a, const Created& b) { return a.ms < b.ms; });
   return out;
 }
+std::vector<Created> pages_of(const void* buf) {
+  std::lock_guard lk(g_bmd_mu);
+  std::vector<Created> out;
+  for (auto& [k, v] : g_live)
+    if (k.first == buf && !v.text.empty()) out.push_back(Created{v.seq, v.last_ms, v.wrapper, v.dialog, v.page, v.text, k.first, k.second});
+  return out;
+}
 std::vector<Created> created_since(uint64_t seq) {
   std::lock_guard lk(g_bmd_mu);
   std::vector<Created> out;

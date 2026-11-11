@@ -29,6 +29,9 @@ void cutin_said();
 // Every BMD page the game builds (dialogue pages, UI descriptions, help lines), rendered to text, newest last.
 struct Created { uint64_t seq; uint64_t ms; void* wrapper; int dialog; int page; std::string text; void* buf = nullptr; void* data = nullptr; void* obj = nullptr; };   // obj: the FBmdPage
 std::vector<Created> created_since(uint64_t seq);
+// Every page of a BMD buffer the game has laid out, as it reads now; `ms` is when it was last laid out. Unlike the
+// ring of created pages, a page built again unchanged (a list reopened) is still here.
+std::vector<Created> pages_of(const void* buf);
 uint64_t created_seq();
 // The seq to count from for "pages built in the last ms": a screen that starts counting on entry takes the pages its
 // opening built, not the history before it (a camp submenu's first help line was the title's "Load this save data?").

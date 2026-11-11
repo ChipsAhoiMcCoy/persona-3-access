@@ -22,23 +22,32 @@ using namespace ue;
 class MailScreen : public MenuScreen {
   Finder draw_{"MailDraw"};
   bool reading_ = false;
+  uint64_t list_ms_ = 0;
   std::string said_;
   struct Mail { std::string sender, title, body; bool fresh = false; };
   static bool flag(UObject* d, const char* n) { auto* b = field<bool>(d, n); return b && *b; }
-  Mail mail(UObject* d, int i) {
+  Mail mail(UObject* d, int i, uint64_t since = 0) {
     Mail m;
     auto* items = field<TArray<uint8_t>>(d, "MailListItems");
     if (!items || i < 0 || i >= items->num) return m;
-    void* title = nullptr;
-    guarded([&] { title = *(void**)(items->data + (size_t)i * 0x20 + 0x10); });
-    void* buf = nullptr;
+    // The title is rendered from the item's own page, never looked up among the pages seen being built: a list
+    // opened again builds the same page unchanged at another address, which is not a new page (it read "Mail 1"
+    // every other time, 2026-11-11). The sender and the body are the other pages laid out from the title's buffer;
+    // the body only counts once it was laid out for this opening (`since`).
+    void* title = nullptr; void* buf = nullptr; void* data = nullptr;
+    guarded([&] {
+      title = *(void**)(items->data + (size_t)i * 0x20 + 0x10);
+      if (title) { buf = *(void**)((uint8_t*)title + 0x18); data = *(void**)((uint8_t*)title + 0x20); }
+    });
+    if (title) m.title = msg::page_string(title);
     int td = -1;
-    auto pages = msg::created_since(0);
-    for (auto& c : pages) if (c.obj == title) { buf = c.buf; td = c.dialog; m.title = c.text; }
+    auto pages = buf ? msg::pages_of(buf) : std::vector<msg::Created>{};
+    for (auto& c : pages) if (c.data == data) td = c.dialog;
+    uint64_t newest = 0;
     for (auto& c : pages) {
-      if (!buf || c.buf != buf || c.dialog == td) continue;
+      if (c.dialog == td || c.data == data) continue;
       if (c.dialog == 0) m.sender = c.text;
-      else if (c.dialog > td) m.body = c.text;
+      else if (td >= 0 && c.dialog > td && c.ms >= since && c.ms >= newest) { m.body = c.text; newest = c.ms; }
     }
     // The sender, when no page of its own was built (the "Unknown Sender" of a mail with none): AMailActor +0x350 is
     // the list (0x30 each: +0x8 the sender's page).
@@ -128,11 +137,15 @@ class MailScreen : public MenuScreen {
     auto* si = field<int32_t>(d, "SelectedIndex");
     if (!si) return;
     bool reading = flag(d, "bIsStartMailAnim");
+    if (!reading) list_ms_ = GetTickCount64();   // the last frame the list was up: the open mail's body is laid out after it
     if (reading && !reading_) {
-      Mail m = mail(d, *si);
+      Mail m = mail(d, *si, list_ms_);
+      // Not laid out yet: wait for it while the mail is still opening. Once it is open, read what there is.
+      if (m.body.empty() && !flag(d, "bIsFinishMailAnim")) return;
+      if (m.body.empty()) m = mail(d, *si);
       std::string s = m.sender.empty() ? m.title : m.sender + ". " + m.title;
       if (!m.body.empty()) s += ". " + m.body;
-      if (!s.empty()) { speech::speak(s, true); said_ = s; reading_ = true; }
+      speech::speak(s, true); said_ = s; reading_ = true;
       return;
     }
     if (!reading && reading_) reading_ = false;
