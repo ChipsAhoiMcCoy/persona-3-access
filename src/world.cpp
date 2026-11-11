@@ -334,6 +334,30 @@ void register_routes() {
     });
     return *out;
   }, "?obj=N navmesh path from the player to an actor");
+  dev::route("/tp", [](const dev::Request& r, int&) {
+    // /tp?obj=N beside an actor (150 cm short of it, on its level) | /tp?x=&y=&z= to a place
+    int obj = (int)dev::arg_int(r, "obj", -1);
+    FVector to{(float)dev::arg_num(r, "x", 0), (float)dev::arg_num(r, "y", 0), (float)dev::arg_num(r, "z", 0)};
+    return dev::on_game([=]() mutable {
+      UObject* hero = player();
+      FVector me;
+      if (!hero || !player_location(me)) return std::string("no hero\n");
+      if (obj >= 0) {
+        UObject* a = ue::object_at(obj);
+        if (!a) return std::string("no object\n");
+        to = actor_location(a);
+        float dx = me.x - to.x, dy = me.y - to.y, d = std::hypot(dx, dy);
+        if (d > 1) { to.x += dx / d * 150.0f; to.y += dy / d * 150.0f; }
+        to.z += 100.0f;
+      }
+      UFunction* f = ue::find_function(ue::class_of(hero), "K2_TeleportTo");
+      if (!f) return std::string("no K2_TeleportTo\n");
+      ue::Params p(f);
+      p.set<FVector>("DestLocation", to);
+      ue::call(hero, p);
+      return std::format("teleported to ({:.0f}, {:.0f}, {:.0f}): {}\n", to.x, to.y, to.z, p.ret<bool>());
+    });
+  }, "?obj=N | ?x=&y=&z= teleport the hero (dev)");
   dev::route("/near", [](const dev::Request& r, int&) {
     // /near?class=FldHitCore&r=3000 actors of a class within r cm of the player, nearest first
     std::string cls = dev::arg(r, "class", "FldHitCore");
