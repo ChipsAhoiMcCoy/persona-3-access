@@ -5,8 +5,8 @@
 #include "screens/menu.h"
 #include "screens/util.h"
 #include "core/strings.h"
+#include "calendar.h"
 #include "gametext.h"
-#include "speech.h"
 #include <format>
 
 namespace p3a::screens {
@@ -100,7 +100,7 @@ class SaveLoadScreen : public MenuScreen {
     int c = list_.cursor();
     if (c < 0) return;
     std::string t = slot(c);
-    if (c == slot_seen_ && t != slot_text_) speech::speak(std::string(strings::kSaved) + ". " + t, true);
+    if (c == slot_seen_ && t != slot_text_) say(std::string(strings::kSaved) + ". " + t, true);
     slot_seen_ = c;
     slot_text_ = t;
   }

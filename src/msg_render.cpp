@@ -2,16 +2,17 @@
 // button icons (named as keys), rows that are a list joined with commas, and each entry of a choice list.
 #include "msg_render.h"
 #include "msg.h"
+#include "core/page_text.h"
 #include "core/text_clean.h"
 #include "core/strings.h"
 #include "screens/screen.h"
 #include "log.h"
 #include "seh.h"
-#include <cctype>
 #include <climits>
 #include <cstring>
 #include <format>
 #include <set>
+#include <utility>
 #include <vector>
 
 namespace p3a::msg {
@@ -28,35 +29,16 @@ void* renderer() { return (void*)g_page_to_string; }
 // The ids are the controller's buttons (one per button, though E stands for two of them on the keyboard).
 // Two of the controller's buttons are different keys by place: Y is E in battle (skills) but Tab in the field (the
 // menu: "opening the menu with [112]"), LB is Q for a previous page but M in the field (the map: "[114] will display
-// a map", 2026-10-29). Those are decided once the whole page is rendered, from the words around them (`around`).
-static const char* icon_name(int id, const std::string& around = {}) {
-  bool pad = strings::pad_hints();
-  // The D-pad's keyboard keys differ: W and S in battle, U and O (camera zoom) in the field.
+// a map", 2026-10-29). Those are decided once the whole page is rendered, from the words around them
+// (core::finish_icons). The names are the keyboard's defaults, from the tutorials' own sentences, and the controller's
+// from its key list (strings::kIconKeys): 104 / 105 the D-pad (battle Tactics and Survey, measured 2026-10-27; the
+// field's camera zoom and reset), 108 save, 110 cancel, 112 battle skills and the field menu, 113 attack and confirm,
+// 114 / 117 the previous / next page, 115 battle Shift, 118 dash, 119 recenter the camera, 121 rotate it.
+// The D-pad's and the by-place keys depend on whether the battle screen is up.
+static bool in_battle() {
   screens::Screen* sc = screens::current();
-  bool battle = sc && std::strcmp(sc->id(), "battle") == 0;
-  auto nearby = [&](const char* w) {
-    std::string a = around;
-    for (auto& ch : a) ch = (char)tolower((unsigned char)ch);
-    return !battle && a.find(w) != std::string::npos;
-  };
-  switch (id) {   // keyboard defaults, from the tutorials' own sentences; the controller's from its key list
-    case 104: return pad ? "D-pad up" : battle ? "W" : "U";     // battle Tactics (measured 2026-10-27); field zoom in
-    case 105: return pad ? "D-pad down" : battle ? "S" : "O";   // battle Survey; field camera reset (2026-10-28)
-    case 119: return pad ? "the right stick button" : "R";      // recenter the camera
-    case 121: return pad ? "the right stick" : "I, J, K and L"; // rotate the camera
-    case 108: return pad ? "Menu" : "H";       // save ("save your progress by pressing the [108] button", 2026-10-28)
-    case 110: return pad ? "B" : "C";          // cancel
-    case 112: return pad ? "Y" : nearby("menu") ? "Tab" : "E";   // battle skills (Persona); the field menu
-    case 113: return pad ? "A" : "Space";      // attack, confirm
-    case 114: return pad ? "LB" : nearby("map") ? "M" : "Q";     // left page / previous (with 117); the field map
-    case 117: return pad ? "RB" : nearby("exploration") || nearby("recover") ? "Y" : "E";   // right page / next; Auto-Recover in Tartarus
-    case 115: return pad ? "LT" : "B";         // battle Shift (B on the command wheel, measured 2026-10-28)
-    case 118: return pad ? "RT" : "Shift";     // dash
-    default: return nullptr;
-  }
+  return sc && std::strcmp(sc->id(), "battle") == 0;
 }
-static constexpr char kByPlace = '\x02';   // followed by the icon id's byte: decided from the finished page
-static constexpr char kGlyph[] = "\x01";   // an unmapped glyph's place while a page is rendered
 // A page's line list (+0x40 next), capped: a stale page's chain could loop.
 static std::vector<uint8_t*> lines(uint8_t* first) {
   std::vector<uint8_t*> out;
@@ -67,6 +49,7 @@ static bool render_with_icons(uint8_t* first, std::string& out) {
   bool icon = false;   // an empty line node with id 0 is a blank line, not an icon
   for (uint8_t* l : lines(first)) if (!*(uint8_t**)(l + 0x28) && *(int32_t*)(l + 0x58)) icon = true;
   if (!icon) return false;
+  bool pad = strings::pad_hints(), battle = in_battle();
   int row = -1;
   for (uint8_t* l : lines(first)) {
     int r = *(int32_t*)(l + 8);
@@ -76,35 +59,26 @@ static bool render_with_icons(uint8_t* first, std::string& out) {
     if (!tk) {
       int id = *(int32_t*)(l + 0x58);
       if (!id) continue;
-      if (id == 112 || id == 114) { out += kByPlace; out += (char)id; continue; }
-      const char* n = icon_name(id);
+      if (id == 112 || id == 114) { out += core::kIconByPlace; out += (char)id; continue; }   // decided from the finished page
+      const char* n = core::icon_key(id, pad, battle);
       static std::set<int> logged;
       if (!n && logged.insert(id).second) log::writef("msg: unmapped icon {} after: {}", id, out);
-      out += n ? std::string(n) : std::string(kGlyph);   // decided below
+      if (n) out += n;
+      else out += core::kIconGlyph;   // an unmapped glyph's place: decided from the finished page too
       continue;
     }
     for (int i = 0; tk && i < 512; ++i, tk = *(uint8_t**)(tk + 0x28)) out.append((const char*)tk, strnlen((const char*)tk, 8));
   }
-  // The sentence around a button decides its key: from the last full stop before it to the next one after.
-  for (size_t p; (p = out.find(kByPlace)) != std::string::npos && p + 1 < out.size();) {
-    int id = (unsigned char)out[p + 1];
-    size_t from = out.rfind('.', p), to = out.find('.', p);
-    std::string around = out.substr(from == std::string::npos ? 0 : from, (to == std::string::npos ? out.size() : to) - (from == std::string::npos ? 0 : from));
-    out.replace(p, 2, icon_name(id, around));
-  }
-  // An unmapped glyph: a button sits between words ("pressing [x] will"), an item glyph runs into its word ("a
-  // [key item]Twilight Fragment" read as "a a keyTwilight", 2026-10-27) and is left out.
-  // A glyph that ends the text is a picture closing a line (a text message's emoji, icon 137, 2026-10-27).
-  for (size_t p; (p = out.find(kGlyph)) != std::string::npos;) {
-    bool inline_glyph = p + 1 >= out.size() || isalnum((unsigned char)out[p + 1]);
-    out.replace(p, 1, inline_glyph ? "" : strings::kAKey);
-  }
+  // The by-place buttons take their key from the sentence around them. An unmapped glyph between words ("pressing
+  // [x] will") is "a key"; an item glyph that runs into its word ("a [key item]Twilight Fragment" read as "a a
+  // keyTwilight", 2026-10-27) or a picture that closes a line (a text message's emoji, icon 137) is left out.
+  out = core::finish_icons(std::move(out), pad, battle);
   return true;
 }
 
 // A page whose rows are a list of names (the DLC notice: "P4G EX BGM Set" / "P5R EX BGM Set" / ..., 2026-10-28) ran
-// together into one sentence. Rows with no punctuation, each after the first starting with a capital or a digit,
-// are a list: joined with commas. Prose wraps across rows too, but a page of prose has its full stops.
+// together into one sentence. Its rows are gathered here; core::rows_as_list says whether they are a list and joins
+// them with commas (the letter records must say what the renderer said).
 static std::string as_list(uint8_t* first, const std::string& joined) {
   std::vector<std::string> rows;
   int row = INT_MIN;
@@ -116,18 +90,7 @@ static std::string as_list(uint8_t* first, const std::string& joined) {
     row = r;
     for (int i = 0; tk && i < 512; ++i, tk = *(uint8_t**)(tk + 0x28)) rows.back().append((const char*)tk, strnlen((const char*)tk, 8));
   }
-  std::vector<std::string> kept;
-  for (auto& r : rows) if (std::string c = core::clean_text(r); !c.empty()) kept.push_back(c);
-  if (kept.size() < 2) return {};
-  std::string spaced, listed;
-  for (size_t i = 0; i < kept.size(); ++i) {
-    const std::string& r = kept[i];
-    if (r.find_first_of(".,!?:;") != std::string::npos) return {};
-    if (i && !isupper((unsigned char)r[0]) && !isdigit((unsigned char)r[0])) return {};
-    spaced += (i ? " " : "") + r;
-    listed += (i ? ", " : "") + r;
-  }
-  return spaced == joined ? listed : std::string{};   // the letter records must say what the renderer said
+  return core::rows_as_list(rows, joined);
 }
 
 std::string page_string(void* page) {

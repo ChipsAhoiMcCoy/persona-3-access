@@ -31,7 +31,7 @@ static int title_count(UObject* state) {
   int last = state ? *(int*)((uint8_t*)state + 0xa0) : 3;
   return last >= 1 && last <= 5 ? last + 1 : 4;
 }
-static std::string title_item(int i) { return i < 4 ? strings::kTitleItems[i] : std::format("item {}", i + 1); }
+static std::string title_item(int i) { return i < 4 ? strings::kTitleItems[i] : std::format("{} {}", strings::kItemNumber, i + 1); }
 
 bool title_opening() { return title_state_is("OP"); }
 // The opening movie takes a press as a skip only once its state has run 1 s (UTitleStateOP +0x44, the time since it
@@ -118,7 +118,7 @@ class TitleScreen : public Screen {
       cursor_ = 1;
     }
   }
-  std::string describe() override { return "Title screen, " + state_; }
+  std::string describe() override { return std::string(strings::kTitleScreen) + ", " + state_; }
 };
 
 // The title and difficulty menus share one native select-cursor struct (title ATitleActor +0x478, difficulty

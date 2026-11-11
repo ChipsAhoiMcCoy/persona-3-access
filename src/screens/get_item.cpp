@@ -18,7 +18,8 @@ using namespace ue;
 
 class GetItemScreen : public Screen {
   Finder draw_{"UIMiscGetItemDraw"};
-  std::string line_;
+  std::string line_;   // the notice up now, as read last
+  std::string said_;   // the notice spoken last while this screen was current
   // "Got Velvet Outfit times 10, 500 yen", or "" when the list is empty.
   std::string read() {
     uint8_t* d = (uint8_t*)draw_.get();
@@ -51,11 +52,16 @@ class GetItemScreen : public Screen {
     if (l != line_) {
       if (!line_.empty()) log::writef("get_item: {}", l);
       line_ = l;
-      if (current() == this) speech::speak(line_, false);   // the next notice while this one is up
     }
     return true;
   }
-  void enter() override { screens::set_keys(strings::kGetItemClose); speech::speak(line_, true); }
+  void enter() override { screens::set_keys(strings::kGetItemClose); said_ = line_; speech::speak(line_, true); }
+  // The next notice while this one is up: queued after it.
+  void tick() override {
+    if (line_ == said_) return;
+    said_ = line_;
+    speech::speak(line_, false);
+  }
   std::string describe() override { return std::format("{}. {}", line_, strings::kGetItemClose()); }
 };
 

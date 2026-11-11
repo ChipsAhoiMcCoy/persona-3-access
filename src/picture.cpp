@@ -2,7 +2,7 @@
 // SCHE_GET_PICTID_TEACH_QUESTION / _ANSWER; the story's sketch) shows an AUIMiscPictureDraw, which loads
 // T_UI_Picture_<id> into m_pPicture (+0x2D0). The question and its answers are messages, but the picture can be the
 // question itself (four spirals labelled A to D), so each picture has a description (strings::kScenePictures), read
-// when a new one is up; the dialogue line after it waits for it (msg::cutin_said). The actor's +0x294 is 1-3 while a
+// when a new one is up; the dialogue line after it waits for it (msg::say_description). The actor's +0x294 is 1-3 while a
 // picture opens and shows, 4-5 as it closes, and it keeps the texture after (measured 2026-11-03): only states 1-3 are
 // up, and the same picture shown again (a question's picture is closed and opened again with the answers) is not
 // read twice.
@@ -15,8 +15,6 @@
 #include "log.h"
 #include "msg.h"
 #include "seh.h"
-#include "speech.h"
-#include "world.h"
 #include "screens/util.h"
 #include "ue/scan.h"
 #include <format>
@@ -35,8 +33,10 @@ const char* describe(const std::string& texture) {
   return nullptr;
 }
 
-// OPEN_PICTURE / CLOSE_PICTURE as their handlers do it (see the top of the file).
+// OPEN_PICTURE / CLOSE_PICTURE as their handlers do it (see the top of the file). The addresses are this build's:
+// on another build nothing is called.
 bool request(int mode, int id, int arg) {
+  if (!ue::known_build()) return false;
   uintptr_t base = scan::exe_base();
   return guarded([&] {
     void* ui = ((void* (*)())(base + 0x122b890))();
@@ -64,9 +64,7 @@ void tick() {
   g_said = texture;
   const char* text = describe(texture);
   log::writef("picture: {}{}", texture, text ? "" : " (no description)");
-  if (!text || world::scene_fast()) return;
-  speech::speak(text, false);
-  msg::cutin_said();
+  msg::say_description(text);
 }
 
 void register_routes() {

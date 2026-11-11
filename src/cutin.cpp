@@ -5,7 +5,7 @@
 // character id, +0x2A4 the picture (FUN_1413b7390 passes both to the texture name's builder FUN_1413b26f0). One actor
 // serves a scene's cut-ins one after another; +0x2C4, the slide-in's progress, starts again from 0 for each (0 to 0.77
 // over 0.6 s, then held; sampled 2026-11-02). A cut-in begins when that progress leaves 0 or falls back: its
-// description (strings::kCutins) is read then, and the dialogue line after it waits for it (msg::cutin_said).
+// description (strings::kCutins) is read then, and the dialogue line after it waits for it (msg::say_description).
 // The BMD `cut` handler (FUN_14124c250) and CUTIN_START (FUN_1410e2090 -> FUN_1410e21b0) both ask the UI manager for
 // UI 0x1D with the same parameters; CUTIN_STOP (FUN_1410e22c0) closes it. /cutin/test plays every picture through
 // FUN_1410e21b0 (no script: its VM argument may be null) and checks each is read.
@@ -15,8 +15,6 @@
 #include "log.h"
 #include "msg.h"
 #include "seh.h"
-#include "speech.h"
-#include "world.h"
 #include "screens/util.h"
 #include "ue/scan.h"
 #include <format>
@@ -96,9 +94,7 @@ void tick() {
   const char* text = describe(chara, pic);
   log::writef("cutin: character {} picture {}{}", chara, pic, text ? "" : " (no description)");
   g_heard_chara = chara; g_heard_pic = pic;
-  if (!text || world::scene_fast()) return;   // fast-forward reads no dialogue either
-  speech::speak(text, false);
-  msg::cutin_said();
+  msg::say_description(text);
 }
 
 void register_routes() {

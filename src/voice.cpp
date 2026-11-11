@@ -27,21 +27,19 @@ static std::deque<uint64_t> g_starts;   // when voices began, newest last
 static bool g_playing = false;
 
 static int status_of(UObject* comp) {
-  static UFunction* fn = nullptr;
-  if (!fn) fn = find_function(class_of(comp), "GetStatus");
+  UFunction* fn = find_function(class_of(comp), "GetStatus");   // cached by (class, name)
   if (!fn) return 0;
   Params p(fn);
   if (!call(comp, p)) return 0;
   return p.ret<int8_t>();   // EAtomComponentStatus: Stop, Prep, Playing, PlayEnd, Error
 }
 
-void tick() {
+// The sound manager's player blocks as they are now (blk null: an empty slot). False when there is no manager.
+struct Raw { UObject* blk; int bank, type, cue; };
+static bool read_blocks(Raw raw[0x100]) {
   static const int id = watch::want("PlayAdxControl");
   UObject* ctl = watch::get(id);
-  g_playing = false;
-  if (!ctl) return;
-  struct Raw { UObject* blk; int bank, type, cue; };
-  Raw raw[0x100]{};
+  if (!ctl) return false;
   guarded([&] {
     UObject** blocks = (UObject**)((uint8_t*)ctl + 0x40);
     for (int k = 0; k < 0x100; ++k) {
@@ -50,6 +48,13 @@ void tick() {
       raw[k] = Raw{(UObject*)b, *(int*)(b + 0x30), *(int*)(b + 0x34), *(int*)(b + 0x3C)};
     }
   });
+  return true;
+}
+
+void tick() {
+  g_playing = false;
+  Raw raw[0x100]{};
+  if (!read_blocks(raw)) return;
   uint64_t now = GetTickCount64();
   for (int k = 0; k < 0x100; ++k) {
     Slot& s = g_slot[k];
@@ -74,9 +79,8 @@ bool playing() { return g_playing; }
 // Cues of the system sheet (CriData/CueSheet/system, read 2026-10-29): 5 "page", 9 "message", 0 "Sys_Cursor".
 // 21 opens a message window (the network question, 2026-10-29). The menu cues were heard on the SE player as the camp menu and title menu played them (2026-10-29).
 void play_system_sound(int cue) {
-  static UClass* cls = nullptr;
-  static UFunction* fn = nullptr;
-  if (!fn) { cls = find_class("SoundApp"); fn = cls ? find_function(cls, "PlayComSE") : nullptr; }
+  UClass* cls = find_class("SoundApp");   // both lookups are cached
+  UFunction* fn = cls ? find_function(cls, "PlayComSE") : nullptr;
   UObject* cdo = cls ? cdo_of(cls) : nullptr;
   if (!fn || !cdo) return;
   Params p(fn);
@@ -120,15 +124,12 @@ void install() {
     hooks::run_on_game_thread([out, all] {
       uint64_t now = GetTickCount64();
       std::string s = std::format("playing={}\n", g_playing);
-      if (all) guarded([&] {   // every player block: type (0 BGM, 1 voice, 2 SE), bank, the cue last requested
-        static const int id = watch::want("PlayAdxControl");
-        UObject* ctl = watch::get(id);
-        if (!ctl) return;
-        UObject** blocks = (UObject**)((uint8_t*)ctl + 0x40);
+      if (all) {   // every player block in use: type (0 BGM, 1 voice, 2 SE), bank, the cue last requested
+        Raw raw[0x100]{};
+        read_blocks(raw);
         for (int k = 0; k < 0x100; ++k)
-          if (uint8_t* b = (uint8_t*)blocks[k]; b && *(int*)(b + 0x30) >= 0)
-            s += std::format("all {} type {} bank {} cue {}\n", k, *(int*)(b + 0x34), *(int*)(b + 0x30), *(int*)(b + 0x3C));
-      });
+          if (raw[k].blk && raw[k].bank >= 0) s += std::format("all {} type {} bank {} cue {}\n", k, raw[k].type, raw[k].bank, raw[k].cue);
+      }
       for (int k = 0; k < 0x100; ++k)
         if (g_slot[k].bank >= 0) s += std::format("block {} bank {} cue {} status {}\n", k, g_slot[k].bank, g_slot[k].cue, g_slot[k].status);
       for (uint64_t t : g_starts) s += std::format("start {} ms ago\n", now - t);

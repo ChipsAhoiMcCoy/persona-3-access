@@ -11,7 +11,6 @@
 #include "hooks.h"
 #include "msg.h"
 #include "seh.h"
-#include "speech.h"
 #include "ue/scan.h"
 #include <algorithm>
 #include <format>
@@ -110,6 +109,7 @@ class MailScreen : public MenuScreen {
       int mode = (int)dev::arg_int(r, "mode", 0), on = (int)dev::arg_int(r, "flag", 0);
       auto out = std::make_shared<std::string>("no ui manager\n");
       hooks::run_on_game_thread([=] {
+        if (!ue::known_build()) { *out = "another build of the game\n"; return; }
         uintptr_t b = scan::exe_base();
         auto mgr = ((void* (*)())(b + 0x134dce0))();
         if (!mgr) return;
@@ -145,7 +145,7 @@ class MailScreen : public MenuScreen {
       if (m.body.empty() && flag(d, "bIsFlipToMainAnim")) return;
       std::string s = m.sender.empty() ? m.title : m.sender + ". " + m.title;
       if (!m.body.empty()) s += ". " + m.body;
-      speech::speak(s, true); said_ = s; reading_ = true;
+      say(s, true); said_ = s; reading_ = true;
       return;
     }
     if (!reading && reading_) reading_ = false;

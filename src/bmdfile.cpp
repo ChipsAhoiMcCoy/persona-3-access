@@ -12,18 +12,19 @@ namespace p3a::bmdfile {
 using namespace ue;
 
 struct Entry { const void* data; int size; std::shared_ptr<const core::bmd::File> file; };
-static std::map<UObject*, Entry> g_cache;
+static std::map<WeakObj::Key, Entry> g_cache;   // by the asset's index and name, not its address
 
 std::shared_ptr<const core::bmd::File> load(UObject* a) {
   if (!a || !is_live(a)) return nullptr;
   auto* buf = field<TArray<uint8_t>>(a, "mBuf");
   if (!buf || !buf->data || buf->num <= 0) return nullptr;
-  auto it = g_cache.find(a);
+  WeakObj::Key key = WeakObj::of(a).key();
+  auto it = g_cache.find(key);
   if (it != g_cache.end() && it->second.data == buf->data && it->second.size == buf->num) return it->second.file;
   auto f = std::make_shared<core::bmd::File>();
   // A file that does not parse is not cached: the game may still be filling or converting it in place.
   if (!guarded([&] { *f = core::bmd::parse(buf->data, (size_t)buf->num); }) || !f->ok) return nullptr;
-  g_cache[a] = Entry{buf->data, buf->num, f};
+  g_cache[key] = Entry{buf->data, buf->num, f};
   return f;
 }
 

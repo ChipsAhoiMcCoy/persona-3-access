@@ -13,6 +13,7 @@
 #include "screens/menu.h"
 #include "screens/util.h"
 #include "screens/camp.h"
+#include "core/reading_order.h"
 #include "core/strings.h"
 #include "log.h"
 #include "poi.h"
@@ -57,24 +58,17 @@ class TownMapScreen : public MenuScreen {
   void build_order() {
     UObject* m = map_.get();
     if (!m) return;
-    struct P { int i; float x, y; };
-    std::vector<P> ps;
+    std::vector<core::Spot> ps;
     for (int i = 0; i < kCount; ++i) {
       auto* v = (float*)((uint8_t*)m + 0x3950 + i * 12);
       if (selectable(i)) ps.push_back({i, v[0], v[1]});
     }
     if (ps.empty()) return;
     // Rows: places within 80 px of the row's first (topmost) place share it, read left to right.
-    std::sort(ps.begin(), ps.end(), [](auto& a, auto& b) { return a.y < b.y; });
-    for (size_t s = 0; s < ps.size();) {
-      size_t e = s + 1;
-      while (e < ps.size() && ps[e].y - ps[s].y < 80) ++e;
-      std::sort(ps.begin() + s, ps.begin() + e, [](auto& a, auto& b) { return a.x < b.x; });
-      s = e;
-    }
+    ps = core::reading_order(std::move(ps), 80);
     order_.clear();
     std::string log_line;
-    for (auto& p : ps) { order_.push_back(p.i); log_line += std::format(" {}({:.0f},{:.0f})", p.i, p.x, p.y); }
+    for (auto& p : ps) { order_.push_back(p.id); log_line += std::format(" {}({:.0f},{:.0f})", p.id, p.x, p.y); }
     log::writef("town_map: order{}", log_line);
     for (int i : order_) who_[i] = people(i);
   }
@@ -208,9 +202,10 @@ class TownMapScreen : public MenuScreen {
   void on_tick() override {
     if (order_.empty()) build_order();
     // F (town info): read when it has settled with a new list (town_info), again after it leaves and comes back.
+    // Queued: it settles a moment after a move, and must not cut off the place just focused.
     std::string info = town_info();
     if (step() != 6) info_.clear();
-    else if (!info.empty() && info != info_) { info_ = info; speech::speak(info, true); }
+    else if (!info.empty() && info != info_) { info_ = info; say(info, false); }
   }
   void build(ui::GraphBuilder& b) override {
     b.begin_stop("town");
@@ -310,9 +305,8 @@ class AreaMapScreen : public Screen {
     auto* list = sel ? (TArray<uint8_t>*)(sel + 0xD0) : nullptr;
     return list && list->num == 0 && world::player();
   }
-  void enter() override { speech::speak(describe(), true); }
+  void enter() override { screens::set_keys(strings::kAreaMapKeys); speech::speak(describe(), true); }
   std::string describe() override {
-    screens::set_keys(strings::kAreaMapKeys);
     std::string a = poi::area_name();
     return a.empty() || a == strings::kUnknownArea ? std::string(strings::kAreaMap) : std::format("{}, {}", strings::kAreaMap, a);
   }

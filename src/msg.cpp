@@ -8,6 +8,7 @@
 //   BmdPageToFString(FString* out, first line) renders a page to plain text (the game allocates out's buffer).
 #include "msg.h"
 #include "msg_render.h"
+#include "core/page_text.h"
 #include "core/speech_text.h"
 #include "core/text_clean.h"
 #include "core/strings.h"
@@ -38,11 +39,13 @@ static void** g_gmalloc;   // FMalloc** (GMalloc)
 static int g_free_slot = -1;
 static std::mutex g_mu;
 static Current g_current;
-struct Seen { void* page = nullptr; void* sel_obj = nullptr; uint64_t seq = 0; std::string spoken, chosen; std::set<std::string> said;
+// What the mod has read of one window. `page` is the address of the page read last, only ever compared with the
+// window's current one; `sel_obj` is the choice list read last (index -1: none).
+struct Seen { void* page = nullptr; WeakObj sel_obj; uint64_t seq = 0; std::string spoken, chosen; std::set<std::string> said;
               int tut_page = -1; };
 // What a window said is forgotten when it closes (tick): the game reuses its proc and page for the next notice (the
 // camp Persona list's "already equipped", the same text each Enter, was read only the first time, 2026-10-31).
-static std::map<UObject*, Seen> g_seen;   // keyed by UMsgProcItem (live this tick only)
+static std::map<WeakObj::Key, Seen> g_seen;   // by UMsgProcItem (its index and name, not its address)
 static uint64_t g_pages_spoken = 0;
 
 // A page is compared with its digits blanked (core::no_digits): a countdown rewrites its page every second ("Settings
@@ -133,9 +136,14 @@ static std::string g_last_who;   // the last named speaker in this session: a wi
 static bool may_be_voiced(const std::string& kind) {
   return settings::get(settings::VoicedLines) != settings::VoicedRead && kind != "System" && kind != "Tutorial" && kind != "Select";
 }
-// A story cut-in's description was read since the last dialogue line: that line queues after it (cutin.cpp).
+// A scene's description (a story cut-in, a full-screen picture) was read since the last dialogue line: that line
+// queues after it.
 static bool g_after_cutin = false;
-void cutin_said() { g_after_cutin = true; }
+void say_description(const char* text) {
+  if (!text || world::scene_fast()) return;   // fast-forward reads no dialogue either
+  speech::speak(text, false);
+  g_after_cutin = true;
+}
 static bool may_interrupt() { return !std::exchange(g_after_cutin, false); }
 static void voiced(const Pending& p) {
   if (settings::get(settings::VoicedLines) == settings::VoicedName && !p.who.empty()) speech::speak(p.who, may_interrupt());
@@ -166,18 +174,13 @@ static bool g_hush = false;
 // FE F7 61 02 01 01 01 01 01 01 01..., where the Mysterious Boy's lines count 02, 03, ...; 2026-11-03).
 // The field's support talk (MsgAssist) opens with the same function and another first argument (FE F7 61 03 ..): `any`
 // takes any first argument, so that a line of chatter with a cue counts as voiced (2026-11-06).
+// The walk itself is core::declares_voice; the data has no length here, and the walk looks at its first 96 bytes'
+// worth of functions (each read stays within 128 bytes).
 static bool declares_voice(void* page, bool any = false) {
   bool v = false;
   guarded([&] {
     uint8_t* d = page ? *(uint8_t**)((uint8_t*)page + 0x20) : nullptr;
-    if (!d) return;
-    for (int i = 0; i < 96 && d[i] == 0xFE;) {
-      uint8_t f = d[i + 1];
-      int argc = (f & 0x0F) - 1;
-      if ((f & 0xF0) != 0xF0 || argc < 0) return;
-      if (d[i + 2] == 0x61 && argc >= 4 && (any || (d[i + 3] == 0x02 && d[i + 4] == 0x01))) { v = d[i + 9] != 0x01 || d[i + 10] != 0x01; return; }
-      i += 3 + argc * 2;
-    }
+    if (d) v = core::declares_voice(d, 128, any);
   });
   return v;
 }
@@ -315,8 +318,8 @@ static bool read_window(Tick& tk, Seen& s, UObject* item, UObject* sel) {
     // A tutorial of several pages says the first one's position too, like the pages turned to.
     if (tut_page >= 0 && tut_pages > 1 && tut_pages < 64 && tut_page < tut_pages) line = core::position(line, (size_t)tut_page + 1, (size_t)tut_pages);
     if (cur.kind != "System" || !just_said(line)) {   // dialogue may repeat a line ("...") on purpose
-      // The log always names the speaker.
-      say_page(s, line, named ? who : std::string(), hinted(spoken_line(who, text)), text, cur.kind, page, cue, page);
+      // The log always names the speaker (and never holds a System question, so the key hint is not in it).
+      say_page(s, line, named ? who : std::string(), spoken_line(who, text), text, cur.kind, page, cue, page);
       if (!g_hush) g_last_speaker = who;   // an unspoken line named nobody: the next line still names its speaker
     } else {
       s.spoken = text;
@@ -350,8 +353,9 @@ static bool read_window(Tick& tk, Seen& s, UObject* item, UObject* sel) {
         // and 27, without their positions, 2026-10-29).
         std::string said = hinted(c.text);
         if (tut_page > 0 && tut_page < tut_pages && tut_pages < 64) said = core::position(said, (size_t)tut_page + 1, (size_t)tut_pages);
-        // The same speaker goes on: not named again.
-        say_page(s, said, {}, spoken_line(who, c.text), c.text, cur.kind, page, cue, c.obj);
+        // The same speaker goes on: not named again. The page object the ring recorded may be gone by now: its
+        // icons are looked at only when it is the page the window holds.
+        say_page(s, said, {}, spoken_line(who, c.text), c.text, cur.kind, page, cue, c.obj == page ? page : nullptr);
         cur.text = c.text;
       } else if (buf && c.buf == buf && no_digits(c.text) == no_digits(s.spoken)) {
         s.spoken = c.text;   // a countdown ticked: keep the current number for a re-read
@@ -385,19 +389,20 @@ static void read_choices(Tick& tk, Seen& s, UObject* sel) {
     uint32_t idx = (uint32_t)screens::ListCursor((uint8_t*)sel + 0x60).index();
     auto ch = choices_of(sel);
     cur.open = true; cur.blocking = true; cur.choices = ch; cur.choice = (int)idx;
-    if (s.sel_obj != sel) {
+    WeakObj list = WeakObj::of(sel);
+    if (!(s.sel_obj == list)) {
       // A new choice list: the focused entry with its position, once (after the page it answers), when every entry
       // has its text -- the entries are empty for a frame or two after the list appears, like pages.
       if (core::all_filled(ch)) {
         if (idx < ch.size()) say_after(choice_line(ch, idx));
-        s.sel_obj = sel;
+        s.sel_obj = list;
       }
     }
     // Moves are the choice menu's (screens/choice.cpp): it speaks them from its own focus.
     if (idx < ch.size() && !ch[idx].empty()) s.chosen = ch[idx];
-  } else if (s.sel_obj) {   // the choice list closed: the answer goes in the log
+  } else if (s.sel_obj.index >= 0) {   // the choice list closed: the answer goes in the log
     remember("Choice", s.chosen);
-    s.sel_obj = nullptr; s.chosen.clear();
+    s.sel_obj = WeakObj{}; s.chosen.clear();
   }
 }
 
@@ -449,13 +454,15 @@ void tick() {
   Tick tk;
   tk.in_battle = watch::get(battle) != nullptr;
   Current& cur = tk.cur;
-  std::map<UObject*, Seen> next;
+  std::map<WeakObj::Key, Seen> next;
   for (int i = 0; i < procs->num; ++i) {
     UObject* proc = procs->data[i];
     if (!is_live(proc)) continue;
     UObject* item = get<UObject*>(proc, "pMsgItem");
     UObject* sel = get<UObject*>(proc, "pSelItem");
-    Seen s = g_seen.count(proc) ? g_seen[proc] : Seen{};
+    WeakObj::Key key = WeakObj::of(proc).key();
+    auto seen = g_seen.find(key);
+    Seen s = seen != g_seen.end() ? seen->second : Seen{};
     g_hush = false;
     bool has_text = item && is_live(item) && read_window(tk, s, item, sel);
     // The window closed (its proc's state +0x30 at 7 closing / 8 closed, or no item): what it said is forgotten. A
@@ -466,9 +473,9 @@ void tick() {
       s.page = nullptr; s.spoken.clear(); s.said.clear(); s.tut_page = -1;
     }
     read_choices(tk, s, sel);
-    next[proc] = s;
+    next[key] = s;
   }
-  for (auto& [proc, old] : g_seen) if (old.sel_obj && !next.count(proc)) remember("Choice", old.chosen);
+  for (auto& [proc, old] : g_seen) if (old.sel_obj.index >= 0 && !next.count(proc)) remember("Choice", old.chosen);
   // The page left the screen before a voice began: the next voice (the party's chatter, which replaces no pending page) is
   // not its own.
   if (!tk.pending_showing) g_pending.active = false;

@@ -23,8 +23,9 @@ void repeat();   // speak the current page again
 // mod's reading stops at once, so a page skipped (or a choice made) feels instant (game thread).
 void player_pressed();
 uint32_t press_count();   // how many such presses so far: a screen that acts on the player's confirm compares it
-// A story cut-in's description was just read (cutin.cpp): the next dialogue line queues after it, not over it.
-void cutin_said();
+// Reads a scene's description (a story cut-in, a full-screen picture), queued; the next dialogue line then queues
+// after it, not over it. Nothing is read for a null text, or while the scene is fast-forwarded (game thread).
+void say_description(const char* text);
 
 // Every BMD page the game builds (dialogue pages, UI descriptions, help lines), rendered to text, newest last.
 struct Created { uint64_t seq; uint64_t ms; void* wrapper; int dialog; int page; std::string text; void* buf = nullptr; void* data = nullptr; void* obj = nullptr; };   // obj: the FBmdPage

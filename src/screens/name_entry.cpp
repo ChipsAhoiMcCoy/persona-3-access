@@ -9,11 +9,15 @@
 // AUINameEntryDraw +0x2D1 (bIsFinishInAnim) the opening animation is over; +0x2D4 (bIsKeyOutAnim) is set by H (exe+0x14b9210
 // state 6, which also opens UI type 6 for "Did I spell that correctly?"); the draw and the actor outlive the contract, so
 // that is where it ends.
-// The screen is a vertical list from the start (the user's call, 2026-11-04): the two names, mirrored to +0x2A0 (the
-// game's own Left / Right steps it), and Done, which presses the game's H (pad Menu; the game ignores it while a name is
-// blank). The game would open the fields by itself in a row: the mod clears its two flags, so a field opens only on
-// Enter (pad A, which opens the same text field) and the first name's commit leaves the cursor where it was. While
-// typing the game has the keys and core::TextField reads the box like a screen reader's own edit field.
+// AUINameEntryDraw +0x34A / +0x34B: set by a move of the field cursor, +0x34A (and +0x34B cleared) when it goes to the
+// last name, +0x34B (and +0x34A cleared) when it goes to the first.
+// The screen is a vertical list from the start (the user's call, 2026-11-04): the two names, mirrored to +0x2A0, and
+// Done, which presses the game's H (pad Menu; the game ignores it while a name is blank). The field cursor is written
+// as the list state's own Left / Right does it (the state's tick, exe+0x14b9770 case 4): the cursor sound, the draw's
+// two flags, then the cursor. The game would open the fields by itself in a row: the mod clears its two flags
+// (+0x334, +0x340), so a field opens only on Enter (pad A, which opens the same text field) and the first name's
+// commit leaves the cursor where it was. While typing the game has the keys and core::TextField reads the box like a
+// screen reader's own edit field.
 #include "screens/menu.h"
 #include "screens/util.h"
 #include "core/strings.h"
@@ -73,7 +77,8 @@ class NameEntryScreen : public MenuScreen {
   std::string name_or_blank(int f) { std::string n = name(f); return n.empty() ? std::string(strings::kBlank) : n; }
   // The game opens its fields by itself on these two flags; here a field opens on the player's Enter only.
   void stop_opening_fields() { if (uint8_t* n = ne()) { n[0x334] = 0; n[0x340] = 0; } }
-  // The first name's commit moved the game's cursor to a blank last name; back as the game's own move does it.
+  // The field cursor put on field f the way the game's own move writes it (without its sound). Also for the first
+  // name's commit, which moved the game's cursor on to a blank last name: back to the field it was on.
   void back_to_field(int f) {
     uint8_t* n = ne();
     uint8_t* d = draw();
@@ -93,10 +98,15 @@ class NameEntryScreen : public MenuScreen {
 
  public:
   NameEntryScreen() {
-    fields_.horizontal = true;
-    fields_.count = 2;
     fields_.keep_edges = true;
     fields_.ready = [this] { return list_up(); };
+    fields_.set = [this](int f) {
+      if (!list_up() || (f != 0 && f != 1)) return false;
+      if (cursor() == f) return true;
+      cursor_sound();
+      back_to_field(f);
+      return true;
+    };
     done_.keep_edges = true;
   }
   const char* id() const override { return "name_entry"; }
@@ -124,8 +134,11 @@ class NameEntryScreen : public MenuScreen {
       // A field opened for typing: its name and what is in it.
       std::string t = field_text();
       field_.open(t);
-      speech::speak(std::format("{}. {}", field_name(f), t.empty() ? strings::kTypeThenEnter() : t), true);
+      say(std::format("{}. {}", field_name(f), t.empty() ? strings::kTypeThenEnter() : t), true);
     } else if (keys) {
+      // The echo of typing is spoken directly, here and in on_game_key: the game has the keys, so a menu's guard
+      // against saying a line twice would take the second of two equal echoes (a doubled letter, the same character
+      // stepped over again) for a repeat.
       std::string t = field_text();
       if (t != field_.text()) speech::speak(field_.edited(t), true);
     } else if (!ty && typed_) {
@@ -159,7 +172,7 @@ class NameEntryScreen : public MenuScreen {
       b.add_item(slot("fields", i), game_item(fields_, i, [this, i] { return std::format("{}, {}", field_name(i), name_or_blank(i)); }));
     b.add_item(slot("done", 0), item([] { return std::string(strings::kNameDone); }, [this] {
       if (both_named()) press_game('H', XINPUT_GAMEPAD_START);
-      else speech::speak(strings::kNamesMissing, true);
+      else say(strings::kNamesMissing, true);
     }));
     b.set_start(slot("fields", cursor()));
   }

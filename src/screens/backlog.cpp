@@ -5,6 +5,7 @@
 // session (msg::history), counted from the newest; entries older than this session are said to be so.
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "core/log_index.h"
 #include "core/speech_text.h"
 #include "core/strings.h"
 #include "log.h"
@@ -51,9 +52,8 @@ class BacklogScreen : public MenuScreen {
   int skip_ = 0;
   std::string entry(int c, int n) {
     auto& h = msg::history();
-    int from_end = n - 1 - c + skip_;   // 0 = the newest record
-    if (from_end < 0 || from_end >= (int)h.size()) return strings::kLogEarlier;
-    return h[h.size() - 1 - from_end];
+    int i = core::log_record_index(c, n, skip_, (int)h.size());
+    return i < 0 ? std::string(strings::kLogEarlier) : h[(size_t)i];
   }
  public:
   BacklogScreen() {

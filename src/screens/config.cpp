@@ -5,6 +5,7 @@
 // a value is a sprite, so values come from that struct, not from the drawn text.
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "core/key_name.h"
 #include "core/strings.h"
 #include "core/text_clean.h"
 #include "log.h"
@@ -18,17 +19,6 @@ using namespace ue;
 
 namespace {
 struct Row { std::string title, desc, value; bool ok = false; };
-
-// Keyboard key codes of the key configuration's Value (measured 2026-10-28 against the defaults: 432 W, 442 S, 441 A,
-// 443 D, 469 Space, 452 C, 431 Q, 433 E, 454 B): the letters in keyboard rows from 431.
-std::string key_name(int v) {
-  static const char* kRows = "QWERTYUIOPASDFGHJKLZXCVBNM";
-  if (v >= 431 && v <= 440) return std::string(1, kRows[v - 431]);
-  if (v >= 441 && v <= 449) return std::string(1, kRows[10 + v - 441]);
-  if (v >= 450 && v <= 456) return std::string(1, kRows[19 + v - 450]);
-  if (v == 469) return "Space";
-  return std::format("{} {}", strings::kKeyCode, v);
-}
 
 std::string take(FString* s) { return s ? core::clean_text(msg::take_fstring(*s)) : std::string(); }
 }  // namespace
@@ -112,7 +102,9 @@ class ConfigScreen : public MenuScreen {
       case 2: r.value = call_str(d, "GetSelLangText", value); break;                       // DCPT_LANGUAGE
       case 4: r.value = call_str(d, "GetBGMText", value); break;                           // DCPT_BGM: 0 "Default"
       default:
-        if (list == 10) r.value = key_name(value);                                          // KEY_CONFIG
+        // KEY_CONFIG: the Value is the key's code (measured 2026-10-28 against the defaults: 432 W, 442 S, 441 A,
+        // 443 D, 469 Space, 452 C, 431 Q, 433 E, 454 B).
+        if (list == 10) r.value = core::config_key_name(value);
         else r.value = !label.empty() ? label : std::to_string(value);
     }
     if (!enabled) r.value += (r.value.empty() ? "" : ", ") + std::string(strings::kUnavailable);
