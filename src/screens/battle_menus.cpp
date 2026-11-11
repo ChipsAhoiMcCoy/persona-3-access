@@ -25,6 +25,7 @@
 #include "input.h"
 #include "msg.h"
 #include "seh.h"
+#include "settings.h"
 #include "speech.h"
 #include "ue/scan.h"
 #include <windows.h>
@@ -557,6 +558,12 @@ void step(int dir) {
   if (!l.empty()) speech::speak(l, true);
 }
 void frame() {
+  // The mod's settings menu is over everything: the stick walks its focused row's details.
+  if (settings::is_open()) {
+    input::claim_right_stick(true);
+    if (int d = input::take_right_flick()) settings::detail_step(-d);
+    return;
+  }
   guarded([] { MenuScreen* m = detail_menu(); detail_landing(m, m ? nullptr : focused_unit()); });
   bool on = in_focus() && !input::modal();
   input::claim_right_stick(on);

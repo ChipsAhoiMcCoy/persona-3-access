@@ -19,5 +19,8 @@ void set(Id id, int value);   // applies it (wall tones, volume) and saves
 // The menu: modal while open (the game gets no keys or buttons; the field keeps running).
 void open();
 void close();
+bool is_open();
+// The focused row's details, the next (+1) or previous (-1) line: the row, then what the setting does or the sound means.
+void detail_step(int dir);
 void install();   // loads and applies the file, binds nothing (commands.cpp binds F2), dev route /settings
 }  // namespace p3a::settings

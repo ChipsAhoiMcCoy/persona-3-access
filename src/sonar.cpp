@@ -201,6 +201,16 @@ bool preview(settings::Id id) {
   return true;
 }
 
+void demo(int kind, bool marked, int side, bool chime) {
+  audio::Spot s{};   // straight ahead
+  s.dist_m = 2.0f;
+  if (side == 1) { s.right = -1; s.ahead = 0; s.pan = -1; }
+  else if (side == 2) { s.right = 1; s.ahead = 0; s.pan = 1; }
+  else if (side == 3) s.ahead = -1;
+  bool lower = side == 3 && settings::on(settings::BehindPitch);
+  audio::play(cue(kind, marked), chime ? 1.2f : 1.0f, s, chime ? audio::Bus::Cues : audio::Bus::Sonar, lower ? kBehindRate : 1.0f);
+}
+
 void install() {
   dev::route("/sonar", [](const dev::Request& r, int&) {
     // /sonar | ?play=person (its sound, ahead) | ?trim=person,-3 (a kind's level in dB)

@@ -11,6 +11,8 @@
 - F1 mentions the details keys wherever the focused row has details.
 - Choosing who gets an item, casts or receives a skill, or changes gear no longer reads each member's level.
 - The mod settings are in five categories instead of one list of 27: Exploring, Sonar, Sound, Dialogue and movies, Controls and help. Tab and Shift+Tab, Page Down and Page Up, or RB and LB change category.
+- Mod settings: every setting says what it does. The right stick down, or Ctrl+Down, reads it; the stick up, or Ctrl+Up, goes back to the row.
+- Mod settings: a new Sound test category. Space or A on a row plays one of the mod's sounds, and its details say what the sound means: the sonar's five sounds, the selected point's tick, a sound from your left, your right and behind you, the beacon, the nearby chime, the Shadow's growl, alarm and lost-you sound, the strike-reach rings, the four wall tones and the controller layer's tick.
 - Mod settings: pressing on at the first or last row says the row again without the cursor sound, as the game's menus do.
 
 ### Fixes

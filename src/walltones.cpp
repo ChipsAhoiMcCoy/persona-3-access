@@ -20,6 +20,7 @@
 #include "msg.h"
 #include "screens/screen.h"
 #include "world.h"
+#include <windows.h>
 #include <algorithm>
 #include <cmath>
 #include <format>
@@ -125,7 +126,24 @@ static float probe(const FVector& p, int d) {
 // a story scene).
 static bool walking() { return world::exploring(); }
 
+// The sound test's tone: a sound's own length (1.2 s), not a wait on anything.
+static int g_demo = -1;
+static ULONGLONG g_demo_until = 0;
+void demo(int dir) {
+  if (dir < 0 || dir > 3) return;
+  g_demo = dir;
+  g_demo_until = GetTickCount64() + 1200;
+}
+
 void tick() {
+  if (g_demo >= 0) {
+    if (GetTickCount64() < g_demo_until) {
+      ensure_loaded();
+      for (int i = 0; i < 4; ++i) audio::set_loop_volume(kToneId + i, i == g_demo ? 0.6f * g_gain : 0.0f);
+      return;
+    }
+    g_demo = -1;
+  }
   if (!g_enabled || !walking()) { silence(); return; }
   ensure_loaded();
   g_people.clear();

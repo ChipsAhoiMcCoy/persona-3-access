@@ -2,6 +2,7 @@
 #include "audio.h"
 #include "core/graph_builder.h"
 #include "core/navigator.h"
+#include "core/sonar_cues.h"
 #include "core/strings.h"
 #include "devserver.h"
 #include "hooks.h"
@@ -147,6 +148,57 @@ static void change(Id id, int delta) {
 enum Category { CatExploring, CatSonar, CatSound, CatDialogue, CatControls, CatCount };
 static const char* const kCategoryNames[CatCount] = {strings::kCatExploring, strings::kCatSonar, strings::kCatSound,
                                                      strings::kCatDialogue, strings::kCatControls};
+// What a setting does: the second line of its details.
+static const char* help(Id id) {
+  switch (id) {
+    case WallTones: return strings::kHelpWallTones;
+    case Sonar: return strings::kHelpSonar;
+    case SonarScope: return strings::kHelpSonarScope;
+    case SonarRange: return strings::kHelpSonarRange;
+    case SonarExits: case SonarDoors: case SonarPeople: case SonarShops: case SonarThings: return strings::kHelpSonarKind;
+    case SonarVolume: return strings::kHelpSonarVolume;
+    case Beacon: return strings::kHelpBeacon;
+    case NearbyChimes: return strings::kHelpNearbyChimes;
+    case ShadowAlerts: return strings::kHelpShadowAlerts;
+    case Hrtf: return strings::kHelpHrtf;
+    case BehindPitch: return strings::kHelpBehindPitch;
+    case PoiRange: return strings::kHelpPoiRange;
+    case MasterVolume: return strings::kHelpMasterVolume;
+    case SoundVolume: return strings::kHelpSoundVolume;
+    case WallVolume: return strings::kHelpWallVolume;
+    case TriggerDelay: return strings::kHelpTriggerDelay;
+    case EntryHints: return strings::kHelpEntryHints;
+    case VoicedLines: return strings::kHelpVoicedLines;
+    case VoiceEndSound: return strings::kHelpVoiceEndSound;
+    case Subtitles: return strings::kHelpSubtitles;
+    case AudioDescription: return strings::kHelpAudioDescription;
+    case DescriptionVolume: return strings::kHelpDescriptionVolume;
+    default: return "";
+  }
+}
+// The sound test (the last category): row i of strings::kSoundTests plays its sound, from the menu, wherever the
+// player is and whatever is switched off. In the order of that table.
+static void play_test(int i) {
+  using core::SignalCue;
+  const audio::Spot ahead{};
+  switch (i) {
+    case 0: case 1: case 2: case 3: case 4: sonar::demo(i, false); break;
+    case 5: sonar::demo(2, true); break;
+    case 6: sonar::demo(2, false, 1); break;
+    case 7: sonar::demo(2, false, 2); break;
+    case 8: sonar::demo(2, false, 3); break;
+    case 9: audio::signal((int)SignalCue::Beacon, 1.0f, ahead); break;
+    case 10: sonar::demo(4, false, 0, true); break;
+    case 11: audio::signal((int)SignalCue::Shadow, 1.4f, ahead); break;
+    case 12: audio::signal((int)SignalCue::Shadow, 1.7f, ahead, 1.3f); break;
+    case 13: audio::signal((int)SignalCue::Spotted, 1.4f, ahead); break;
+    case 14: audio::signal((int)SignalCue::Lost, 1.1f, ahead); break;
+    case 15: audio::signal_here((int)SignalCue::Reach, 1.2f); break;
+    case 16: audio::signal_here((int)SignalCue::Ambush, 1.2f); break;
+    case 17: case 18: case 19: case 20: walltones::demo(i - 17); break;
+    case 21: audio::signal((int)SignalCue::Layer, 0.9f, ahead); break;
+  }
+}
 static Category category(Id id) {
   switch (id) {
     case WallTones: case WallVolume: case Beacon: case NearbyChimes: case ShadowAlerts: case PoiRange: return CatExploring;
@@ -176,16 +228,31 @@ struct Menu : ui::Screen {
         v->on_adjust = [id](int sign, bool) { change(id, sign); };
         v->on_activate = [id] { change(id, 0); };
         v->state_text = [id] { return label(id); };
+        v->detail_lines = [id] { return std::vector<std::string>{std::format("{}, {}", kDefs[id].name, label(id)), help(id)}; };
         b.add_item(ui::ControlId::structural(kDefs[i].key), v);
       }
       if (c == CatControls) {
         auto v = std::make_shared<ui::NodeVtable>();
         v->announcements = {ui::NodeAnnouncement([] { return std::string(strings::kModKeys); }, false, k::kLabel)};
         v->on_activate = [] { voice::play_system_sound(voice::CueDecide); speech::speak(keys::help(), true); };
+        v->detail_lines = [] { return std::vector<std::string>{strings::kModKeys, strings::kHelpModKeys}; };
         b.add_item(ui::ControlId::structural("mod_keys"), v);
       }
       b.pop_context();
     }
+    // The sound test: Space or A plays the row's sound; its details say what the sound means. No cursor sound on
+    // these rows' activation: only the sound asked for is heard.
+    b.begin_stop("sound_test");
+    b.push_context(strings::kCatSoundTest);
+    for (int i = 0; i < (int)std::size(strings::kSoundTests); ++i) {
+      const strings::SoundTest& t = strings::kSoundTests[i];
+      auto v = std::make_shared<ui::NodeVtable>();
+      v->announcements = {ui::NodeAnnouncement([&t] { return std::string(t.name); }, false, k::kLabel)};
+      v->on_activate = [i] { play_test(i); };
+      v->detail_lines = [&t] { return std::vector<std::string>{t.name, t.help}; };
+      b.add_item(ui::ControlId::structural(std::format("test{}", i)), v);
+    }
+    b.pop_context();
   }
 };
 static Menu g_menu;
@@ -232,8 +299,29 @@ static void typed(char16_t c) {
   nav().ensure_focus();
 }
 
+// The focused row's details, a line per press: the row itself, then what it does (the detail buffer of the game's
+// menus: the right stick up and down, Ctrl+Up and Ctrl+Down). Landing on another row starts at its top.
+static std::optional<ui::ControlId> g_detail_on;
+static int g_detail_line = 0;
+void detail_step(int dir) {
+  if (!g_open) return;
+  const ui::GraphNode* n = nav().focused_node();
+  if (!n || !n->vtable || !n->vtable->detail_lines) return;
+  if (!g_detail_on || !(*g_detail_on == n->id)) { g_detail_on = n->id; g_detail_line = 0; }
+  auto lines = n->vtable->detail_lines();
+  std::erase_if(lines, [](const std::string& l) { return l.empty(); });
+  if (lines.empty()) return;
+  g_detail_line = std::clamp(g_detail_line + dir, 0, (int)lines.size() - 1);
+  speech::speak(lines[g_detail_line], true);
+}
+bool is_open() { return g_open; }
+
 static void on_key(uint32_t vk, bool repeat) {
   using namespace ui::ui_actions;
+  if ((vk == VK_UP || vk == VK_DOWN) && (GetKeyState(VK_CONTROL) & 0x8000)) {
+    if (!repeat) detail_step(vk == VK_DOWN ? 1 : -1);
+    return;
+  }
   switch (vk) {
     case VK_UP: arrow(Up, true); break;
     case VK_DOWN: arrow(Down, false); break;

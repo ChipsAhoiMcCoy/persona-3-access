@@ -100,7 +100,9 @@ highlight (the stick, the mouse, a page change) the mod follows it.
 F2 (or both triggers and View) opens the mod's settings from anywhere; the game's own Config screen lists it with
 its keys (F1 there). While the settings are open the game gets none of your keys or buttons, but it keeps running:
 in Tartarus, open them from the camp menu's Config to be safe. The settings are in five categories, each a short
-list of its own: Exploring, Sonar, Sound, Dialogue and movies, Controls and help. Tab and Shift+Tab (Page Down and
+list of its own: Exploring, Sonar, Sound, Dialogue and movies, Controls and help. A sixth, Sound test, plays the
+mod's sounds (below). Every row says what it does on the details keys: the right stick down, or Ctrl+Down, reads
+it, and the stick up or Ctrl+Up goes back to the row. Tab and Shift+Tab (Page Down and
 Page Up; RB and LB) go to the next and previous category, wrapping, and its name is said as you land. It works like
 every other menu: the up and down arrows
 (D-pad) choose (at a category's first or last row a further press says the row again, without the cursor sound), Home and End jump to the first and last row, typing letters jumps to a setting in the category by name, left
@@ -114,6 +116,12 @@ Sonar holds everything named Sonar. Sound holds 3D sound for headphones, Lower p
 and Beeps and chimes volume. Dialogue and movies holds Voiced dialogue, When a line ends, Read cutscene subtitles and
 the two Audio description settings. Controls and help holds Controller trigger delay, Menu key hints on entry and
 Mod keys.
+
+Sound test is where to learn the mod's sounds. Space or Enter (A) on a row plays its sound, wherever you are and
+whatever is switched off, and the details keys say what the sound means. It holds the five sonar sounds, the tick
+that marks the selected point, the same sound from your left, your right and behind you, the beacon, the nearby
+chime, the Shadow's growl (plain and hunting you), the Shadow alarm and the sound of a Shadow losing you, the two
+strike-reach rings, the four wall tones and the controller layer's tick. They play at the volumes set under Sound.
 
 - Wall tones: on, off
 - Sonar: on, off (also F3): every point of interest near you repeats its own sound from where it is, faster and louder the closer it is (see Sounds)
