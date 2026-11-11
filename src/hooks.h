@@ -9,11 +9,11 @@ namespace p3a::hooks {
 // transaction (a thread sitting in a prologue being rewritten is moved), so this is safe at any time.
 bool attach(void** orig, void* detour, const char* label);
 void detach(void** orig, void* detour);
-void detach_all();   // unload: removes every attach still live
+void detach_all();   // unload: removes every detour still in (the modules', then the Win32 layer's)
 
-// The Win32 layer: focus defang (P3A_NOFOCUS=1, the dev loop) and the low-level keyboard hook refusal.
+// The Win32 layer: the frame's pump (PeekMessageW), focus defang (P3A_NOFOCUS=1, the dev loop) and the low-level
+// keyboard hook refusal. Its detours are recorded with the others; detach_all removes them.
 bool install();
-void remove();
 uint64_t key_ms();         // when the game window last got a key press, or 0
 
 // Game-thread work. `tick()` is called once per game frame by pump(); it drains the
@@ -35,5 +35,8 @@ HWND game_window();   // the game's top-level window (UnrealWindow), or null bef
 // Keyboard messages reach the filter first (game thread); returning true swallows the message from the game.
 using KeyFilter = bool (*)(UINT msg, WPARAM vk, LPARAM lp);
 void set_key_filter(KeyFilter f);
+// Called (game thread) when the game window is told it loses the keyboard or stops being the active window. Never in
+// the dev loop's no-focus mode, which drops those messages: there every key is posted, its key-up with it.
+void set_focus_lost(void (*cb)());
 std::string counters();
 }  // namespace p3a::hooks

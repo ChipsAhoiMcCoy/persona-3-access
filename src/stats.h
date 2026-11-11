@@ -12,7 +12,5 @@ int money();                                        // the wallet, or -1
 void tick();                                        // announces a stat going up or ranking up, and yen gained or spent
 int last_up();                                      // the stat whose points rose last and no Stats up! panel has shown, or -1
 void up_shown();                                    // a Stats up! panel has shown it
-void* flow_command(const char* name);               // a flowscript command's function, by its name (P3R.exe's command table)
-int flow_int_arg(uint8_t* ctx);                     // a flowscript command's first argument as an int (0 if none)
-void install();                                     // finds GetHeroParameterHandle; /stats dev route
+void install();                                     // finds GetHeroParameterHandle, hooks the money notice's flowscript command; /stats dev route
 }  // namespace p3a::stats

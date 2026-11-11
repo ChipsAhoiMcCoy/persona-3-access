@@ -2,10 +2,10 @@
 #include "audio.h"
 #include "core/graph_builder.h"
 #include "core/navigator.h"
+#include "core/settings_text.h"
 #include "core/sonar_cues.h"
 #include "core/strings.h"
 #include "devserver.h"
-#include "hooks.h"
 #include "input.h"
 #include "keys.h"
 #include "log.h"
@@ -26,40 +26,56 @@
 
 namespace p3a::settings {
 enum class Unit { Toggle, Meters, Percent, Ms, Choice };
-struct Def { const char* key; const char* name; Unit unit; std::vector<int> values; int def; std::vector<const char*> labels = {}; };
-// One row per Id, in its order: what the file calls it, what the menu says, the values it cycles through.
+// The menu's categories (the user's call, 2026-11-11: one list of 27 rows had grown too long). Each is a stop of its
+// own: a short list with its own positions, its name said on landing; Tab / Shift+Tab (Page Down / Page Up, RB / LB)
+// go to the next / previous one, wrapping. A row names its category, so the table's order stays the file's.
+enum Category { CatExploring, CatSonar, CatSound, CatDialogue, CatControls, CatCount };
+static const char* const kCategoryNames[CatCount] = {strings::kCatExploring, strings::kCatSonar, strings::kCatSound,
+                                                     strings::kCatDialogue, strings::kCatControls};
+struct Def {
+  const char* key; const char* name;
+  Category cat;        // where the menu lists it
+  const char* help;    // what it does: read with its row, after the position
+  Unit unit; std::vector<int> values; int def; std::vector<const char*> labels = {};
+};
+static const std::vector<int> kPercents = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+// One row per Id, in its order: what the file calls it, what the menu says and where, the values it cycles through.
 static const Def kDefs[Count] = {
-  {"wall_tones", strings::kSetWallTones, Unit::Toggle, {0, 1}, 1},
-  {"sonar", strings::kSetSonar, Unit::Toggle, {0, 1}, 1},                    // every nearby point of interest sounds (sonar.cpp)
-  {"sonar_scope", strings::kSetSonarScope, Unit::Choice, {ScopeAll, ScopeCategory, ScopeSelected}, ScopeAll,
+  {"wall_tones", strings::kSetWallTones, CatExploring, strings::kHelpWallTones, Unit::Toggle, {0, 1}, 1},
+  // every nearby point of interest sounds (sonar.cpp)
+  {"sonar", strings::kSetSonar, CatSonar, strings::kHelpSonar, Unit::Toggle, {0, 1}, 1},
+  {"sonar_scope", strings::kSetSonarScope, CatSonar, strings::kHelpSonarScope, Unit::Choice, {ScopeAll, ScopeCategory, ScopeSelected}, ScopeAll,
    {strings::kScopeAll, strings::kScopeCategory, strings::kScopeSelected}},
   // 10 m (20 was tried for a day under the key sonar_distance: what made things seem late was the wait before a
   // thing's first sound, not the range; the user's call, 2026-11-10).
-  {"sonar_range", strings::kSetSonarRange, Unit::Meters, {5, 10, 15, 20, 30, 40}, 10},
-  {"sonar_exits", strings::kSetSonarExits, Unit::Toggle, {0, 1}, 1},
-  {"sonar_doors", strings::kSetSonarDoors, Unit::Toggle, {0, 1}, 1},
-  {"sonar_people", strings::kSetSonarPeople, Unit::Toggle, {0, 1}, 1},
-  {"sonar_shops", strings::kSetSonarShops, Unit::Toggle, {0, 1}, 1},
-  {"sonar_objects", strings::kSetSonarThings, Unit::Toggle, {0, 1}, 1},
-  {"sonar_events", strings::kSetSonarEvents, Unit::Toggle, {0, 1}, 1},
-  {"sonar_fragments", strings::kSetSonarFragments, Unit::Toggle, {0, 1}, 1},
-  {"shadow_alerts", strings::kSetShadowAlerts, Unit::Toggle, {0, 1}, 1},
-  {"hrtf", strings::kSetHrtf, Unit::Toggle, {0, 1}, 1},                    // the positional cues through Steam Audio
-  {"behind_pitch", strings::kSetBehindPitch, Unit::Toggle, {0, 1}, 1},
-  {"poi_range", strings::kSetPoiRange, Unit::Meters, {20, 40, 60, 100, 150}, 60},
-  {"master_volume", strings::kSetMasterVolume, Unit::Percent, {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, 100},
-  {"sonar_volume", strings::kSetSonarVolume, Unit::Percent, {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, 80},   // the Sonar bus
-  {"sound_volume", strings::kSetSoundVolume, Unit::Percent, {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, 60},   // the Cues bus
-  {"wall_volume", strings::kSetWallVolume, Unit::Percent, {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, 100},
-  {"trigger_delay", strings::kSetTriggerDelay, Unit::Ms, {0, 100, 150, 250}, 150},
-  {"entry_hints", strings::kSetEntryHints, Unit::Toggle, {0, 1}, 0},
-  {"voiced_lines", strings::kSetVoicedLines, Unit::Choice, {VoicedSilent, VoicedName, VoicedRead}, VoicedSilent,
+  {"sonar_range", strings::kSetSonarRange, CatSonar, strings::kHelpSonarRange, Unit::Meters, {5, 10, 15, 20, 30, 40}, 10},
+  {"sonar_exits", strings::kSetSonarExits, CatSonar, strings::kHelpSonarKind, Unit::Toggle, {0, 1}, 1},
+  {"sonar_doors", strings::kSetSonarDoors, CatSonar, strings::kHelpSonarKind, Unit::Toggle, {0, 1}, 1},
+  {"sonar_people", strings::kSetSonarPeople, CatSonar, strings::kHelpSonarKind, Unit::Toggle, {0, 1}, 1},
+  {"sonar_shops", strings::kSetSonarShops, CatSonar, strings::kHelpSonarKind, Unit::Toggle, {0, 1}, 1},
+  {"sonar_objects", strings::kSetSonarThings, CatSonar, strings::kHelpSonarKind, Unit::Toggle, {0, 1}, 1},
+  {"sonar_events", strings::kSetSonarEvents, CatSonar, strings::kHelpSonarKind, Unit::Toggle, {0, 1}, 1},
+  {"sonar_fragments", strings::kSetSonarFragments, CatSonar, strings::kHelpSonarKind, Unit::Toggle, {0, 1}, 1},
+  {"shadow_alerts", strings::kSetShadowAlerts, CatExploring, strings::kHelpShadowAlerts, Unit::Toggle, {0, 1}, 1},
+  // the positional cues through Steam Audio
+  {"hrtf", strings::kSetHrtf, CatSound, strings::kHelpHrtf, Unit::Toggle, {0, 1}, 1},
+  {"behind_pitch", strings::kSetBehindPitch, CatSound, strings::kHelpBehindPitch, Unit::Toggle, {0, 1}, 1},
+  {"poi_range", strings::kSetPoiRange, CatExploring, strings::kHelpPoiRange, Unit::Meters, {20, 40, 60, 100, 150}, 60},
+  {"master_volume", strings::kSetMasterVolume, CatSound, strings::kHelpMasterVolume, Unit::Percent, kPercents, 100},
+  {"sonar_volume", strings::kSetSonarVolume, CatSonar, strings::kHelpSonarVolume, Unit::Percent, kPercents, 80},     // the Sonar bus
+  {"sound_volume", strings::kSetSoundVolume, CatSound, strings::kHelpSoundVolume, Unit::Percent, kPercents, 60},     // the Cues bus
+  {"wall_volume", strings::kSetWallVolume, CatExploring, strings::kHelpWallVolume, Unit::Percent, kPercents, 100},
+  {"trigger_delay", strings::kSetTriggerDelay, CatControls, strings::kHelpTriggerDelay, Unit::Ms, {0, 100, 150, 250}, 150},
+  {"entry_hints", strings::kSetEntryHints, CatControls, strings::kHelpEntryHints, Unit::Toggle, {0, 1}, 0},
+  {"voiced_lines", strings::kSetVoicedLines, CatDialogue, strings::kHelpVoicedLines, Unit::Choice, {VoicedSilent, VoicedName, VoicedRead}, VoicedSilent,
    {strings::kVoicedRead, strings::kVoicedName, strings::kVoicedSilent}},
-  {"voice_end_sound", strings::kSetVoiceEndSound, Unit::Choice, {EndNext, EndPage, EndMessage, EndCursor, EndOff}, EndNext,
+  {"voice_end_sound", strings::kSetVoiceEndSound, CatDialogue, strings::kHelpVoiceEndSound, Unit::Choice, {EndNext, EndPage, EndMessage, EndCursor, EndOff}, EndNext,
    {strings::kEndNext, strings::kEndPage, strings::kEndMessage, strings::kEndCursor, strings::kOff}},
-  {"subtitles", strings::kSetSubtitles, Unit::Toggle, {0, 1}, 0},                  // the screen reader reads a cutscene's subtitles (msg.cpp)
-  {"audio_description", strings::kSetAudioDescription, Unit::Toggle, {0, 1}, 1},   // the narrator in story movies (ad.cpp)
-  {"description_volume", strings::kSetDescriptionVolume, Unit::Percent, {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, 100},
+  // the screen reader reads a cutscene's subtitles (msg.cpp)
+  {"subtitles", strings::kSetSubtitles, CatDialogue, strings::kHelpSubtitles, Unit::Toggle, {0, 1}, 0},
+  // the narrator in story movies (ad.cpp)
+  {"audio_description", strings::kSetAudioDescription, CatDialogue, strings::kHelpAudioDescription, Unit::Toggle, {0, 1}, 1},
+  {"description_volume", strings::kSetDescriptionVolume, CatDialogue, strings::kHelpDescriptionVolume, Unit::Percent, kPercents, 100},
 };
 static int g_value[Count] = {};   // load() fills it from kDefs, then the file
 
@@ -101,10 +117,10 @@ static void load() {
   if (FILE* f = _wfopen(file().c_str(), L"r")) {
     char line[256];
     while (fgets(line, sizeof line, f)) {
-      char key[128]; int v;
-      if (sscanf(line, " %127[^= ] = %d", key, &v) != 2) continue;
+      std::string key; int v;
+      if (!core::parse_setting(line, key, v)) continue;
       for (int i = 0; i < Count; ++i)   // a value the option does not offer (a hand edit) keeps the default
-        if (kDefs[i].key == std::string_view(key) && std::ranges::find(kDefs[i].values, v) != kDefs[i].values.end()) g_value[i] = v;
+        if (key == kDefs[i].key && std::ranges::find(kDefs[i].values, v) != kDefs[i].values.end()) g_value[i] = v;
     }
     fclose(f);
   }
@@ -130,11 +146,9 @@ static bool g_open = false;
 
 static void change(Id id, int delta) {
   const auto& vals = kDefs[id].values;
-  int at = 0;
-  for (size_t i = 0; i < vals.size(); ++i) if (vals[i] == g_value[id]) at = (int)i;
-  int n = (int)vals.size();
+  int at = core::value_index(vals, g_value[id]);
   // Space (0) steps forward and wraps; left and right stop at the ends.
-  int next = delta == 0 ? (at + 1) % n : std::clamp(at + delta, 0, n - 1);
+  int next = core::step_index(at, (int)vals.size(), delta);
   if (next == at) return;   // state_text says the value again
   set(id, vals[next]);
   if (id == VoiceEndSound && g_value[id] != EndNext) voice::play_end_sound();   // a preview, in place of the menu's sound
@@ -142,39 +156,6 @@ static void change(Id id, int delta) {
   else voice::play_system_sound(voice::CueOption);   // the game's Config plays it on every value change (FUN_141391c40)
 }
 
-// The categories (the user's call, 2026-11-11: one list of 27 rows had grown too long). Each is a stop of its own: a
-// short list with its own positions, its name said on landing; Tab / Shift+Tab (Page Down / Page Up, RB / LB) go to
-// the next / previous one, wrapping. By Id, so the table's order above stays the file's.
-enum Category { CatExploring, CatSonar, CatSound, CatDialogue, CatControls, CatCount };
-static const char* const kCategoryNames[CatCount] = {strings::kCatExploring, strings::kCatSonar, strings::kCatSound,
-                                                     strings::kCatDialogue, strings::kCatControls};
-// What a setting does: read with its row, after the position.
-static const char* help(Id id) {
-  switch (id) {
-    case WallTones: return strings::kHelpWallTones;
-    case Sonar: return strings::kHelpSonar;
-    case SonarScope: return strings::kHelpSonarScope;
-    case SonarRange: return strings::kHelpSonarRange;
-    case SonarExits: case SonarDoors: case SonarPeople: case SonarShops: case SonarThings: case SonarEvents: case SonarFragments:
-      return strings::kHelpSonarKind;
-    case SonarVolume: return strings::kHelpSonarVolume;
-    case ShadowAlerts: return strings::kHelpShadowAlerts;
-    case Hrtf: return strings::kHelpHrtf;
-    case BehindPitch: return strings::kHelpBehindPitch;
-    case PoiRange: return strings::kHelpPoiRange;
-    case MasterVolume: return strings::kHelpMasterVolume;
-    case SoundVolume: return strings::kHelpSoundVolume;
-    case WallVolume: return strings::kHelpWallVolume;
-    case TriggerDelay: return strings::kHelpTriggerDelay;
-    case EntryHints: return strings::kHelpEntryHints;
-    case VoicedLines: return strings::kHelpVoicedLines;
-    case VoiceEndSound: return strings::kHelpVoiceEndSound;
-    case Subtitles: return strings::kHelpSubtitles;
-    case AudioDescription: return strings::kHelpAudioDescription;
-    case DescriptionVolume: return strings::kHelpDescriptionVolume;
-    default: return "";
-  }
-}
 // The sound test (the last category): row i of strings::kSoundTests plays its sound, from the menu, wherever the
 // player is and whatever is switched off. In the order of that table.
 static void play_test(int i) {
@@ -193,16 +174,6 @@ static void play_test(int i) {
     case 18: audio::signal((int)SignalCue::Layer, 0.9f, ahead); break;
   }
 }
-static Category category(Id id) {
-  switch (id) {
-    case WallTones: case WallVolume: case ShadowAlerts: case PoiRange: return CatExploring;
-    case Sonar: case SonarScope: case SonarRange: case SonarExits: case SonarDoors: case SonarPeople: case SonarShops:
-    case SonarThings: case SonarEvents: case SonarFragments: case SonarVolume: return CatSonar;
-    case Hrtf: case BehindPitch: case MasterVolume: case SoundVolume: return CatSound;
-    case VoicedLines: case VoiceEndSound: case Subtitles: case AudioDescription: case DescriptionVolume: return CatDialogue;
-    default: return CatControls;   // TriggerDelay, EntryHints, and anything new until it is given a place
-  }
-}
 
 struct Menu : ui::Screen {
   std::string_view key() const override { return "mod_settings"; }
@@ -215,13 +186,13 @@ struct Menu : ui::Screen {
       b.push_context(kCategoryNames[c]);
       for (int i = 0; i < Count; ++i) {
         Id id = (Id)i;
-        if (category(id) != c) continue;
+        if (kDefs[i].cat != c) continue;
         auto v = std::make_shared<ui::NodeVtable>();
         // What the setting does is read with the row, after its position (the user's call, 2026-11-11: no details
         // keys in this menu).
         v->announcements = {ui::NodeAnnouncement([id] { return std::string(kDefs[id].name); }, false, k::kLabel),
                             ui::NodeAnnouncement([id] { return label(id); }, true, k::kValue),
-                            ui::NodeAnnouncement([id] { return std::string(help(id)); }, false, k::kTooltip)};
+                            ui::NodeAnnouncement([id] { return std::string(kDefs[id].help); }, false, k::kTooltip)};
         v->on_adjust = [id](int sign, bool) { change(id, sign); };
         v->on_activate = [id] { change(id, 0); };
         v->state_text = [id] { return label(id); };
@@ -372,19 +343,17 @@ void install() {
   log::writef("settings: loaded {}", log::utf8(std::u16string(f.begin(), f.end())));
   dev::route("/settings", [](const dev::Request& r, int&) {
     // /settings?set=poi_range&v=40 | ?open=1 | ?close=1
-    auto out = std::make_shared<std::string>("timeout\n");
     std::string key = dev::arg(r, "set");
     int v = (int)dev::arg_int(r, "v", 0);
     bool op = dev::has(r, "open"), cl = dev::has(r, "close");
-    hooks::run_on_game_thread([=] {
+    return dev::on_game([=] {
       for (int i = 0; i < Count; ++i) if (!key.empty() && key == kDefs[i].key) set((Id)i, v);
       if (op) open();
       if (cl) close();
       std::string s = std::format("open={} focus={}\n", g_open, focused_key());
       for (int i = 0; i < Count; ++i) s += std::format("{}={} ({})\n", kDefs[i].key, g_value[i], label((Id)i));
-      *out = s;
+      return s;
     });
-    return *out;
   }, "?set=key&v=N ?open=1 ?close=1 the mod's settings");
 }
 }  // namespace p3a::settings

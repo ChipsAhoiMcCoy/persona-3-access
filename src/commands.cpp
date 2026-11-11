@@ -11,7 +11,7 @@
 #include "party.h"
 #include "settings.h"
 #include "poi.h"
-#include "gametext.h"
+#include "calendar.h"
 #include "screens/screen.h"
 #include "screens/battle.h"
 #include "speech.h"
@@ -81,24 +81,24 @@ static void walk_selected() {
 
 void install() {
   using namespace keys;
-  bind(VK_F1, None, "help", "The keys of this screen", screen_keys);
-  bind(VK_F1, Shift, "help.mod", "The mod's keys", [] { speech::speak(keys::help(), true); });
-  bind(VK_F2, None, "settings", "Mod settings", settings::open);
-  bind(VK_F3, None, "sonar", "Sonar on or off: the sounds of the things around you", sonar::toggle);
-  bind(VK_OEM_2, None, "where", "Where am I: the area, the date, your yen and the objective", where_am_i);                       // /
-  bind(VK_OEM_2, Shift, "stats", "Social stats", [] {                                                            // Shift+/
+  bind(VK_F1, None, "help", strings::kKeyHelpScreenKeys, screen_keys);
+  bind(VK_F1, Shift, "help.mod", strings::kKeyHelpModKeys, [] { speech::speak(keys::help(), true); });
+  bind(VK_F2, None, "settings", strings::kKeyHelpSettings, settings::open);
+  bind(VK_F3, None, "sonar", strings::kKeyHelpSonar, sonar::toggle);
+  bind(VK_OEM_2, None, "where", strings::kKeyHelpWhere, where_am_i);                                             // /
+  bind(VK_OEM_2, Shift, "stats", strings::kKeyHelpStats, [] {                                                    // Shift+/
     std::string s = stats::describe();
     speech::speak(s.empty() ? strings::kNotInField : s, true);
   });
-  bind(VK_OEM_5, Shift, "social", "Social Links and their ranks", [] { speech::speak(social::summary(), true); });   // Shift+backslash
-  bind(VK_OEM_5, None, "review", "Repeat the current message or describe the current screen", review);           // backslash
-  bind(VK_OEM_6, None, "poi.next", "Next point of interest, farther away", [] { poi::next(1); }, true);         // ]
-  bind(VK_OEM_4, None, "poi.prev", "Previous point of interest, nearer", [] { poi::next(-1); }, true);           // [
-  bind(VK_OEM_6, Shift, "poi.cat.next", "Next category of points of interest, from its nearest", [] { poi::next_category(1); });  // Shift+]
-  bind(VK_OEM_4, Shift, "poi.cat.prev", "Previous category", [] { poi::next_category(-1); });                    // Shift+[
-  bind(VK_OEM_7, Shift, "party", "Party: each member's level, HP and SP", [] { speech::speak(party::summary(), true); });   // Shift+'
-  bind(VK_OEM_7, None, "nav.walk", "Walk to the selected point of interest, or stop walking", walk_selected);     // '
-  bind(VK_OEM_1, None, "area", "Describe the area: how the place around you looks", area::describe);           // ;
+  bind(VK_OEM_5, Shift, "social", strings::kKeyHelpSocial, [] { speech::speak(social::summary(), true); });      // Shift+backslash
+  bind(VK_OEM_5, None, "review", strings::kKeyHelpReview, review);                                               // backslash
+  bind(VK_OEM_6, None, "poi.next", strings::kKeyHelpPoiNext, [] { poi::next(1); }, true);                        // ]
+  bind(VK_OEM_4, None, "poi.prev", strings::kKeyHelpPoiPrev, [] { poi::next(-1); }, true);                       // [
+  bind(VK_OEM_6, Shift, "poi.cat.next", strings::kKeyHelpPoiCatNext, [] { poi::next_category(1); });             // Shift+]
+  bind(VK_OEM_4, Shift, "poi.cat.prev", strings::kKeyHelpPoiCatPrev, [] { poi::next_category(-1); });            // Shift+[
+  bind(VK_OEM_7, Shift, "party", strings::kKeyHelpParty, [] { speech::speak(party::summary(), true); });         // Shift+'
+  bind(VK_OEM_7, None, "nav.walk", strings::kKeyHelpWalk, walk_selected);                                        // '
+  bind(VK_OEM_1, None, "area", strings::kKeyHelpArea, area::describe);                                           // ;
   // The same keys on a controller: hold both triggers, then (input.cpp keeps these buttons from the game meanwhile).
   struct PadKey { const char* name; uint16_t button; };
   const PadKey pad[] = {

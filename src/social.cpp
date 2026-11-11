@@ -13,6 +13,7 @@
 #include "watch.h"
 #include "core/strings.h"
 #include "devserver.h"
+#include "flow.h"
 #include "gametext.h"
 #include "hooks.h"
 #include "log.h"
@@ -21,7 +22,6 @@
 #include "seh.h"
 #include "screens/screen.h"
 #include "speech.h"
-#include "stats.h"
 #include "ue/scan.h"
 #include <windows.h>
 #include <algorithm>
@@ -159,10 +159,9 @@ static std::string g_last_change;
 // change of that link (the data may move before or after the command) is the card's to speak.
 static bool g_card_due[23] = {};
 static int g_rankup_arcana = 0;      // the link of the last CMM_RANKUP: the card's when its own number is unreadable
-using FlowCmd_t = int64_t (*)(uint8_t*);
-static FlowCmd_t g_rankup_cmd;
+static flow::Command g_rankup_cmd;
 static int64_t rankup_hook(uint8_t* ctx) {
-  int a = stats::flow_int_arg(ctx);
+  int a = flow::int_arg(ctx);
   // The command runs every frame while its card is up (it waits on it): noted once.
   if (a >= 1 && a <= 22 && !g_card_due[a]) { g_card_due[a] = true; g_rankup_arcana = a; log::writef("social: CMM_RANKUP {}", arcana_name(a)); }
   return g_rankup_cmd(ctx);
@@ -250,14 +249,13 @@ void tick() {
 }
 
 void install() {
-  g_rankup_cmd = (FlowCmd_t)stats::flow_command("CMM_RANKUP");
+  g_rankup_cmd = (flow::Command)flow::command("CMM_RANKUP");
   log::writef("social: CMM_RANKUP={:#x}", g_rankup_cmd ? (uintptr_t)g_rankup_cmd - scan::exe_base() : 0);
   if (g_rankup_cmd) hooks::attach((void**)&g_rankup_cmd, (void*)&rankup_hook, "CMM_RANKUP");
   dev::route("/social", [](const dev::Request& r, int&) {
     // ?partner=Kenji%20Tomochika: what the field prompt adds for that person
-    auto out = std::make_shared<std::string>("timeout\n");
     std::string who = dev::arg(r, "partner");
-    hooks::run_on_game_thread([out, who] {
+    return dev::on_game([who] {
       std::string s = summary() + "\n";
       if (!who.empty()) s = std::format("partner '{}': '{}'\n", who, partner_rank(who)) + s;
       for (auto& l : read())
@@ -265,9 +263,8 @@ void install() {
           s += std::format("{:2} {:<11} rank {:2} points {:3} of {:3}{}{} ({})\n", l.arcana, arcana_name(l.arcana), l.rank, l.points,
                            points_needed(l), reversed(l.arcana) ? " reversed" : "", ready(l) ? " ready" : "", person(l.arcana));
       if (!g_last_change.empty()) s += "last: " + g_last_change + "\n";
-      *out = s;
+      return s;
     });
-    return *out;
   }, "social links and ranks");
 }
 }  // namespace p3a::social

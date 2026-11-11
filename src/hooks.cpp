@@ -1,6 +1,7 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks; zlib, see LICENSES/. This is not the original software.
 #include "hooks.h"
 #include "log.h"
+#include "mod.h"
 #include "seh.h"
 #include <detours.h>
 #include <tlhelp32.h>
@@ -44,7 +45,8 @@ static std::mutex g_tx_mu;
 
 // Every live attach, so unload can remove whatever a module forgot (a CreateBmdPage hook left behind by a hot
 // reload sent the game into the next DLL's code and corrupted the heap, 2026-10-27).
-struct Attached { void** orig; void* detour; const char* label; };
+// `layer`: one of the Win32 layer's own detours (install), which go in together and come out together, last.
+struct Attached { void** orig; void* detour; const char* label; bool layer = false; };
 static std::vector<Attached> g_attached;
 
 bool attach(void** orig, void* detour, const char* label) {
@@ -69,14 +71,19 @@ void detach(void** orig, void* detour) {
   DetourDetach(orig, detour);
   DetourTransactionCommit();
 }
+// Two transactions, each in the order its detours were attached: the modules' detours first (the window procedure,
+// ProcessEvent, the game's own functions), then the Win32 layer under them (PeekMessageW, the frame's pump, with it).
 void detach_all() {
   std::lock_guard lk(g_tx_mu);
-  if (g_attached.empty()) return;
-  DetourTransactionBegin();
-  ThreadUpdater threads;
-  for (auto& a : g_attached) { DetourDetach(a.orig, a.detour); log::writef("hook {}: detached at unload", a.label); }
+  for (bool layer : {false, true}) {
+    if (std::none_of(g_attached.begin(), g_attached.end(), [&](const Attached& a) { return a.layer == layer; })) continue;
+    DetourTransactionBegin();
+    ThreadUpdater threads;
+    for (auto& a : g_attached)
+      if (a.layer == layer) { DetourDetach(a.orig, a.detour); log::writef("hook {}: detached at unload", a.label); }
+    DetourTransactionCommit();
+  }
   g_attached.clear();
-  DetourTransactionCommit();
 }
 
 // ======================= game-thread job pump =======================
@@ -235,8 +242,14 @@ static std::atomic<KeyFilter> g_key_filter{nullptr};
 void set_key_filter(KeyFilter f) { g_key_filter = f; }
 static std::atomic<uint64_t> g_key_ms{0};
 uint64_t key_ms() { return g_key_ms; }
+static std::atomic<void (*)()> g_focus_lost{nullptr};
+void set_focus_lost(void (*cb)()) { g_focus_lost = cb; }
 static LRESULT CALLBACK wndproc_hook(HWND h, UINT m, WPARAM w, LPARAM l) {
-  if (g_nofocus && ((m == WM_ACTIVATE && LOWORD(w) == WA_INACTIVE) || (m == WM_ACTIVATEAPP && !w) || m == WM_KILLFOCUS)) return 0;
+  if ((m == WM_ACTIVATE && LOWORD(w) == WA_INACTIVE) || (m == WM_ACTIVATEAPP && !w) || m == WM_KILLFOCUS) {
+    if (g_nofocus) return 0;
+    // The keyboard goes to another window: the key-ups of whatever is held go with it.
+    if (auto cb = g_focus_lost.load()) cb();
+  }
   if (m == WM_KEYDOWN || m == WM_SYSKEYDOWN) g_key_ms = GetTickCount64();
   if (m == WM_KEYDOWN || m == WM_KEYUP || m == WM_SYSKEYDOWN || m == WM_SYSKEYUP || m == WM_CHAR) {
     if (KeyFilter f = g_key_filter.load(); f && f(m, w, l)) return 0;
@@ -279,42 +292,33 @@ static BOOL WINAPI PeekMessageW_hook(LPMSG m, HWND h, UINT lo, UINT hi, UINT rm)
   return PeekMessageW_orig(m, h, lo, hi, rm);
 }
 
-struct W32Hook { void** orig; void* detour; const char* name; bool ok; };
-static std::vector<W32Hook> g_w32;
-
+// The Win32 layer's detours go in with one transaction and are recorded with every other attach (g_attached), so
+// detach_all takes them out at unload.
 bool install() {
-  { wchar_t v[4]; g_nofocus = GetEnvironmentVariableW(L"P3A_NOFOCUS", v, 4) > 0 && v[0] == L'1'; }
-  g_w32 = {
-    {(void**)&SetWindowsHookExW_orig, (void*)&SetWindowsHookExW_hook, "SetWindowsHookExW", false},
-    {(void**)&SetWindowsHookExA_orig, (void*)&SetWindowsHookExA_hook, "SetWindowsHookExA", false},
-    {(void**)&UnhookWindowsHookEx_orig, (void*)&UnhookWindowsHookEx_hook, "UnhookWindowsHookEx", false},
-    {(void**)&SystemParametersInfoW_orig, (void*)&SystemParametersInfoW_hook, "SystemParametersInfoW", false},
-    {(void**)&GetForegroundWindow_orig, (void*)&GetForegroundWindow_hook, "GetForegroundWindow", false},
-    {(void**)&GetActiveWindow_orig, (void*)&GetActiveWindow_hook, "GetActiveWindow", false},
-    {(void**)&GetFocus_orig, (void*)&GetFocus_hook, "GetFocus", false},
-    {(void**)&SetForegroundWindow_orig, (void*)&SetForegroundWindow_hook, "SetForegroundWindow", false},
-    {(void**)&SetActiveWindow_orig, (void*)&SetActiveWindow_hook, "SetActiveWindow", false},
-    {(void**)&SetFocus_orig, (void*)&SetFocus_hook, "SetFocus", false},
-    {(void**)&BringWindowToTop_orig, (void*)&BringWindowToTop_hook, "BringWindowToTop", false},
-    {(void**)&ShowWindow_orig, (void*)&ShowWindow_hook, "ShowWindow", false},
-    {(void**)&SetWindowPos_orig, (void*)&SetWindowPos_hook, "SetWindowPos", false},
-    {(void**)&PeekMessageW_orig, (void*)&PeekMessageW_hook, "PeekMessageW", false},
+  g_nofocus = env_flag(L"P3A_NOFOCUS");
+  const Attached layer[] = {
+    {(void**)&SetWindowsHookExW_orig, (void*)&SetWindowsHookExW_hook, "SetWindowsHookExW", true},
+    {(void**)&SetWindowsHookExA_orig, (void*)&SetWindowsHookExA_hook, "SetWindowsHookExA", true},
+    {(void**)&UnhookWindowsHookEx_orig, (void*)&UnhookWindowsHookEx_hook, "UnhookWindowsHookEx", true},
+    {(void**)&SystemParametersInfoW_orig, (void*)&SystemParametersInfoW_hook, "SystemParametersInfoW", true},
+    {(void**)&GetForegroundWindow_orig, (void*)&GetForegroundWindow_hook, "GetForegroundWindow", true},
+    {(void**)&GetActiveWindow_orig, (void*)&GetActiveWindow_hook, "GetActiveWindow", true},
+    {(void**)&GetFocus_orig, (void*)&GetFocus_hook, "GetFocus", true},
+    {(void**)&SetForegroundWindow_orig, (void*)&SetForegroundWindow_hook, "SetForegroundWindow", true},
+    {(void**)&SetActiveWindow_orig, (void*)&SetActiveWindow_hook, "SetActiveWindow", true},
+    {(void**)&SetFocus_orig, (void*)&SetFocus_hook, "SetFocus", true},
+    {(void**)&BringWindowToTop_orig, (void*)&BringWindowToTop_hook, "BringWindowToTop", true},
+    {(void**)&ShowWindow_orig, (void*)&ShowWindow_hook, "ShowWindow", true},
+    {(void**)&SetWindowPos_orig, (void*)&SetWindowPos_hook, "SetWindowPos", true},
+    {(void**)&PeekMessageW_orig, (void*)&PeekMessageW_hook, "PeekMessageW", true},
   };
   std::lock_guard lk(g_tx_mu);
   DetourTransactionBegin();
   ThreadUpdater threads;
-  for (auto& h : g_w32) h.ok = DetourAttach(h.orig, h.detour) == NO_ERROR;
+  for (const Attached& h : layer) if (DetourAttach(h.orig, h.detour) == NO_ERROR) g_attached.push_back(h);
   LONG r = DetourTransactionCommit();
   log::writef("hooks: win32 layer commit={} nofocus={}", r, g_nofocus);
   return r == NO_ERROR;
-}
-
-void remove() {
-  std::lock_guard lk(g_tx_mu);
-  DetourTransactionBegin();
-  ThreadUpdater threads;
-  for (auto& h : g_w32) if (h.ok) { DetourDetach(h.orig, h.detour); h.ok = false; }
-  DetourTransactionCommit();
 }
 
 std::string counters() {

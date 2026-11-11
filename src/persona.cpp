@@ -7,7 +7,6 @@
 #include "bmdfile.h"
 #include "core/strings.h"
 #include "devserver.h"
-#include "hooks.h"
 #include "party.h"
 #include "seh.h"
 #include "social.h"
@@ -263,8 +262,7 @@ std::string status_line(const uint8_t* e) {
     int id = *(uint16_t*)(e + 2), level = *(uint16_t*)(e + 4);
     if (!id) return;
     s = describe(id, level);
-    static const char* stat[5] = {"St", "Ma", "En", "Ag", "Lu"};
-    for (int i = 0; i < 5; ++i) s += std::format(", {} {}", stat[i], stat_total(e, i));
+    for (int i = 0; i < 5; ++i) s += std::format(", {} {}", strings::kStatAbbrev[i], stat_total(e, i));
     std::string sk;
     for (int i = 0; i < 8; ++i)
       if (int sid = *(uint16_t*)(e + 0xC + i * 2)) sk += (sk.empty() ? "" : ", ") + skill_name(sid);
@@ -293,11 +291,10 @@ void install() {
   for (const char* c : {"DatPersona", "DatAffinityTable", "DatSkillNameTable", "DatSkillNormalTable"}) watch::want(c);
   dev::route("/persona", [](const dev::Request& r, int&) {
     // /persona the hero's stock | ?id=N one Persona's data
-    auto out = std::make_shared<std::string>("timeout\n");
     int id = (int)dev::arg_int(r, "id", -1);
     std::string find = dev::arg(r, "find");
     bool bench = dev::has(r, "bench"), learn = dev::has(r, "learn");
-    hooks::run_on_game_thread([out, id, find, bench, learn] {
+    return dev::on_game([id, find, bench, learn] {
       if (bench) {   // ?bench=1: Fusion Search's work for one cursor move (every stock pair), and one object scan
         LARGE_INTEGER f, t0, t1, t2;
         QueryPerformanceFrequency(&f);
@@ -310,13 +307,11 @@ void install() {
         find_first("NormalSpreadDataAsset");
         QueryPerformanceCounter(&t2);
         auto us = [&](LARGE_INTEGER a, LARGE_INTEGER b) { return (b.QuadPart - a.QuadPart) * 1000000 / f.QuadPart; };
-        *out = std::format("{} pairs: {} us; one object scan: {} us\n", pairs, us(t0, t1), us(t1, t2));
-        return;
+        return std::format("{} pairs: {} us; one object scan: {} us\n", pairs, us(t0, t1), us(t1, t2));
       }
       if (!find.empty()) {
-        *out = "not found\n";
-        for (int i = 1; i < 600; ++i) if (name(i) == find) { *out = std::format("{} {}\n", i, find); break; }
-        return;
+        for (int i = 1; i < 600; ++i) if (name(i) == find) return std::format("{} {}\n", i, find);
+        return std::string("not found\n");
       }
       if (id == 0) {   // ?id=0: every Persona (id race level flag name)
         std::string s;
@@ -325,30 +320,26 @@ void install() {
           if (!rec) break;
           s += std::format("{} {} {} {:#x} {}\n", i, rec[2], rec[3], *(uint16_t*)rec, name(i));
         }
-        *out = s;
-        return;
+        return s;
       }
-      if (id >= 0) { *out = std::format("{} {} arcana {} base level {}; skill {}\n", id, name(id), arcana(id), base_level(id), skill_name(id)); return; }
+      if (id >= 0) return std::format("{} {} arcana {} base level {}; skill {}\n", id, name(id), arcana(id), base_level(id), skill_name(id));
       if (learn) {   // ?learn=1: the equipped Persona one EXP short of the level of its next skill (dev: the victory
                      // screen's skill-learned status page)
         auto* e = (uint8_t*)stock_entry(equipped());
         int pid = e ? *(uint16_t*)(e + 2) : 0, level = e ? *(uint16_t*)(e + 4) : 0;
-        *out = "no skill left to learn\n";
         for (auto& l : learnset(pid)) {
           if (l.level <= level) continue;
           int need = exp_for_level(e, l.level);
           if (need <= 0) break;
           *(uint32_t*)(e + 8) = (uint32_t)(need - 1);
-          *out = std::format("{} EXP {}: learns {} at level {}\n", name(pid), need - 1, skill_name(l.skill), l.level);
-          break;
+          return std::format("{} EXP {}: learns {} at level {}\n", name(pid), need - 1, skill_name(l.skill), l.level);
         }
-        return;
+        return std::string("no skill left to learn\n");
       }
       std::string s = std::format("equipped slot {}\n", equipped());
       for (auto& o : stock()) s += std::format("  slot {} id {} {}\n", o.slot, o.id, describe(o.id, o.level));
-      *out = s;
+      return s;
     });
-    return *out;
   }, "the hero's Persona stock | ?id=N one Persona | ?learn=1 the equipped one 1 EXP short of its next skill (dev)");
 }
 }  // namespace p3a::persona

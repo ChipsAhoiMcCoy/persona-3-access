@@ -5,6 +5,7 @@
 #include "stats.h"
 #include "core/strings.h"
 #include "devserver.h"
+#include "flow.h"
 #include "hooks.h"
 #include "log.h"
 #include "party.h"
@@ -31,51 +32,16 @@ static GetHandle_t g_get_handle;
 
 // The flowscript command ADD_GET_ITEM_LIST_MONEY(amount) queues yen on the item-get notice the next OPEN_GET_ITEM
 // shows; the wallet only changes when the player confirms it. Hooked to note the amount, so the wallet's change that
-// follows is not said again (the notice itself is read by screens/get_item.cpp). Its
-// entry in the game's command table is {fn, argc, name}; the argument reader (FUN_141274950): the script context's
-// +0x34 argument count, +0x37+i a type byte (0/4 int, 1 float, 2/3 script variables), +0x60+i*8 the value.
-using FlowCmd_t = int64_t (*)(uint8_t*);
-static FlowCmd_t g_money_cmd;
+// follows is not said again (the notice itself is read by screens/get_item.cpp).
+static flow::Command g_money_cmd;
 static int g_told_money = 0;   // a money notice's amount, noted until the wallet takes it
 
-int flow_int_arg(uint8_t* ctx) {
-  int v = 0;
-  guarded([&] {
-    int i = *(int32_t*)(ctx + 0x34);   // argument 0
-    if (i < 1 || i > 0x30) return;
-    uint8_t type = ctx[0x37 + i];
-    if (type == 0 || type == 4) v = *(int32_t*)(ctx + 0x60 + i * 8);
-    else if (type == 1) v = (int)*(float*)(ctx + 0x60 + i * 8);
-  });
-  return v;
-}
-
 static int64_t money_cmd_hook(uint8_t* ctx) {
-  int amount = flow_int_arg(ctx);
+  int amount = flow::int_arg(ctx);
   if (amount > 0) {   // the notice says it (screens/get_item.cpp reads its list); the wallet change is then not said
     g_told_money = amount;
   }
   return g_money_cmd(ctx);
-}
-
-// A flowscript command's function, by its name in the command table (.rdata string, then the entry pointing at it).
-void* flow_command(const char* name) {
-  auto* base = (uint8_t*)scan::exe_base();
-  auto* nt = (IMAGE_NT_HEADERS*)(base + ((IMAGE_DOS_HEADER*)base)->e_lfanew);
-  auto* sec = IMAGE_FIRST_SECTION(nt);
-  size_t len = strlen(name) + 1;
-  uintptr_t str = 0;
-  for (int i = 0; i < nt->FileHeader.NumberOfSections && !str; ++i)
-    if (!(sec[i].Characteristics & IMAGE_SCN_MEM_EXECUTE))
-      for (uint8_t *p = base + sec[i].VirtualAddress, *e = p + sec[i].Misc.VirtualSize - len; p < e; ++p)
-        if (*p == (uint8_t)name[0] && memcmp(p, name, len) == 0 && p[-1] == 0) { str = (uintptr_t)p; break; }
-  if (!str) return nullptr;
-  for (int i = 0; i < nt->FileHeader.NumberOfSections; ++i)
-    if (!(sec[i].Characteristics & IMAGE_SCN_MEM_EXECUTE))
-      for (uint8_t *p = base + sec[i].VirtualAddress + 16, *e = base + sec[i].VirtualAddress + sec[i].Misc.VirtualSize - 8;
-           p < e; p += 8)
-        if (*(uintptr_t*)p == str) return *(void**)(p - 16);
-  return nullptr;
 }
 
 static uint8_t* handle() {
@@ -171,21 +137,19 @@ void install() {
   uintptr_t cs = scan::find("E8 ?? ?? ?? ?? 48 89 45 ?? 4C 8B E8 48 85 C0 0F 84 ?? ?? ?? ?? 8B 40 ??");
   if (cs) g_get_handle = (GetHandle_t)scan::rip(cs + 1);
   log::writef("stats: GetHeroParameterHandle={:#x}", g_get_handle ? (uintptr_t)g_get_handle - scan::exe_base() : 0);
-  g_money_cmd = (FlowCmd_t)flow_command("ADD_GET_ITEM_LIST_MONEY");
+  g_money_cmd = (flow::Command)flow::command("ADD_GET_ITEM_LIST_MONEY");
   log::writef("stats: ADD_GET_ITEM_LIST_MONEY={:#x}", g_money_cmd ? (uintptr_t)g_money_cmd - scan::exe_base() : 0);
   if (g_money_cmd) hooks::attach((void**)&g_money_cmd, (void*)&money_cmd_hook, "ADD_GET_ITEM_LIST_MONEY");
   dev::route("/stats", [](const dev::Request&, int&) {
-    auto out = std::make_shared<std::string>("timeout\n");
-    hooks::run_on_game_thread([out] {
+    return dev::on_game([] {
       Stats s;
-      if (!read(s)) { *out = "no hero parameters\n"; return; }
+      if (!read(s)) return std::string("no hero parameters\n");
       std::string o;
       for (int i = 0; i < 3; ++i) o += std::format("stat {} points {} level {}\n", i, s.points[i], s.level[i]);
       o += std::format("names table: {}\n", s.names ? full_name(s.names) : "null");
       if (s.names) for (auto& r : datatable_rows(s.names)) o += "  " + r.name + ": " + struct_string(datatable_struct(s.names), r.data, 1) + "\n";
-      *out = o;
+      return o;
     });
-    return *out;
   }, "the hero's social stats: points, ranks, rank-name table");
 }
 }  // namespace p3a::stats

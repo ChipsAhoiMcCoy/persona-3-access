@@ -19,7 +19,8 @@
 namespace p3a::crash {
 namespace {
 struct Module { uintptr_t lo, hi; char name[32]; };
-Module g_mods[64]; int g_nmods = 0;
+constexpr int kMaxModules = 256;   // the game loads well over a hundred, the mod among the last
+Module g_mods[kMaxModules]; int g_nmods = 0;
 HANDLE g_file = INVALID_HANDLE_VALUE;
 void* g_handler = nullptr;
 thread_local bool t_inside = false;
@@ -29,11 +30,11 @@ long g_lines = 0;
 constexpr long kMaxLines = 200;
 
 void snapshot_modules() {
-  HMODULE mods[256]; DWORD need = 0;
+  HMODULE mods[kMaxModules]; DWORD need = 0;
   if (!EnumProcessModules(GetCurrentProcess(), mods, sizeof mods, &need)) return;
-  int n = (int)(need / sizeof(HMODULE)); if (n > 256) n = 256;
+  int n = (int)(need / sizeof(HMODULE)); if (n > kMaxModules) n = kMaxModules;
   g_nmods = 0;
-  for (int i = 0; i < n && g_nmods < 64; ++i) {
+  for (int i = 0; i < n && g_nmods < kMaxModules; ++i) {
     MODULEINFO mi{};
     if (!GetModuleInformation(GetCurrentProcess(), mods[i], &mi, sizeof mi)) continue;
     Module& m = g_mods[g_nmods];

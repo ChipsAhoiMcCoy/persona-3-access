@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
 #include <functional>
@@ -12,6 +13,12 @@ uintptr_t find_unique(std::string_view pattern);
 inline uintptr_t rip(uintptr_t at) { return at + 4 + *(const int32_t*)at; }
 // Calls hit(address) for each match until it returns false.
 void each_match(std::string_view pattern, const std::function<bool(uintptr_t)>& hit);
+// P3R.exe's data (its non-executable sections).
+// A NUL-terminated string that stands whole there (the byte before it is NUL too): its address, or 0.
+uintptr_t find_string(const char* text);
+// The first slot holding `value`, at a multiple of 8 from its section's start and at least `skip` bytes into it:
+// its address, or 0.
+uintptr_t find_pointer(uintptr_t value, size_t skip = 0);
 uintptr_t exe_base();
 uint32_t exe_timestamp();
 }  // namespace p3a::scan

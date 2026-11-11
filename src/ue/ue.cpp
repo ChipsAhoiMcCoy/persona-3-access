@@ -513,29 +513,50 @@ UObject* player_controller() {
 UObject* player_pawn() { return get<UObject*>(player_controller(), "Pawn"); }
 
 // ---- init ----
-bool init() {
-  uintptr_t base = scan::exe_base();
-  uint32_t ts = scan::exe_timestamp();
-  uintptr_t objs = 0, names = 0, pe = 0, world = 0;
-  // Signatures first (they survive a patch); the measured offsets are the fallback and the cross-check.
+// GObjects and GNames. Signatures first (they survive a patch); the measured offsets are the fallback and the
+// cross-check. The image is searched (~100 ms a signature) on every call until the name pool answers at what was
+// found (the code may not be unpacked yet on the first calls); from then on init() only checks. Each line is logged
+// once, or again when what it says changes.
+static bool g_located;
+static void locate(uintptr_t base, uint32_t ts) {
+  uintptr_t objs = 0, names = 0;
   if (uintptr_t a = scan::find("48 8B 05 ?? ?? ?? ?? 48 8B 0C ?? 48 8D 04 ?? 48 85 C0 74 ?? 44 39 40 ?? 75 ?? F7 40 ?? 00 00 00 30 75 ?? 48 8B 00")) objs = scan::rip(a + 3);
   if (uintptr_t a = scan::find("4C 8D 05 ?? ?? ?? ?? EB ?? 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 4C 8B C0 C6 05 ?? ?? ?? ?? 01")) names = scan::rip(a + 3);
-  log::writef("ue: build {:#x}{}; sig GObjects={:#x} GNames={:#x} (dump: {:#x} {:#x})", ts, ts == kKnownBuild ? " (known)" : " (UNKNOWN)",
-              objs ? objs - base : 0, names ? names - base : 0, kGObjects, kGNames);
+  static uintptr_t logged_objs = ~(uintptr_t)0, logged_names = ~(uintptr_t)0;
+  if (objs != logged_objs || names != logged_names) {
+    logged_objs = objs; logged_names = names;
+    log::writef("ue: build {:#x}{}; sig GObjects={:#x} GNames={:#x} (dump: {:#x} {:#x})", ts, ts == kKnownBuild ? " (known)" : " (UNKNOWN)",
+                objs ? objs - base : 0, names ? names - base : 0, kGObjects, kGNames);
+  }
   if (!objs) objs = base + kGObjects;
   if (!names) names = base + kGNames;
   g_objects = (uint8_t*)objs;
   g_names = (uint8_t*)names;
-  if (fname(0) != "None") { log::writef("ue: name pool check failed ('{}')", fname(0)); g_ready = false; return false; }
+}
+bool init() {
+  uintptr_t base = scan::exe_base();
+  uint32_t ts = scan::exe_timestamp();
+  uintptr_t pe = 0, world = 0;
+  if (!g_located) locate(base, ts);
+  if (fname(0) != "None") {
+    static bool said = false;
+    if (!said) { said = true; log::writef("ue: name pool check failed ('{}')", fname(0)); }
+    g_ready = false;
+    return false;
+  }
+  g_located = true;
   // ProcessEvent: vtable slot 0x44 of any UObject (the first object is /Script/CoreUObject).
   UObject* o0 = object_at(0);
   if (o0) pe = (*(uintptr_t**)o0)[kProcessEventIdx];
-  if (ts == kKnownBuild && pe != base + kProcessEvent) log::writef("ue: ProcessEvent slot {:#x} != measured {:#x}", pe - base, kProcessEvent);
+  static uintptr_t logged_pe = ~(uintptr_t)0;
+  bool news = pe != logged_pe || !g_ready;
+  logged_pe = pe;
+  if (news && ts == kKnownBuild && pe != base + kProcessEvent) log::writef("ue: ProcessEvent slot {:#x} != measured {:#x}", pe - base, kProcessEvent);
   g_pe = (ProcessEvent_t)pe;
   world = ts == kKnownBuild ? base + kGWorld : 0;
   g_world = (UObject**)world;
   g_ready = true;
-  log::writef("ue: ready, {} objects, first='{}', ProcessEvent=exe+{:#x}", num_objects(), full_name(o0), pe - base);
+  if (news) log::writef("ue: ready, {} objects, first='{}', ProcessEvent=exe+{:#x}", num_objects(), full_name(o0), pe - base);
   return true;
 }
 bool known_build() {

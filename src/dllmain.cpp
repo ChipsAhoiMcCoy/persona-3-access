@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <cmath>
 #include <format>
+#include "ad.h"
 #include "audio.h"
 #include "crash.h"
 #include "devserver.h"
@@ -134,14 +135,16 @@ extern "C" __declspec(dllexport) DWORD WINAPI p3a_unload(LPVOID) {
   if (g_init && WaitForSingleObject(g_init, 5000) == WAIT_TIMEOUT) log::write("p3access: the init thread is still running");
   if (!g_up) return 1;
   nav::unload();   // before the key filter goes: the walk's held keys are let go
+  ad::unload();    // the clip decoders' worker threads end before their code goes
   // The server first, so no request runs mod code while it is torn down; cancelling releases handlers that wait
   // on the game thread.
   hooks::cancel_pending();
   dev::stop();
   mod::shutdown();
   input::remove();
-  hooks::detach_all();   // anything a module did not remove itself (a stale detour into an unloaded DLL corrupts the heap)
-  hooks::remove();
+  // Every detour still in: what a module did not remove itself (a stale detour into an unloaded DLL corrupts the
+  // heap), then the Win32 layer.
+  hooks::detach_all();
   crash::remove();
   speech::shutdown();
   Sleep(1000);   // let a hook body another thread was already running finish before the unmap (250 ms was not always enough)

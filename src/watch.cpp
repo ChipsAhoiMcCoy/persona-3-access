@@ -6,7 +6,6 @@
 // frees the list's buffer with FMemory::Free, so the buffer must come from GMalloc). The list was empty.
 #include "watch.h"
 #include "devserver.h"
-#include "hooks.h"
 #include "log.h"
 #include "msg.h"
 #include "seh.h"
@@ -293,35 +292,34 @@ void install() {
   dev::route("/watch", [](const dev::Request& r, int&) {
     // /watch?class=BmdAsset what the list holds, and the live instances a scan finds that it lacks
     std::string cls = dev::arg(r, "class");
-    auto out = std::make_shared<std::string>("timeout\n");
-    hooks::run_on_game_thread([out, cls] {
+    return dev::on_game([cls] {
+      std::string out;
       std::vector<UObject*> have;
       {
         std::lock_guard lk(reg().mu);
         auto it = reg().by_name.find(cls);
-        if (it == reg().by_name.end()) { *out = "not wanted\n"; return; }
+        if (it == reg().by_name.end()) return std::string("not wanted\n");
         Want& w = reg().wants[it->second];
-        *out = std::format("{} entries (all={})\n", w.live.size(), w.all);
+        out = std::format("{} entries (all={})\n", w.live.size(), w.all);
         for (auto& x : w.live) {
           have.push_back(x.obj);
-          *out += std::format("  #{} {}{}\n", x.index, alive(x) ? name_of(x.obj) : "", alive(x) ? "" : "(dead)");
+          out += std::format("  #{} {}{}\n", x.index, alive(x) ? name_of(x.obj) : "", alive(x) ? "" : "(dead)");
         }
       }
       for (UObject* o : find_all(cls))
-        if (std::find(have.begin(), have.end(), o) == have.end()) *out += std::format("missing #{} {}\n", index_of(o), name_of(o));
+        if (std::find(have.begin(), have.end(), o) == have.end()) out += std::format("missing #{} {}\n", index_of(o), name_of(o));
+      return out;
     });
-    return *out;
   }, "?class=X the watch list for a class, and live instances it lacks");
   dev::route("/watch/born", [](const dev::Request& r, int&) {
     std::string on = dev::arg(r, "on"), match = dev::arg(r, "match");
-    auto out = std::make_shared<std::string>("timeout\n");
-    hooks::run_on_game_thread([out, on, match] {
+    return dev::on_game([on, match] {
       if (!on.empty()) { g_born_on = on == "1"; g_born.clear(); }
-      *out = std::format("on={} {} objects\n", g_born_on, g_born.size());
+      std::string out = std::format("on={} {} objects\n", g_born_on, g_born.size());
       if (on.empty())
-        for (auto& l : g_born) if (match.empty() || dev::contains_ci(l, match)) *out += l + "\n";
+        for (auto& l : g_born) if (match.empty() || dev::contains_ci(l, match)) out += l + "\n";
+      return out;
     });
-    return *out;
   }, "?on=1|0 start/stop logging every object made; no args: the log (?match=) (dev)");
   uint8_t* base = object_array();
   if (!base) { log::write("watch: no object array; scanning instead"); return; }

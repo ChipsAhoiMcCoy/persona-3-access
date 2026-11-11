@@ -56,17 +56,17 @@ static int current_mods() {
 static bool g_movement[256];
 static std::atomic<uint64_t> g_game_key_ms{0};
 uint64_t game_key_ms() { return g_game_key_ms; }
-static ULONGLONG g_movement_at[256];   // the last down or auto-repeat of each held movement key
 static uint32_t g_movement_presses[256];
 uint32_t movement_presses(uint32_t vk) { return g_movement_presses[vk & 0xFF]; }
 static bool is_movement(uint32_t vk) { return vk == 'W' || vk == 'A' || vk == 'S' || vk == 'D' || vk == VK_UP || vk == VK_DOWN || vk == VK_LEFT || vk == VK_RIGHT; }
-// A held key auto-repeats (after the first ~0.5 s): one silent for over a second lost its key-up (focus changes,
-// 2026-10-28: a stuck flag stopped every walk at once), so it no longer counts as held.
+// A movement key is held from its key-down to its key-up. The window losing the keyboard takes the key-up with it
+// (it goes to the other window; a stuck flag stopped every walk at once, 2026-10-28), so losing it lets go of every
+// movement key (focus_lost, from the window procedure).
 bool movement_key_down() {
-  ULONGLONG now = GetTickCount64();
-  for (int i = 0; i < 256; ++i) if (g_movement[i] && now - g_movement_at[i] < 1200) return true;
+  for (int i = 0; i < 256; ++i) if (g_movement[i]) return true;
   return false;
 }
+static void focus_lost() { for (bool& held : g_movement) held = false; }
 
 // Synthetic keys the navigator posts carry this marker in the lParam's reserved bits, so they are neither bound
 // commands nor a "player took over" signal.
@@ -82,7 +82,7 @@ static bool filter(UINT msg, WPARAM w, LPARAM l) {
     if (is_movement(vk) && !synthetic) {
       if (!g_movement[vk]) log::writef("keys: movement key {:#x} down (lParam {:#x})", vk, (uint64_t)l);
       if (!(l & (1 << 30))) ++g_movement_presses[vk];
-      g_movement[vk] = true; g_movement_at[vk] = GetTickCount64();
+      g_movement[vk] = true;
     }
     bool repeat = (l & (1 << 30)) != 0;
     // Confirm or cancel from the player: a message window's reading stops before anything the press says itself.
@@ -140,35 +140,35 @@ static bool filter(UINT msg, WPARAM w, LPARAM l) {
 
 static std::string key_name(uint32_t vk, int mods) {
   std::string s;
-  if (mods & Ctrl) s += "Ctrl+";
-  if (mods & Alt) s += "Alt+";
-  if (mods & Shift) s += "Shift+";
+  if (mods & Ctrl) s += strings::kModCtrl;
+  if (mods & Alt) s += strings::kModAlt;
+  if (mods & Shift) s += strings::kModShift;
   UINT sc = MapVirtualKeyW(vk, MAPVK_VK_TO_VSC);
   wchar_t buf[64] = {};
   LONG lp = (LONG)(sc << 16);
   if (vk >= VK_PRIOR && vk <= VK_DELETE) lp |= 1 << 24;
   if (GetKeyNameTextW(lp, buf, 64) > 0) { char nb[128]; WideCharToMultiByte(CP_UTF8, 0, buf, -1, nb, 128, nullptr, nullptr); s += nb; }
-  else s += std::format("key {:#x}", vk);
+  else s += std::format("{} {:#x}", strings::kKeyUnnamed, vk);
   return s;
 }
 
 static const char* pad_name(uint16_t m) {
   switch (m) {
-    case XINPUT_GAMEPAD_DPAD_UP: return "D-pad up";
-    case XINPUT_GAMEPAD_DPAD_DOWN: return "D-pad down";
-    case XINPUT_GAMEPAD_DPAD_LEFT: return "D-pad left";
-    case XINPUT_GAMEPAD_DPAD_RIGHT: return "D-pad right";
-    case XINPUT_GAMEPAD_START: return "Menu button";
-    case XINPUT_GAMEPAD_BACK: return "View button";
-    case XINPUT_GAMEPAD_LEFT_THUMB: return "L3";
-    case XINPUT_GAMEPAD_RIGHT_THUMB: return "R3";
-    case XINPUT_GAMEPAD_LEFT_SHOULDER: return "LB";
-    case XINPUT_GAMEPAD_RIGHT_SHOULDER: return "RB";
-    case XINPUT_GAMEPAD_A: return "A";
-    case XINPUT_GAMEPAD_B: return "B";
-    case XINPUT_GAMEPAD_X: return "X";
-    case XINPUT_GAMEPAD_Y: return "Y";
-    default: return "?";
+    case XINPUT_GAMEPAD_DPAD_UP: return strings::kPadDpadUp;
+    case XINPUT_GAMEPAD_DPAD_DOWN: return strings::kPadDpadDown;
+    case XINPUT_GAMEPAD_DPAD_LEFT: return strings::kPadDpadLeft;
+    case XINPUT_GAMEPAD_DPAD_RIGHT: return strings::kPadDpadRight;
+    case XINPUT_GAMEPAD_START: return strings::kPadMenu;
+    case XINPUT_GAMEPAD_BACK: return strings::kPadView;
+    case XINPUT_GAMEPAD_LEFT_THUMB: return strings::kPadL3;
+    case XINPUT_GAMEPAD_RIGHT_THUMB: return strings::kPadR3;
+    case XINPUT_GAMEPAD_LEFT_SHOULDER: return strings::kPadLB;
+    case XINPUT_GAMEPAD_RIGHT_SHOULDER: return strings::kPadRB;
+    case XINPUT_GAMEPAD_A: return strings::kPadA;
+    case XINPUT_GAMEPAD_B: return strings::kPadB;
+    case XINPUT_GAMEPAD_X: return strings::kPadX;
+    case XINPUT_GAMEPAD_Y: return strings::kPadY;
+    default: return strings::kPadUnknown;
   }
 }
 
@@ -183,5 +183,8 @@ std::string help() {
   return s;
 }
 
-void install() { hooks::set_key_filter(&filter); }
+void install() {
+  hooks::set_key_filter(&filter);
+  hooks::set_focus_lost(&focus_lost);
+}
 }  // namespace p3a::keys

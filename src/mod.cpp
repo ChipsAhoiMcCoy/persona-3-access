@@ -13,6 +13,7 @@
 #include "nav.h"
 #include "poi.h"
 #include "area.h"
+#include "calendar.h"
 #include "gametext.h"
 #include "stats.h"
 #include "party.h"
@@ -43,12 +44,15 @@ static bool g_ue_up = false;
 
 // Once per mod tick on the game thread (hooks::tick). Every reader polls the game's own objects here, each timed for
 // /perf (the average and worst microseconds per reader since the last reset).
-struct Section { const char* name; void (*fn)(); uint64_t total_us = 0, max_us = 0; };
+// `layouts`: the reader goes by fixed object layouts measured on one build of the game, so it runs on that build only
+// (on another it would speak misread numbers: ue::known_build).
+struct Section { const char* name; void (*fn)(); bool layouts = false; uint64_t total_us = 0, max_us = 0; };
 static Section g_sections[] = {
   {"watch", watch::tick}, {"probe", ue::probe_tick}, {"input", input::tick}, {"world", world::tick}, {"doors", doors::tick},
   {"voice", voice::tick}, {"msg", msg::tick}, {"screens", screens::tick},
   {"walltones", walltones::tick}, {"nav", nav::tick}, {"poi", poi::tick}, {"sonar", sonar::tick}, {"calendar", calendar::tick},
-  {"stats", stats::tick}, {"social", social::tick}, {"party", party::tick}, {"ad", ad::tick}, {"cutin", cutin::tick}, {"picture", picture::tick},
+  {"stats", stats::tick, true}, {"social", social::tick, true}, {"party", party::tick, true},
+  {"ad", ad::tick}, {"cutin", cutin::tick}, {"picture", picture::tick},
 };
 static uint64_t g_perf_ticks = 0;
 static void tick() {
@@ -60,7 +64,9 @@ static void tick() {
     if (!std::exchange(said, true)) log::write("mod: the game is quitting, the tick stops");
     return;
   }
+  static const bool known = ue::known_build();
   for (auto& s : g_sections) {
+    if (s.layouts && !known) continue;
     LARGE_INTEGER t0, t1;
     QueryPerformanceCounter(&t0);
     s.fn();
@@ -84,7 +90,7 @@ static std::string perf(bool reset) {
 // has also finished with the code by then) before scanning or hooking anything.
 static bool wait_for_engine() {
   for (int i = 0; i < 1200; ++i) {   // up to 2 minutes
-    if (ue::init() && ue::num_objects() > 20000) return true;
+    if (ue::init() && ue::num_objects() > 20000) { log::writef("mod: the engine is up, {} objects", ue::num_objects()); return true; }
     Sleep(100);
   }
   return false;
@@ -93,7 +99,7 @@ static bool wait_for_engine() {
 void init(bool speech_ok) {
   if (!wait_for_engine()) {
     log::write("mod: the engine never came up (unknown build?); staying inert");
-    speech::speak("Persona 3 Access could not find the game engine. This game version may be unsupported.", false);
+    speech::speak(strings::kNoEngine, false);
     return;
   }
   ue::install_hooks();
@@ -119,6 +125,7 @@ void init(bool speech_ok) {
   commands::install();
   bmdfile::install();
   gametext::install();
+  calendar::install();
   stats::install();
   social::install();
   persona::install();
@@ -127,23 +134,13 @@ void init(bool speech_ok) {
   dev::route("/screen", [](const dev::Request&, int&) {
     return dev::on_game([] { auto* s = screens::current(); return screens::status() + "\n" + (s ? s->describe() : std::string()) + "\n"; });
   }, "current modelled screen and its description");
-  dev::route("/item", [](const dev::Request& r, int&) {
-    auto out = std::make_shared<std::string>("timeout\n");
-    std::string name = dev::arg(r, "name");
-    hooks::run_on_game_thread([out, name] {
-      items::Info in;
-      *out = items::find(name, in) ? std::format("{} {}: id {:#x}, bag {:#x} (GlobalWork +{:#x}), owned {}\n", in.category, name, in.id, in.bag,
-                                                 0x24E8 + in.bag, items::owned(in)) : std::string("unknown item\n");
-    });
-    return *out;
-  }, "?name= an item's id, bag slot and how many are carried (dev)");
   dev::route("/perf", [](const dev::Request& r, int&) {
     bool reset = dev::has(r, "reset");
     return dev::on_game([reset] { return perf(reset); });
   }, "?reset=1 the mod tick's cost per reader and per screen since the last reset");
   g_ue_up = true;
   hooks::set_tick_callback(&tick);
-  speech::speak(speech_ok ? "Persona 3 Access loaded" : "Persona 3 Access loaded, no speech backend", false);
+  speech::speak(speech_ok ? strings::kModLoaded : strings::kModLoadedNoSpeech, false);
   if (!ue::known_build()) speech::speak(strings::kUnsupportedBuild, false);
 }
 void shutdown() {
