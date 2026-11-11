@@ -9,6 +9,7 @@
 // then exe+0x144df60(actor, true) plays the cursor sound and moves the marker; in town-info mode (F) it also refreshes
 // the info (exe+0x14431c0) and blends the camera to m_pInfoCamera[cursor]. A destination is selectable when
 // exe+0x120d970(sub1, i) and exe+0x120da10(sub2, i) agree (sub1 = exe+0x122ab40(), sub2 = exe+0x122abb0()).
+// The map opens with the cursor on the place the hero is in, and the list starts there.
 #include "screens/menu.h"
 #include "screens/util.h"
 #include "core/strings.h"
@@ -17,6 +18,7 @@
 #include "log.h"
 #include "poi.h"
 #include "seh.h"
+#include "social.h"
 #include "speech.h"
 #include "textcap.h"
 #include "world.h"
@@ -78,6 +80,51 @@ class TownMapScreen : public MenuScreen {
     std::string log_line;
     for (auto& p : ps) { order_.push_back(p.i); log_line += std::format(" {}({:.0f},{:.0f})", p.i, p.x, p.y); }
     log::writef("town_map: order{}", log_line);
+    for (int i : order_) who_[i] = people(i);
+  }
+  // Who is at a destination now: the list the game builds for town info's card icons, exe+0x11d8fc0(out, destination),
+  // from the field characters' own tables, the date and the time of day. `out` is four arrays and a set, freed the
+  // way the game's caller (exe+0x14431c0) frees them: +0x00 the Social Links (0x20 each: arcana, rank, reversed, the
+  // name FString at +0x10; a maxed link has rank 10), +0x10 / +0x20 / +0x30 other characters by kind (0x18 each: the
+  // kind 1-3, the name FString at +0x8).
+  std::string who_[kCount];
+  static std::string people(int dest) {
+    alignas(16) uint8_t out[0x100] = {};
+    uintptr_t b = scan::exe_base();
+    std::string links, others;
+    bool ok = guarded([&] {
+      ((void* (*)(void*, int))(b + 0x11d8fc0))(out, dest);
+      std::vector<social::Link> mine = social::read();
+      auto* l = (TArray<uint8_t>*)out;
+      for (int i = 0; l->data && i < l->num && i < 32; ++i) {
+        uint8_t* e = l->data + i * 0x20;
+        int arcana = *(int32_t*)e, rank = *(int32_t*)(e + 4);
+        std::string n = core::clean_text(to_utf8(*(FString*)(e + 0x10)));
+        log::writef("town_map: {} link {} rank {} reversed {} '{}'", dest, arcana, rank, e[8], n);
+        std::string s = std::format("{} ({})", n.empty() ? social::person(arcana) : n, social::arcana_name(arcana));
+        if (rank > 0) s += std::format(", {} {}", strings::kRank, rank);
+        else s += std::string(", ") + strings::kTownLinkNew;   // the game marks a link that can be started too
+        if (e[8]) s += std::string(", ") + strings::kReversed;
+        else for (auto& m : mine) if (m.arcana == arcana && m.rank == rank && social::ready(m)) s += std::string(", ") + strings::kReadyToRankUp;
+        links += (links.empty() ? "" : "; ") + s;
+      }
+      for (int k = 1; k <= 3; ++k) {
+        auto* a = (TArray<uint8_t>*)(out + k * 0x10);
+        for (int i = 0; a->data && i < a->num && i < 32; ++i) {
+          std::string n = core::clean_text(to_utf8(*(FString*)(a->data + i * 0x18 + 8)));
+          log::writef("town_map: {} other kind {} '{}'", dest, k, n);
+          if (!n.empty() && others.find(n) == std::string::npos) others += (others.empty() ? "" : ", ") + n;
+        }
+      }
+      ((void (*)(void*))(b + 0xa789b0))(out + 0x40);
+      for (int k = 3; k >= 1; --k) ((void (*)(void*))(b + 0x9fbee0))(out + k * 0x10);
+      ((void (*)(void*))(b + 0x8d8330))(out);
+    });
+    if (!ok) { log::write("town_map: reading who is there faulted"); return {}; }
+    std::string s;
+    if (!links.empty()) s = std::string(strings::kTownLinks) + ": " + links;
+    if (!others.empty()) s += (s.empty() ? "" : ". ") + std::string(strings::kTownOthers) + ": " + others;
+    return s;
   }
   // F (town info): the destination's shops and places in two columns at the bottom (y >= 700, x 123 and 533;
   // dimmed, alpha 0x99, where it is not open now; measured 2026-10-28). The list is built and drawn natively
@@ -172,7 +219,12 @@ class TownMapScreen : public MenuScreen {
   }
   void build(ui::GraphBuilder& b) override {
     b.begin_stop("town");
-    for (int i : order_) { std::string l = place(i); b.add_item(slot("town", i), game_item(map_list_, i, [l] { return l; })); }
+    for (int i : order_) {
+      std::string l = place(i);
+      auto v = game_item(map_list_, i, [l] { return l; });
+      describe_with(v, [this, i] { return who_[i]; });
+      b.add_item(slot("town", i), v);
+    }
     if (int c = read(); c >= 0) b.set_start(slot("town", c));
   }
 };

@@ -244,7 +244,9 @@ F1 always gives the current screen's keys. These are in its hints but not descri
 - The town map ("Go Elsewhere") reads as a numbered list ("Paulownia Mall, 2 of 3"): the arrow keys (D-pad) go
   through the open destinations in the order they appear on the map, top row first, left to right. The stick
   still moves around the map itself, and the list follows. W A S D do nothing here. Enter or Space picks it, then its list of
-  entrances (an entrance closed now says so). F (town info) lists the destination's shops and places, saying which
+  entrances (an entrance closed now says so). The list opens on the place you are in. After a destination's
+  name comes who is there now, as the map's card icons show it ("Social Links here: Kenji Tomochika (Magician),
+  rank 1, ready to rank up"; a link you can start but have not says "not started yet", under the name the game gives it). F (town info) lists the destination's shops and places, saying which
   are unavailable now.
 - The map key (M) in town, school and the dorm: "Where should I go?" with the area's own destinations (your room,
   the lobby, other floors) and "Town Map" first; the up and down arrows choose, Space goes. Where the story allows no travel, M
