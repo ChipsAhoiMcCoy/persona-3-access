@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Sonar (new)
+- Every point of interest near you now repeats its own sound from where it is, faster and louder the closer it is: exits a rising breath of air, doors two knocks, people a short voiced "hm", shops a small bell, objects a plucked note. On by default; F3 (both triggers and R3 on a controller) turns it on or off.
+- It works with the points of interest list: the point you selected is marked by a short tick before its sound and always has a place among the sounds, and each point you land on in the list plays its sound once from where it is, however far.
+- New mod settings: Sonar, Sonar plays (everything nearby, the list's category only, or the selected point only at any distance), Sonar range, a switch for each kind (changing one plays its sound), and Sonar volume.
+- The nearby chimes now play only while the sonar is off.
+
 ### Battles
 - The target no longer wraps around on the command wheel or in Analyze. At the first or last enemy, a further press says who you are still on, so you can tell the leftmost from the rightmost.
 - A skill or item that hits a whole side is now one choice in the target list: "All enemies" or "All allies" with their names, instead of a single enemy's name.

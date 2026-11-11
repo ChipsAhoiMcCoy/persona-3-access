@@ -19,6 +19,7 @@
 #include "items.h"
 #include "persona.h"
 #include "social.h"
+#include "sonar.h"
 #include "bmdfile.h"
 #include "audio.h"
 #include "devserver.h"
@@ -45,7 +46,7 @@ struct Section { const char* name; void (*fn)(); uint64_t total_us = 0, max_us =
 static Section g_sections[] = {
   {"watch", watch::tick}, {"probe", ue::probe_tick}, {"input", input::tick}, {"world", world::tick},
   {"voice", voice::tick}, {"msg", msg::tick}, {"screens", screens::tick},
-  {"walltones", walltones::tick}, {"nav", nav::tick}, {"poi", poi::tick}, {"calendar", calendar::tick},
+  {"walltones", walltones::tick}, {"nav", nav::tick}, {"poi", poi::tick}, {"sonar", sonar::tick}, {"calendar", calendar::tick},
   {"stats", stats::tick}, {"social", social::tick}, {"party", party::tick}, {"ad", ad::tick}, {"cutin", cutin::tick}, {"picture", picture::tick},
 };
 static uint64_t g_perf_ticks = 0;
@@ -109,6 +110,7 @@ void init(bool speech_ok) {
   settings::install();
   voice::install();
   poi::install();
+  sonar::install();
   area::install();
   nav::install();
   commands::install();

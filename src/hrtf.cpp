@@ -8,7 +8,7 @@
 
 namespace p3a::hrtf {
 namespace {
-constexpr int kSlots = 8;
+constexpr int kSlots = 16;   // 8 until the sonar: its sounds overlap each other and the other cues
 // Output trim so the cues are about as loud as when panned (0.707 per ear at the centre). Measured offline
 // (2026-10-30, ear RMS averaged over six azimuths against the centre pan): the 880 Hz beacon +2.4 dB, the 392 Hz chime
 // +0.9, the 165 Hz Shadow pulse +1.6, the 1320 Hz tick ~0. The HRTF's own response varies by pitch and direction

@@ -1,0 +1,24 @@
+#pragma once
+// The sonar's sounds, made here rather than shipped as files: one short sound per kind of thing, each with a
+// character of its own (so they are told apart by more than pitch) and energy across the spectrum (a pure tone gives
+// the ears little to place ahead or behind). Mono, engine-free, all at one loudness.
+#include <vector>
+
+namespace p3a::core {
+
+enum class SonarCue {
+  Exit,     // a way into another area: a breath of air rising through an opening, over a low thump
+  Door,     // a room's door: two knocks on wood
+  Person,   // someone to talk to: a short voiced "hm", rising
+  Shop,     // a shop or vendor: two strikes of a small bell, the second higher (a till)
+  Thing,    // something to check or open: one bright plucked note
+  Count
+};
+
+// The sound at `rate` Hz: starts and ends on silence, under 0.3 s, RMS kSonarCueRms (peak under 0.9).
+std::vector<float> sonar_cue(SonarCue cue, int rate);
+// The same after a short high tick: the thing the player has selected.
+std::vector<float> sonar_cue_marked(SonarCue cue, int rate);
+inline constexpr float kSonarCueRms = 0.10f;   // what the spikiest of them (the pluck) reaches under the peak limit
+
+}  // namespace p3a::core

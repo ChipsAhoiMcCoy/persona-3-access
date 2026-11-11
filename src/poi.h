@@ -19,6 +19,7 @@ void next(int delta);
 void next_category(int delta);   // selects and speaks the new category's nearest
 void announce_list();            // the current category (or the next with something) and its nearest, selected
 bool selected(Poi& out);
+bool in_selected_category(const Poi& p);   // p belongs to the category the review keys are on
 std::string hit_name(ue::UObject* hit);   // a hit actor's display name ("Bed"), or ""
 std::string prompt();      // the interaction prompt label showing now ("Treasure Chest"), or ""
 std::string objective();   // the story objective last shown in the field ("Head to the faculty office"), or ""

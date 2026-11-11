@@ -9,6 +9,7 @@
 #include "keys.h"
 #include "log.h"
 #include "mod.h"
+#include "sonar.h"
 #include "speech.h"
 #include "voice.h"
 #include "walltones.h"
@@ -27,6 +28,15 @@ struct Def { const char* key; const char* name; Unit unit; std::vector<int> valu
 // One row per Id, in its order: what the file calls it, what the menu says, the values it cycles through.
 static const Def kDefs[Count] = {
   {"wall_tones", strings::kSetWallTones, Unit::Toggle, {0, 1}, 1},
+  {"sonar", strings::kSetSonar, Unit::Toggle, {0, 1}, 1},                    // every nearby point of interest sounds (sonar.cpp)
+  {"sonar_scope", strings::kSetSonarScope, Unit::Choice, {ScopeAll, ScopeCategory, ScopeSelected}, ScopeAll,
+   {strings::kScopeAll, strings::kScopeCategory, strings::kScopeSelected}},
+  {"sonar_range", strings::kSetSonarRange, Unit::Meters, {5, 8, 10, 15, 20, 30}, 10},
+  {"sonar_exits", strings::kSetSonarExits, Unit::Toggle, {0, 1}, 1},
+  {"sonar_doors", strings::kSetSonarDoors, Unit::Toggle, {0, 1}, 1},
+  {"sonar_people", strings::kSetSonarPeople, Unit::Toggle, {0, 1}, 1},
+  {"sonar_shops", strings::kSetSonarShops, Unit::Toggle, {0, 1}, 1},
+  {"sonar_objects", strings::kSetSonarThings, Unit::Toggle, {0, 1}, 1},
   {"beacon", strings::kSetBeacon, Unit::Toggle, {0, 1}, 0},                 // toward the selected point of interest
   {"nearby_chimes", strings::kSetNearbyChimes, Unit::Toggle, {0, 1}, 1},
   {"shadow_alerts", strings::kSetShadowAlerts, Unit::Toggle, {0, 1}, 1},
@@ -34,6 +44,7 @@ static const Def kDefs[Count] = {
   {"behind_pitch", strings::kSetBehindPitch, Unit::Toggle, {0, 1}, 1},
   {"poi_range", strings::kSetPoiRange, Unit::Meters, {20, 40, 60, 100, 150}, 60},
   {"master_volume", strings::kSetMasterVolume, Unit::Percent, {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, 100},
+  {"sonar_volume", strings::kSetSonarVolume, Unit::Percent, {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, 80},   // the Sonar bus
   {"sound_volume", strings::kSetSoundVolume, Unit::Percent, {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, 60},   // the Cues bus
   {"wall_volume", strings::kSetWallVolume, Unit::Percent, {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, 100},
   {"trigger_delay", strings::kSetTriggerDelay, Unit::Ms, {0, 100, 150, 250}, 150},
@@ -68,6 +79,7 @@ static void apply(Id id) {
   if (id == WallTones && !env_flag(L"P3A_NOWALLTONES")) walltones::set_enabled(g_value[id] != 0);
   if (id == MasterVolume) audio::set_master_volume(g_value[id] / 100.0f);
   if (id == SoundVolume) audio::set_bus_volume(audio::Bus::Cues, g_value[id] / 100.0f);
+  if (id == SonarVolume) audio::set_bus_volume(audio::Bus::Sonar, g_value[id] / 100.0f);
   if (id == WallVolume) audio::set_bus_volume(audio::Bus::Walls, g_value[id] / 100.0f);
   if (id == DescriptionVolume) audio::set_bus_volume(audio::Bus::Narration, g_value[id] / 100.0f);
   if (id == Hrtf) audio::set_hrtf(g_value[id] != 0);
@@ -122,6 +134,7 @@ static void change(Id id, int delta) {
   if (next == at) return;   // state_text says the value again
   set(id, vals[next]);
   if (id == VoiceEndSound && g_value[id] != EndNext) voice::play_end_sound();   // a preview, in place of the menu's sound
+  else if (sonar::preview(id)) {}   // a kind's own sound, or one at the new volume
   else voice::play_system_sound(voice::CueOption);   // the game's Config plays it on every value change (FUN_141391c40)
 }
 

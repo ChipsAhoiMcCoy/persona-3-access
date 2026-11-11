@@ -15,6 +15,7 @@
 #include "seh.h"
 #include "settings.h"
 #include "social.h"
+#include "sonar.h"
 #include "speech.h"
 #include "world.h"
 #include <algorithm>
@@ -330,6 +331,8 @@ static bool in_cat(const Poi& p, Cat c) {
   }
 }
 
+bool in_selected_category(const Poi& p) { return in_cat(p, g_cat); }
+
 static std::vector<Poi> in_category(const std::vector<Poi>& all, Cat c) {
   std::vector<Poi> v;
   for (auto& p : all) if (in_cat(p, c)) v.push_back(p);
@@ -353,6 +356,7 @@ static void announce_nearest(const std::vector<Poi>& list) {
   g_sel = list[0].obj;
   g_sel_poi = list[0];
   speech::speak(std::format("{}: {}, 1 {} {}", cat_name(g_cat), describe(list[0]), strings::kOf, list.size()), true);
+  sonar::selected(list[0]);   // its sound, from where it is
 }
 
 void next(int delta) {
@@ -367,6 +371,7 @@ void next(int delta) {
   g_sel = list[i].obj;
   g_sel_poi = list[i];
   speech::speak(std::format("{}, {} {} {}", describe(list[i]), i + 1, strings::kOf, n), true);
+  sonar::selected(list[i]);
 }
 
 void next_category(int delta) { announce_nearest(settle(scan(), delta, true)); }
@@ -677,8 +682,9 @@ static void pickup_tick() {
 
 // Things coming into reach chime once from their direction (re-armed once the hero is 15 m away): exits low, things
 // to check or open high, people in between. A sound, not words: the points of interest list has the words.
+// Not while the sonar is on: there each thing's own repeating sound says it has come near.
 static void proximity_chimes() {
-  if (!settings::on(settings::NearbyChimes)) return;
+  if (!settings::on(settings::NearbyChimes) || settings::on(settings::Sonar)) return;
   static ULONGLONG last = 0;
   ULONGLONG now = GetTickCount64();
   if (now - last < 300) return;

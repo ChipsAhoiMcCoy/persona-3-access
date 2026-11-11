@@ -35,8 +35,13 @@ void set_master_volume(float v);   // the player's Master volume: scales every b
 // Cues = beeps and pulses; Walls = the looping channels. The master scales all of them; a new kind of sound gets
 // its own bus (an entry here, a slider in settings.cpp). All voices' own volume changes glide (~15 ms) and the
 // output goes through a limiter rather than a hard clip, so nothing clicks or crackles.
-enum class Bus { Cues, Walls, Narration, Count };
+enum class Bus { Cues, Walls, Narration, Sonar, Count };
 void set_bus_volume(Bus b, float v);
+// A one-shot sample from a place: mono at the mixer rate (sample_rate), starting and ending on silence. Through the
+// HRTF like the positional beeps (panned without it). rate != 1 plays it faster or slower, pitch and length together.
+using Pcm = std::shared_ptr<const std::vector<float>>;
+void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate = 1.0f);
+int sample_rate();
 // The narrator (audio description): a mono clip decoded at the mixer rate (decode_mono: WAV or MP3, any thread),
 // played centred on the Narration bus. narrate replaces whatever was playing and returns its id; stop fades out.
 // narration() reports the current clip: `played` == `total` with `ended` set means it played in full.

@@ -1,6 +1,6 @@
 # Persona 3 Access
 
-A screen-reader accessibility mod for Persona 3 Reload on Steam. It speaks the game through your screen reader and adds sound for getting around: wall tones, a guidance beacon, and an auto-walk to any place of interest.
+A screen-reader accessibility mod for Persona 3 Reload on Steam. It speaks the game through your screen reader and adds sound for getting around: wall tones, a sonar of the people, doors, exits and things around you, a guidance beacon, and an auto-walk to any place of interest.
 
 This is an unofficial fan project. It is not affiliated with or endorsed by Atlus or SEGA. It includes no game files, and you need your own copy of the game. Persona 3 Reload and related names and characters belong to their owners.
 
@@ -45,6 +45,7 @@ The game's own controls work as usual (keyboard or controller). The mod adds the
 - F1: The keys of what is in front of you: the current menu or screen, the message window, or the field
 - Shift+F1: The mod's own keys
 - F2: Mod settings (see below)
+- F3: Sonar on or off: the sounds of the things around you (see Sounds)
 - Slash: Where am I: the area, the date, your yen, and the current objective (with the line under it, if any)
 - Shift+Slash: Social stats: Academics, Charm and Courage with their ranks
 - Shift+Backslash: Social Links: each arcana with its partner and rank
@@ -70,6 +71,7 @@ nearest point of interest of the current category. While you hold them the game 
 - LB: Social stats
 - RB: Social Links
 - L3 (press the left stick): Party
+- R3 (press the right stick): Sonar on or off
 - Menu button: The keys of what is in front of you (like F1)
 - View button: Mod settings (like F2); its last row reads the mod's keys
 
@@ -105,13 +107,18 @@ once, to `%LOCALAPPDATA%\P3RAccess\settings.ini`. The menu plays the game's own 
 (the camp menu's), the cursor on each move, and a sound on each value change.
 
 - Wall tones: on, off
+- Sonar: on, off (also F3): every point of interest near you repeats its own sound from where it is, faster and louder the closer it is (see Sounds)
+- Sonar plays: everything nearby, the list's category only, the selected point only (at any distance): narrows the sonar to the category the points of interest list is on, or to the one point you selected there, which then sounds however far away it is
+- Sonar range: 10 meters; 5, 8, 15, 20 or 30
+- Sonar: exits, Sonar: doors, Sonar: people, Sonar: shops, Sonar: objects: on, off: each kind of thing on its own. Changing one plays its sound, so this is also where to learn them
 - Beacon: off, on (also Shift+Semicolon): a beep from the direction of the path to the selected point of interest
-- Nearby chimes: on, off: the chime when a way to another area, a person or a thing comes within 8 m
+- Nearby chimes: on, off: the chime when a way to another area, a person or a thing comes within 8 m. Only while the sonar is off: with it on, each thing's own sound tells you it has come near
 - Shadow alerts: on, off: the Shadow pulse and the back-turned / facing-you cues in Tartarus
-- 3D sound for headphones: on, off: the beacon, the nearby chimes and the Shadow cues come from where their source is, ahead, behind, above or below (Steam Audio's HRTF; far sounds are also a little duller). Off pans them left and right only, as before
-- Lower pitch behind you: on, off: the beacon, the nearby chimes and the Shadow pulse play lower when their source is behind you
+- 3D sound for headphones: on, off: the sonar, the beacon, the nearby chimes and the Shadow cues come from where their source is, ahead, behind, above or below (Steam Audio's HRTF; far sounds are also a little duller). Off pans them left and right only, as before
+- Lower pitch behind you: on, off: the sonar's sounds, the beacon, the nearby chimes and the Shadow pulse play lower when their source is behind you
 - Points of interest range: 60 meters; 20, 40, 100 or 150
 - Mod master volume: 100 percent; 0 to 100 in steps of 10, like the game's volume sliders: every sound the mod plays (not the game's own sounds, which follow the game's settings)
+- Sonar volume: 80 percent; 0 to 100 in steps of 10: the sonar's sounds (changing it plays one)
 - Beeps and chimes volume: 60 percent; 0 to 100 in steps of 10: the beacon, the nearby chimes, the Shadow cues and the other beeps
 - Wall tone volume: 100 percent; 0 to 100 in steps of 10: the wall tones
 - Controller trigger delay: 150 milliseconds; off, 100 or 250
@@ -150,6 +157,8 @@ offices, restrooms, the dorm's bedrooms), people, shops (businesses, food, vendo
 category with nothing in it is skipped. The proximity chimes rise in pitch in the same order: exits lowest, then
 doors, people, shops, and objects highest. They are spoken with their name, distance, clock direction and position: "Iwatodai Station, 6 meters, 2 o'clock, 1 of 3". The category is said first when you change category or open the controller layer.
 12 o'clock is straight ahead (where pushing forward walks), 3 o'clock is to your right.
+With the sonar on, each point you land on in the list also plays its kind's sound once from where it is, however far,
+and the one you have selected is marked among the sonar's sounds by a short high tick before its own.
 
 ### More keys in particular screens
 
@@ -341,13 +350,24 @@ F1 always gives the current screen's keys. These are in its hints but not descri
 - Wall tones: four looping tones tell you how close walls are: ahead and behind (centered, different pitches),
   right (right ear) and left (left ear). Louder means closer; silence means open space. Each tone measures how far
   holding that direction would actually take you: a wall you would just slide along stays quiet.
+- Sonar: every point of interest within range (10 m unless you change it) repeats its own sound from where it is.
+  The closer it is, the faster it repeats (from about once every second and a half at the edge to three times a
+  second beside you) and the louder it is, so walking toward a sound makes it quicken. Each kind has a sound of its
+  own: exits (ways into another area) a rising breath of air over a low thump, doors two knocks on wood, people a
+  short voiced "hm" that rises, shops two strikes of a small bell, and objects (things to check or open) a bright
+  plucked note. Directions follow the camera: a sound straight ahead is where pushing forward walks, and turning the
+  camera turns the whole field around you. A sound played lower is behind you (Lower pitch behind you). To keep
+  crowded places readable only the six nearest things sound, at most three of one kind; things on another floor are
+  left out unless you can walk there. The point selected in the points of interest list always has a place among
+  them, marked by a short high tick before its sound. The sonar is silent in menus, conversations, story scenes and
+  battles. Shadows are not part of it: they keep their own pulse.
 - Beacon: a short beep every 0.6 seconds from the direction of the path to the selected place; a lower beep means it
   is behind you (Lower pitch behind you).
 - Nearby chimes: when a way to another area, a person or a thing comes within 8 m, it chimes once from its direction,
   rising from exits (lowest) through doors, people and shops to things to check or open (highest). A slightly lower chime means it is behind you. It chimes again
-  once you have been more than 15 m away.
+  once you have been more than 15 m away. The chimes are the sonar's quieter stand-in: they play only while the sonar is off.
 
-The beacon, the chimes and the Shadow cues are positioned with Steam Audio (Valve, Apache 2.0; phonon.dll beside
+The sonar, the beacon, the chimes and the Shadow cues are positioned with Steam Audio (Valve, Apache 2.0; phonon.dll beside
 the mod; its license and third-party notices are in the P3RAccess\licenses folder). Without phonon.dll they pan left and
 right as before. Headphones give the best sense of ahead and behind.
 

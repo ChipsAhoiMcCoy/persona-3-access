@@ -15,6 +15,7 @@
 #include "speech.h"
 #include "stats.h"
 #include "social.h"
+#include "sonar.h"
 #include "walltones.h"
 #include "world.h"
 #include <windows.h>
@@ -79,6 +80,7 @@ void install() {
   bind(VK_F1, None, "help", "The keys of this screen", screen_keys);
   bind(VK_F1, Shift, "help.mod", "The mod's keys", [] { speech::speak(keys::help(), true); });
   bind(VK_F2, None, "settings", "Mod settings", settings::open);
+  bind(VK_F3, None, "sonar", "Sonar on or off: the sounds of the things around you", sonar::toggle);
   bind(VK_OEM_2, None, "where", "Where am I: the area, the date, your yen and the objective", where_am_i);                       // /
   bind(VK_OEM_2, Shift, "stats", "Social stats", [] {                                                            // Shift+/
     std::string s = stats::describe();
@@ -102,7 +104,7 @@ void install() {
     {"poi.cat.next", XINPUT_GAMEPAD_DPAD_RIGHT}, {"poi.cat.prev", XINPUT_GAMEPAD_DPAD_LEFT},
     {"nav.walk", XINPUT_GAMEPAD_A}, {"area", XINPUT_GAMEPAD_B}, {"review", XINPUT_GAMEPAD_X}, {"where", XINPUT_GAMEPAD_Y},
     {"stats", XINPUT_GAMEPAD_LEFT_SHOULDER}, {"social", XINPUT_GAMEPAD_RIGHT_SHOULDER}, {"party", XINPUT_GAMEPAD_LEFT_THUMB},
-    {"help", XINPUT_GAMEPAD_START}, {"settings", XINPUT_GAMEPAD_BACK},
+    {"sonar", XINPUT_GAMEPAD_RIGHT_THUMB}, {"help", XINPUT_GAMEPAD_START}, {"settings", XINPUT_GAMEPAD_BACK},
   };
   for (auto [name, button] : pad) bind_pad(name, button);
   on_pad_layer(pad_layer);
