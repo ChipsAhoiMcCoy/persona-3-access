@@ -129,4 +129,23 @@ std::vector<size_t> near_sides(const std::vector<Place>& sorted) {
   return kept;
 }
 
+const char* icon_state(std::string_view kind) {
+  if (kind == "Talk_Read") return strings::kIconTalked;
+  if (kind == "Listen_Read") return strings::kIconHeard;
+  if (kind == "Commu" || kind == "Commu_Field") return strings::kIconLink;
+  if (kind == "Commu_Reverse") return strings::kIconLinkReversed;
+  if (kind == "DormitoryLife") return strings::kIconHangout;
+  if (kind == "MaleQuest" || kind == "MaleQuest_Field") return strings::kIconEpisode;
+  if (kind == "Quest") return strings::kIconRequest;
+  if (kind == "StudyGroup") return strings::kIconStudy;
+  if (kind == "Walking") return strings::kIconWalk;
+  return "";
+}
+
+std::string icon_kind(std::string_view class_name) {
+  constexpr std::string_view head = "BP_UI_AccessIcon_", tail = "_C";
+  if (class_name.size() <= head.size() + tail.size() || !class_name.starts_with(head) || !class_name.ends_with(tail)) return {};
+  return std::string(class_name.substr(head.size(), class_name.size() - head.size() - tail.size()));
+}
+
 }  // namespace p3a::core

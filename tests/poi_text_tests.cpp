@@ -174,3 +174,20 @@ TEST_CASE("near_sides: a far side does not hide a third exit") {
   std::vector<Place> stacked = {{true, "Up", Vec3{0, 0, 0}}, {true, "Down", Vec3{0, 0, 250}}};
   CHECK(near_sides(stacked) == std::vector<size_t>{0, 1});
 }
+
+TEST_CASE("icon_state: what the icon over a person says") {
+  using p3a::core::icon_kind;
+  using p3a::core::icon_state;
+  CHECK(icon_kind("BP_UI_AccessIcon_Talk_Read_C") == "Talk_Read");
+  CHECK(icon_kind("BP_UI_AccessIcon_Commu_C") == "Commu");
+  CHECK(icon_kind("FldNpcActor").empty());
+  CHECK(icon_kind("BP_UI_AccessIcon__C").empty());
+  CHECK(std::string(icon_state("Talk")).empty());       // the plain state: nothing to add
+  CHECK(std::string(icon_state("Listen")).empty());
+  CHECK(std::string(icon_state("Talk_Read")) == "talked to");
+  CHECK(std::string(icon_state("Listen_Read")) == "heard");
+  CHECK(std::string(icon_state("Commu")) == std::string(icon_state("Commu_Field")));
+  CHECK(std::string(icon_state("Commu_Reverse")) == "Social Link, reversed");
+  CHECK(std::string(icon_state("MaleQuest_Field")) == "Linked Episode");
+  CHECK(std::string(icon_state("Something_New")).empty());
+}

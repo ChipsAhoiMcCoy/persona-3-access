@@ -1,6 +1,7 @@
 #pragma once
 #include <functional>
 #include <string>
+#include <string_view>
 #include <vector>
 #include "core/boxes.h"
 
@@ -24,6 +25,12 @@ std::string story_scene(const std::string& actor_name);
 // A name that ends in "_<digits>" without a leading zero is, to Unreal, the name before it with a number one
 // higher: "FOO_12" is FOO with number 13. True, with both parts, when `name` is such a name.
 bool numbered_name(const std::string& name, std::string& base, int& number);
+
+// What the icon floating over a person says about them, by the icon's kind (the middle of its class name,
+// BP_UI_AccessIcon_<Kind>_C): "" for the plain Talk and Listen icons and for a kind not known.
+const char* icon_state(std::string_view kind);
+// The kind in an icon actor's class name: "BP_UI_AccessIcon_Talk_Read_C" -> "Talk_Read"; "" for another class.
+std::string icon_kind(std::string_view class_name);
 
 // What a hit under the plain Check icon is, by the name the game gives it: somewhere to buy, eat, work or spend
 // time (a business's entrance, a vendor, a vending machine); a room's door to check; or a thing.

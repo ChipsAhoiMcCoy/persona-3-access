@@ -22,7 +22,8 @@ std::string clock(float b) { return std::format("{} {}", core::clock_hour(b), st
 std::string describe(const Poi& p) {
   // The name stands alone, a way into another area's too: it is where it leads, and its category says what it is
   // ("Gekkoukan High School exit" was taken for the way out of the school; the user's call, 2026-11-09).
-  return std::format("{}, {}, {}", p.name, core::meters(p.dist / 100.0f), clock(p.bearing));
+  std::string who = p.state.empty() ? p.name : p.name + ", " + p.state;
+  return std::format("{}, {}, {}", who, core::meters(p.dist / 100.0f), clock(p.bearing));
 }
 
 enum class Cat { Exits, Doors, People, Shops, Things, Events, Shadows, Count };

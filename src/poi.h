@@ -10,11 +10,12 @@ namespace p3a::poi {
 // Fragment: a Twilight Fragment, a pickup in town or a crystal to strike in Tartarus: listed among the objects, with
 // a sonar sound of its own.
 enum class Kind { Exit, Person, Shop, Door, Thing, Enemy, Event, Fragment };
-struct Poi { ue::WeakObj obj; Kind kind; std::string name; ue::FVector loc; float dist; float bearing; };
+// state: what the icon over a person says ("talked to", "Social Link"), said after the name; "" when it says nothing.
+struct Poi { ue::WeakObj obj; Kind kind; std::string name; ue::FVector loc; float dist; float bearing; std::string state; };
 
 std::vector<Poi> scan(float radius_cm = -1);   // nearest first (game thread); -1 = the range setting
 std::string clock(float bearing_deg);                   // "12 o'clock" etc. (camera-relative)
-std::string describe(const Poi& p);                     // "Iwatodai Station, 6 meters, 2 o'clock"
+std::string describe(const Poi& p);                     // "Iwatodai Station, 6 meters, 2 o'clock"; a state after the name
 
 // The selection the review keys walk: next/previous within the current category (nearest first), categories cycle
 // Exits -> Doors -> People -> Shops -> Objects -> Events -> Shadows, skipping empty ones. selected() re-resolves the object every call.

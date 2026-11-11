@@ -77,6 +77,22 @@ std::vector<Poi> scan(float radius) {
   // a trigger the list (60 m, a chest and the stairs in it) did not have (a Tartarus floor, 2026-11-11).
   const float list_radius = std::max(radius, settings::get(settings::PoiRange) * 100.0f);
   bool beyond = false;   // something past `radius` that the list has
+  // The icon the game floats over a person: an actor of its own, BP_UI_AccessIcon_<Kind>_C, whose Owner is the person
+  // (the dorm lounge, 2026-11-11: five Talk icons owned by the five people there; Akihiko's became Talk_Read once he
+  // was talked to). Hidden while a conversation runs.
+  static const char* const kIconKinds[] = {"Talk_Read", "Listen_Read", "Commu", "Commu_Field", "Commu_Reverse", "DormitoryLife",
+                                           "MaleQuest", "MaleQuest_Field", "Quest", "StudyGroup", "Walking"};
+  static const std::vector<int> icon_ids = [] {
+    std::vector<int> ids;
+    for (const char* k : kIconKinds) ids.push_back(watch::want(std::format("BP_UI_AccessIcon_{}_C", k), true));
+    return ids;
+  }();
+  std::map<UObject*, const char*> icons;   // a person -> what their icon says
+  for (size_t i = 0; i < icon_ids.size(); ++i)
+    for (UObject* icon : watch::all(icon_ids[i])) {
+      if (!is_live(icon) || get_bool(icon, "bHidden")) continue;
+      if (UObject* owner = get<UObject*>(icon, "Owner")) icons[owner] = core::icon_state(kIconKinds[i]);
+    }
   auto add = [&](UObject* a, Kind k, std::string name, bool any_floor = false) {
     world::FVector v{};
     if (!guarded([&] { v = world::actor_location(a); })) return;
@@ -94,6 +110,7 @@ std::vector<Poi> scan(float radius) {
     for (auto& o : out)
       if (core::same_thing(o.name, world::vec3(o.loc), name, world::vec3(v))) return;
     out.push_back(Poi{WeakObj::of(a), k, std::move(name), v, d, world::bearing(me, v)});
+    if (auto it = icons.find(a); it != icons.end()) out.back().state = it->second;
   };
   std::vector<UObject*> triggers;
   // A story trigger named for its scene, FldHitActor_<major>_<Scene>_H<n> (FldHitActor_299_Takaya_H0 and _Nyx_H0 at
