@@ -199,6 +199,21 @@ static bool fragment_spot(UObject* hit) {
   return flag.starts_with("FLD_RESOURCE_SPOT") || flag.starts_with("FLD_MOON_MILITARY_R_MEDAL");
 }
 
+// A roaming Shadow's kind, the game's own (UFldEnemyComp.EnemyType, EFldEnemyType, on the component the enemy
+// manager holds beside the actor; the actor's class says the same: BP_FldEmNormal / Strong / Rare / Death). "Rare
+// Shadow" and "the Reaper" are the game's words for them (Mitsuru's and Fuuka's lines); "Strong" is the type's name.
+static const char* shadow_name(UObject* actor, UObject* comp) {
+  std::string t;
+  if (FField* p = comp ? find_prop(class_of(comp), "EnemyType") : nullptr)
+    guarded([&] { t = enum_name(prop_inner_object(p), *((uint8_t*)comp + prop_offset(p))); });
+  std::string cn = name_of(class_of(actor));
+  auto is = [&](const char* type, const char* cls) { return t.empty() ? cn.find(cls) != std::string::npos : t == type; };
+  if (is("Death", "FldEmDeath")) return strings::kPoiReaper;
+  if (is("Rare", "FldEmRare")) return strings::kPoiShadowRare;
+  if (is("Strong", "FldEmStrong")) return strings::kPoiShadowStrong;
+  return strings::kPoiShadow;
+}
+
 bool breakable(UObject* a) {
   if (!a) return false;
   std::string cn = name_of(class_of(a));
@@ -345,9 +360,16 @@ std::vector<Poi> scan(float radius) {
     else add(a, Kind::Thing, strings::kPoiBreakable);
   }
   // Shadows roaming a Tartarus floor (EnemySymbolBaseCore; parked or defeated ones are hidden).
+  static const int enemy_manager = watch::want("FldEnemyManager");
+  struct Holder { UObject* actor; UObject* comp; };   // FFldEnemyHolder
+  UObject* em = watch::get(enemy_manager);
+  auto* holders = em ? field<TArray<Holder>>(em, "Enemies") : nullptr;
   for (UObject* a : live("EnemySymbolBaseCore")) {
     if (get_bool(a, "bHidden")) continue;
-    add(a, Kind::Enemy, strings::kPoiShadow);
+    UObject* comp = nullptr;
+    if (holders && holders->data && holders->num > 0 && holders->num < 256)
+      guarded([&] { for (int i = 0; i < holders->num; ++i) if (holders->data[i].actor == a) { comp = holders->data[i].comp; break; } });
+    add(a, Kind::Enemy, shadow_name(a, comp));
   }
   if (out.empty() && !beyond) for (UObject* a : triggers) add(a, Kind::Event, strings::kPoiEvent);
   std::sort(out.begin(), out.end(), [](const Poi& a, const Poi& b) { return a.dist < b.dist; });
