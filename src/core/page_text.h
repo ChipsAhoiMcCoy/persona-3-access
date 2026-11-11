@@ -34,4 +34,7 @@ std::string rows_as_list(const std::vector<std::string>& rows, std::string_view 
 // its fourth is the cue, where 0 (bytes 01 01) means no voice. `any`: any first argument counts (support talk).
 // Reads at most `size` bytes and the first 96 bytes' worth of functions.
 bool declares_voice(const uint8_t* data, size_t size, bool any = false);
+// The cue that voice function names (its fourth argument: first byte - 1, plus 255 times the second byte - 1), 0 when
+// the page declares no voice.
+int declared_cue(const uint8_t* data, size_t size, bool any = false);
 }  // namespace p3a::core

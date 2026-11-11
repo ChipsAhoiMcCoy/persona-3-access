@@ -112,11 +112,11 @@ const std::vector<std::string>& history() { return g_history; }
 
 // Voiced dialogue (setting VoicedLines): a page that declares a voice (declares_voice) is never read (or only its
 // speaker is named) and nothing waits for the voice: there is no fallback reading when none plays (the user's call,
-// 2026-11-03). The page stays pending only to claim its voice's start for the end cue (voices began 343-360 ms after
-// their page, 2026-10-29); the voice can begin a little before the page has its text, so a start up to kVoiceBefore
-// before the page is its own.
-constexpr uint64_t kVoiceBefore = 600;
-struct Pending { std::string line, who; void* page = nullptr; uint64_t shown = 0; bool active = false, cue = false; };
+// 2026-11-03). The page stays pending only to claim its voice's start for the end cue. The voice is the page's own by
+// its cue: the page's voice function names the cue (core::declared_cue) and the sound manager's voice block holds the
+// cue it was asked to play (voice::started). It can begin before the page has its text or some 350 ms after; a start
+// counts once, and never one older than the last a page claimed.
+struct Pending { std::string line, who; void* page = nullptr; uint64_t shown = 0; bool active = false, cue = false; int voice_cue = 0; };
 static Pending g_pending;
 static uint64_t g_voice_used = 0;   // the voice start a page already claimed (the next page must not claim it too)
 // A page that waits for a key, once its voice (or the mod's reading of an unvoiced line: thoughts, everyday NPC talk)
@@ -176,14 +176,15 @@ static bool g_hush = false;
 // takes any first argument, so that a line of chatter with a cue counts as voiced (2026-11-06).
 // The walk itself is core::declares_voice; the data has no length here, and the walk looks at its first 96 bytes'
 // worth of functions (each read stays within 128 bytes).
-static bool declares_voice(void* page, bool any = false) {
-  bool v = false;
+static int declared_cue(void* page, bool any = false) {
+  int v = 0;
   guarded([&] {
     uint8_t* d = page ? *(uint8_t**)((uint8_t*)page + 0x20) : nullptr;
-    if (d) v = core::declares_voice(d, 128, any);
+    if (d) v = core::declared_cue(d, 128, any);
   });
   return v;
 }
+static bool declares_voice(void* page, bool any = false) { return declared_cue(page, any) != 0; }
 
 static void say_dialogue(const std::string& line, const std::string& who, const std::string& kind, void* page, bool cue) {
   if (g_hush) return;
@@ -204,7 +205,8 @@ static void say_dialogue(const std::string& line, const std::string& who, const 
     if (cue) wait_for_key(page, true);
     return;
   }
-  g_pending = Pending{line, who == strings::kThinking ? std::string() : who, page, GetTickCount64(), true, cue};
+  g_pending = Pending{line, who == strings::kThinking ? std::string() : who, page, GetTickCount64(), true, cue, declared_cue(page)};
+  log::writef("msg: page declares voice cue {}", g_pending.voice_cue);
   voiced(g_pending);
 }
 // Speech that follows the page (its choice list): after the line, or alone if the line is voiced.
@@ -216,8 +218,8 @@ static void pending_tick() {
   Pending& p = g_pending;
   if (!p.active) return;
   uint64_t now = GetTickCount64();
-  uint64_t v = voice::last_start();
-  if (v && v != g_voice_used && v + kVoiceBefore >= p.shown) {
+  uint64_t v = voice::started(p.voice_cue);
+  if (v > g_voice_used) {
     g_voice_used = v;
     g_voiced_page = p.page; g_voiced_done = false;
     log::writef("msg: voiced ({} ms after the page): {}", now - p.shown, p.line);

@@ -6,7 +6,9 @@ namespace p3a::voice {
 // The game's voice players: when a voiced line starts (the setting "Voiced dialogue" keeps the screen reader quiet
 // for it). Game thread.
 void tick();                                   // every mod tick, before msg::tick
-uint64_t last_start();   // when a voice last began playing (GetTickCount64), 0 for never
+// The newest start of a voice with this cue, as a count of voice starts (1 for the first; 0: none of the last 16
+// starts had it). A later start has a higher number.
+uint64_t started(int cue);
 bool playing();
 // The setting VoiceEndSound's cue from the game's system cue sheet, through USoundApp::PlayComSE (none for "Next"
 // or off).

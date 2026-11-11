@@ -57,18 +57,19 @@ std::string rows_as_list(const std::vector<std::string>& rows, std::string_view 
   return spaced == joined ? listed : std::string{};
 }
 
-bool declares_voice(const uint8_t* d, size_t size, bool any) {
-  if (!d) return false;
+int declared_cue(const uint8_t* d, size_t size, bool any) {
+  if (!d) return 0;
   for (size_t i = 0; i < 96 && i + 2 < size && d[i] == 0xFE;) {
     uint8_t f = d[i + 1];
     int argc = (f & 0x0F) - 1;
-    if ((f & 0xF0) != 0xF0 || argc < 0) return false;
+    if ((f & 0xF0) != 0xF0 || argc < 0) return 0;
     if (d[i + 2] == 0x61 && argc >= 4) {
-      if (i + 10 >= size) return false;
-      if (any || (d[i + 3] == 0x02 && d[i + 4] == 0x01)) return d[i + 9] != 0x01 || d[i + 10] != 0x01;
+      if (i + 10 >= size) return 0;
+      if (any || (d[i + 3] == 0x02 && d[i + 4] == 0x01)) return (d[i + 9] - 1) + (d[i + 10] - 1) * 255;
     }
     i += 3 + (size_t)argc * 2;
   }
-  return false;
+  return 0;
 }
+bool declares_voice(const uint8_t* d, size_t size, bool any) { return declared_cue(d, size, any) != 0; }
 }  // namespace p3a::core

@@ -23,7 +23,9 @@ using namespace ue;
 
 struct Slot { int status = 0; int cue = -1; int bank = -1; };
 static Slot g_slot[0x100];
-static std::deque<uint64_t> g_starts;   // when voices began, newest last
+struct Start { uint64_t n; int cue; };
+static std::deque<Start> g_starts;   // the voices that began, newest last
+static uint64_t g_start_count = 0;
 static bool g_playing = false;
 
 static int status_of(UObject* comp) {
@@ -55,7 +57,6 @@ void tick() {
   g_playing = false;
   Raw raw[0x100]{};
   if (!read_blocks(raw)) return;
-  uint64_t now = GetTickCount64();
   for (int k = 0; k < 0x100; ++k) {
     Slot& s = g_slot[k];
     const Raw& r = raw[k];
@@ -64,7 +65,7 @@ void tick() {
     int st = comp && is_live(comp) ? status_of(comp) : 0;
     bool on = st == 1 || st == 2, was = s.status == 1 || s.status == 2;
     if (on && (!was || r.cue != s.cue)) {
-      g_starts.push_back(now);
+      g_starts.push_back(Start{++g_start_count, r.cue});
       if (g_starts.size() > 16) g_starts.pop_front();
       log::writef("voice: start block {} bank {} cue {}", k, r.bank, r.cue);
     }
@@ -73,7 +74,10 @@ void tick() {
   }
 }
 
-uint64_t last_start() { return g_starts.empty() ? 0 : g_starts.back(); }
+uint64_t started(int cue) {
+  for (size_t i = g_starts.size(); i-- > 0;) if (g_starts[i].cue == cue) return g_starts[i].n;
+  return 0;
+}
 bool playing() { return g_playing; }
 
 // Cues of the system sheet (CriData/CueSheet/system, read 2026-10-29): 5 "page", 9 "message", 0 "Sys_Cursor".
@@ -122,7 +126,6 @@ void install() {
     auto out = std::make_shared<std::string>("timeout\n");
     bool all = dev::has(r, "all");
     hooks::run_on_game_thread([out, all] {
-      uint64_t now = GetTickCount64();
       std::string s = std::format("playing={}\n", g_playing);
       if (all) {   // every player block in use: type (0 BGM, 1 voice, 2 SE), bank, the cue last requested
         Raw raw[0x100]{};
@@ -132,7 +135,7 @@ void install() {
       }
       for (int k = 0; k < 0x100; ++k)
         if (g_slot[k].bank >= 0) s += std::format("block {} bank {} cue {} status {}\n", k, g_slot[k].bank, g_slot[k].cue, g_slot[k].status);
-      for (uint64_t t : g_starts) s += std::format("start {} ms ago\n", now - t);
+      for (const Start& t : g_starts) s += std::format("start {} cue {}\n", t.n, t.cue);
       *out = s;
     });
     return *out;
