@@ -12,6 +12,7 @@
 // The map opens with the cursor on the place the hero is in, and the list starts there.
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "screens/camp.h"
 #include "core/strings.h"
 #include "log.h"
 #include "poi.h"
@@ -29,7 +30,6 @@
 
 namespace p3a::screens {
 using namespace ue;
-int pause_top();
 
 class TownMapScreen : public MenuScreen {
   Finder map_{"UITownMapActor"};

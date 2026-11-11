@@ -1,6 +1,7 @@
 #include "screens/menu.h"
 #include "screens/util.h"
 #include "screens/battle.h"
+#include "screens/persona_status.h"
 #include "core/strings.h"
 #include "items.h"
 #include "log.h"
@@ -17,9 +18,6 @@
 
 namespace p3a::screens {
 using namespace ue;
-
-void build_status_page(ui::GraphBuilder& b, const uint8_t* e, const std::string& lead, const std::string& bonus,
-                       const uint8_t* before, const ui::ControlId* name_id, ui::NodeVtablePtr name_item);
 
 UObject* result_ui() {
   static Finder core{"BtlCoreComponent"};
@@ -323,7 +321,7 @@ class BattleResultScreen : public MenuScreen {
       int id = was ? *(uint16_t*)(was + 2) : 0;
       const uint8_t* now = id ? live_entry(id) : nullptr;
       if (id && id != persona_ && settled(now, was)) {
-        focus_quietly(ui::ControlId::structural(std::format("ps.{}.name", id)));
+        focus_quietly(status_name_id(id));
         say_status(now, was);
         persona_ = id;
       }

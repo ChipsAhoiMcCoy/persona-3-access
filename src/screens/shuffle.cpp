@@ -18,6 +18,7 @@
 #include "screens/menu.h"
 #include "screens/util.h"
 #include "screens/battle.h"
+#include "screens/persona_status.h"
 #include "core/strings.h"
 #include "log.h"
 #include "msg.h"
@@ -30,9 +31,6 @@
 
 namespace p3a::screens {
 using namespace ue;
-
-void build_status_page(ui::GraphBuilder& b, const uint8_t* e, const std::string& lead, const std::string& bonus,
-                       const uint8_t* before, const ui::ControlId* name_id, ui::NodeVtablePtr name_item);
 
 UObject* shuffle_ui() {
   static const int id = watch::want("BtlShuffleMainBase", true);
@@ -349,7 +347,7 @@ class ShuffleScreen : public MenuScreen {
       int id = e ? *(uint16_t*)(e + 2) : 0;
       if (id != stats_) {
         stats_ = id;
-        focus(id ? ui::ControlId::structural(std::format("ps.{}.name", id)) : slot("release", get<int32_t>(ui, "PersonaSelectCoursorIndex")));
+        focus(id ? status_name_id(id) : slot("release", get<int32_t>(ui, "PersonaSelectCoursorIndex")));
       }
     }
     if (!choosing(ui)) return;

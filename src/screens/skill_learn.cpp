@@ -6,6 +6,7 @@
 // entry (APersonaStatusDraw +0x34C) and the game's skill table.
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "screens/persona_status.h"
 #include "core/strings.h"
 #include "persona.h"
 #include "speech.h"

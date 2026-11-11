@@ -18,6 +18,7 @@
 //     +0x484 + +0x488.
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "screens/persona_status.h"
 #include "core/strings.h"
 #include "msg.h"
 #include "persona.h"
@@ -30,11 +31,7 @@
 
 namespace p3a::screens {
 using namespace ue;
-void build_status_page(ui::GraphBuilder& b, const uint8_t* e, const std::string& lead, const std::string& bonus,
-                       const uint8_t* before, const ui::ControlId* name_id = nullptr,
-                       ui::NodeVtablePtr name_item = {});   // persona_status.cpp
 std::string velvet_result_bonus();
-bool take_skill_learned();   // skill_learn.cpp
 
 class VelvetScreen : public MenuScreen {
   Finder room_{"UIVelvetRoom"}, draw_{"UIVelvetRoomDraw"}, combine_{"UICombine"}, book_{"UICompleteBook"}, regist_{"UICompleteBookRegist"};
@@ -282,7 +279,7 @@ class VelvetScreen : public MenuScreen {
     if (!page_ && scene() == 4 && step() == 5) result_id_ = id;
     if (!page_) screens::set_keys(scene() == 4 && step() == 5 ? strings::kFusionConfirmKeys : scene() == 4 ? strings::kPersonaStatusKeys
                                : scene() == 5 ? strings::kCompendiumPageKeys : strings::kStatusConfirmKeys);
-    else focus(ui::ControlId::structural(std::format("ps.{}.name", id)));
+    else focus(status_name_id(id));
     page_ = id;
   }
   void build(ui::GraphBuilder& b) override {

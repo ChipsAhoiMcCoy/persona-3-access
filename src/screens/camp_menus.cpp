@@ -25,6 +25,8 @@
 //   System   UCmpSystem +0x54 == 4, ListCursor +0x64 (7 entries; locked by flags 0x40000089..8F).
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "screens/camp.h"
+#include "screens/persona_status.h"
 #include "bmdfile.h"
 #include "core/strings.h"
 #include "core/text_clean.h"
@@ -47,11 +49,7 @@
 #include <unordered_map>
 
 namespace p3a::screens {
-void build_status_page(ui::GraphBuilder& b, const uint8_t* e, const std::string& lead, const std::string& bonus,
-                       const uint8_t* before, const ui::ControlId* name_id = nullptr,
-                       ui::NodeVtablePtr name_item = {});   // persona_status.cpp
 using namespace ue;
-bool camp_open();
 
 namespace {
 template <class T> TArray<T>* arr(void* base, int off) {

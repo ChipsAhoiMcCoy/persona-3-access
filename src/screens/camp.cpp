@@ -3,6 +3,7 @@
 // for the labels, the help lines as the game shows them (strings::kCampHelp).
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "screens/camp.h"
 #include "core/strings.h"
 #include "party.h"
 

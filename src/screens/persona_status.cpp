@@ -4,6 +4,7 @@
 // same page for its own rows (build_status_page) and keeps the game's F / X from opening this one over it.
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "screens/persona_status.h"
 #include "core/strings.h"
 #include "persona.h"
 #include <cctype>
@@ -19,6 +20,8 @@ using namespace ue;
 // per kind.
 // `before` (a level up): each stat says what it gained, each skill it did not have says "new".
 // `name_item` (the camp's list, a game_item at `name_id`) replaces the name line.
+ui::ControlId status_name_id(int persona) { return ui::ControlId::structural(std::format("ps.{}.name", persona)); }
+
 void build_status_page(ui::GraphBuilder& b, const uint8_t* e, const std::string& lead, const std::string& bonus,
                        const uint8_t* before, const ui::ControlId* name_id, ui::NodeVtablePtr name_item) {
   using M = MenuScreen;
@@ -114,7 +117,7 @@ class PersonaStatusScreen : public MenuScreen {
   void on_tick() override {
     const uint8_t* e = persona::shown_status();
     int id = e ? *(uint16_t*)(e + 2) : 0;
-    if (id && shown_ && id != shown_) focus(ui::ControlId::structural(std::format("ps.{}.name", id)));   // Q / E
+    if (id && shown_ && id != shown_) focus(status_name_id(id));   // Q / E
     if (id) shown_ = id;
   }
   void build(ui::GraphBuilder& b) override { build_status_page(b, persona::shown_status(), {}, {}, nullptr, nullptr, {}); }
