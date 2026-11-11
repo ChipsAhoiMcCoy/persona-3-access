@@ -13,8 +13,11 @@
 #include "seh.h"
 #include "speech.h"
 #include "ue/scan.h"
+#include <algorithm>
 #include <format>
 #include <memory>
+#include <utility>
+#include <vector>
 
 namespace p3a::screens {
 using namespace ue;
@@ -22,18 +25,16 @@ using namespace ue;
 class MailScreen : public MenuScreen {
   Finder draw_{"MailDraw"};
   bool reading_ = false;
-  uint64_t list_ms_ = 0;
   std::string said_;
   struct Mail { std::string sender, title, body; bool fresh = false; };
   static bool flag(UObject* d, const char* n) { auto* b = field<bool>(d, n); return b && *b; }
-  Mail mail(UObject* d, int i, uint64_t since = 0) {
+  Mail mail(UObject* d, int i) {
     Mail m;
     auto* items = field<TArray<uint8_t>>(d, "MailListItems");
     if (!items || i < 0 || i >= items->num) return m;
     // The title is rendered from the item's own page, never looked up among the pages seen being built: a list
     // opened again builds the same page unchanged at another address, which is not a new page (it read "Mail 1"
-    // every other time, 2026-11-11). The sender and the body are the other pages laid out from the title's buffer;
-    // the body only counts once it was laid out for this opening (`since`).
+    // every other time, 2026-11-11). The sender and the body are the other pages laid out from the title's buffer.
     void* title = nullptr; void* buf = nullptr; void* data = nullptr;
     guarded([&] {
       title = *(void**)(items->data + (size_t)i * 0x20 + 0x10);
@@ -43,12 +44,17 @@ class MailScreen : public MenuScreen {
     int td = -1;
     auto pages = buf ? msg::pages_of(buf) : std::vector<msg::Created>{};
     for (auto& c : pages) if (c.data == data) td = c.dialog;
-    uint64_t newest = 0;
+    // A sender's file is its name (dialog 0), then a title and its body for each mail: the body is the dialog after
+    // the title. It is laid out once, with the list, not again when the mail opens (waiting for a newer layout read
+    // no mail at all, 2026-11-11).
+    std::vector<std::pair<int, std::string>> body;
     for (auto& c : pages) {
       if (c.dialog == td || c.data == data) continue;
       if (c.dialog == 0) m.sender = c.text;
-      else if (td >= 0 && c.dialog > td && c.ms >= since && c.ms >= newest) { m.body = c.text; newest = c.ms; }
+      else if (td >= 0 && c.dialog == td + 1) body.emplace_back(c.page, c.text);
     }
+    std::sort(body.begin(), body.end());
+    for (auto& [p, t] : body) m.body += (m.body.empty() ? "" : " ") + t;
     // The sender, when no page of its own was built (the "Unknown Sender" of a mail with none): AMailActor +0x350 is
     // the list (0x30 each: +0x8 the sender's page).
     if (m.sender.empty()) {
@@ -137,12 +143,11 @@ class MailScreen : public MenuScreen {
     auto* si = field<int32_t>(d, "SelectedIndex");
     if (!si) return;
     bool reading = flag(d, "bIsStartMailAnim");
-    if (!reading) list_ms_ = GetTickCount64();   // the last frame the list was up: the open mail's body is laid out after it
     if (reading && !reading_) {
-      Mail m = mail(d, *si, list_ms_);
-      // Not laid out yet: wait for it while the mail is still opening. Once it is open, read what there is.
-      if (m.body.empty() && !flag(d, "bIsFinishMailAnim")) return;
-      if (m.body.empty()) m = mail(d, *si);
+      Mail m = mail(d, *si);
+      // Not laid out yet: wait for it while the list flips to the mail (bIsFlipToMainAnim, cleared by the flip's
+      // end; bIsFinishMailAnim is never set while a mail is open). Once it is open, read what there is.
+      if (m.body.empty() && flag(d, "bIsFlipToMainAnim")) return;
       std::string s = m.sender.empty() ? m.title : m.sender + ". " + m.title;
       if (!m.body.empty()) s += ". " + m.body;
       speech::speak(s, true); said_ = s; reading_ = true;
