@@ -471,7 +471,6 @@ inline constexpr const char* kNoParty = "No party";
 inline constexpr const char* kTownInfo = "Places here";
 inline constexpr const char* kTownLinks = "Social Links here";
 inline constexpr const char* kTownOthers = "Also here";
-inline constexpr const char* kTownLinkNew = "not started yet";
 inline constexpr const char* kTheurgy = "Theurgy";
 inline constexpr const char* kBuffs[] = {"attack up", "attack down", "defense up", "defense down", "agility up", "agility down"};
 inline constexpr const char* kCharged = "Charged";

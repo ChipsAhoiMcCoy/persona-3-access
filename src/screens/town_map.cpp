@@ -103,7 +103,6 @@ class TownMapScreen : public MenuScreen {
         log::writef("town_map: {} link {} rank {} reversed {} '{}'", dest, arcana, rank, e[8], n);
         std::string s = std::format("{} ({})", n.empty() ? social::person(arcana) : n, social::arcana_name(arcana));
         if (rank > 0) s += std::format(", {} {}", strings::kRank, rank);
-        else s += std::string(", ") + strings::kTownLinkNew;   // the game marks a link that can be started too
         if (e[8]) s += std::string(", ") + strings::kReversed;
         else for (auto& m : mine) if (m.arcana == arcana && m.rank == rank && social::ready(m)) s += std::string(", ") + strings::kReadyToRankUp;
         links += (links.empty() ? "" : "; ") + s;
