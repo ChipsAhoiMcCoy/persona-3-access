@@ -16,4 +16,7 @@ Clock clock();
 void tick();                                   // every frame: follow the movie, play its descriptions
 std::string selftest(const std::string& filter);   // decode every packed clip and check its length (any thread)
 void register_routes();
+// The mod is being unloaded (any thread, before the DLL is freed): waits for the clip decoders' worker threads to
+// end, so none is left running code that is about to go away.
+void unload();
 }  // namespace p3a::ad

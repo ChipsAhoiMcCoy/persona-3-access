@@ -29,7 +29,7 @@ static void banner_tick() {
   static const int id = watch::want("UIAccessInfoDraw");
   uint8_t* a = (uint8_t*)watch::get(id);
   g_banner_moving = false;
-  if (!a) return;
+  if (!a || !ue::known_build()) return;   // the offsets below are this build's: on another one there is no banner
   std::string b;
   int floor = 0;
   // Its state +0x294 on arrival: 13 leaving, 14 loading, 1 the new place (the floor is written first), 2 showing the
@@ -69,8 +69,10 @@ bool area_ids(int& major, int& minor) {
 int tartarus_floor() {
   static const int dcid = watch::want("FldDungeonControlActor");
   UObject* dc = watch::get(dcid);
-  int32_t* f = dc ? (int32_t*)((uint8_t*)dc + 0x2A0) : nullptr;
-  return f && f[0] == 299 && f[1] >= 1 && f[1] < 264 ? f[1] : 0;
+  if (!dc || !ue::known_build()) return 0;   // this build's offsets
+  int32_t dungeon = 0, floor = 0;
+  guarded([&] { int32_t* f = (int32_t*)((uint8_t*)dc + 0x2A0); dungeon = f[0]; floor = f[1]; });
+  return dungeon == 299 && floor >= 1 && floor < 264 ? floor : 0;
 }
 
 std::string area_name() {

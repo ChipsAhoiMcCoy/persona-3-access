@@ -10,7 +10,7 @@
 #include "core/area_text.h"
 #include "core/strings.h"
 #include "devserver.h"
-#include "gametext.h"
+#include "calendar.h"
 #include "poi.h"
 #include "seh.h"
 #include "speech.h"
@@ -80,7 +80,7 @@ static ca::Scene scene(std::vector<std::string>* levels_out = nullptr) {
       bool abyss = false;
       for (const char* n : {"Malebolge", "Cocytus", "Caina", "Antenora", "Ptolomea", "Judecca", "Empyrean"})
         if (s.name.find(n) != std::string::npos) abyss = true;
-      s.name = abyss ? "Monad Chambers" : "Monad";
+      s.name = abyss ? strings::kMonadChambers : strings::kMonad;
       s.major = 0;
       break;
     }
@@ -116,6 +116,7 @@ void install() {
     int major = (int)dev::arg_int(r, "major"), minor = (int)dev::arg_int(r, "minor"), entry = (int)dev::arg_int(r, "entry");
     if (!entry) entry = 1;
     return dev::on_game([=] {
+      if (!ue::known_build()) return std::string("another build of the game\n");   // the address is this build's
       bool ok = guarded([&] { ((void (*)(int, int, int))(scan::exe_base() + 0xa69c740))(major, minor, entry); });
       return std::format("CALL_FIELD({}, {}, {}) {}\n", major, minor, entry, ok ? "called" : "faulted");
     });
@@ -126,6 +127,7 @@ void install() {
     int id = (int)dev::arg_int(r, "id");
     bool door = dev::arg_int(r, "fdoor") != 0;
     return dev::on_game([=] {
+      if (!ue::known_build()) return std::string("another build of the game\n");   // the addresses are this build's
       void* ctrl = *(void**)(scan::exe_base() + 0x5687c10);
       if (!ctrl) return std::string("no dungeon controller\n");
       bool ok = guarded([&] {

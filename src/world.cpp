@@ -70,9 +70,7 @@ bool exploring() {
 bool player_location(FVector& out) {
   UObject* p = player();
   if (!p) return false;
-  static UFunction* fn = nullptr;
-  if (!fn || !is_live(fn)) fn = find_function(class_of(p), "K2_GetActorLocation");
-  Params loc(fn);
+  Params loc(find_function(class_of(p), "K2_GetActorLocation"));
   call(p, loc);
   out = loc.ret<FVector>();
   return true;
@@ -83,9 +81,7 @@ void tick() {
   UObject* cm = g_cam_mgr.resolve();
   if (!cm) { cm = get<UObject*>(player_controller(), "PlayerCameraManager"); g_cam_mgr = WeakObj::of(cm); }
   if (cm) {
-    static UFunction* fn = nullptr;
-    if (!fn || !is_live(fn)) fn = find_function(class_of(cm), "GetCameraRotation");
-    Params r(fn);
+    Params r(find_function(class_of(cm), "GetCameraRotation"));
     call(cm, r);
     g_cam_yaw = r.ret<FRotator>().yaw;
   }
@@ -110,14 +106,23 @@ FVector dir_vector(int dir) {
 }
 
 // ---- traces: UKismetSystemLibrary through ProcessEvent (layouts from reflection) ----
+// The function, its class object and its parameter layout are looked up afresh on the first trace of every frame
+// (world::tick's count): nothing of the engine's is kept from one frame to the next, and a lookup that failed is
+// simply made again.
 struct TraceFn {
+  const char* name;
+  uint64_t frame = ~0ull;   // the frame the rest was read in
   UFunction* fn = nullptr;
   UObject* cdo = nullptr;
-  int32_t o_world, o_start, o_end, o_profile, o_ignore, o_hit, o_ignore_self, o_ret, o_radius = -1, o_half = -1;
-  int32_t h_distance, h_point, h_actor, h_location, h_normal;
+  int32_t o_world = -1, o_start = -1, o_end = -1, o_profile = -1, o_ignore = -1, o_hit = -1, o_ignore_self = -1, o_ret = -1, o_radius = -1, o_half = -1;
+  int32_t h_distance = -1, h_point = -1, h_actor = -1, h_location = -1, h_normal = -1;
   FField* h_blocking = nullptr; FField* h_penetrating = nullptr;
   bool ok = false;
-  explicit TraceFn(const char* name) {
+  explicit TraceFn(const char* fn_name) : name(fn_name) {}
+  void refresh() {
+    if (frame == g_frame) return;
+    frame = g_frame;
+    ok = false;
     UClass* k = find_class("KismetSystemLibrary");
     fn = find_function(k, name);
     cdo = cdo_of(k);
@@ -135,15 +140,13 @@ struct TraceFn {
 
 static bool is_person(UObject* a) {
   if (!a) return false;
-  static UClass* npc = nullptr; static UClass* pawn = nullptr;
-  if (!npc || !is_live(npc)) npc = find_class("FldHitCharacter");
-  if (!pawn || !is_live(pawn)) pawn = find_class("Pawn");
-  return is_a(a, npc) || is_a(a, pawn);
+  return is_a(a, find_class("FldHitCharacter")) || is_a(a, find_class("Pawn"));
 }
 
 static Hit run_trace(TraceFn& t, const FVector& from, const FVector& to, const char* profile, float radius, float half,
                      std::vector<UObject*>* people = nullptr) {
   Hit h;
+  t.refresh();
   if (!t.ok) return h;
   UObject* p = player();
   std::vector<uint8_t> buf(params_size(t.fn), 0);
@@ -200,7 +203,8 @@ std::string status() {
 
 // The field streams whole districts at once: an actor counts only if its level is the persistent level or a streamed
 // level that is visible right now (hidden sublevels keep their actors, parked at the origin; measured 2026-10-27).
-static std::vector<UObject*> g_visible_levels;
+// The levels are kept by index and name, not by pointer: a level that has gone matches nothing.
+static std::vector<WeakObj> g_visible_levels;
 static ULONGLONG g_levels_at = 0;
 static uint64_t g_levels_stamp = 0;
 uint64_t levels_stamp() { return g_levels_stamp; }
@@ -209,42 +213,42 @@ static void refresh_levels() {
   if (now - g_levels_at < 1000) return;
   g_levels_at = now;
   // The list as it was: a change of it is counted (levels_stamp) when this one is complete.
-  struct Count { std::vector<UObject*> was; ~Count() { if (was != g_visible_levels) ++g_levels_stamp; } } count{g_visible_levels};
+  struct Count { std::vector<WeakObj> was; ~Count() { if (!(was == g_visible_levels)) ++g_levels_stamp; } } count{g_visible_levels};
   g_visible_levels.clear();
   UObject* w = gworld();
   if (!w) return;
-  if (UObject* pl = get<UObject*>(w, "PersistentLevel")) g_visible_levels.push_back(pl);
+  if (UObject* pl = get<UObject*>(w, "PersistentLevel")) g_visible_levels.push_back(WeakObj::of(pl));
   auto* levels = field<TArray<UObject*>>(w, "StreamingLevels");
   if (!levels) return;
-  static UFunction* visible_fn = nullptr;
   for (int i = 0; i < levels->num; ++i) {
     UObject* ls = levels->data[i];
     if (!ls) continue;
-    if (!visible_fn || !is_live(visible_fn)) visible_fn = find_function(class_of(ls), "IsLevelVisible");
-    Params p(visible_fn);
+    Params p(find_function(class_of(ls), "IsLevelVisible"));
     call(ls, p);
     if (!p.ret<bool>()) continue;
-    if (UObject* lvl = get<UObject*>(ls, "LoadedLevel")) g_visible_levels.push_back(lvl);
+    if (UObject* lvl = get<UObject*>(ls, "LoadedLevel")) g_visible_levels.push_back(WeakObj::of(lvl));
   }
 }
 bool actor_visible_level(UObject* a) {
   refresh_levels();
   UObject* lvl = outer_of(a);
-  for (UObject* v : g_visible_levels) if (v == lvl) return true;
+  if (!lvl) return false;
+  WeakObj l = WeakObj::of(lvl);
+  for (const WeakObj& v : g_visible_levels) if (v == l) return true;
   return false;
 }
 std::vector<std::string> visible_levels() {
   g_levels_at = 0;   // fresh: the names are read from the level objects themselves
   refresh_levels();
   std::vector<std::string> out;
-  for (UObject* v : g_visible_levels) if (UObject* w = outer_of(v)) out.push_back(name_of(w));   // a ULevel's outer is its UWorld
+  for (const WeakObj& v : g_visible_levels)
+    if (UObject* lvl = v.resolve())
+      if (UObject* w = outer_of(lvl)) out.push_back(name_of(w));   // a ULevel's outer is its UWorld
   return out;
 }
 
 FVector actor_location(UObject* a) {
-  static UFunction* fn = nullptr;
-  if (!fn || !is_live(fn)) fn = find_function(find_class("Actor"), "K2_GetActorLocation");
-  Params p(fn);
+  Params p(find_function(find_class("Actor"), "K2_GetActorLocation"));
   call(a, p);
   return p.ret<FVector>();
 }
@@ -274,27 +278,18 @@ bool capsule_of(UObject* actor, float& radius, float& half_height) {
 }
 
 // Camera-relative bearing of `to` from `from` in degrees: 0 ahead, 90 right, 180 behind, -90 left.
-float bearing(const FVector& from, const FVector& to) {
-  float a = std::atan2(to.y - from.y, to.x - from.x) * 180.0f / 3.14159265f - g_cam_yaw;
-  while (a > 180) a -= 360;
-  while (a < -180) a += 360;
-  return a;
-}
+float bearing(const FVector& from, const FVector& to) { return core::bearing(vec3(from), vec3(to), g_cam_yaw); }
 
+// The hero's location is the capsule's middle and most targets (navmesh points, hit boxes) sit near the floor: see
+// core::listener_spot for how height is counted.
 audio::Spot spot(const FVector& from, const FVector& to) {
-  float dx = to.x - from.x, dy = to.y - from.y, dz = to.z - from.z;
-  float flat = std::hypot(dx, dy);
-  float b = bearing(from, to) * 3.14159265f / 180.0f;
-  // Height counts only past 1.5 m: the hero's location is the capsule's middle and most targets (navmesh points, hit
-  // boxes) sit near the floor, so a thing on the same floor would otherwise sound below you, the more so up close.
-  float lift = std::fabs(dz) > 150.0f ? dz - std::copysign(150.0f, dz) : 0.0f;
-  float e = std::atan2(lift, flat);
+  core::ListenerSpot l = core::listener_spot(vec3(from), vec3(to), g_cam_yaw);
   audio::Spot s;
-  s.right = std::sin(b) * std::cos(e);
-  s.ahead = std::cos(b) * std::cos(e);
-  s.up = std::sin(e);
-  s.dist_m = std::sqrt(flat * flat + dz * dz) / 100.0f;
-  s.pan = std::sin(b);
+  s.right = l.right;
+  s.ahead = l.ahead;
+  s.up = l.up;
+  s.dist_m = l.dist_m;
+  s.pan = l.pan;
   s.placed = true; s.wx = to.x; s.wy = to.y; s.wz = to.z;   // audio::follow keeps it there while it plays
   return s;
 }
@@ -302,9 +297,8 @@ audio::Spot spot(const FVector& from, const FVector& to) {
 // Navmesh path through UNavigationSystemV1::FindPathToLocationSynchronously (static, on the CDO). Empty = no path.
 std::vector<FVector> find_path(const FVector& from, const FVector& to, bool* partial) {
   std::vector<FVector> pts;
-  static UClass* nav = nullptr;
-  static UFunction* fn = nullptr;
-  if (!fn || !is_live(fn)) { nav = find_class("NavigationSystemV1"); fn = find_function(nav, "FindPathToLocationSynchronously"); }
+  UClass* nav = find_class("NavigationSystemV1");
+  UFunction* fn = find_function(nav, "FindPathToLocationSynchronously");
   if (!fn) return pts;
   Params p(fn);
   p.set<UObject*>("WorldContextObject", player() ? player() : gworld());
@@ -316,18 +310,15 @@ std::vector<FVector> find_path(const FVector& from, const FVector& to, bool* par
   auto* arr = field<TArray<FVector>>(path, "PathPoints");
   if (arr) for (int i = 0; i < arr->num; ++i) pts.push_back(arr->data[i]);
   if (partial) {
-    static UFunction* pf = nullptr;
-    if (!pf || !is_live(pf)) pf = find_function(class_of(path), "IsPartial");
-    Params q(pf); call(path, q); *partial = q.ret<bool>();
+    Params q(find_function(class_of(path), "IsPartial")); call(path, q); *partial = q.ret<bool>();
   }
   return pts;
 }
 
 // The nearest navmesh point to `p` within `extent` cm (NavigationSystemV1::K2_ProjectPointToNavigation).
 bool project_to_nav(const FVector& p, float extent, FVector& out) {
-  static UClass* nav = nullptr;
-  static UFunction* fn = nullptr;
-  if (!fn || !is_live(fn)) { nav = find_class("NavigationSystemV1"); fn = find_function(nav, "K2_ProjectPointToNavigation"); }
+  UClass* nav = find_class("NavigationSystemV1");
+  UFunction* fn = find_function(nav, "K2_ProjectPointToNavigation");
   if (!fn) return false;
   Params q(fn);
   q.set<UObject*>("WorldContextObject", player() ? player() : gworld());

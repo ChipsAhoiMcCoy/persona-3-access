@@ -6,14 +6,12 @@
 //  - UGlobalWorkBpLib::GWorkFlagChk: the game's story-flag check, by flag name.
 //  - UFldEnemyComp.EnemyType (EFldEnemyType) and AFldDungeonObjectActor.ObjType (EDungeonObjType), as value names.
 #include "poi_internal.h"
+#include "core/poi_text.h"
 #include "core/strings.h"
 #include "gametext.h"
 #include "seh.h"
 #include "social.h"
-#include <cctype>
 #include <format>
-#include <map>
-#include <set>
 
 namespace p3a::poi {
 using namespace ue;
@@ -34,33 +32,21 @@ const char* kind_name(Kind k) {
 // The cast's actor names carry the romanised Japanese spelling ("Mituru", "Sanada", "Fuka", "Aegis"): the names the
 // English game uses. Everyone else reads by the actor-name token.
 static std::string npc_actor_name(UObject* npc) {
-  static const std::map<std::string, std::string> cast = {
-    {"Yukari", "Yukari"}, {"Junpei", "Junpei"}, {"Mituru", "Mitsuru"}, {"Sanada", "Akihiko"}, {"Fuka", "Fuuka"},
-    {"Aegis", "Aigis"}, {"Koromaru", "Koromaru"}, {"Ken", "Ken"}, {"Amada", "Ken"}, {"Shinjiro", "Shinjiro"}, {"Aragaki", "Shinjiro"},
-    {"Ikutsuki", "Ikutsuki"}, {"Elizabeth", "Elizabeth"}, {"Igor", "Igor"}, {"Pharos", "Pharos"},
-  };
-  // FldNpcActor_105_102_Yukari_6 -> the first token after the field ids
-  std::string n = name_of(npc);
-  std::vector<std::string> tok;
-  for (size_t s = 0; s <= n.size();) { size_t e = n.find('_', s); if (e == std::string::npos) e = n.size(); tok.push_back(n.substr(s, e - s)); s = e + 1; }
-  for (auto& t : tok) { auto it = cast.find(t); if (it != cast.end()) return it->second; }
-  // The first word after the class (FldNpcActor_Jin has no field ids at all: Adamah, 2026-10-28).
-  for (size_t i = 1; i < tok.size(); ++i) if (!tok[i].empty() && !isdigit((unsigned char)tok[i][0])) return tok[i];
-  return strings::kPoiPerson;
+  std::string n = core::person_from_actor_name(name_of(npc));
+  return n.empty() ? std::string(strings::kPoiPerson) : n;
 }
 
 // UGlobalWorkBpLib::GWorkFlagChk(FName, out EGWorkOnOffEnum) -- the game's own story-flag check.
 bool flag_on(const std::string& flag) {
-  static UClass* lib = nullptr;
-  static UFunction* fn = nullptr;
-  if (!fn || !is_live(fn)) { lib = find_class("GlobalWorkBpLib"); fn = find_function(lib, "GWorkFlagChk"); }
+  UClass* lib = find_class("GlobalWorkBpLib");
+  UFunction* fn = find_function(lib, "GWorkFlagChk");
   if (!fn) return false;
   // "FOO_12" is the FName FOO with number 13 (Unreal splits a numeric suffix without a leading zero off the name).
   FName name{fname_index(flag), 0};
-  size_t us = flag.find_last_of('_');
-  if (us != std::string::npos && us + 1 < flag.size() && flag.size() - us <= 10 &&
-      flag.find_first_not_of("0123456789", us + 1) == std::string::npos && (flag[us + 1] != '0' || us + 2 == flag.size()))
-    if (int32_t base = fname_index(std::string_view(flag).substr(0, us)); base >= 0) name = {base, std::stoi(flag.substr(us + 1)) + 1};
+  std::string base_name;
+  int number = 0;
+  if (core::numbered_name(flag, base_name, number))
+    if (int32_t base = fname_index(base_name); base >= 0) name = {base, number};
   if (name.index < 0) return false;
   Params p(fn);
   p.set<FName>("FlagName", name);
@@ -111,34 +97,13 @@ std::string npc_name(UObject* npc) {
   return n.empty() ? npc_actor_name(npc) : n;
 }
 
-// The game marks nearly every hit with the plain Check icon: a business's door (Be Blue V, the police station, Hagakure
-// Ramen) and a classroom's look exactly like a bookshelf; only the Net Cafe and Umiushi carry the Shop icon. Their
-// scripts tell them apart (HIT_SKILL_SHOP, HIT_POLICE_ENTER, CALL_PUBLIC_SHOP; FLD_OPEN_ORD_DOOR_FADE for a room), so
-// these lists sort the Check hits by the name the game gives them (surveyed from every field level's hits and their
-// BF_OBJ flowscripts, 2026-10-31).
+// A hit under the plain Check icon, sorted by the name the game gives it (the lists: core::check_kind).
 Kind check_kind(const std::string& name) {
-  // Somewhere to buy, eat, work or spend time: a business's entrance, a vendor, a vending machine.
-  static const std::set<std::string> shops = {
-    "Aohige Pharmacy", "Azuki Arai Sweets", "Be Blue V", "Bookworms", "Used Bookstore", "Caf\xC3\xA9",
-    "Chagall Caf\xC3\xA9", "Net Caf\xC3\xA9", "Game Parade", "Hagakure Ramen", "Ramen Shop", "Wakatsu Kitchen", "Umiushi Beef Bowls",
-    "Hamburger Shop", "Wilduck Burger", "Kenneth Arnold", "Mahjong Parlor Red Hawk", "Mandragora", "Mayoido",
-    "Mayoido Antiques", "Octopia", "Police Station", "Que Sera Sera", "Screen Shot", "Takoyaki Vendor",
-    "Vending Machine", "Mystery Vending Machine", "Ticket Booth", "Kyoto Souvenirs", "Souvenir Sweets", "Kyoto Crafts",
-  };
-  // A room's door you check to go in (or find locked): classrooms, offices, restrooms, the dorm's bedrooms.
-  static const std::set<std::string> doors = {
-    "Classroom Door", "Classroom 2-E", "Computer Room", "Faculty Office", "Library", "Nurse's Office", "Laboratory",
-    "Janitor's Room", "Art Room", "Science Room", "Music Room", "Music Prep Room", "Home Ec Prep Room",
-    "Home Economics Room", "PA Room", "Printing Room", "Student Council Room", "Welfare Training Room", "Gym",
-    "Indoor Swimming Pool", "Practice Field", "Men's Room", "Women's Room", "Restroom", "Bathroom", "Storage Room",
-    "Storeroom", "Rooftop Storage", "Emergency Exit", "Rear Entrance", "Kitchen Door", "Locked Gate", "Metal Doors",
-    "Large Door", "Command Room", "Sanada's Room", "Mitsuru's Room", "Yukari's Room", "Vacant Room", "Junpei's Room",
-    "Aragaki's Room", "Amada's Room", "Fuuka's Room", "Aigis's Room", "His Room", "Door to Velvet Room", "Fuji Room", "Inn Exit", "Hot Spring",
-    "School Building 2F", "School Building 3F",   // the school's stairs (a Check hit, HIT_SECOND_FLOOR_STAIRS)
-  };
-  if (shops.count(name)) return Kind::Shop;
-  if (doors.count(name)) return Kind::Door;
-  return Kind::Thing;
+  switch (core::check_kind(name)) {
+    case core::CheckKind::Shop: return Kind::Shop;
+    case core::CheckKind::Door: return Kind::Door;
+    default: return Kind::Thing;
+  }
 }
 
 std::string icon_of(UObject* hit) { return enum_prop_name(hit, "mCheckIcon_"); }
@@ -158,14 +123,9 @@ bool fragment_spot(UObject* hit) {
 // object the hit belongs to (FldDungeonObjectActor.ObjType, EDungeonObjType; its hits are m_pHitActorList). The
 // locked ones cost Twilight Fragments to open: TBoxMedal1/2/3 take 1/2/3 (the chest's script, SUB_TBOX_MEDAL).
 // Seen on Adamah floor 240 (2026-11-11): TBoxPrimField is a plain black chest, TBoxRare a silver case under purple
-// sparks, TBoxJewelry a gold case under a gold glow (it held a Diamond). Locked chests: UNTESTED, none met.
-std::string chest_name(const std::string& type, const std::string& game_name) {
-  if (type == "TBoxRare") return strings::kPoiChestRare;
-  if (type == "TBoxJewelry") return strings::kPoiChestGold;
-  int cost = type == "TBoxMedal1" ? 1 : type == "TBoxMedal2" ? 2 : type == "TBoxMedal3" ? 3 : 0;
-  if (cost) return std::format("{}, {} {}", strings::kPoiChestLocked, cost, cost == 1 ? strings::kPoiFragment : strings::kPoiFragments);
-  return game_name;
-}
+// sparks, TBoxJewelry a gold case under a gold glow (it held a Diamond). A locked one was seen listed on Adamah floors
+// 247 and 255 (2026-11-11): "Locked Treasure Chest, 3 Twilight Fragments".
+std::string chest_name(const std::string& type, const std::string& game_name) { return core::chest_name(type, game_name); }
 
 // A roaming Shadow's kind, the game's own (UFldEnemyComp.EnemyType, EFldEnemyType, on the component the enemy
 // manager holds beside the actor; the actor's class says the same: BP_FldEmNormal / Strong / Rare / Death). "Rare

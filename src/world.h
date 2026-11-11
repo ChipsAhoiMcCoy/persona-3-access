@@ -3,6 +3,7 @@
 #include <vector>
 #include "audio.h"
 #include "core/boxes.h"
+#include "core/listener.h"
 #include "ue/ue.h"
 
 namespace p3a::world {

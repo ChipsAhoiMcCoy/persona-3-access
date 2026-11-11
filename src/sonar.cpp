@@ -21,7 +21,17 @@ using core::SonarCue;
 using world::FVector;
 
 constexpr int kKinds = (int)SonarCue::Count;
-constexpr const char* kKindName[kKinds] = {"exit", "door", "person", "shop", "object", "event", "fragment"};
+// Each kind of sound, in SonarCue's order: its name (the log, /sonar), the setting that switches it, and the points
+// of interest it sounds for.
+struct KindInfo { const char* name; settings::Id setting; poi::Kind poi; };
+constexpr KindInfo kKind[kKinds] = {
+  {"exit", settings::SonarExits, poi::Kind::Exit},       {"door", settings::SonarDoors, poi::Kind::Door},
+  {"person", settings::SonarPeople, poi::Kind::Person},  {"shop", settings::SonarShops, poi::Kind::Shop},
+  {"object", settings::SonarThings, poi::Kind::Thing},   {"event", settings::SonarEvents, poi::Kind::Event},
+  {"fragment", settings::SonarFragments, poi::Kind::Fragment},
+};
+static_assert((int)SonarCue::Exit == 0 && (int)SonarCue::Door == 1 && (int)SonarCue::Person == 2 && (int)SonarCue::Shop == 3 &&
+              (int)SonarCue::Thing == 4 && (int)SonarCue::Event == 5 && (int)SonarCue::Fragment == 6, "kKind is in SonarCue's order");
 constexpr size_t kMaxSources = 6;      // the nearest things that sound at once
 constexpr int kMaxPerKind = 3;         // of one kind: a corridor of students must not drown the door beside you
 constexpr float kNearM = 1.5f;         // at and under this: full volume (the rhythm has its own scale: core/sonar_field)
@@ -43,22 +53,10 @@ ULONGLONG g_scan_at = 0;
 long long g_fired = 0;
 
 int cue_of(poi::Kind k) {
-  switch (k) {
-    case poi::Kind::Exit: return (int)SonarCue::Exit;
-    case poi::Kind::Door: return (int)SonarCue::Door;
-    case poi::Kind::Person: return (int)SonarCue::Person;
-    case poi::Kind::Shop: return (int)SonarCue::Shop;
-    case poi::Kind::Thing: return (int)SonarCue::Thing;
-    case poi::Kind::Event: return (int)SonarCue::Event;
-    case poi::Kind::Fragment: return (int)SonarCue::Fragment;
-    default: return -1;   // Shadows: their own pulse
-  }
+  for (int i = 0; i < kKinds; ++i) if (kKind[i].poi == k) return i;
+  return -1;   // Shadows: their own sounds
 }
-bool kind_on(int kind) {
-  static const settings::Id ids[kKinds] = {settings::SonarExits, settings::SonarDoors, settings::SonarPeople, settings::SonarShops, settings::SonarThings,
-                                           settings::SonarEvents, settings::SonarFragments};
-  return kind >= 0 && kind < kKinds && settings::on(ids[kind]);
-}
+bool kind_on(int kind) { return kind >= 0 && kind < kKinds && settings::on(kKind[kind].setting); }
 
 // The sounds, made once at the mixer's rate.
 audio::Pcm cue(int kind, bool brief = false) {
@@ -172,7 +170,7 @@ void tick() {
         emit(s.kind, me, s.loc);
         if (std::find(heard.begin(), heard.end(), p.id) == heard.end()) {
           heard.push_back(p.id);
-          log::writef("sonar: {} #{} first sounds at {:.1f} m", kKindName[s.kind], s.obj.index, dist_m(me, s.loc));
+          log::writef("sonar: {} #{} first sounds at {:.1f} m", kKind[s.kind].name, s.obj.index, dist_m(me, s.loc));
         }
         break;
       }
@@ -184,7 +182,7 @@ void toggle() {
 }
 
 void selected(const poi::Poi& p) {
-  if (!settings::on(settings::Sonar)) return;
+  if (!settings::on(settings::Sonar) || !world::exploring()) return;
   FVector me;
   int kind = cue_of(p.kind);
   if (kind < 0 || !world::player_location(me)) return;
@@ -192,8 +190,8 @@ void selected(const poi::Poi& p) {
 }
 
 bool preview(settings::Id id) {
-  int kind = id == settings::SonarExits ? 0 : id == settings::SonarDoors ? 1 : id == settings::SonarPeople ? 2 :
-             id == settings::SonarShops ? 3 : id == settings::SonarThings ? 4 : id == settings::SonarEvents ? 5 : id == settings::SonarFragments ? 6 : id == settings::SonarVolume ? (int)SonarCue::Thing : -1;
+  int kind = id == settings::SonarVolume ? (int)SonarCue::Thing : -1;
+  for (int k = 0; k < kKinds; ++k) if (kKind[k].setting == id) kind = k;
   if (kind < 0) return false;
   audio::play(cue(kind), 1.0f, audio::Spot{}, audio::Bus::Sonar);   // straight ahead, at arm's length
   return true;
@@ -213,19 +211,19 @@ void install() {
     std::string play = dev::arg(r, "play"), trim = dev::arg(r, "trim");
     return dev::on_game([play, trim] {
       for (int k = 0; k < kKinds; ++k) {
-        if (play == kKindName[k]) audio::play(cue(k), 1.0f, audio::Spot{}, audio::Bus::Sonar);
-        if (size_t c = trim.find(','); c != std::string::npos && trim.substr(0, c) == kKindName[k]) g_trim_db[k] = (float)atof(trim.c_str() + c + 1);
+        if (play == kKind[k].name) audio::play(cue(k), 1.0f, audio::Spot{}, audio::Bus::Sonar);
+        if (size_t c = trim.find(','); c != std::string::npos && trim.substr(0, c) == kKind[k].name) g_trim_db[k] = (float)atof(trim.c_str() + c + 1);
       }
       std::string s = std::format("sonar on={} scope={} range={} m in_field={} sources={} tracked={} fired={}\ntrims dB:", settings::on(settings::Sonar),
                                   settings::get(settings::SonarScope), settings::get(settings::SonarRange), in_field(), g_sources.size(), g_field.tracked(), g_fired);
-      for (int k = 0; k < kKinds; ++k) s += std::format(" {}={:+.1f}", kKindName[k], g_trim_db[k]);
+      for (int k = 0; k < kKinds; ++k) s += std::format(" {}={:+.1f}", kKind[k].name, g_trim_db[k]);
       s += "\n";
       FVector me;
       if (world::player_location(me))
         for (const Source& src : g_sources) {
           float d = dist_m(me, src.loc);
           audio::Spot at = world::spot(me, src.loc);
-          s += std::format("  {:<7} {:5.1f} m  every {:.2f} s  gain {:.2f}  right {:+.2f} ahead {:+.2f} up {:+.2f}{}  #{}\n", kKindName[src.kind], d,
+          s += std::format("  {:<7} {:5.1f} m  every {:.2f} s  gain {:.2f}  right {:+.2f} ahead {:+.2f} up {:+.2f}{}  #{}\n", kKind[src.kind].name, d,
                            g_field.params().period_for(d), gain_at(d), at.right, at.ahead, at.up, src.selected ? "  selected" : "", src.obj.index);
         }
       return s;

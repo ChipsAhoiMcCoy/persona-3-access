@@ -8,6 +8,7 @@
 //  - UFldDungeonMissingController.m_pMissingPerson; AEnemySymbolBaseCore (the roaming Shadows) with the enemy
 //    manager's holders (shadow::enemy_holders).
 #include "poi_internal.h"
+#include "core/poi_text.h"
 #include "core/strings.h"
 #include "devserver.h"
 #include "doors.h"
@@ -91,7 +92,7 @@ std::vector<Poi> scan(float radius) {
     if (doors::behind(a, me, v)) return;
     // The daily and the Dark Hour version of a hit often stand on the same spot: one entry per name and place.
     for (auto& o : out)
-      if (o.name == name && std::fabs(o.loc.x - v.x) + std::fabs(o.loc.y - v.y) + std::fabs(o.loc.z - v.z) < 150.0f) return;
+      if (core::same_thing(o.name, world::vec3(o.loc), name, world::vec3(v))) return;
     out.push_back(Poi{WeakObj::of(a), k, std::move(name), v, d, world::bearing(me, v)});
   };
   std::vector<UObject*> triggers;
@@ -100,14 +101,16 @@ std::vector<Poi> scan(float radius) {
   // (Takaya's box floats 7 m up a ramp, with no navmesh path to its centre), until its off flag is set.
   // UNTESTED: written while the game was in use; verify at Adamah floor 263 (slot 15).
   auto story_beat = [](UObject* a) -> std::string {
-    std::string n = name_of(a);
-    std::vector<std::string> tok;
-    for (size_t b = 0; b <= n.size();) { size_t e = n.find('_', b); if (e == std::string::npos) e = n.size(); tok.push_back(n.substr(b, e - b)); b = e + 1; }
-    if (tok.size() < 4 || tok[0] != "FldHitActor" || tok[1].empty() || !isdigit((unsigned char)tok[1][0])) return {};
-    const std::string& w = tok[2];
-    if (w.size() < 2 || !isalpha((unsigned char)w[0]) || (w[0] == 'H' && isdigit((unsigned char)w[1]))) return {};
-    if (flag_prop_on(a, "mOffFlagName_")) return {};
+    std::string w = core::story_scene(name_of(a));
+    if (w.empty() || flag_prop_on(a, "mOffFlagName_")) return {};
     return w;
+  };
+  // A thing farther off than the list's own range cannot be in the result, nor change it: it is passed over before
+  // its name and flags are read (most of a town's hit actors, every scan).
+  auto out_of_range = [&](UObject* a) {
+    world::FVector v{};
+    if (!guarded([&] { v = world::actor_location(a); })) return true;
+    return std::sqrt((v.x - me.x) * (v.x - me.x) + (v.y - me.y) * (v.y - me.y) + (v.z - me.z) * (v.z - me.z)) > list_radius;
   };
   std::map<UObject*, std::string> chests;   // a chest's hit -> its dungeon object's type
   for (UObject* o : live("FldDungeonObjectActor")) {
@@ -126,7 +129,7 @@ std::vector<Poi> scan(float radius) {
   if (UObject* mc = watch::get(missing_id)) missing = get<UObject*>(mc, "m_pMissingPerson");
   if (missing && (!is_live(missing) || get_bool(missing, "bHidden"))) missing = nullptr;
   for (UObject* a : live("FldHitCore")) {
-    if (!world::actor_visible_level(a) || is_a(a, "FldNpcActor")) continue;
+    if (!world::actor_visible_level(a) || is_a(a, "FldNpcActor") || out_of_range(a)) continue;
     std::string icon = icon_of(a);
     // The missing person's only hit has no icon: a sphere that starts the rescue when walked into
     // (BP_DHIT_MISNPC_C, overlap BP_FldHit_MISNPC_01_HERO_C). Named by the game's hit-name table: "Stray Cat",
@@ -208,15 +211,10 @@ std::vector<Poi> scan(float radius) {
   std::sort(out.begin(), out.end(), [](const Poi& a, const Poi& b) { return a.dist < b.dist; });
   // A door between two rooms is two exits a step apart, one on each side, each named for where it leads (the
   // monorail's cars, 1.4 m apart, 2026-10-27): only the one on the player's side, the nearer, counts.
+  std::vector<core::Place> places;
+  for (auto& p : out) places.push_back(core::Place{p.kind == Kind::Exit, p.name, world::vec3(p.loc)});
   std::vector<Poi> kept;
-  for (auto& p : out) {
-    bool far_side = false;
-    if (p.kind == Kind::Exit)
-      for (auto& k : kept)
-        if (k.kind == Kind::Exit && k.name != p.name &&
-            std::hypot(k.loc.x - p.loc.x, k.loc.y - p.loc.y, k.loc.z - p.loc.z) < 200.0f) far_side = true;
-    if (!far_side) kept.push_back(std::move(p));
-  }
+  for (size_t i : core::near_sides(places)) kept.push_back(std::move(out[i]));
   return kept;
 }
 

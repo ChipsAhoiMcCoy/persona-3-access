@@ -156,23 +156,26 @@ bool breakable_in_reach(const FVector& me, FVector& at) {
   return found != nullptr;
 }
 
-// Within 4 m the nearest Shadow's heading is spoken once ("back turned" / "facing you"). In reach of the strike a
-// blade's ring repeats; from behind it (the battle then starts with the advantage) two rising ticks instead.
+// Within 4 m the nearest Shadow's heading is spoken ("back turned" / "facing you"): each of the two lines at most
+// once per approach, however often the Shadow turns meanwhile. An approach ends when that Shadow is more than 6 m
+// off, or when another Shadow becomes the close one. In reach of the strike a blade's ring repeats; from behind it
+// (the battle then starts with the advantage) two rising ticks instead: the ring follows its facing as it is now.
 // Returns the ring's cue while the Shadow is in reach, else -1.
 int close_cues(const Seen& s, const FVector& me) {
-  static WeakObj told;
-  static int told_state = -1;
+  static WeakObj told;                 // the Shadow this approach is to
+  static bool said[2] = {false, false};   // "facing you", "back turned": said on this approach
   float to_me = std::atan2(me.y - s.at.y, me.x - s.at.x) * 180.0f / kPi;
   bool back_turned = angle_diff(yaw_of(s.actor), to_me) > 110.0f;   // the hero is outside its front
   WeakObj w = WeakObj::of(s.actor);
   if (s.dist < 400.0f) {
+    if (!(w == told)) { told = w; said[0] = said[1] = false; }
     int st = back_turned ? 1 : 0;
-    if (!(w == told) || st != told_state) {
-      told = w; told_state = st;
+    if (!said[st]) {
+      said[st] = true;
       speech::speak(back_turned ? strings::kShadowBackTurned : strings::kShadowFacingYou, false);
     }
   } else if (s.dist > 600.0f && w.index == told.index) {
-    told_state = -1;
+    said[0] = said[1] = false;
   }
   if (s.dist > 800.0f) return -1;
   bool known = false;
@@ -189,6 +192,8 @@ int close_cues(const Seen& s, const FVector& me) {
 // What each Shadow knows of the hero, followed from the marks the game shows over it: the exclamation mark is the
 // moment it notices him (the alarm), and it hunts him from then until its question mark (it lost him) or until it
 // lets go of him as its target (the falling notes). The target alone starts nothing: only the mark says "noticed".
+// Every Shadow on the floor is followed for as long as its actor is there and shown, however far off it is, so one
+// that hunts the hero out of earshot and back still reads as hunting; the two cues sound only within kMindRange.
 struct Mind { bool hunting = false, tracked = false; Mark last = Mark::None; };
 std::map<WeakObj::Key, Mind> g_minds;
 bool hunting(UObject* shadow) {
@@ -198,7 +203,7 @@ bool hunting(UObject* shadow) {
 void mind_cues(const std::vector<Seen>& seen, const FVector& me) {
   std::map<WeakObj::Key, Mind> now_known;
   for (const Seen& s : seen) {
-    if (s.dist > kMindRange) continue;
+    const bool heard = s.dist <= kMindRange;
     auto key = WeakObj::of(s.actor).key();
     auto it = g_minds.find(key);
     Mind m = it == g_minds.end() ? Mind{} : it->second;
@@ -210,8 +215,13 @@ void mind_cues(const std::vector<Seen>& seen, const FVector& me) {
       else if (m.tracked) m.hunting = false;   // it held him as its target and has let go
     }
     m.last = s.raw.mark;
-    if (m.hunting && !was) { audio::signal((int)SignalCue::Spotted, 1.4f, world::spot(me, s.at)); log::writef("shadow: #{} noticed the hero at {:.1f} m", std::get<0>(key), s.dist / 100.0f); }
-    else if (was && !m.hunting) { audio::signal((int)SignalCue::Lost, 1.1f, world::spot(me, s.at)); log::writef("shadow: #{} lost the hero", std::get<0>(key)); }
+    if (m.hunting && !was) {
+      if (heard) audio::signal((int)SignalCue::Spotted, 1.4f, world::spot(me, s.at));
+      log::writef("shadow: #{} noticed the hero at {:.1f} m{}", std::get<0>(key), s.dist / 100.0f, heard ? "" : " (too far off for the cue)");
+    } else if (was && !m.hunting) {
+      if (heard) audio::signal((int)SignalCue::Lost, 1.1f, world::spot(me, s.at));
+      log::writef("shadow: #{} lost the hero{}", std::get<0>(key), heard ? "" : " (too far off for the cue)");
+    }
     now_known[key] = m;
   }
   g_minds.swap(now_known);
@@ -229,7 +239,7 @@ std::vector<Holder> enemy_holders() {
 }
 
 void tick() {
-  if (!settings::on(settings::ShadowAlerts)) return;
+  if (!settings::on(settings::ShadowAlerts) || !world::exploring()) return;
   FVector me;
   if (!world::player_location(me)) return;
   std::vector<Seen> seen = look(me);

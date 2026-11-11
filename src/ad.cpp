@@ -24,6 +24,7 @@
 #include <cstring>
 #include <format>
 #include <memory>
+#include <mutex>
 #include <thread>
 
 namespace p3a::ad {
@@ -59,6 +60,14 @@ bool g_was_playing = false;
 std::string g_key;                  // the movie we last set up for (with or without descriptions)
 float g_base_volume = -1, g_volume = -1;
 // All of the above is the game thread's: the dev routes read it through dev::on_game.
+
+// The clip decoders: one worker thread per described movie, each owned here until it is joined (once its scene is
+// ready, at the next movie's load; or at unload, which first tells them to stop). Their code is in this DLL, so none
+// may outlive it. The list is never destroyed: a thread still joinable must not meet its destructor at process exit.
+struct Decoder { std::thread thread; std::shared_ptr<Scene> scene; };
+std::mutex g_decoders_mu;                // the list (the game thread loads, unload runs on another thread)
+std::atomic<bool> g_unloading{false};    // set by unload: no new decoder, and the running ones stop after their clip
+std::vector<Decoder>& decoders() { static auto* list = new std::vector<Decoder>; return *list; }
 
 int player_id() { static int id = watch::want("BP_MoviePlayer_C"); return id; }
 int track_player_id() { static int id = watch::want("BP_MoviePlayerEventSequenceTrack_C"); return id; }
@@ -112,14 +121,22 @@ std::shared_ptr<Scene> load_scene(const std::string& key) {
   }
   fclose(f);
   s->pcm.resize(s->cues.size());
-  std::thread([s] {
-    for (size_t i = 0; i < s->files.size(); ++i) {
+  std::lock_guard lk(g_decoders_mu);
+  if (g_unloading) return nullptr;
+  std::vector<Decoder>& list = decoders();
+  // The decoders that have finished are joined here (their last statement sets `ready`: no wait to speak of).
+  for (auto it = list.begin(); it != list.end();) {
+    if (it->scene->ready) { it->thread.join(); it = list.erase(it); }
+    else ++it;
+  }
+  list.push_back(Decoder{std::thread([s] {
+    for (size_t i = 0; i < s->files.size() && !g_unloading; ++i) {
       auto v = std::make_shared<std::vector<float>>();
       if (audio::decode_mono(data_dir() + s->key + "\\" + s->files[i], *v)) s->pcm[i] = std::move(v);
       else ++s->failed;
     }
     s->ready = true;
-  }).detach();
+  }), s});
   return s;
 }
 
@@ -150,6 +167,13 @@ void stop_all() {
   g_voice_id = -1;
 }
 }  // namespace
+
+void unload() {
+  g_unloading = true;
+  std::vector<Decoder> list;
+  { std::lock_guard lk(g_decoders_mu); list.swap(decoders()); }
+  for (Decoder& d : list) if (d.thread.joinable()) d.thread.join();
+}
 
 Clock clock() {
   Clock c;

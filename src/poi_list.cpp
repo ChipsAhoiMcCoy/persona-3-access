@@ -3,6 +3,7 @@
 // opening the controller's mod layer, selects the nearest; an empty category is skipped.
 // Read here: the selected actor's own place (K2_GetActorLocation) and bHidden; everything else comes from poi::scan.
 #include "poi_internal.h"
+#include "core/poi_text.h"
 #include "core/strings.h"
 #include "core/units.h"
 #include "doors.h"
@@ -16,11 +17,7 @@
 namespace p3a::poi {
 using namespace ue;
 
-std::string clock(float b) {
-  int h = (int)std::lround(b / 30.0f);
-  if (h <= 0) h += 12;
-  return std::format("{} o'clock", h);
-}
+std::string clock(float b) { return std::format("{} {}", core::clock_hour(b), strings::kOClock); }
 
 std::string describe(const Poi& p) {
   // The name stands alone, a way into another area's too: it is where it leads, and its category says what it is
@@ -66,13 +63,13 @@ static std::vector<Poi> in_category(const std::vector<Poi>& all, Cat c) {
 
 // The current category, or the next one in `delta`'s direction that has something (staying put when it does).
 static std::vector<Poi> settle(const std::vector<Poi>& all, int delta, bool move) {
-  int n = (int)Cat::Count;
-  for (int step = move ? 1 : 0; step <= n; ++step) {
-    Cat c = (Cat)((((int)g_cat + step * delta) % n + n) % n);
-    auto v = in_category(all, c);
-    if (!v.empty()) { g_cat = c; return v; }
-  }
-  return {};
+  int c = core::settle_category((int)g_cat, (int)Cat::Count, delta, move, [&](int cat) {
+    for (auto& p : all) if (in_cat(p, (Cat)cat)) return true;
+    return false;
+  });
+  if (c < 0) return {};
+  g_cat = (Cat)c;
+  return in_category(all, g_cat);
 }
 
 // "Exits: Iwatodai Station, 6 meters, 2 o'clock, 1 of 3", the nearest selected.
@@ -84,7 +81,15 @@ static void announce_nearest(const std::vector<Poi>& list) {
   sonar::selected(list[0]);   // its sound, from where it is
 }
 
+// The list is of the field the player is walking: in a menu, a conversation, a battle or a scene its keys say so.
+static bool in_field() {
+  if (world::exploring()) return true;
+  speech::speak(strings::kNotInField, true);
+  return false;
+}
+
 void next(int delta) {
+  if (!in_field()) return;
   auto all = scan();
   Cat was = g_cat;
   auto list = settle(all, 1, false);
@@ -99,7 +104,10 @@ void next(int delta) {
   sonar::selected(list[i]);
 }
 
-void next_category(int delta) { announce_nearest(settle(scan(), delta, true)); }
+void next_category(int delta) {
+  if (!in_field()) return;
+  announce_nearest(settle(scan(), delta, true));
+}
 
 void announce_list() { announce_nearest(settle(scan(), 1, false)); }
 

@@ -7,6 +7,7 @@
 //    (textcap source 0), while the field's panel is up: AUIAccessInfoDraw's task state +0x294 is 3.
 //  - A picked-up item's line ("Revival Bead×1") is drawn at the left through FontDrawEx (textcap source 2).
 #include "poi_internal.h"
+#include "core/poi_text.h"
 #include "core/strings.h"
 #include "core/text_clean.h"
 #include "msg.h"
@@ -28,17 +29,10 @@ using namespace ue;
 
 // A point of interest named by a prompt's label: a Social Link partner's name carries its arcana ("Nozomi Suemitsu
 // (Moon)"), the prompt only the name (his prompt had no verb and no rank, 2026-11-03).
-static bool is_named(const std::string& poi_name, const std::string& label) {
-  return poi_name == label || (poi_name.size() > label.size() + 2 && poi_name.starts_with(label) &&
-                               poi_name.compare(label.size(), 2, " (") == 0);
-}
+using core::is_named;
 // A way onward the game names as what you do there ("Go Elsewhere", "Head Up", "Return to Dorm", "Proceed Onward",
 // "Enter the Velvet Room", "To furthest floor": every such first word in the DT_Fld*HitName tables), not as a place.
-static bool named_as_action(const std::string& name) {
-  for (const char* verb : {"Go ", "Head ", "Return ", "Proceed ", "Enter ", "Exit ", "To "})
-    if (name.rfind(verb, 0) == 0) return true;
-  return false;
-}
+using core::named_as_action;
 // `of`: the point of interest the prompt belongs to, the nearest of that name (left alone when it is nobody's).
 static std::string verb_for(const std::string& label, WeakObj* of = nullptr) {
   for (auto& p : scan(800.0f)) {
@@ -84,7 +78,7 @@ static std::string misc_check_label() {
   static const int id = watch::want("UIMiscCheckDraw");
   uint8_t* a = (uint8_t*)watch::get(id);
   std::string label;
-  if (a) guarded([&] {
+  if (a && ue::known_build()) guarded([&] {   // this build's offsets: on another one no prompt is read
     int st = *(int32_t*)(a + 0x294);
     if (st == 1 || st == 2) label = core::clean_text(to_utf8(*(FString*)(a + 0x9A8)));
   });
@@ -99,7 +93,8 @@ void prompt_tick() {
   static const int access_info = watch::want("UIAccessInfoDraw");
   uint8_t* panel = (uint8_t*)watch::get(access_info);
   int panel_state = -1;
-  if (panel) guarded([&] { panel_state = *(int32_t*)(panel + 0x294); });
+  // The state's offset is this build's: on another one the panel reads as never up, and no objective is taken.
+  if (panel && ue::known_build()) guarded([&] { panel_state = *(int32_t*)(panel + 0x294); });
   static bool field_was = false;
   static uint64_t field_since = 0;
   bool field_up = !panel || panel_state == 3;

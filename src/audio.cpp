@@ -233,7 +233,9 @@ void shutdown() {
   g_narr = Narr{};
 }
 
-void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate) {
+// One shot into the mixer, whole, under the lock. `spatial`: heard from `at` (through the HRTF, panned without it);
+// false: from no place, both ears alike.
+static void push_shot(Pcm pcm, float volume, const Spot& at, Bus bus, float rate, bool spatial) {
   if (!g_ready || !pcm || pcm->size() < 2 || (int)bus < 0 || bus >= Bus::Count) return;   // only the device callback drains g_shots
   std::lock_guard lk(g_mu);
   if (g_shots.size() >= kMaxShots) return;
@@ -243,8 +245,10 @@ void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate) {
   s.rate = std::clamp(rate, 0.25f, 4.0f);
   s.bus = bus;
   s.spot = at;
+  s.spatial = spatial;
   g_shots.push_back(std::move(s));
 }
+void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate) { push_shot(std::move(pcm), volume, at, bus, rate, true); }
 int sample_rate() { return kRate; }
 // A sound's volume and pitch stay as they started (the sonar's level for its distance, the lower pitch from behind):
 // only where it is heard from moves. The HRTF takes a new direction per 10 ms block and blends from the last one.
@@ -256,21 +260,15 @@ void follow(const std::function<Spot(float, float, float)>& where) {
   for (Shot& s : g_shots) if (!s.dead && s.spot.placed) { s.spot = where(s.spot.wx, s.spot.wy, s.spot.wz); s.spot.placed = true; ++n; }
   g_followed += n;
 }
-void signal(int signal, float volume, const Spot& at, float rate) {
-  static Pcm made[(int)core::SignalCue::Count];   // game thread only: made on first use
-  if (signal < 0 || signal >= (int)core::SignalCue::Count) return;
+// A signal's samples, made on first use (game thread only). Null for a number that is no signal.
+static Pcm signal_pcm(int signal) {
+  static Pcm made[(int)core::SignalCue::Count];
+  if (signal < 0 || signal >= (int)core::SignalCue::Count) return nullptr;
   if (!made[signal]) made[signal] = std::make_shared<const std::vector<float>>(core::signal_cue((core::SignalCue)signal, kRate));
-  play(made[signal], volume, at, Bus::Cues, rate);
+  return made[signal];
 }
-void signal_here(int signal, float volume) {
-  if (!g_ready || signal < 0 || signal >= (int)core::SignalCue::Count) return;
-  audio::signal(signal, 0.0f, Spot{});   // makes it on first use (a silent shot)
-  std::lock_guard lk(g_mu);
-  if (g_shots.empty() || g_shots.back().vol != 0.0f || g_shots.back().pos != 0) return;   // the mixer was full: not made
-  Shot& s = g_shots.back();   // that shot: no place, both ears alike
-  s.vol = volume < 0 ? 0 : volume;
-  s.spatial = false;
-}
+void signal(int signal, float volume, const Spot& at, float rate) { push_shot(signal_pcm(signal), volume, at, Bus::Cues, rate, true); }
+void signal_here(int signal, float volume) { push_shot(signal_pcm(signal), volume, Spot{}, Bus::Cues, 1.0f, false); }
 void set_hrtf(bool on) { std::lock_guard lk(g_mu); g_hrtf_on = on; }
 
 bool render_beep_wav(float freq, int ms, const Spot& at, const std::string& path) {
@@ -335,20 +333,9 @@ Narration narration() {
 }
 
 bool load_loop(int id, const std::string& wav_path, float pan) {
-  // Decode to mono float at the mixer rate (miniaudio resamples; the wotr files are 44.1 kHz).
-  ma_decoder_config dc = ma_decoder_config_init(ma_format_f32, 1, kRate);
-  ma_decoder dec;
-  if (ma_decoder_init_file(wav_path.c_str(), &dc, &dec) != MA_SUCCESS) { log::writef("audio: cannot open loop '{}'", wav_path); return false; }
+  // Decoded to mono float at the mixer rate (miniaudio resamples; the wotr files are 44.1 kHz).
   std::vector<float> samples;
-  float buf[4096];
-  for (;;) {
-    ma_uint64 got = 0;
-    ma_result r = ma_decoder_read_pcm_frames(&dec, buf, 4096, &got);
-    samples.insert(samples.end(), buf, buf + got);
-    if (r != MA_SUCCESS || got == 0) break;
-  }
-  ma_decoder_uninit(&dec);
-  if (samples.empty()) { log::writef("audio: loop '{}' decoded to nothing", wav_path); return false; }
+  if (!decode_mono(wav_path, samples)) { log::writef("audio: cannot open loop '{}', or it decoded to nothing", wav_path); return false; }
   Loop lp{id};
   lp.samples = std::move(samples);
   pan_gains(pan, lp.gl, lp.gr);

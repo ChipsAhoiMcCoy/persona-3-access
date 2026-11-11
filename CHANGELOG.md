@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Less said twice, fewer keys read out
+- Key names are no longer part of spoken lines; F1 reads them, as everywhere else. A turn's line ends "Theurgy ready" (it was "Theurgy ready, T"), a 1 More says "Shift available" (it was "B shifts the turn to another member"), a shop's quantity opens with "How many? 1" (it was "How many? W and S change, Space confirms. 1"), and the Stats up screen no longer ends with "Space continues."
+- Beside a Shadow that kept turning, "Shadow close, facing you" and "Shadow close, back turned" were said every time it turned: over a hundred times in a minute next to one that circled. Each is now said once as you close in on a Shadow; the ring that tells you a strike will connect, and whether from behind, still follows its facing all the time.
+- A Shadow that chased you out of earshot and came back was treated as if it had not noticed you. It is still growled as hunting.
+- "Theurgy obtained" no longer cuts off the line being read, and the town map's information about a place no longer cuts off the place's name.
+- The victory page, a saved-game line, an opened mail and a few other lines of a menu's own can no longer be read twice in a row when nothing was pressed in between.
+- The point of interest list keys (the bracket keys) say "Not in the field" in a menu, a conversation or a battle, where the list is not about what is on screen.
+
 ### Battle
 - When a Persona with eight skills levelled up after a battle and had to forget one to learn the new skill, the list of skills was not presented: only "This Persona cannot learn any more skills" was read, and Enter forgot whichever skill the game's cursor was on. The list is now a menu, as it already was with a skill card: the new skill first, then the eight slots with their costs; Enter asks "Forget ...?", and the level-up page follows.
 - A physical skill's cost in the battle skill list was read as a percentage ("Akasha Arts, 140% HP") when the number is the HP it takes from that member. It now reads "Akasha Arts, 140 HP". The Persona pages keep the percentage ("22% HP"), which is what they show.
