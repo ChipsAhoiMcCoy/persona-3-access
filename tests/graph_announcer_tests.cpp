@@ -11,7 +11,6 @@
 #include "core/graph_announcer.h"
 
 using p3a::ui::ControlId;
-using p3a::ui::ControlType;
 using p3a::ui::GraphAnnouncer;
 using p3a::ui::GraphNode;
 using p3a::ui::Key;
@@ -41,17 +40,10 @@ class Arena {
     return n;
   }
 
-  GraphNode* typed(const ControlType* type, std::vector<NodeAnnouncement> parts) {
-    auto vt = std::make_shared<NodeVtable>();
-    vt->control_type = type;
-    vt->announcements = std::move(parts);
-    return add(ControlId::structural(Key("typed")), std::move(vt), nullptr);
-  }
-
-  GraphNode* custom(const std::string& key, std::vector<NodeAnnouncement> parts) {
+  GraphNode* custom(const std::string& key, std::vector<NodeAnnouncement> parts, GraphNode* parent = nullptr) {
     auto vt = std::make_shared<NodeVtable>();
     vt->announcements = std::move(parts);
-    return add(ControlId::structural(Key(key)), std::move(vt), nullptr);
+    return add(ControlId::structural(Key(key)), std::move(vt), parent);
   }
 
  private:
@@ -67,36 +59,15 @@ class Arena {
 // Readable failure output: the announcer returns nullopt for "nothing to say".
 std::string spoken(const std::optional<std::string>& s) { return s ? *s : std::string("<nothing>"); }
 
-// The announcer's hooks are process-wide statics; restore them however a case exits.
-struct ScopedHooks {
-  ScopedHooks()
-      : part_filter(GraphAnnouncer::part_filter),
-        position_text(GraphAnnouncer::position_text),
-        expanded_state_text(GraphAnnouncer::expanded_state_text) {}
-  ~ScopedHooks() {
-    GraphAnnouncer::part_filter = part_filter;
-    GraphAnnouncer::position_text = position_text;
-    GraphAnnouncer::expanded_state_text = expanded_state_text;
+// The announcer's position wording is a process-wide static; these cases set the host's ("2 of 5") and
+// restore what was there however a case exits.
+struct ScopedPositions {
+  ScopedPositions() : saved(GraphAnnouncer::position_text) {
+    GraphAnnouncer::position_text = [](int i, int n) { return std::to_string(i) + " of " + std::to_string(n); };
   }
-  decltype(GraphAnnouncer::part_filter) part_filter;
-  decltype(GraphAnnouncer::position_text) position_text;
-  decltype(GraphAnnouncer::expanded_state_text) expanded_state_text;
+  ~ScopedPositions() { GraphAnnouncer::position_text = saved; }
+  decltype(GraphAnnouncer::position_text) saved;
 };
-
-const ControlType& test_button() {
-  static const ControlType type = [] {
-    ControlType t;
-    t.key = "button";
-    t.order = {std::string(kinds::kLabel), std::string(kinds::kRole), std::string(kinds::kValue),
-               std::string(kinds::kEnabled), std::string(kinds::kPosition)};
-    t.common = [] {
-      return std::vector<NodeAnnouncement>{
-          NodeAnnouncement([] { return std::string("button"); }, false, kinds::kRole)};
-    };
-    return t;
-  }();
-  return type;
-}
 
 }  // namespace
 
@@ -139,44 +110,6 @@ TEST_CASE("an ascend reads the leaf only") {
   CHECK(spoken(GraphAnnouncer::compose(from, to)) == "Back");
 }
 
-TEST_CASE("descending from a group onto its child reads the child only") {
-  // The group is ON the child's chain AND is the from-node: the prefix swallows it (stepping into your
-  // own group never re-announces the group).
-  Arena a;
-  GraphNode* group = a.node("Combat");
-  group->expandable = true;
-  group->expanded = true;
-  GraphNode* child = a.node("Auto pause on combat start, toggle, on", group);
-
-  CHECK(spoken(GraphAnnouncer::compose(group, child)) == "Auto pause on combat start, toggle, on");
-}
-
-TEST_CASE("entering a group from outside reads the group") {
-  Arena a;
-  GraphNode* group = a.node("Combat");
-  group->expandable = true;
-  group->expanded = true;
-  GraphNode* child = a.node("Auto pause on combat start, toggle, on", group);
-  GraphNode* elsewhere = a.node("Tabs");
-
-  CHECK(spoken(GraphAnnouncer::compose(elsewhere, child)) ==
-        "Combat, Auto pause on combat start, toggle, on");
-}
-
-TEST_CASE("the expanded state word appends to groups") {
-  Arena a;
-  GraphNode* group = a.node("Combat");
-  group->expandable = true;
-  group->expanded = false;
-  ScopedHooks hooks;
-  GraphAnnouncer::expanded_state_text = [](bool e) { return std::string(e ? "expanded" : "collapsed"); };
-  CHECK(spoken(GraphAnnouncer::compose_full(group)) == "Combat, collapsed");
-  group->expanded = true;
-  CHECK(spoken(GraphAnnouncer::compose_full(group)) == "Combat, expanded");
-  group->vtable->speaks_own_expansion = true;  // a group whose own parts carry the state word
-  CHECK(spoken(GraphAnnouncer::compose_full(group)) == "Combat");
-}
-
 TEST_CASE("a duplicate container label is skipped") {
   // A "Game difficulty" section wrapping the "Game difficulty" control: the section stays silent.
   Arena a;
@@ -191,50 +124,7 @@ TEST_CASE("a duplicate container label is skipped") {
         "Game difficulty, Game difficulty presets, menu button");
 }
 
-TEST_CASE("a control type supplies the role and the ordering") {
-  // Parts declared out of order -- the type's kind order sorts them; the common role merges in.
-  Arena a;
-  GraphNode* node = a.typed(&test_button(),
-                            {NodeAnnouncement([] { return std::string("on"); }, false, kinds::kValue),
-                             NodeAnnouncement([] { return std::string("Hold position"); }, false,
-                                              kinds::kLabel)});
-
-  CHECK(spoken(GraphAnnouncer::compose_full(node)) == "Hold position, button, on");
-}
-
-TEST_CASE("a node part overrides a common part of the same kind") {
-  Arena a;
-  GraphNode* node =
-      a.typed(&test_button(),
-              {NodeAnnouncement([] { return std::string("Continue"); }, false, kinds::kLabel),
-               NodeAnnouncement([] { return std::string("menu button"); }, false, kinds::kRole)});
-
-  CHECK(spoken(GraphAnnouncer::compose_full(node)) == "Continue, menu button");
-}
-
-TEST_CASE("kindless parts keep declaration order after the known kinds") {
-  Arena a;
-  GraphNode* node =
-      a.typed(&test_button(),
-              {NodeAnnouncement([] { return std::string("custom one"); }),
-               NodeAnnouncement([] { return std::string("Continue"); }, false, kinds::kLabel),
-               NodeAnnouncement([] { return std::string("custom two"); })});
-
-  CHECK(spoken(GraphAnnouncer::compose_full(node)) == "Continue, button, custom one, custom two");
-}
-
-TEST_CASE("the part filter drops parts") {
-  Arena a;
-  GraphNode* node = a.typed(
-      &test_button(), {NodeAnnouncement([] { return std::string("Continue"); }, false, kinds::kLabel)});
-  ScopedHooks hooks;
-  GraphAnnouncer::part_filter = [](const ControlType*, const NodeAnnouncement& part) {
-    return std::string_view(part.kind) != kinds::kRole;
-  };
-  CHECK(spoken(GraphAnnouncer::compose_full(node)) == "Continue");
-}
-
-TEST_CASE("leaf text joins the announcement parts") {
+TEST_CASE("leaf text joins the announcement parts in declaration order") {
   Arena a;
   GraphNode* node = a.custom("x", {
                                       NodeAnnouncement::fixed("Hold position"),
@@ -243,6 +133,39 @@ TEST_CASE("leaf text joins the announcement parts") {
                                       NodeAnnouncement([] { return std::string(); }),  // silent
                                   });
   CHECK(spoken(GraphAnnouncer::compose_full(node)) == "Hold position, toggle, on");
+}
+
+TEST_CASE("the position follows the parts and a description follows the position") {
+  // A menu row as the screens declare it: label, a live value, and its description as a tooltip part.
+  Arena a;
+  GraphNode* node = a.custom("dia", {
+                                        NodeAnnouncement([] { return std::string("Dia"); }, false, kinds::kLabel),
+                                        NodeAnnouncement([] { return std::string("Slightly restores 1 ally's HP."); }, true, kinds::kTooltip),
+                                        NodeAnnouncement([] { return std::string("3 SP"); }, true, kinds::kValue),
+                                    });
+  node->position_index = 2;
+  node->position_count = 5;
+  ScopedPositions positions;
+  CHECK(spoken(GraphAnnouncer::leaf_text(node)) == "Dia, 3 SP, 2 of 5, Slightly restores 1 ally's HP.");
+}
+
+TEST_CASE("a node that speaks its own position, or has none, gets no stamped one") {
+  ScopedPositions positions;
+  Arena a;
+  GraphNode* own = a.custom("own", {NodeAnnouncement::fixed("Yes")});
+  own->position_index = 1;
+  own->position_count = 1;
+  own->vtable->speaks_own_position = true;   // one thing to answer: no "1 of 1"
+  CHECK(spoken(GraphAnnouncer::leaf_text(own)) == "Yes");
+
+  GraphNode* part = a.custom("part", {NodeAnnouncement::fixed("April 30"),
+                                      NodeAnnouncement([] { return std::string("day 30 of 30"); }, false, kinds::kPosition)});
+  part->position_index = 3;
+  part->position_count = 9;
+  CHECK(spoken(GraphAnnouncer::leaf_text(part)) == "April 30, day 30 of 30");
+
+  GraphNode* raw = a.custom("raw", {NodeAnnouncement::fixed("A line")});   // position_count 0: a raw node
+  CHECK(spoken(GraphAnnouncer::leaf_text(raw)) == "A line");
 }
 
 TEST_CASE("the transition label leads") {
@@ -258,4 +181,21 @@ TEST_CASE("a context change at the same depth reads the new level") {
   GraphNode* to = a.node("Haste", a.context("Level 2 spells", "table"));
 
   CHECK(spoken(GraphAnnouncer::compose(from, to)) == "Level 2 spells, table, Haste");
+}
+
+TEST_CASE("a remembered path stands in for a node that is gone") {
+  // The row focus came from was removed by its own action: its path still says which list it sat in, so
+  // the row that takes its place reads as a sibling, without the list's title.
+  Arena a;
+  GraphNode* list = a.context("Your items", "list");
+  GraphNode* gone = a.node("Bead", list);
+  const std::vector<ControlId> path = GraphAnnouncer::path_ids(gone);
+  REQUIRE(path.size() == 2);
+  CHECK(path[0] == list->id);
+  CHECK(path[1] == gone->id);
+
+  GraphNode* next = a.node("Soma", list);
+  CHECK(spoken(GraphAnnouncer::compose_from_path(path, next)) == "Soma");
+  CHECK(spoken(GraphAnnouncer::compose_from_path({}, next)) == "Your items, list, Soma");
+  CHECK(GraphAnnouncer::path_ids(nullptr).empty());
 }

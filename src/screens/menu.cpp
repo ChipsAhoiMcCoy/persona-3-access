@@ -2,7 +2,7 @@
 // from the game while that screen has focus, and the two-way sync between the mod's focus and the game's cursors.
 #include "screens/menu.h"
 #include "screens/util.h"
-#include "screens/battle.h"
+#include "screens/battle_details.h"
 #include "core/graph_announcer.h"
 #include "core/navigator.h"
 #include "core/strings.h"
@@ -668,7 +668,6 @@ std::string dump() {
 
 void install() {
   ui::GraphAnnouncer::position_text = [](int i, int n) { return std::format("{} {} {}", i, strings::kOf, n); };
-  ui::GraphAnnouncer::expanded_state_text = [](bool e) { return std::string(e ? strings::kExpanded : strings::kCollapsed); };
   keys::set_menu(on_key);
   battle_details::install();
   dev::route("/menu", [](const dev::Request&, int&) { return dev::on_game([] { return dump(); }); }, "the bespoke menu's graph and focus");

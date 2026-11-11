@@ -23,27 +23,11 @@ bool has_kind(const std::vector<NodeAnnouncement>& anns, const std::string& kind
   return false;
 }
 
-// Sort key: declared kinds by their order index; everything else after (one shared bucket, with the
-// stable sort below keeping their declaration order).
-std::size_t order_index(const std::vector<std::string>& order, const std::string& kind) {
-  if (!kind.empty())
-    for (std::size_t i = 0; i < order.size(); i++)
-      if (order[i] == kind) return i;
-  return order.size();
-}
-
 // The next part "starts as" this label: equal, or its first comma-separated segment is the label (a
 // control's readout leads with its label: "Game difficulty, menu button").
 bool duplicates_next(const std::string& label, const std::string& next) {
   if (next.rfind(label, 0) != 0) return false;
   return next.size() == label.size() || next[label.size()] == ',';
-}
-
-// A stand-in part handed to the part filter, so a filter that drops position-kind parts drops the
-// auto-stamped position too.
-const NodeAnnouncement& auto_position_probe() {
-  static const NodeAnnouncement probe(nullptr, false, announcement_kinds::kPosition);
-  return probe;
 }
 
 }  // namespace
@@ -65,8 +49,7 @@ std::optional<std::string> GraphAnnouncer::compose_from_path(const std::vector<C
 
   const std::vector<const GraphNode*> to_path = path_of(to);
 
-  // Common prefix by identity -- levels we were already inside (or ON: descending from a group onto its
-  // child keeps the group in the prefix) stay silent.
+  // Common prefix by identity -- levels we were already inside stay silent.
   std::size_t i = 0;
   while (i < from_path.size() && i < to_path.size() && from_path[i] == to_path[i]->id) i++;
 
@@ -103,37 +86,10 @@ std::optional<std::string> GraphAnnouncer::compose_from_path(const std::vector<C
   return message.build();
 }
 
-std::vector<NodeAnnouncement> GraphAnnouncer::effective_announcements(const GraphNode* node) {
-  std::vector<NodeAnnouncement> result;
-  const NodeVtable* vt = node != nullptr ? node->vtable.get() : nullptr;
-  if (vt == nullptr) return result;
-  const ControlType* type = vt->control_type;
-
-  if (type != nullptr && type->common) {
-    for (const NodeAnnouncement& c : type->common())
-      if (!has_kind(vt->announcements, c.kind)) result.push_back(c);
-  }
-  for (const NodeAnnouncement& a : vt->announcements) result.push_back(a);
-
-  if (type != nullptr && !type->order.empty() && result.size() > 1) {
-    // A stable sort: parts of one bucket (the kindless ones) keep their declaration order.
-    std::stable_sort(result.begin(), result.end(),
-                     [type](const NodeAnnouncement& x, const NodeAnnouncement& y) {
-                       return order_index(type->order, x.kind) < order_index(type->order, y.kind);
-                     });
-  }
-
-  if (part_filter) {
-    auto filter = part_filter;  // a part's resolver must not see a half-swapped hook
-    result.erase(std::remove_if(result.begin(), result.end(),
-                                [&filter, type](const NodeAnnouncement& a) { return !filter(type, a); }),
-                 result.end());
-  }
-  return result;
-}
-
 std::optional<std::string> GraphAnnouncer::leaf_text(const GraphNode* node) {
-  const std::vector<NodeAnnouncement> anns = effective_announcements(node);
+  const NodeVtable* vt = node != nullptr ? node->vtable.get() : nullptr;
+  if (vt == nullptr) return std::nullopt;   // a node with no vtable has nothing to speak
+  const std::vector<NodeAnnouncement>& anns = vt->announcements;
   MessageBuilder message;
   bool any = false;
   auto push = [&message, &any](const std::string& part) {
@@ -147,18 +103,10 @@ std::optional<std::string> GraphAnnouncer::leaf_text(const GraphNode* node) {
   for (const NodeAnnouncement& a : anns)
     if (a.text && a.kind != tooltip) push(a.text());
 
-  const NodeVtable* vt = node != nullptr ? node->vtable.get() : nullptr;
-  // (A node with no vtable has no announcements to speak either: both branches below skip it.)
-  if (node != nullptr && node->expandable && vt != nullptr && !vt->speaks_own_expansion &&
-      expanded_state_text) {
-    push(expanded_state_text(node->expanded));
-  }
-
   // The auto-stamped sibling position, unless the node carries its own (an explicit position-kind part,
-  // or speaks_own_position). Honors the part filter.
-  if (node != nullptr && node->position_count > 0 && position_text && vt != nullptr &&
-      !vt->speaks_own_position && !has_kind(vt->announcements, std::string(announcement_kinds::kPosition)) &&
-      (!part_filter || part_filter(vt->control_type, auto_position_probe()))) {
+  // or speaks_own_position).
+  if (node->position_count > 0 && position_text && !vt->speaks_own_position &&
+      !has_kind(anns, std::string(announcement_kinds::kPosition))) {
     push(position_text(node->position_index, node->position_count));
   }
   for (const NodeAnnouncement& a : anns)

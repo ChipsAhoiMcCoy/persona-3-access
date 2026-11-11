@@ -1,6 +1,7 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks, itself ported from Dark Vision (WrathAccess) by Bradley Renshaw; both zlib, see LICENSES/. This is not the original software.
 #include "core/key_graph.h"
 
+#include <algorithm>
 #include <unordered_set>
 #include <utility>
 
@@ -10,6 +11,12 @@ namespace {
 int index_of(const std::vector<ControlId>& order, const ControlId& key) {
   for (std::size_t i = 0; i < order.size(); i++)
     if (order[i] == key) return static_cast<int>(i);
+  return -1;
+}
+
+int index_of(const std::vector<Key>& keys, const Key& key) {
+  for (std::size_t i = 0; i < keys.size(); i++)
+    if (keys[i] == key) return static_cast<int>(i);
   return -1;
 }
 
@@ -28,14 +35,6 @@ void remember_land_group(const GraphRender& render, GraphState& state, const std
   if (node != nullptr) state.last_land_group = node->vtable != nullptr ? node->vtable->land_group : std::string();
 }
 
-// Track the tabular column focus sits on (nodes outside tables leave it untouched, so a detour through
-// a header row or another stop doesn't forget the working column).
-void remember_column(const GraphRender& render, GraphState& state, const std::optional<ControlId>& key) {
-  GraphNode* node = render.node_at(key);
-  if (node != nullptr && node->vtable != nullptr && node->vtable->column >= 0)
-    state.last_column = node->vtable->column;
-}
-
 void remember_stop(const GraphRender& render, GraphState& state, const std::optional<ControlId>& key) {
   GraphNode* node = render.node_at(key);
   if (node != nullptr && !node->stop_key.empty()) state.stop_memory.insert_or_assign(node->stop_key, *key);
@@ -44,8 +43,8 @@ void remember_stop(const GraphRender& render, GraphState& state, const std::opti
 }  // namespace
 
 bool KeyGraph::rerender() {
-  // Retire the render one generation at a time: callers (and tree_right below) legitimately keep
-  // reading nodes they read before the rebuild.
+  // Retire the render one generation at a time: callers legitimately keep reading nodes they read
+  // before the rebuild.
   previous_ = std::move(current_);
   current_ = render_callback_();
   if (current_ == nullptr || current_->node_count() == 0) {
@@ -68,53 +67,31 @@ void KeyGraph::reconcile(GraphRender& render, GraphState& state) {
   std::optional<ControlId> resolved;
 
   if (old) {
-    // Tier 1: the same backing object, even if its structural key changed (it moved). Scanned in
-    // declaration order, so a render that somehow carried the same reference twice resolves
-    // deterministically.
-    if (old->reference() != nullptr) {
-      for (GraphNode* n : render.order())
-        if (n->id.reference_matches(old->reference())) {
-          resolved = n->id;
-          break;
-        }
-    }
+    // The same control: its id is in this render too.
+    GraphNode* same = render.node_at(*old);
+    if (same != nullptr) resolved = same->id;
 
-    // Tier 2: the same structural key, even if the backing object was rebuilt.
-    if (!resolved) {
-      GraphNode* structural = render.node_at(*old);
-      if (structural != nullptr) resolved = structural->id;
-    }
-
-    // Tier 3 -- the GENERAL row-vanish rule: land on the nearest survivor OF THE SAME LANDING GROUP
-    // (this list's rows), next-first then previous -- never a header, a lead line or another panel. Only nodes stamped with a land_group participate; the vanished node's
-    // group was remembered at focus time.
-    if (!resolved && !state.key_order.empty() && !state.last_land_group.empty()) {
-      const int old_index = index_of(state.key_order, *old);
-      if (old_index >= 0) {
-        const int count = static_cast<int>(state.key_order.size());
-        for (int off = 1; off < count && !resolved; off++) {
-          resolved = group_survivor_at(render, state, old_index + off);  // next row first
-          if (!resolved) resolved = group_survivor_at(render, state, old_index - off);
-        }
-        if (resolved) resolved = slide_to_column(render, *resolved, state.last_column);
+    // It vanished -- the GENERAL row-vanish rule: land on the nearest survivor OF THE SAME LANDING GROUP
+    // (this list's rows), next-first then previous -- never a header, a lead line or another panel. Only
+    // nodes stamped with a land_group participate; the vanished node's group was remembered at focus time.
+    const int old_index = !resolved && !state.key_order.empty() ? index_of(state.key_order, *old) : -1;
+    if (old_index >= 0 && !state.last_land_group.empty()) {
+      const int count = static_cast<int>(state.key_order.size());
+      for (int off = 1; off < count && !resolved; off++) {
+        resolved = group_survivor_at(render, state, old_index + off);  // next row first
+        if (!resolved) resolved = group_survivor_at(render, state, old_index - off);
       }
     }
 
-    // Fallback: nearest survivor walking the previous order backward. The order interleaves row cells,
-    // so when a whole row vanished the walk lands on the previous row's LAST
-    // cell -- a different column. Slide along that row to the column focus was on, so acting on rows in
-    // sequence keeps your place in the table.
-    if (!resolved && !state.key_order.empty()) {
-      const int old_index = index_of(state.key_order, *old);
-      if (old_index >= 0)
-        for (int i = old_index; i >= 0; i--) {
-          GraphNode* survivor = render.node_at(state.key_order[static_cast<std::size_t>(i)]);
-          if (survivor != nullptr) {
-            resolved = slide_to_column(render, survivor->id, state.last_column);
-            break;
-          }
+    // Fallback: the nearest survivor walking the previous order backward.
+    if (!resolved && old_index >= 0)
+      for (int i = old_index; i >= 0; i--) {
+        GraphNode* survivor = render.node_at(state.key_order[static_cast<std::size_t>(i)]);
+        if (survivor != nullptr) {
+          resolved = survivor->id;
+          break;
         }
-    }
+      }
   }
 
   // Nothing matched (or first render): the start node -- but prefer the SELECTED member of its stop
@@ -129,32 +106,8 @@ void KeyGraph::reconcile(GraphRender& render, GraphState& state) {
 
   state.cur_key = resolved;
   remember_stop(render, state, resolved);
-  remember_column(render, state, resolved);
   remember_land_group(render, state, resolved);
   state.key_order = compute_order(render);
-}
-
-ControlId KeyGraph::slide_to_column(const GraphRender& render, const ControlId& start, int pref_col) {
-  GraphNode* node = render.node_at(start);
-  if (node == nullptr || pref_col < 0) return start;
-  const int col = node->vtable != nullptr ? node->vtable->column : -1;
-  if (col < 0 || col == pref_col) return start;
-
-  const GraphDir dir = col < pref_col ? GraphDir::Right : GraphDir::Left;
-  GraphNode* cur = node;
-  while (cur->vtable->column != pref_col) {
-    const Transition* t = cur->transition(dir);
-    if (t == nullptr) break;
-    GraphNode* next = render.node_at(t->destination);
-    if (next == nullptr || next->vtable == nullptr || next->vtable->column < 0) break;
-    if (dir == GraphDir::Right && next->vtable->column > pref_col) break;  // sparse: stop below pref
-    if (dir == GraphDir::Left && next->vtable->column < pref_col) {        // overshot: nearest below
-      cur = next;
-      break;
-    }
-    cur = next;
-  }
-  return cur->id;
 }
 
 std::vector<ControlId> KeyGraph::compute_order(const GraphRender& render) {
@@ -191,18 +144,27 @@ std::vector<ControlId> KeyGraph::compute_order(const GraphRender& render) {
 void KeyGraph::set_current(GraphNode* node) {
   state_->cur_key = node->id;
   if (!node->stop_key.empty()) state_->stop_memory.insert_or_assign(node->stop_key, node->id);
-  if (node->vtable != nullptr && node->vtable->column >= 0) state_->last_column = node->vtable->column;
-  // Row-vanish rule (see reconcile tier 3).
+  // Row-vanish rule (see reconcile).
   state_->last_land_group = node->vtable != nullptr ? node->vtable->land_group : std::string();
 }
 
-bool KeyGraph::focus_at_column(const ControlId& id, int pref_col) {
-  if (!rerender()) return false;
-  const ControlId target = slide_to_column(*current_, id, pref_col);
-  GraphNode* node = current_->node_at(target);
-  if (node == nullptr) return false;
-  set_current(node);
-  return true;
+// ---- stops and regions ----
+
+std::vector<Key> KeyGraph::stops() const {
+  std::vector<Key> stops;
+  if (current_ == nullptr) return stops;
+  for (GraphNode* n : current_->order())
+    if (!n->stop_key.empty() && std::find(stops.begin(), stops.end(), n->stop_key) == stops.end()) stops.push_back(n->stop_key);
+  return stops;
+}
+
+std::vector<Key> KeyGraph::regions_of(const Key& stop_key) const {
+  std::vector<Key> regions;
+  if (current_ == nullptr) return regions;
+  for (GraphNode* n : current_->order())
+    if (n->stop_key == stop_key && !n->region_key.empty() && std::find(regions.begin(), regions.end(), n->region_key) == regions.end())
+      regions.push_back(n->region_key);
+  return regions;
 }
 
 // ---- navigation operations ----
@@ -256,40 +218,7 @@ MoveResult KeyGraph::move_to_edge(GraphDir dir) {
   return result;
 }
 
-MoveResult KeyGraph::move_stop(int dir, bool wrap) {
-  MoveResult result;
-  if (!rerender()) return result;
-
-  GraphNode* node = current_node();
-  result.from = node;
-  result.to = node;
-  if (node == nullptr) return result;
-
-  const std::vector<Key> stops = stop_order();
-  if (stops.size() <= 1) return result;
-
-  int idx = -1;
-  for (std::size_t i = 0; i < stops.size(); i++)
-    if (stops[i] == node->stop_key) {
-      idx = static_cast<int>(i);
-      break;
-    }
-  if (idx < 0) return result;
-  const int count = static_cast<int>(stops.size());
-  int ni = idx + dir;
-  if (wrap) ni = ((ni % count) + count) % count;
-  if (ni < 0 || ni >= count || ni == idx) return result;
-
-  GraphNode* dest = stop_landing(stops[static_cast<std::size_t>(ni)]);
-  if (dest == nullptr) return result;
-
-  set_current(dest);
-  result.to = dest;
-  result.moved = true;
-  return result;
-}
-
-MoveResult KeyGraph::move_region(int dir, bool wrap) {
+MoveResult KeyGraph::move_region(int dir) {
   MoveResult result;
   if (!rerender()) return result;
 
@@ -298,28 +227,12 @@ MoveResult KeyGraph::move_region(int dir, bool wrap) {
   result.to = node;
   if (node == nullptr || node->region_key.empty()) return result;
 
-  std::vector<Key> regions;
-  for (GraphNode* n : current_->order()) {
-    if (!(n->stop_key == node->stop_key) || n->region_key.empty()) continue;
-    bool known = false;
-    for (const Key& r : regions)
-      if (r == n->region_key) {
-        known = true;
-        break;
-      }
-    if (!known) regions.push_back(n->region_key);
-  }
-
-  int idx = -1;
-  for (std::size_t i = 0; i < regions.size(); i++)
-    if (regions[i] == node->region_key) {
-      idx = static_cast<int>(i);
-      break;
-    }
+  const std::vector<Key> regions = regions_of(node->stop_key);
+  const int idx = index_of(regions, node->region_key);
   const int count = static_cast<int>(regions.size());
-  int ni = idx + dir;
-  if (wrap && count > 1) ni = ((ni % count) + count) % count;
-  if (idx < 0 || ni < 0 || ni >= count || ni == idx) return result;
+  if (idx < 0 || count < 2) return result;
+  const int ni = (((idx + dir) % count) + count) % count;
+  if (ni == idx) return result;
 
   for (GraphNode* n : current_->order())
     if (n->stop_key == node->stop_key && n->region_key == regions[static_cast<std::size_t>(ni)]) {
@@ -337,32 +250,6 @@ bool KeyGraph::focus(const ControlId& id) {
   if (node == nullptr) return false;
   set_current(node);
   return true;
-}
-
-bool KeyGraph::focus_by_reference(const void* reference) {
-  if (reference == nullptr || current_ == nullptr) return false;
-  for (GraphNode* n : current_->order())
-    if (n->id.reference_matches(reference)) {
-      const bool changed = !state_->cur_key || !(*state_->cur_key == n->id);
-      set_current(n);
-      return changed;
-    }
-  return false;
-}
-
-std::vector<Key> KeyGraph::stop_order() const {
-  std::vector<Key> stops;
-  for (GraphNode* n : current_->order()) {
-    if (n->stop_key.empty()) continue;
-    bool known = false;
-    for (const Key& s : stops)
-      if (s == n->stop_key) {
-        known = true;
-        break;
-      }
-    if (!known) stops.push_back(n->stop_key);
-  }
-  return stops;
 }
 
 GraphNode* KeyGraph::stop_landing(const Key& stop_key) const {
@@ -402,133 +289,6 @@ GraphNode* KeyGraph::selected_node_in_stop(const GraphRender& render, const Key&
   return nullptr;
 }
 
-// ---- tree operations ----
-
-bool KeyGraph::in_tree(const GraphNode* node) {
-  for (const GraphNode* n = node; n != nullptr; n = n->parent)
-    if (n->expandable) return true;
-  return false;
-}
-
-KeyGraph::TreeResult KeyGraph::tree_right() {
-  TreeResult result;
-  if (!rerender()) return result;
-  GraphNode* node = current_node();
-  if (node == nullptr) return result;
-
-  if (node->expandable && !node->expanded) {
-    const ControlId group_id = node->id;  // the node itself belongs to the render we are about to retire
-    set_expanded(node, true);
-    if (!rerender()) return result;
-    GraphNode* header = current_->node_at(group_id);
-    if (header == nullptr) return result;
-    if (first_child_of(header) == nullptr) {
-      // A lazy drill-in that resolved to nothing: don't leave a silent empty-expanded node.
-      set_expanded(header, false);
-      rerender();
-      result.kind = TreeMove::EmptyGroup;
-      return result;
-    }
-    result.kind = TreeMove::Expanded;
-    return result;
-  }
-
-  if (node->expandable && node->expanded) {
-    GraphNode* child = first_child_of(node);
-    if (child == nullptr) {
-      result.kind = TreeMove::Leaf;
-      return result;
-    }
-    result.move.from = node;
-    set_current(child);
-    result.move.to = child;
-    result.move.moved = true;
-    result.kind = TreeMove::Descended;
-    return result;
-  }
-
-  result.kind = in_tree(node) ? TreeMove::Leaf : TreeMove::None;
-  return result;
-}
-
-KeyGraph::TreeResult KeyGraph::tree_left() {
-  TreeResult result;
-  if (!rerender()) return result;
-  GraphNode* node = current_node();
-  if (node == nullptr) return result;
-
-  if (node->expandable && node->expanded) {
-    set_expanded(node, false);
-    rerender();  // focus stays on the header by identity
-    result.kind = TreeMove::Collapsed;
-    return result;
-  }
-
-  for (GraphNode* p = node->parent; p != nullptr; p = p->parent) {
-    if (!p->focusable || !current_->contains(p->id)) continue;
-    result.move.from = node;
-    GraphNode* target = current_->node_at(p->id);
-    set_current(target);
-    result.move.to = target;
-    result.move.moved = true;
-    result.kind = TreeMove::Ascended;
-    return result;
-  }
-
-  result.kind = in_tree(node) ? TreeMove::Leaf : TreeMove::None;
-  return result;
-}
-
-MoveResult KeyGraph::move_to_sibling_edge(bool first) {
-  MoveResult result;
-  if (!rerender()) return result;
-  GraphNode* node = current_node();
-  result.from = node;
-  result.to = node;
-  if (node == nullptr) return result;
-
-  GraphNode* target = nullptr;
-  for (GraphNode* n : current_->order()) {
-    if (n->parent != node->parent) continue;
-    // Same Tab-stop only: a top-level group and another stop's nodes share a null parent, and Home from
-    // such a group must not land in the other stop.
-    if (n->stop_key != node->stop_key) continue;
-    if (first) {
-      target = n;
-      break;
-    }
-    target = n;  // last match wins
-  }
-  if (target == nullptr || target == node) return result;
-  set_current(target);
-  result.to = target;
-  result.moved = true;
-  return result;
-}
-
-// Change a group's expansion: through its vtable override when declared (a screen that keeps the state
-// itself), else the persistent set.
-void KeyGraph::set_expanded(GraphNode* group, bool expanded) {
-  if (group->vtable != nullptr) {
-    if (expanded && group->vtable->on_expand) {
-      group->vtable->on_expand();
-      return;
-    }
-    if (!expanded && group->vtable->on_collapse) {
-      group->vtable->on_collapse();
-      return;
-    }
-  }
-  if (expanded) state_->expanded.insert(group->id);
-  else state_->expanded.erase(group->id);
-}
-
-GraphNode* KeyGraph::first_child_of(const GraphNode* group) const {
-  for (GraphNode* n : current_->order())
-    if (n->parent == group) return n;
-  return nullptr;
-}
-
 // ---- behavior invokers ----
 
 bool KeyGraph::activate() {
@@ -536,30 +296,6 @@ bool KeyGraph::activate() {
   GraphNode* node = current_node();
   if (node == nullptr || node->vtable == nullptr || !node->vtable->on_activate) return false;
   node->vtable->on_activate();
-  return true;
-}
-
-bool KeyGraph::secondary() {
-  if (!rerender()) return false;
-  GraphNode* node = current_node();
-  if (node == nullptr || node->vtable == nullptr || !node->vtable->on_secondary) return false;
-  node->vtable->on_secondary();
-  return true;
-}
-
-bool KeyGraph::tooltip() {
-  if (!rerender()) return false;
-  GraphNode* node = current_node();
-  if (node == nullptr || node->vtable == nullptr || !node->vtable->on_tooltip) return false;
-  node->vtable->on_tooltip();
-  return true;
-}
-
-bool KeyGraph::compare() {
-  if (!rerender()) return false;
-  GraphNode* node = current_node();
-  if (node == nullptr || node->vtable == nullptr || !node->vtable->on_compare) return false;
-  node->vtable->on_compare();
   return true;
 }
 

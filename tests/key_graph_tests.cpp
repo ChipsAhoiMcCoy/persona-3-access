@@ -122,7 +122,7 @@ TEST_CASE("transition label is reported") {
   CHECK(r.transition_label == "lane change");
 }
 
-TEST_CASE("reconcile tier 2 follows the structural key across rebuilds") {
+TEST_CASE("reconcile follows the control's id across rebuilds") {
   GraphState state;
   int generation = 0;
   KeyGraph g(
@@ -139,29 +139,6 @@ TEST_CASE("reconcile tier 2 follows the structural key across rebuilds") {
   CHECK(state.cur_key == id("b"));
   CHECK(g.rerender());  // a whole new render
   CHECK(state.cur_key == id("b"));
-}
-
-TEST_CASE("reconcile tier 1 follows a moved object") {
-  GraphState state;
-  int backing = 0;
-  const void* thing = &backing;  // the backing domain object
-  int slot = 1;                  // its structural position, which will change
-
-  KeyGraph g(
-      [thing, &slot] {
-        return GraphBuilder()
-            .add_item(ControlId::structural(Key("header")), vt("Header"))
-            .add_item(ControlId::referenced(thing, Key("slot" + std::to_string(slot))), vt("Thing"))
-            .build();
-      },
-      &state);
-
-  g.move(GraphDir::Down);  // focus the thing (at slot1)
-  CHECK(state.cur_key->structural_key().text() == "slot1");
-
-  slot = 2;  // the object moves to a different slot
-  CHECK(g.rerender());
-  CHECK(state.cur_key->structural_key().text() == "slot2");  // followed the reference, not the old key
 }
 
 TEST_CASE("reconcile falls back to the nearest survivor") {
@@ -215,63 +192,43 @@ TEST_CASE("compute order covers all stops") {
 
   CHECK(g.rerender());
   CHECK(state.key_order.size() == 3);  // later stops appended despite no cross-stop edges
+  CHECK(state.key_order[0] == id("a"));
+  CHECK(state.key_order[2] == id("c"));
+  CHECK(g.stops().size() == 3);
 }
 
-TEST_CASE("stop cycling remembers the position per stop") {
+TEST_CASE("a stop remembers the position focus left it on") {
   GraphState state;
   KeyGraph g(
       [] {
         return GraphBuilder()
+            .begin_stop("a")
             .add_item(id("a1"), vt("A1"))
             .add_item(id("a2"), vt("A2"))
-            .begin_stop()
+            .begin_stop("b")
             .add_item(id("b1"), vt("B1"))
             .add_item(id("b2"), vt("B2"))
             .build();
       },
       &state);
+  // What Tab does: the stop's landing, then focus there.
+  auto enter = [&g](const char* stop) {
+    p3a::ui::GraphNode* landing = g.stop_landing(Key(stop));
+    REQUIRE(landing != nullptr);
+    const ControlId target = landing->id;
+    REQUIRE(g.focus(target));
+    return target;
+  };
 
-  g.move(GraphDir::Down);  // a2 (remembered for stop 1)
-  MoveResult r = g.move_stop(+1, false);
-  CHECK(r.moved);
-  CHECK(r.to->id == id("b1"));
+  CHECK(g.stops().empty());   // nothing rendered yet
+  CHECK(g.rerender());
+  CHECK(g.stops() == std::vector<Key>{Key("a"), Key("b")});
+  g.move(GraphDir::Down);  // a2 (remembered for stop a)
+  CHECK(enter("b") == id("b1"));   // never visited: its first node
   g.move(GraphDir::Down);  // b2
-
-  r = g.move_stop(-1, false);
-  CHECK(r.to->id == id("a2"));  // remembered, not the stop's first node
-
-  r = g.move_stop(-1, false);  // at the first stop, no wrap
-  CHECK_FALSE(r.moved);
-
-  r = g.move_stop(-1, true);  // wraps to the last stop's memory
-  CHECK(r.moved);
-  CHECK(r.to->id == id("b2"));
-}
-
-TEST_CASE("region jumps within a stop") {
-  GraphState state;
-  KeyGraph g(
-      [] {
-        return GraphBuilder()
-            .set_region(Key("filters"))
-            .add_item(id("f1"), vt("F1"))
-            .set_region(Key("items"))
-            .add_item(id("i1"), vt("I1"))
-            .add_item(id("i2"), vt("I2"))
-            .set_region(Key("footer"))
-            .add_item(id("z1"), vt("Z1"))
-            .build();
-      },
-      &state);
-
-  MoveResult r = g.move_region(+1);
-  CHECK(r.to->id == id("i1"));
-  r = g.move_region(+1);
-  CHECK(r.to->id == id("z1"));
-  r = g.move_region(+1);  // at the last region
-  CHECK_FALSE(r.moved);
-  r = g.move_region(-1);
-  CHECK(r.to->id == id("i1"));
+  CHECK(enter("a") == id("a2"));   // remembered, not the stop's first node
+  CHECK(enter("b") == id("b2"));
+  CHECK(g.stop_landing(Key("nowhere")) == nullptr);
 }
 
 TEST_CASE("section jumps wrap and land on a section's first line") {
@@ -284,16 +241,45 @@ TEST_CASE("section jumps wrap and land on a section's first line") {
             .set_region(Key("stats"))
             .add_item(id("s1"), vt("S1"))
             .add_item(id("s2"), vt("S2"))
+            .set_region(Key("skills"))
+            .add_item(id("k1"), vt("K1"))
             .build();
       },
       &state);
 
-  MoveResult r = g.move_region(-1, true);  // from the first section back to the last
+  CHECK(g.rerender());
+  CHECK(g.regions_of(g.current_node()->stop_key) == std::vector<Key>{Key("top"), Key("stats"), Key("skills")});
+  MoveResult r = g.move_region(+1);
   CHECK(r.to->id == id("s1"));
   r = g.move(GraphDir::Down);  // arrows still walk on
   CHECK(r.to->id == id("s2"));
-  r = g.move_region(+1, true);
+  r = g.move_region(+1);
+  CHECK(r.to->id == id("k1"));
+  r = g.move_region(+1);  // past the last section: the first again
+  CHECK(r.moved);
   CHECK(r.to->id == id("t1"));
+  r = g.move_region(-1);  // and back from the first to the last
+  CHECK(r.to->id == id("k1"));
+}
+
+TEST_CASE("a page with one section, or a node in none, has nowhere to jump") {
+  GraphState state;
+  KeyGraph g(
+      [] {
+        return GraphBuilder()
+            .add_item(id("plain"), vt("Plain"))
+            .begin_stop()
+            .set_region(Key("only"))
+            .add_item(id("o1"), vt("O1"))
+            .add_item(id("o2"), vt("O2"))
+            .build();
+      },
+      &state);
+
+  CHECK_FALSE(g.move_region(+1).moved);   // in no region
+  CHECK(g.focus(id("o2")));
+  CHECK_FALSE(g.move_region(+1).moved);   // its stop has one
+  CHECK(state.cur_key == id("o2"));
 }
 
 TEST_CASE("behavior invokers report absence") {
@@ -314,8 +300,11 @@ TEST_CASE("behavior invokers report absence") {
   CHECK(clicked);
   CHECK(g.try_adjust(+1, false));
   CHECK(adjusted);
-  CHECK_FALSE(g.secondary());
-  CHECK_FALSE(g.tooltip());
+
+  GraphState plain_state;
+  KeyGraph plain([] { return GraphBuilder().add_item(id("a"), vt("A")).build(); }, &plain_state);
+  CHECK_FALSE(plain.activate());   // a line of information: nothing to activate or adjust
+  CHECK_FALSE(plain.try_adjust(+1, false));
 }
 
 TEST_CASE("initial focus lands on the selected member") {
@@ -335,28 +324,28 @@ TEST_CASE("initial focus lands on the selected member") {
   CHECK(state.cur_key == id("c"));  // not the first node
 }
 
-TEST_CASE("tab into a stop lands on the selected member when there is no memory") {
+TEST_CASE("a stop's landing is its selected member when there is no memory") {
   GraphState state;
   KeyGraph g(
       [] {
         return GraphBuilder()
+            .begin_stop("a")
             .add_item(id("a1"), vt("A1"))
-            .begin_stop()
+            .begin_stop("b")
             .add_item(id("b1"), radio("B1", false))
             .add_item(id("b2"), radio("B2", true))  // selected in the second stop
             .build();
       },
       &state);
 
-  MoveResult r = g.move_stop(+1, false);
-  CHECK(r.moved);
-  CHECK(r.to->id == id("b2"));  // landed on the checked one, not b1
+  CHECK(g.rerender());
+  CHECK(g.stop_landing(Key("b"))->id == id("b2"));  // the checked one, not b1
+  CHECK(g.focus(id("b2")));
 
   // But remembered position wins on return.
   g.move(GraphDir::Up);   // b1
-  g.move_stop(-1, false);  // to stop 1
-  r = g.move_stop(+1, false);
-  CHECK(r.to->id == id("b1"));  // memory beats selection
+  CHECK(g.focus(id("a1")));
+  CHECK(g.stop_landing(Key("b"))->id == id("b1"));  // memory beats selection
 }
 
 TEST_CASE("a raw block between menu rows stays reachable") {
@@ -389,131 +378,43 @@ TEST_CASE("a raw block between menu rows stays reachable") {
   CHECK(state.cur_key == id("raw2"));  // and back in
 }
 
-TEST_CASE("tree ops expand, collapse, descend, ascend") {
+TEST_CASE("focus moves to a control by id") {
   GraphState state;
   KeyGraph g(
-      [&state] {
-        return GraphBuilder(&state.expanded)
-            .begin_group(id("combat"), vt("Combat"))
-            .add_item(id("pause"), vt("Auto pause"))
-            .add_item(id("delay"), vt("Delay"))
-            .end_group()
-            .build();
-      },
-      &state);
-
-  CHECK(g.rerender());  // focus lands on the collapsed header
-  CHECK(state.cur_key == id("combat"));
-  CHECK(KeyGraph::in_tree(g.current_node()));
-
-  KeyGraph::TreeResult r = g.tree_right();  // collapsed -> expand
-  CHECK(r.kind == KeyGraph::TreeMove::Expanded);
-  CHECK(state.cur_key == id("combat"));  // focus stays on the header
-  CHECK(g.current_node()->expanded);
-  CHECK(g.current()->contains(id("pause")));
-
-  r = g.tree_right();  // expanded -> descend to first child
-  CHECK(r.kind == KeyGraph::TreeMove::Descended);
-  CHECK(state.cur_key == id("pause"));
-
-  r = g.tree_right();  // a leaf inside the tree -- consume
-  CHECK(r.kind == KeyGraph::TreeMove::Leaf);
-
-  r = g.tree_left();  // child -> ascend to the header
-  CHECK(r.kind == KeyGraph::TreeMove::Ascended);
-  CHECK(state.cur_key == id("combat"));
-
-  r = g.tree_left();  // expanded header -> collapse
-  CHECK(r.kind == KeyGraph::TreeMove::Collapsed);
-  CHECK(state.cur_key == id("combat"));
-  CHECK_FALSE(g.current()->contains(id("pause")));
-}
-
-TEST_CASE("an empty group re-collapses on expand") {
-  GraphState state;
-  KeyGraph g(
-      [&state] {
-        return GraphBuilder(&state.expanded)
-            .begin_group(id("dud"), vt("Dud"))  // no children declared
-            .end_group()
-            .build();
-      },
-      &state);
-
-  CHECK(g.rerender());
-  const KeyGraph::TreeResult r = g.tree_right();
-  CHECK(r.kind == KeyGraph::TreeMove::EmptyGroup);
-  CHECK_FALSE(g.current_node()->expanded);  // auto-recollapsed
-  CHECK(state.expanded.count(id("dud")) == 0);
-}
-
-TEST_CASE("collapsing while inside lands on the nearest survivor") {
-  GraphState state;
-  state.expanded.insert(id("combat"));
-  KeyGraph g(
-      [&state] {
-        return GraphBuilder(&state.expanded)
-            .begin_group(id("combat"), vt("Combat"))
-            .add_item(id("pause"), vt("Auto pause"))
-            .end_group()
-            .build();
-      },
-      &state);
-
-  g.rerender();
-  g.focus(id("pause"));
-  state.expanded.erase(id("combat"));  // collapsed externally while focus was inside
-  CHECK(g.rerender());
-  CHECK(state.cur_key == id("combat"));  // nearest survivor = the header
-}
-
-TEST_CASE("sibling edge jump stays at depth") {
-  GraphState state;
-  state.expanded.insert(id("g"));
-  KeyGraph g(
-      [&state] {
-        return GraphBuilder(&state.expanded)
-            .add_item(id("top"), vt("Top"))
-            .begin_group(id("g"), vt("Group"))
-            .add_item(id("c1"), vt("C1"))
-            .add_item(id("c2"), vt("C2"))
-            .add_item(id("c3"), vt("C3"))
-            .end_group()
-            .build();
-      },
-      &state);
-
-  g.rerender();
-  g.focus(id("c2"));
-  MoveResult r = g.move_to_sibling_edge(false);
-  CHECK(r.moved);
-  CHECK(state.cur_key == id("c3"));  // last SIBLING, not the last visible row overall
-
-  r = g.move_to_sibling_edge(true);
-  CHECK(state.cur_key == id("c1"));
-}
-
-TEST_CASE("focus and focus-by-reference work") {
-  GraphState state;
-  int storage = 0;
-  const void* backing = &storage;
-  KeyGraph g(
-      [backing] {
+      [] {
         return GraphBuilder()
             .add_item(id("a"), vt("A"))
-            .add_item(ControlId::referenced(backing, Key("b")), vt("B"))
+            .add_item(id("b"), vt("B"))
             .build();
       },
       &state);
 
-  CHECK(g.rerender());
-  CHECK(g.focus_by_reference(backing));
-  CHECK(state.cur_key->structural_key().text() == "b");
-  CHECK_FALSE(g.focus_by_reference(backing));  // already there -- not a change
-
+  CHECK(g.focus(id("b")));
+  CHECK(state.cur_key == id("b"));
   CHECK(g.focus(id("a")));
   CHECK(state.cur_key == id("a"));
   CHECK_FALSE(g.focus(id("nope")));
+  CHECK(state.cur_key == id("a"));
+}
+
+TEST_CASE("a vanished last row lands on the row before it") {
+  GraphState state;
+  std::vector<std::string> items{"a", "b", "c"};
+  auto actionable = [](std::string label) { NodeVtablePtr v = vt(std::move(label)); v->on_activate = [] {}; return v; };
+  KeyGraph g(
+      [&] {
+        GraphBuilder b;
+        b.begin_stop("mine");
+        b.add_item(id("lead"), vt("Lead line"));   // no action: never the landing while a row survives
+        for (const std::string& i : items) b.add_item(id(i), actionable(i));
+        return b.build();
+      },
+      &state);
+  CHECK(g.rerender());
+  CHECK(g.focus(id("c")));
+  items.pop_back();   // the last row is gone: no next row, so the previous one
+  CHECK(g.rerender());
+  CHECK(state.cur_key == id("b"));
 }
 
 TEST_CASE("a vanished first row lands on the next row of its own stop, not the previous stop's last node") {

@@ -72,7 +72,7 @@ TEST_CASE("row: Left/Right repeat at the ends, Up/Down say nothing") {
 }
 
 // The search scope must not hold GraphNode* from the render the letter was typed in: every arrow through the
-// results rerenders (focus_at_column), so by the second arrow such pointers would be freed arena memory. The scope
+// results rerenders (KeyGraph::focus), so by the second arrow such pointers would be freed arena memory. The scope
 // is kept by ControlId.
 namespace {
 struct WordsScreen : Screen {
@@ -149,13 +149,13 @@ TEST_CASE("on_focus fires on a user landing, once per change of node, not on an 
 }
 
 namespace {
-// A tab strip stop, then a page stop holding a plain line and two top-level tree groups. Home/End on a group
-// must stay inside the page stop: the groups and the tab nodes share a null parent, and the sibling walk must
-// not run into the tab strip.
-struct TabbedTreeScreen : Screen {
-  std::string_view key() const override { return "tabbed"; }
+// A tab strip stop (a row), then a page stop in two sections: a header line, then two lines of stats.
+struct PagedScreen : Screen {
+  bool wraps = false;
+  std::string_view key() const override { return "paged"; }
   bool is_active() override { return true; }
-  std::string screen_name() const override { return "tabbed"; }
+  std::string screen_name() const override { return "paged"; }
+  bool wrap() const override { return wraps; }
   void build(GraphBuilder& b) override {
     b.begin_stop("tabs");
     b.start_row("tabs");
@@ -163,31 +163,45 @@ struct TabbedTreeScreen : Screen {
     b.add_item(id("t2"), vt("t2"));
     b.end_row();
     b.begin_stop("page");
+    b.set_region("top");
     b.add_item(id("hdr"), vt("hdr"));
-    b.begin_group(id("g1"), vt("g1"));
-    b.add_item(id("g1.s1"), vt("g1s1"));
-    b.end_group();
-    b.begin_group(id("g2"), vt("g2"));
-    b.add_item(id("g2.s1"), vt("g2s1"));
-    b.end_group();
+    b.set_region("stats");
+    b.add_item(id("s1"), vt("s1"));
+    b.add_item(id("s2"), vt("s2"));
   }
 };
 }  // namespace
 
-TEST_CASE("Home/End on a top-level tree group stay within the page stop, never the tab strip") {
+TEST_CASE("Tab moves between stops and remembers each one's place; Home/End and the sections stay inside a stop") {
   std::vector<std::string> spoken;
   int frame = 0;
-  TabbedTreeScreen screen;
+  PagedScreen screen;
   GraphNavigator nav{NavigatorHost{[&](std::string_view t, bool) { spoken.emplace_back(t); }, {}, [] { return true; }, [&] { return frame; }}};
   nav.attach(&screen); nav.ensure_focus();
   auto act = [&](std::string_view k) { spoken.clear(); nav.on_action(k); return spoken.empty() ? std::string() : spoken.back(); };
-  CHECK(act(ui_actions::Next).find("hdr") != std::string::npos);   // into the page stop
-  CHECK(act(ui_actions::Down).find("g1") != std::string::npos);
-  CHECK(act(ui_actions::Down).find("g2") != std::string::npos);
-  std::string home = act(ui_actions::Home);
-  CHECK(home.find("hdr") != std::string::npos);
-  CHECK(home.find("t1") == std::string::npos);
-  CHECK(act(ui_actions::End).find("g2") != std::string::npos);
+  CHECK(nav.stop_count() == 2);
+  CHECK(nav.section_count() == 0);               // the tab strip has no sections
+  spoken.clear();
+  CHECK_FALSE(nav.on_action(ui_actions::SectionNext));   // so the key is not taken there
+  CHECK(spoken.empty());
+
+  CHECK(act(ui_actions::Next) == "hdr");         // into the page stop
+  CHECK(nav.section_count() == 2);
+  CHECK(act(ui_actions::End) == "s2");
+  CHECK(act(ui_actions::Home) == "hdr");         // the top of the page, never the tab strip
+  CHECK(act(ui_actions::SectionNext) == "s1");
+  CHECK(act(ui_actions::SectionNext) == "hdr");  // past the last section: the first again
+  CHECK(act(ui_actions::SectionPrev) == "s1");
+
+  CHECK(act(ui_actions::Next) == "");            // the last stop, no wrap: taken, nothing said
+  CHECK(nav.focused_id() == id("s1"));
+  CHECK(act(ui_actions::Prev) == "t1");
+  CHECK(act(ui_actions::Prev) == "");            // the first stop, no wrap
+  CHECK(act(ui_actions::Next) == "s1");          // back where the page was left, not on its first line
+
+  screen.wraps = true;
+  CHECK(act(ui_actions::Next) == "t1");          // past the last stop: the first
+  CHECK(act(ui_actions::Prev) == "s1");          // and back round
 }
 
 namespace {

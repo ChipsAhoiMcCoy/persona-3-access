@@ -46,7 +46,7 @@ GraphBuilder& GraphBuilder::set_region(Key key) {
   return *this;
 }
 
-// ---- the parent stack: contexts + groups ----
+// ---- the parent stack: contexts ----
 
 GraphBuilder& GraphBuilder::push_context(std::string_view label, std::string_view role, bool positions) {
   GraphNode* parent = current_parent();
@@ -64,45 +64,14 @@ GraphBuilder& GraphBuilder::push_context(std::string_view label, std::string_vie
   node->parent = parent;
   node->focusable = false;
   node->suppress_child_positions = !positions;
-  parents_.push_back(ParentFrame{node, suppressed()});
+  parents_.push_back(node);
   return *this;
 }
 
 GraphBuilder& GraphBuilder::pop_context() {
-  if (parents_.empty()) throw std::logic_error("No context/group to pop");
+  if (parents_.empty()) throw std::logic_error("No context to pop");
   parents_.pop_back();
   return *this;
-}
-
-GraphBuilder& GraphBuilder::begin_group(ControlId id, NodeVtablePtr vtable, std::optional<bool> expanded,
-                                        bool default_expanded) {
-  if (current_row_ != nullptr) throw std::logic_error("Cannot begin a group inside an open row");
-  const bool is_expanded =
-      expanded ? *expanded
-               : (expansion_ != nullptr ? expansion_->count(id) != 0 : default_expanded);
-
-  GraphNode* header = nullptr;
-  if (!suppressed()) {
-    header = make_node(std::move(id), std::move(vtable));
-    header->expandable = true;
-    header->expanded = is_expanded;
-    owned_rows_.push_back(std::make_unique<Row>());
-    Row* row = owned_rows_.back().get();
-    row->stop_key = stop_key_;
-    row->items.push_back(header);
-    rows_.push_back(row);
-    row_of_[header] = row;
-  }
-  parents_.push_back(ParentFrame{
-      // Suppressed subtree: keep chaining from the outer parent so the stack stays coherent.
-      header != nullptr ? header : current_parent(),
-      suppressed() || !is_expanded,
-  });
-  return *this;
-}
-
-bool GraphBuilder::is_expanded(const ControlId& id) const {
-  return expansion_ != nullptr && expansion_->count(id) != 0;
 }
 
 GraphBuilder& GraphBuilder::set_start(ControlId id) {
@@ -123,14 +92,13 @@ GraphBuilder& GraphBuilder::start_row(Key row_key) {
 
 GraphBuilder& GraphBuilder::end_row() {
   if (current_row_ == nullptr) throw std::logic_error("No row to end");
-  if (current_row_->items.empty() && !suppressed()) throw std::logic_error("Row cannot be empty");
-  if (!current_row_->items.empty()) rows_.push_back(current_row_);
+  if (current_row_->items.empty()) throw std::logic_error("Row cannot be empty");
+  rows_.push_back(current_row_);
   current_row_ = nullptr;
   return *this;
 }
 
 GraphBuilder& GraphBuilder::add_item(ControlId id, NodeVtablePtr vtable) {
-  if (suppressed()) return *this;
   // An actionable node belongs to its Tab stop's landing group unless the screen said otherwise: when it vanishes
   // on the rebuild its action caused (an item used up, sold, registered), focus lands on the next row of the same
   // list, not on the previous stop's last node. Lead lines and headers have no action and keep no group, so they
@@ -154,7 +122,6 @@ GraphBuilder& GraphBuilder::add_item(ControlId id, NodeVtablePtr vtable) {
 // ---- raw mode ----
 
 GraphBuilder& GraphBuilder::add_node(ControlId id, NodeVtablePtr vtable) {
-  if (suppressed()) return *this;
   raw_nodes_.push_back(make_node(std::move(id), std::move(vtable)));
   return *this;
 }
@@ -257,7 +224,7 @@ void GraphBuilder::stitch_mode_boundaries() {
 
 // Auto-stamp "n of m" positions: a multi-item row's members are
 // positioned within their ROW (a bar); single-item-row nodes among the siblings sharing their
-// (parent, stop) -- the vertical list/tree level arrows actually traverse. Raw/grid nodes get none.
+// (parent, stop) -- the vertical list the arrows actually traverse. Raw/grid nodes get none.
 // A list of one says "1 of 1" too: a lone entry read without it did not sound like a menu option (the cafe's
 // one coffee, 2026-10-31).
 void GraphBuilder::stamp_positions() {

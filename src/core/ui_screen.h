@@ -13,13 +13,6 @@
 namespace p3a::ui {
 class GraphBuilder;
 
-// A screen-level command dispatched by string id (Back and the like).
-struct ScreenAction {
-  std::string id;
-  std::function<void()> execute;
-};
-namespace action_ids { inline constexpr std::string_view Back = "back"; }
-
 class Screen {
  public:
   virtual ~Screen() = default;
@@ -28,25 +21,16 @@ class Screen {
   // Graph declaration, IMMEDIATE MODE: called on every render; declare controls fresh each call (no retained tree);
   // focus persists by ControlId identity. Declare nothing while content does not exist.
   virtual void build(GraphBuilder&) {}
-  // The screen's title (spoken by the host on entry; the navigator uses it for an unfocused screen's Tab).
+  // The screen's title, for the host to speak on entry (the navigator never says it).
   virtual std::string screen_name() const { return {}; }
   // Whether Tab wraps from the last stop back to the first (the arrows never wrap: an edge repeats the item).
   virtual bool wrap() const { return false; }
-  // Keep per-screen nav state (focus, stop memory, expansion) when the screen closes. The host reads this
+  // Keep per-screen nav state (focus, stop memory) when the screen closes. The host reads this
   // and calls GraphNavigator::screen_closed when it is false.
   virtual bool keep_state_on_pop() const { return false; }
-  // Start with no focused element: the arrows are not taken and Tab enters the first stop.
-  virtual bool start_unfocused() const { return false; }
   // Stand down input dispatch entirely (a text field reads raw keys itself).
   virtual bool captures_raw_input() const { return false; }
   // Whether typing letters runs type-ahead over the focused stop.
   virtual bool allows_typeahead() const { return true; }
-  // Screen-level actions by id.
-  virtual std::vector<ScreenAction> actions() { return {}; }
-  bool invoke_action(std::string_view id) {
-    for (auto& a : actions())
-      if (a.id == id && a.execute) { a.execute(); return true; }
-    return false;
-  }
 };
 }  // namespace p3a::ui

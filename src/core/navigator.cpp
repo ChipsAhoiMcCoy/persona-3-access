@@ -22,7 +22,7 @@ void GraphNavigator::speak(std::string_view text, bool interrupt) {
 
 // Screens declare fresh from live state on every render (immediate mode).
 GraphRenderPtr GraphNavigator::build_render(Screen* screen) {
-  GraphBuilder b(&state_->expanded);  // groups consult the persistent expansion set
+  GraphBuilder b;
   screen->build(b);
   return b.build();
 }
@@ -38,7 +38,6 @@ void GraphNavigator::attach(Screen* screen) {
     else { scratch_state_ = GraphState{}; state_ = &scratch_state_; }
     last_spoken_key_.reset();
     pending_focus_.reset();
-    pending_stop_.reset();
     live_key_.reset();
   }
   if (!state_) { scratch_state_ = GraphState{}; state_ = &scratch_state_; }
@@ -57,37 +56,12 @@ void GraphNavigator::focus_node(const ControlId& id, bool announce, bool interru
   pending_interrupt_ = interrupt;
 }
 
-void GraphNavigator::focus_stop(Key stop_key) { pending_stop_ = std::move(stop_key); }
-
-std::optional<Key> GraphNavigator::focused_stop_key() const {
-  const GraphNode* n = graph_ ? graph_->current_node() : nullptr;
-  if (!n) return std::nullopt;
-  return n->stop_key;
-}
-
-int GraphNavigator::stop_count() const {
-  if (!graph_ || !graph_->current()) return 0;
-  std::vector<Key> stops;
-  for (GraphNode* n : graph_->current()->order())
-    if (std::find(stops.begin(), stops.end(), n->stop_key) == stops.end()) stops.push_back(n->stop_key);
-  return (int)stops.size();
-}
+int GraphNavigator::stop_count() const { return graph_ ? (int)graph_->stops().size() : 0; }
 
 int GraphNavigator::section_count() const {
   const GraphNode* cur = graph_ ? graph_->current_node() : nullptr;
   if (!cur || cur->region_key.empty()) return 0;
-  std::vector<Key> regions;
-  for (GraphNode* n : graph_->current()->order())
-    if (n->stop_key == cur->stop_key && !n->region_key.empty() && std::find(regions.begin(), regions.end(), n->region_key) == regions.end())
-      regions.push_back(n->region_key);
-  return (int)regions.size();
-}
-
-void GraphNavigator::blur() {
-  if (state_) state_->cur_key.reset();
-  last_spoken_key_.reset();
-  pending_focus_.reset();
-  live_key_.reset();
+  return (int)graph_->regions_of(cur->stop_key).size();
 }
 
 void GraphNavigator::mark_spoken(const GraphNode* node) {
@@ -103,32 +77,22 @@ void GraphNavigator::ensure_focus() {
   // moved, and live-state flips, and a full build each frame is costly on a long list. On the frames
   // between, the focused node's live parts are still watched against the cached render.
   int frame = host_.frame_count ? host_.frame_count() : 0;
-  bool must_render = !state_->cur_key || pending_focus_ || pending_stop_;
+  bool must_render = !state_->cur_key || pending_focus_;
   if (!must_render && frame - last_idle_render_ < kIdleRenderEvery) {
     if (const GraphNode* cached = graph_->current_node()) watch_live(cached);
     return;
   }
   last_idle_render_ = frame;
 
-  if (!state_->cur_key && !pending_focus_) {
-    // A start_unfocused screen stays unfocused until Tab seats a cursor.
-    if (screen_->start_unfocused()) return;
-    if (!graph_->rerender()) return;  // no content yet; reconcile seats the start node once there is
-  } else {
-    if (!graph_->rerender()) return;  // nothing focusable this frame; retry
-    if (pending_focus_) {
-      // One retry frame for a target focused mid-build; a target still not in the render was removed --
-      // drop the request rather than re-seating every frame.
-      if (graph_->current()->contains(*pending_focus_)) {
-        graph_->focus(*pending_focus_);
-        if (!pending_announce_) mark_spoken(graph_->current_node());
-      }
-      pending_focus_.reset();
+  if (!graph_->rerender()) return;  // no content yet; reconcile seats the start node once there is
+  if (pending_focus_) {
+    // One retry frame for a target focused mid-build; a target still not in the render was removed --
+    // drop the request rather than re-seating every frame.
+    if (graph_->current()->contains(*pending_focus_)) {
+      graph_->focus(*pending_focus_);
+      if (!pending_announce_) mark_spoken(graph_->current_node());
     }
-    if (pending_stop_) {
-      if (GraphNode* land = graph_->stop_landing(*pending_stop_)) graph_->focus(land->id);
-      pending_stop_.reset();  // the announce rides the normal differ below
-    }
+    pending_focus_.reset();
   }
 
   const GraphNode* node = graph_->current_node();
@@ -149,7 +113,8 @@ void GraphNavigator::ensure_focus() {
 // Watch the FOCUSED node's Live parts and speak a part when its value changes (a setting's value, a
 // description the game fills in late). Baselines silently whenever focus lands on a new identity.
 void GraphNavigator::watch_live(const GraphNode* node) {
-  auto anns = GraphAnnouncer::effective_announcements(node);
+  if (!node->vtable) return;
+  const std::vector<NodeAnnouncement> anns = node->vtable->announcements;   // a copy: a part's text runs the screen's code
   if (anns.empty()) return;
   bool baseline = !live_key_ || *live_key_ != node->id || live_values_.size() != anns.size();
   if (baseline) { live_key_ = node->id; live_values_.clear(); }
@@ -168,9 +133,6 @@ void GraphNavigator::watch_live(const GraphNode* node) {
 
 void GraphNavigator::announce_current() {
   if (!graph_) return;
-  // An unfocused screen with nothing focused has nothing to announce, and rerender would auto-seat a
-  // phantom focus at the start node.
-  if (!state_->cur_key && screen_ && screen_->start_unfocused()) return;
   if (!graph_->rerender()) return;
   const GraphNode* node = graph_->current_node();
   if (!node) return;
@@ -210,34 +172,10 @@ bool GraphNavigator::on_action(std::string_view key) {
   if (key == Home) return jump_edge(true);
   if (key == End) return jump_edge(false);
   const GraphNode* node = graph_ ? graph_->current_node() : nullptr;
-  // Region and section jumps consume only when the focused node is IN a region; elsewhere the key is not taken.
-  if (key == RegionPrev) return node && !node->region_key.empty() && region_jump(-1);
-  if (key == RegionNext) return node && !node->region_key.empty() && region_jump(1);
-  if (key == SectionPrev) return node && !node->region_key.empty() && region_jump(-1, true);
-  if (key == SectionNext) return node && !node->region_key.empty() && region_jump(1, true);
+  // Section jumps consume only when the focused node is IN a region; elsewhere the key is not taken.
+  if (key == SectionPrev) return node && !node->region_key.empty() && section_jump(-1);
+  if (key == SectionNext) return node && !node->region_key.empty() && section_jump(1);
   if (key == Activate) { if (!node) return false; vtable_activate(); return true; }
-  if (key == Secondary) { if (!node) return false; if (node->vtable && node->vtable->on_secondary) graph_->secondary(); return true; }
-  if (key == Back) return screen_ && screen_->invoke_action(action_ids::Back);
-  if (key == Tooltip) {
-    if (!node) return false;
-    if (node->vtable && node->vtable->on_tooltip) { graph_->tooltip(); return true; }
-    if (node->vtable && node->vtable->details) { std::string d = node->vtable->details(); if (!d.empty()) { speak(d, true); return true; } }
-    speak(strings::kNoTooltip, false);
-    return true;
-  }
-  if (key == TooltipDetail) {   // the long form; the short one when the control has no long form
-    if (!node) return false;
-    if (node->vtable && node->vtable->on_tooltip_detail) { node->vtable->on_tooltip_detail(); return true; }
-    if (node->vtable && node->vtable->on_tooltip) { graph_->tooltip(); return true; }
-    speak(strings::kNoTooltip, false);
-    return true;
-  }
-  if (key == Compare) {
-    if (!node) return false;
-    if (node->vtable && node->vtable->on_compare) { graph_->compare(); return true; }
-    speak(strings::kNothingToCompare, false);
-    return true;
-  }
   return false;
 }
 
@@ -247,34 +185,19 @@ bool GraphNavigator::arrow(GraphDir dir) {
   // A focused control with on_adjust (a setting's value) adjusts on Left/Right (priority over any navigation).
   if (dir == GraphDir::Left || dir == GraphDir::Right)
     if (vtable_adjust(dir == GraphDir::Right ? 1 : -1)) return true;
-  // Edge-wired movement first (rows/grids/flattened tree rows all ride edges).
+  // Movement rides the edges (rows, lists, grids).
   MoveResult move = graph_->move(dir);
-  if (move.moved) { announce_move(move); return true; }
+  if (move.moved) { land(move.to, move.from, move.transition_label); return true; }
   focus_node = graph_->current_node();  // move() rerendered: the node captured above may be a stale render's
   if (!focus_node) return false;
-  // At an edge. Left/Right get tree semantics: expand/collapse a group, descend into an expanded one,
-  // ascend from a child -- generic engine operations over parent/expandable.
-  if (dir == GraphDir::Left || dir == GraphDir::Right) {
-    KeyGraph::TreeResult tr = dir == GraphDir::Right ? graph_->tree_right() : graph_->tree_left();
-    switch (tr.kind) {
-      case KeyGraph::TreeMove::Expanded:
-      case KeyGraph::TreeMove::Collapsed: speak_focused_state(); return true;
-      case KeyGraph::TreeMove::EmptyGroup: speak(strings::kNoDetails, true); return true;
-      case KeyGraph::TreeMove::Descended:
-      case KeyGraph::TreeMove::Ascended: announce_move(tr.move); return true;
-      case KeyGraph::TreeMove::Leaf: return true;
-      case KeyGraph::TreeMove::None: break;
-    }
-  }
   // Nothing moved: at the edge of the list, repeat the focused item rather than go silent. Only along
   // the list's own axis: Left/Right in a vertical list are not an edge, they are nothing -- and Up/Down in
   // a pure row likewise.
-  // Edges inside trees are consumed; from a plain list the press is not taken, so the host can hand it on
-  // (to the game's own list). A press something else answers is not repeated: the repeat and then the
-  // answer were both said (the calendar's April 30, then May 1, 2026-11-01).
-  bool consumed = KeyGraph::in_tree(graph_->current_node());
-  if (on_list_axis(focus_node, dir) && (consumed || !host_.edge_answered || !host_.edge_answered(dir))) repeat_focused();
-  return consumed;
+  // The press is not taken, so the host can hand it on (to the game's own list). A press something else
+  // answers is not repeated: the repeat and then the answer were both said (the calendar's April 30, then
+  // May 1, 2026-11-01).
+  if (on_list_axis(focus_node, dir) && (!host_.edge_answered || !host_.edge_answered(dir))) repeat_focused();
+  return false;
 }
 
 bool GraphNavigator::on_list_axis(const GraphNode* node, GraphDir dir) {
@@ -293,38 +216,21 @@ void GraphNavigator::repeat_focused() {
   mark_spoken(node);
 }
 
-// Speak the focused group's post-toggle state and rebaseline the differ + live watch.
-void GraphNavigator::speak_focused_state() {
-  const GraphNode* node = graph_->current_node();
-  if (!node) return;
-  if (auto t = GraphAnnouncer::leaf_text(node)) speak(*t, true);
-  mark_spoken(node);
-  live_key_.reset();
-}
-
 bool GraphNavigator::tab(int step) {
-  // Snapshot BEFORE rerendering: reconcile auto-seats a null cursor at the start node, and an unfocused
-  // screen's Tab must enter at the first stop, not step from that phantom seat.
+  // Snapshot BEFORE rerendering: reconcile seats a cursor that was not set yet at the start node, and a
+  // Tab pressed before any focus was seated must enter at the first (or last) stop, not step from there.
   if (!graph_ || !state_) return false;
   bool was_unfocused = !state_->cur_key;
   if (!graph_->rerender()) return false;
-  std::vector<Key> stops;
-  for (GraphNode* n : graph_->current()->order())
-    if (!n->stop_key.empty() && std::find(stops.begin(), stops.end(), n->stop_key) == stops.end()) stops.push_back(n->stop_key);
+  const std::vector<Key> stops = graph_->stops();
   if (stops.empty()) return false;
   const GraphNode* cur = was_unfocused ? nullptr : graph_->current_node();
   int idx = -1;
   if (cur) { auto it = std::find(stops.begin(), stops.end(), cur->stop_key); if (it != stops.end()) idx = (int)(it - stops.begin()); }
-  if (idx < 0) return land_on_stop(stops[step >= 0 ? 0 : stops.size() - 1]);  // unfocused: enter at first/last
+  if (idx < 0) return land_on_stop(stops[step >= 0 ? 0 : stops.size() - 1]);  // no focus yet: enter at first/last
   int ni = idx + step;
   int n = (int)stops.size();
   if (ni < 0 || ni >= n) {
-    if (screen_ && screen_->start_unfocused()) {
-      blur();  // truly unfocused: a later re-entry starts unfocused again
-      std::string name = screen_->screen_name();
-      if (!name.empty()) speak(name, true);
-      return true;
-    }
     if (screen_ && screen_->wrap()) ni = ((ni % n) + n) % n;
     else return true;  // at the end; consume, no wrap
   }
@@ -333,14 +239,18 @@ bool GraphNavigator::tab(int step) {
 
 // Remembered position -> SELECTED member -> first node (so Tab into a list lands on the item currently chosen).
 bool GraphNavigator::land_on_stop(const Key& stop_key) {
-  GraphNode* land = graph_->stop_landing(stop_key);
-  if (!land || !graph_->focus(land->id)) return true;
-  const GraphNode* node = graph_->current_node();
-  play_hover(node);
-  fire_focus(node);
-  if (auto t = compose_move(last_spoken_node(), node, false)) speak(*t, true);
-  mark_spoken(node);
+  GraphNode* target = graph_->stop_landing(stop_key);
+  if (!target || !graph_->focus(target->id)) return true;
+  land(graph_->current_node(), last_spoken_node());
   return true;
+}
+
+void GraphNavigator::land(const GraphNode* to, const GraphNode* from, std::string_view transition) {
+  if (!to) return;
+  play_hover(to);
+  fire_focus(to);
+  if (auto t = compose_move(from, to, false, transition)) speak(*t, true);
+  mark_spoken(to);
 }
 
 void GraphNavigator::play_hover(const GraphNode* node) {
@@ -358,31 +268,17 @@ void GraphNavigator::fire_focus(const GraphNode* node) {
 bool GraphNavigator::jump_edge(bool first) {
   const GraphNode* focus_node = graph_ ? graph_->current_node() : nullptr;
   if (!focus_node) return false;
-  if (KeyGraph::in_tree(focus_node)) {  // first/last sibling at the current depth
-    MoveResult sib = graph_->move_to_sibling_edge(first);
-    if (sib.moved) announce_move(sib); else repeat_focused();  // already there: say so by repeating it
-    return true;
-  }
   // Home/End run along the list; in a row (no vertical edges) that is left/right.
   bool vertical = focus_node->has_transition(GraphDir::Up) || focus_node->has_transition(GraphDir::Down);
   MoveResult move = graph_->move_to_edge(vertical ? (first ? GraphDir::Up : GraphDir::Down) : (first ? GraphDir::Left : GraphDir::Right));
-  if (move.moved) announce_move(move); else repeat_focused();
+  if (move.moved) land(move.to, move.from); else repeat_focused();   // already there: say so by repeating it
   return true;
 }
 
-bool GraphNavigator::region_jump(int dir, bool wrap) {
-  MoveResult r = graph_->move_region(dir, wrap);
-  if (!r.moved) return true;  // no region that way: consume
-  announce_move(r);
-  return true;
-}
-
-void GraphNavigator::announce_move(const MoveResult& r) {
-  if (!r.to) return;
-  play_hover(r.to);
-  fire_focus(r.to);
-  if (auto t = compose_move(r.from, r.to, false, r.transition_label)) speak(*t, true);
-  mark_spoken(r.to);
+bool GraphNavigator::section_jump(int dir) {
+  MoveResult r = graph_->move_region(dir);
+  if (r.moved) land(r.to, r.from);
+  return true;  // one section only: consumed, nothing said
 }
 
 // Run the focused node's activation; speak its state_text as immediate feedback when it declares one,
@@ -469,16 +365,14 @@ bool GraphNavigator::tick_result_arrows(const TypeaheadInput& in) {
   return true;
 }
 
-// Keys the live search owns (letters, space, up/down, escape): an action bound to one of them must not
-// fire its nav meaning while a search is active. Decided by action id here (the host binds ids to keys).
+// Keys the live search owns (up/down walk its results): an action bound to one of them must not fire its
+// nav meaning while a search is active. Decided by action id here (the host binds ids to keys).
 bool GraphNavigator::fired_from_search_key(std::string_view key) const {
   using namespace ui_actions;
-  return key == Up || key == Down || key == Tooltip;
+  return key == Up || key == Down;
 }
 
 void GraphNavigator::type_char(std::uint32_t cp) {
-  // A fresh search remembers the column you are on: every result lands there.
-  if (!search_.has_buffer()) { const GraphNode* n = graph_->current_node(); search_column_ = n && n->vtable ? n->vtable->column : -1; }
   rebuild_search_scope();
   if (search_nodes_.empty()) return;
   search_.add_codepoint(cp);
@@ -492,23 +386,20 @@ std::string GraphNavigator::search_text_of(const GraphNode* n) {
   return {};
 }
 
-// The searchable scope is the focused node's Tab-stop. Tabular rows contribute ONE result (the primary).
+// The searchable scope is the focused node's Tab-stop.
 void GraphNavigator::rebuild_search_scope() {
   search_nodes_.clear();
   const GraphNode* node = graph_ ? graph_->current_node() : nullptr;
   if (!node || !graph_->current()) return;
   for (GraphNode* n : graph_->current()->order())
-    if (n->stop_key == node->stop_key && n->vtable && !n->vtable->exclude_from_search && n->vtable->column <= 0) search_nodes_.push_back({n->id, search_text_of(n)});
+    if (n->stop_key == node->stop_key && n->vtable && !n->vtable->exclude_from_search) search_nodes_.push_back({n->id, search_text_of(n)});
 }
 
 void GraphNavigator::search_focus_result(int index) {
   if (index < 0 || (size_t)index >= search_nodes_.size()) return;
-  if (!graph_->focus_at_column(search_nodes_[(size_t)index].id, search_column_)) return;   // resolves in the CURRENT render
+  if (!graph_->focus(search_nodes_[(size_t)index].id)) return;   // resolves in the CURRENT render
   const GraphNode* node = graph_->current_node();
-  play_hover(node);
-  fire_focus(node);
-  if (auto t = compose_move(last_spoken_node(), node, false)) speak(*t, true);
-  mark_spoken(node);
+  land(node, last_spoken_node());
   search_focus_id_ = node->id;
 }
 
@@ -518,7 +409,6 @@ void GraphNavigator::clear_search(bool announce) {
   search_nodes_.clear();
   search_focus_id_.reset();
   search_held_dir_ = 0;
-  search_column_ = -1;
   if (announce && had) speak(strings::kSearchCleared, true);
 }
 

@@ -22,13 +22,9 @@ namespace p3a::ui {
 /// **Raw mode** -- add_node() + connect() for arbitrary topologies.
 ///
 /// Orthogonal to both: begin_stop() groups nodes into Tab-stops (arrows never cross a stop; Tab cycles
-/// them), set_region() tags nodes with a region (a page's section, for the section jumps), and the PARENT STACK builds the
-/// presentation hierarchy: push_context() pushes a non-focusable structural level ("Difficulty
-/// settings, list" -- announced when focus enters from outside), while begin_group() pushes a
-/// focusable, EXPANDABLE group header (a tree section) whose children only emit while it's expanded --
-/// expansion state lives in the persistent set the builder is constructed with (GraphState::expanded),
-/// so screens hold no tree state of their own. Nesting recurses; a collapsed ancestor suppresses
-/// everything beneath it.
+/// them), set_region() tags nodes with a region (a page's section, for the section jumps), and the
+/// PARENT STACK builds the presentation hierarchy: push_context() pushes a non-focusable structural
+/// level ("Difficulty settings, list" -- announced when focus enters from outside). Nesting recurses.
 ///
 /// Ownership: every node the builder makes -- including the non-focusable context parents that are
 /// never published -- is owned by the builder until build() hands the whole arena to the render, which
@@ -38,10 +34,7 @@ namespace p3a::ui {
 /// std::logic_error for a call out of order (an unclosed row, a duplicate id, a pop with nothing pushed).
 class GraphBuilder {
  public:
-  /// `expansion` is the persistent expanded-group set (GraphState::expanded); null = every group must
-  /// pass its state explicitly. The builder does not own it and must not outlive it.
-  explicit GraphBuilder(std::unordered_set<ControlId>* expansion = nullptr) : expansion_(expansion) {}
-
+  GraphBuilder() = default;
   GraphBuilder(const GraphBuilder&) = delete;
   GraphBuilder& operator=(const GraphBuilder&) = delete;
 
@@ -56,31 +49,14 @@ class GraphBuilder {
   /// key clears. Region keys must be stable across rebuilds.
   GraphBuilder& set_region(Key key);
 
-  // ---- the parent stack: contexts + groups ----
+  // ---- the parent stack: contexts ----
 
   /// Push one NON-FOCUSABLE level of presentation hierarchy ("Difficulty settings", "list") onto nodes
   /// added from here -- pure structure: never navigable, announced when focus enters from outside.
-  /// Close with pop_context().
+  /// `positions` false: its direct children get no auto-stamped "n of m". Close with pop_context().
   GraphBuilder& push_context(std::string_view label, std::string_view role = {}, bool positions = true);
 
   GraphBuilder& pop_context();
-
-  /// Push a FOCUSABLE, expandable group header (a tree section): the header emits as a navigable node
-  /// here, and the children declared before end_group() emit only while the group is expanded (a
-  /// collapsed ancestor suppresses the whole subtree -- recursion just works). Expansion state:
-  /// `expanded` when given (a screen that keeps the state itself), else the persistent
-  /// expansion set the builder was constructed with, else `default_expanded`. The engine's tree
-  /// operations (Right/Left) expand/collapse via the vtable's on_expand/on_collapse overrides when set,
-  /// else by mutating the persistent set.
-  GraphBuilder& begin_group(ControlId id, NodeVtablePtr vtable,
-                            std::optional<bool> expanded = std::nullopt, bool default_expanded = false);
-
-  GraphBuilder& end_group() { return pop_context(); }
-
-  /// Whether a group id is expanded in the persistent set -- for screens that must avoid even BUILDING
-  /// a collapsed group's children (a hierarchy whose children are costly to read).
-  /// Groups with an explicit `expanded` argument manage their own state instead.
-  bool is_expanded(const ControlId& id) const;
 
   /// Focus starts here when the graph has no prior position (defaults to the first node).
   GraphBuilder& set_start(ControlId id);
@@ -92,14 +68,12 @@ class GraphBuilder {
   GraphBuilder& start_row(Key row_key = {});
   GraphBuilder& end_row();
 
-  /// Add a control -- into the open row, or as its own single-item row. A no-op inside a collapsed
-  /// group's subtree.
+  /// Add a control -- into the open row, or as its own single-item row.
   GraphBuilder& add_item(ControlId id, NodeVtablePtr vtable);
 
   // ---- raw mode ----
 
-  /// Add a node with no automatic wiring (raw mode; wire with connect()). A no-op inside a collapsed
-  /// group's subtree.
+  /// Add a node with no automatic wiring (raw mode; wire with connect()).
   GraphBuilder& add_node(ControlId id, NodeVtablePtr vtable);
 
   /// Directed edge from -> to, with an optional spoken transition line ("lane change"). Edges to/from
@@ -127,16 +101,8 @@ class GraphBuilder {
     std::string label;
   };
 
-  // The parent stack: structural levels (push_context) and group headers (begin_group). A frame whose
-  // group is collapsed suppresses every declaration beneath it (the stack stays balanced regardless).
-  struct ParentFrame {
-    GraphNode* node;   // the parent node (non-focusable context, or the group header)
-    bool suppressed;   // this frame's subtree is swallowed (collapsed, or under a collapsed ancestor)
-  };
-
   static Key auto_stop_key(int index);
-  GraphNode* current_parent() const { return parents_.empty() ? nullptr : parents_.back().node; }
-  bool suppressed() const { return !parents_.empty() && parents_.back().suppressed; }
+  GraphNode* current_parent() const { return parents_.empty() ? nullptr : parents_.back(); }
   GraphNode* make_node(ControlId id, NodeVtablePtr vtable);
   GraphNode* own(std::unique_ptr<GraphNode> node);
 
@@ -145,8 +111,6 @@ class GraphBuilder {
   void stamp_positions();
   static void stamp(const std::vector<GraphNode*>& siblings);
   static ControlId vertical_target(const Row& from, const Row& to, std::size_t pos);
-
-  std::unordered_set<ControlId>* expansion_;  // persistent expanded-group set (null = all explicit)
 
   // Every node this builder made, in creation order; handed to the render at build().
   std::vector<std::unique_ptr<GraphNode>> owned_;
@@ -177,7 +141,7 @@ class GraphBuilder {
   Key stop_key_ = auto_stop_key(0);
   int stop_auto_ = 1;
   Key region_key_;
-  std::vector<ParentFrame> parents_;
+  std::vector<GraphNode*> parents_;   // the open contexts, outermost first
 };
 
 }  // namespace p3a::ui

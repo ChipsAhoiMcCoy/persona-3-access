@@ -44,11 +44,9 @@ struct TypeaheadInput {
 namespace ui_actions {
 inline constexpr std::string_view Up = "ui.up", Down = "ui.down", Left = "ui.left", Right = "ui.right";
 inline constexpr std::string_view Next = "ui.next", Prev = "ui.prev", Home = "ui.home", End = "ui.end";
-inline constexpr std::string_view RegionPrev = "ui.regionPrev", RegionNext = "ui.regionNext";
 // A page's sections (regions of the focused stop), wrapping.
 inline constexpr std::string_view SectionPrev = "ui.sectionPrev", SectionNext = "ui.sectionNext";
-inline constexpr std::string_view Activate = "ui.activate", Secondary = "ui.secondary", Back = "ui.back";
-inline constexpr std::string_view Tooltip = "ui.tooltip", TooltipDetail = "ui.tooltipDetail", Compare = "ui.compare";
+inline constexpr std::string_view Activate = "ui.activate";
 }  // namespace ui_actions
 
 class GraphNavigator {
@@ -62,8 +60,6 @@ class GraphNavigator {
   void attach(Screen* screen);
   // A screen closed and its focus is not to be kept for its next opening: drop its state.
   void screen_closed(Screen* screen);
-  // Drop focus back to the screen's unfocused state (a start_unfocused screen).
-  void blur();
   // The per-frame pull: rebuild + reconcile, establish initial focus when content appears, apply pending
   // focus requests, announce any focus-identity change exactly once, watch live parts.
   void ensure_focus();
@@ -76,9 +72,6 @@ class GraphNavigator {
   // Move focus to a node by id when it exists in a render (one retry frame for content appearing).
   // interrupt: the landing interrupts speech (the game moved its cursor on its own: a player's move, not an entry).
   void focus_node(const ControlId& id, bool announce = true, bool interrupt = false);
-  // Land on the first/remembered/selected node of a Tab-stop once it has nodes.
-  void focus_stop(Key stop_key);
-  std::optional<Key> focused_stop_key() const;
   std::optional<ControlId> focused_id() const;  // identity of the focused node, if any
   // The focus the state remembers: unlike focused_id(), known while the screen builds (the render is being replaced).
   std::optional<ControlId> remembered_focus() const { return state_ ? state_->cur_key : std::nullopt; }
@@ -102,12 +95,12 @@ class GraphNavigator {
   bool jump_edge(bool first);
   static bool on_list_axis(const GraphNode* node, GraphDir dir);  // is `dir` along the list the node sits in
   void repeat_focused();                                           // the edge case: say the focused item again
-  bool region_jump(int dir, bool wrap = false);
-  void announce_move(const MoveResult& r);
+  bool section_jump(int dir);
+  // A player's landing on `to`: its sound, its on_focus, the line read as a move from `from`, interrupting.
+  void land(const GraphNode* to, const GraphNode* from, std::string_view transition = {});
   bool vtable_activate();
   bool vtable_adjust(int sign);
   void feedback_after_change();  // speak state_text, rerender, rebaseline the live watch
-  void speak_focused_state();
   void play_hover(const GraphNode* node);
   void fire_focus(const GraphNode* node);                          // the node's on_focus on a user landing (a change of node)
   void speak(std::string_view text, bool interrupt);
@@ -138,7 +131,6 @@ class GraphNavigator {
   std::optional<ControlId> pending_focus_;
   bool pending_announce_ = true;
   bool pending_interrupt_ = false;
-  std::optional<Key> pending_stop_;
   int last_idle_render_ = -1000000;
   static constexpr int kIdleRenderEvery = 6;  // ~100 ms at 60 fps
   // live watch
@@ -155,7 +147,6 @@ class GraphNavigator {
   Screen* last_typeahead_screen_ = nullptr;
   int search_held_dir_ = 0;
   double search_repeat_in_ = 0;
-  int search_column_ = -1;
 };
 
 }  // namespace p3a::ui

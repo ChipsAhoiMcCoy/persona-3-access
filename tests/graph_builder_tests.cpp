@@ -131,51 +131,31 @@ TEST_CASE("a context builds a non-focusable parent chain") {
   CHECK_FALSE(render->contains(a->parent->id));        // context nodes are never navigable
 }
 
-TEST_CASE("groups emit headers and suppress collapsed subtrees") {
-  std::unordered_set<ControlId> expansion;
-  auto build = [&expansion] {
-    return GraphBuilder(&expansion)
-        .begin_group(id("combat"), vt("Combat"))
-        .add_item(id("pause"), vt("Auto pause"))
-        .begin_group(id("nested"), vt("Nested"))
-        .add_item(id("deep"), vt("Deep"))
-        .end_group()
-        .end_group()
-        .add_item(id("after"), vt("After"))
-        .build();
-  };
+TEST_CASE("contexts of the same name on two stops are two parents") {
+  const GraphRenderPtr render = GraphBuilder()
+                                    .begin_stop("left")
+                                    .push_context("Items")
+                                    .add_item(id("a"), vt("A"))
+                                    .pop_context()
+                                    .begin_stop("right")
+                                    .push_context("Items")
+                                    .add_item(id("b"), vt("B"))
+                                    .pop_context()
+                                    .build();
 
-  const GraphRenderPtr collapsed = build();
-  CHECK(collapsed->contains(id("combat")));
-  CHECK(collapsed->node_at(id("combat"))->expandable);
-  CHECK_FALSE(collapsed->node_at(id("combat"))->expanded);
-  CHECK_FALSE(collapsed->contains(id("pause")));  // collapsed -> children swallowed
-  CHECK_FALSE(collapsed->contains(id("nested")));
-  CHECK(collapsed->contains(id("after")));
-
-  expansion.insert(id("combat"));
-  const GraphRenderPtr expanded = build();
-  CHECK(expanded->contains(id("pause")));
-  CHECK(expanded->node_at(id("combat")) == expanded->node_at(id("pause"))->parent);
-  CHECK(expanded->contains(id("nested")));    // nested header visible...
-  CHECK_FALSE(expanded->contains(id("deep")));  // ...but its own subtree still collapsed
-
-  expansion.insert(id("nested"));
-  const GraphRenderPtr deep = build();
-  CHECK(deep->contains(id("deep")));
-  CHECK(deep->node_at(id("nested")) == deep->node_at(id("deep"))->parent);
+  // Their ids differ, so the announcer reads the title again on the way from one to the other.
+  CHECK(render->node_at(id("a"))->parent->id != render->node_at(id("b"))->parent->id);
 }
 
 TEST_CASE("positions auto-stamp by sibling group") {
-  std::unordered_set<ControlId> expansion;
-  expansion.insert(id("g"));
-  const GraphRenderPtr render = GraphBuilder(&expansion)
-                                    .add_item(id("a"), vt("A"))  // top level: a, g = 2 siblings
-                                    .begin_group(id("g"), vt("G"))
-                                    .add_item(id("c1"), vt("C1"))  // group level: 3 siblings
+  const GraphRenderPtr render = GraphBuilder()
+                                    .add_item(id("a"), vt("A"))  // top level: a, b = 2 siblings
+                                    .add_item(id("b"), vt("B"))
+                                    .push_context("Group")
+                                    .add_item(id("c1"), vt("C1"))  // inside the context: 3 siblings
                                     .add_item(id("c2"), vt("C2"))
                                     .add_item(id("c3"), vt("C3"))
-                                    .end_group()
+                                    .pop_context()
                                     .begin_stop()
                                     .add_item(id("lone"), vt("Lone"))  // single sibling -> 1 of 1
                                     .begin_stop()
@@ -183,11 +163,17 @@ TEST_CASE("positions auto-stamp by sibling group") {
                                     .add_item(id("r1"), vt("R1"))
                                     .add_item(id("r2"), vt("R2"))
                                     .end_row()  // row members
+                                    .begin_stop()
+                                    .push_context("Log", {}, false)  // a parent whose children get none
+                                    .add_item(id("l1"), vt("L1"))
+                                    .add_item(id("l2"), vt("L2"))
+                                    .pop_context()
+                                    .add_node(id("raw"), vt("Raw"))  // a raw node gets none
                                     .build();
 
   CHECK(render->node_at(id("a"))->position_index == 1);
   CHECK(render->node_at(id("a"))->position_count == 2);
-  CHECK(render->node_at(id("g"))->position_index == 2);
+  CHECK(render->node_at(id("b"))->position_index == 2);
   CHECK(render->node_at(id("c2"))->position_index == 2);
   CHECK(render->node_at(id("c2"))->position_count == 3);
   CHECK(render->node_at(id("lone"))->position_index == 1);
@@ -195,6 +181,8 @@ TEST_CASE("positions auto-stamp by sibling group") {
   CHECK(render->node_at(id("r1"))->position_index == 1);
   CHECK(render->node_at(id("r2"))->position_index == 2);
   CHECK(render->node_at(id("r2"))->position_count == 2);
+  CHECK(render->node_at(id("l2"))->position_count == 0);
+  CHECK(render->node_at(id("raw"))->position_count == 0);
 }
 
 TEST_CASE("regions are stamped") {

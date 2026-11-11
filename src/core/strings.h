@@ -509,20 +509,15 @@ inline constexpr const char* kLogEarlier = "An earlier line, from before this se
 inline constexpr const char* kShift = "Shift. Pass the turn to";
 inline constexpr Hint kShiftAvailable{"B shifts the turn to another member", "LT shifts the turn to another member"};
 inline constexpr const char* kRewind = "Rewind. Choose a day to go back to";
-// The menu navigator (core/navigator.cpp)
-inline constexpr const char* kNoTooltip = "no details";
-inline constexpr const char* kNothingToCompare = "nothing to compare";
-inline constexpr const char* kNoDetails = "no details";
+// The menu navigator's type-ahead (core/navigator.cpp)
 inline constexpr const char* kNoMatch = "no match for";
 inline constexpr const char* kSearchCleared = "search cleared";
-inline constexpr const char* kExpanded = "expanded";
 inline constexpr const char* kCard = "Card";
 // Shuffle Time's Minor Arcana suits, said with the card's number: "Wands 1".
 inline constexpr const char* kSuitSwords = "Swords";
 inline constexpr const char* kSuitCoins = "Coins";
 inline constexpr const char* kSuitCups = "Cups";
 inline constexpr const char* kSuitWands = "Wands";
-inline constexpr const char* kCollapsed = "collapsed";
 // Camp submenus (camp_menus.cpp)
 // Their keys (F1), from each menu's native input function: Q / E LB / RB,
 // F the X button, X RT, Z LT, H the Menu button.
