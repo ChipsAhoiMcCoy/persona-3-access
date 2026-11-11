@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-alpha.3
+
 ### Sonar (new)
 - Every point of interest near you now repeats its own sound from where it is, faster and louder the closer it is: exits a rising breath of air, doors two knocks, people a two-note whistle, shops a small bell, objects a plucked note. On by default; F3 (both triggers and R3 on a controller) turns it on or off.
 - It works with the points of interest list: the point you selected is marked by a short tick before its sound and always has a place among the sounds, and each point you land on in the list plays its sound once from where it is, however far.
@@ -12,6 +14,10 @@
 
 ### Menus
 - What a menu presses in the game for you (stepping the game's highlight, the confirm) now goes out on the device you pressed: a key for the keyboard, a button for the controller. It used to follow whichever device had stirred last, so a controller's stick resting near its edge could turn a keyboard confirm into a controller press.
+- Returning to the title from System no longer reads "Menu, System, 9 of 9" again after you confirm.
+- Rewind: you can now go back to any day in the list. The game's cursor did not follow the focus, so only the day the list opened on could be confirmed.
+- Rewind: the list waits for its opening animation like the other menus, and nothing is read again behind the fade after you confirm a day.
+- A prompt such as "Check: Dorm Register" is no longer said behind the black screen while a rewind or a load takes you away.
 
 ### Shadows in Tartarus
 - The Shadow's growl is heard from 30 m instead of 15, is louder at a distance, and is pitched where headphones carry it. A Shadow above or below you is no longer left out, which could keep one silent until it was on you.
@@ -23,6 +29,9 @@
 ### Exploring
 - Pushing the controller's left stick stops the auto-walk, as a movement key already did on the keyboard.
 - The auto-walk finds the way in to a thing that stands inside something solid, such as a Tartarus teleporter between its pillars: it checks which sides the hero's body can come in from, walks round to the nearest and goes straight in. It used to circle the thing a sixth of a turn at a time, which could miss every gap and end in "Stuck".
+- Exits are said by name alone: "Iwatodai Station", not "Iwatodai Station exit", which was taken for the way out of the place.
+- Prompts say "Go to" only before a place an exit leads to. A prompt that already says what you do, like "Enter the Velvet Room", and a device you operate are said by name alone.
+- The auto-walk ends when a dialogue or menu comes up, instead of walking on into a way the game has just turned you back from.
 
 ### Sounds
 - A sound with a place in the world now stays at that place while it plays: the sonar's sounds, the beacon, the Shadow cues and the nearby chimes shift in your ears as you walk or turn the camera during them. Each used to stay where it was heard when it started.
@@ -56,19 +65,8 @@
 ### Shuffle Time
 - Each card now says what its face shows before its effect: "Fool", or a suit card's suit and number such as "Wands 1".
 
-### Exploring
-- Exits are said by name alone: "Iwatodai Station", not "Iwatodai Station exit", which was taken for the way out of the place.
-- Prompts say "Go to" only before a place an exit leads to. A prompt that already says what you do, like "Enter the Velvet Room", and a device you operate are said by name alone.
-- The auto-walk ends when a dialogue or menu comes up, instead of walking on into a way the game has just turned you back from.
-
 ### Velvet Room
 - A Persona's status page in registration and in the compendium is read again. It was silent: the list behind it kept the focus. The page now opens with what confirming does, "Register this Persona?" or "Summon this Persona?", before the Persona's name.
-
-### Menus
-- Returning to the title from System no longer reads "Menu, System, 9 of 9" again after you confirm.
-- Rewind: you can now go back to any day in the list. The game's cursor did not follow the focus, so only the day the list opened on could be confirmed.
-- Rewind: the list waits for its opening animation like the other menus, and nothing is read again behind the fade after you confirm a day.
-- A prompt such as "Check: Dorm Register" is no longer said behind the black screen while a rewind or a load takes you away.
 
 ## 0.1.0-alpha.2
 

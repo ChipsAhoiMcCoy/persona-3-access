@@ -29,6 +29,7 @@ These reached the code but have not been seen working in the game, because no te
 - The victory screen's new pacing was tried in one battle with a member's level-up. The hero's own level-up page and a battle with several level-ups at once have not been tried with it.
 - The compendium's Persona status page (Summon from the Compendium, then a Persona) was not tried in the game after its fix. Registration's page, which had the same fault, was.
 - The game over screen's fixes (the poem read aloud, confirm skipping it, each choice's description, the wait for the list to take input) and the shorter damage line for a target you chose have not been tried in the game.
+- The auto-walk's search for the way in to a walled-in target was tried on one Tartarus teleporter, from one side.
 - The Missing Persons board in the field. The camp's Missing Persons list has been tested.
 - The Persona status page in battle (F on a skill list) was not checked again after the page was reworked.
 - The audio description text was checked by automated timing and transcript checks, not by a person watching every movie.
