@@ -318,6 +318,10 @@ std::vector<Poi> scan(float radius) {
     if (type == "AreaChange" || icon == "Goto") add(a, Kind::Exit, nm.empty() ? strings::kPoiExit : nm);
     else if (icon == "Shop") add(a, Kind::Shop, nm.empty() ? strings::kPoiShop : nm);
     else if (icon == "Speak" || icon == "Listen") add(a, Kind::Person, nm.empty() ? strings::kPoiPerson : nm);
+    // Tartarus' doors are ways onward under the plain Check icon: the Monad door on a floor ("Enter Door", row
+    // 10009006; seen on Adamah floors 231 and 243, 2026-11-11), and in the passage "Exit Door", "Proceed Onward" and
+    // the way back (10009007-10009009, 10009012; UNTESTED, from the game's data).
+    else if (int idx = get<int32_t>(a, "mNameIndex_", -1); ((idx >= 10009006 && idx <= 10009009) || idx == 10009012) && !nm.empty()) add(a, Kind::Exit, nm);
     else if (fragment_spot(a)) add(a, Kind::Fragment, strings::kPoiFragment);
     else if (nm.empty()) add(a, Kind::Thing, strings::kPoiThing);
     else add(a, check_kind(nm), nm);
