@@ -6,7 +6,8 @@
 
 namespace p3a::screens {
 // Party members' levels when the current battle began (by unit id), and their names: the battle screen records
-// them as the battle starts, the victory screen (battle_result.cpp) reads the names and clears the levels.
+// them as the battle starts, the victory screen (battle_result.cpp) reads the names and forgets the levels
+// (forget_battle_start; a name stays until a later battle records it again).
 extern int g_start_level[32];
 extern std::string g_party_name[32];
 // Every party Persona as the battle began (by Persona id: the hero's stock, each member's own), so the victory
@@ -14,10 +15,10 @@ extern std::string g_party_name[32];
 struct StartPersona { int level = 0; std::array<uint8_t, 5> stats{}; std::array<uint16_t, 8> skills{}; };
 extern std::map<int, StartPersona> g_start_personas;
 void forget_battle_start();
-// The live Shuffle Time actor (cards dealt), or null (shuffle.cpp).
 }  // namespace p3a::screens
 namespace p3a::ue { struct UObject; }
 namespace p3a::screens {
+// The live Shuffle Time actor (cards dealt), or null (shuffle.cpp).
 ue::UObject* shuffle_ui();
 // The details of who is in focus in a battle (battle_menus.cpp): the right stick up and down, Ctrl+Up and Ctrl+Down.
 namespace battle_details {

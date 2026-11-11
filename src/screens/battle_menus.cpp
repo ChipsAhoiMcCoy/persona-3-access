@@ -1,13 +1,16 @@
-// The battle's lists as bespoke menus (menu.h). Their state is reflected (battle.cpp's header has the classes):
-//   state 2 skills    BP_BtlSkillList_C      SkillIDList, CursorIndex (Q / E switch the equipped Persona)
-//   state 3 items     BP_BtlItemList_C       ItemList (FBtlItemData: ID, Num, Name), CursorIndex
-//   state 4 targets   BP_BtlTargetSelect_C   targetList, TargetIndex
-//   state 7 Theurgy   BP_BtlTheurgiaList_C   ItemList (skill ids), CursorIndex
+// The battle's lists as bespoke menus (menu.h). Their state is reflected:
+//   state 2 skills    BP_BtlSkillList_C      SkillIDList, SelectCursor (the index confirm uses; Q / E switch the
+//                     equipped Persona, IsChangingPersona meanwhile)
+//   state 3 items     BP_BtlItemList_C       ItemList (FBtlItemData: ID, Num, Name), CurrentIndex
+//   state 4 targets   BP_BtlTargetSelect_C   targetList, TargetIndex, TargetType (not 0: the whole list is taken)
+//   state 6 Survey    BP_BtlTacticsCheck_C   CursorList, TargetIndex
+//   state 7 Theurgy   BP_BtlTheurgiaList_C   ItemList (skill ids), CurrentIndex
 //   state 9 Shift     BP_BtlGuiShiftSelect_C PlayerList, TargetIndex
 //   state 10 Tactics  BP_BtlStrategyInstruct_C inputState (0 Order/Escape, 1 member, 2 order), CursorIndex[level],
 //                     PlayerList, OperationNameList (the game's English names); a member's order: GetOperation
-// The game's state is ABtlGuiStateManager.nowState. A skill's description is the BMD page whose dialog number is its
-// id, built once the game's cursor is on it: read after the name when it comes.
+// The game's state is ABtlGuiStateManager.nowState; whose turn it is, BP_BtlTargetManager_C.MainCharacter. A skill's
+// description is its help line from the game's file (persona::skill_help): the skill list keeps it for the detail
+// buffer and the review key, Theurgy reads it after the name.
 //
 // Moving the game's cursors (no keys): the lists are actors (BP_BtlGuiBaseActor_C), not widgets.
 // The native lists (skills, items, Theurgy, Tactics) take UBtlGuiListComponent.SetCursor(CurrentIndex), which moves
@@ -27,7 +30,6 @@
 #include "seh.h"
 #include "speech.h"
 #include "ue/scan.h"
-#include <windows.h>
 #include <algorithm>
 #include <format>
 

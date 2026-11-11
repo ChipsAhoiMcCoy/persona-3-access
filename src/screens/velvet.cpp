@@ -1,8 +1,10 @@
 // The Velvet Room's fusion screens as a bespoke menu (menu.h). Everything is drawn as pictures and native text the font
 // hooks never see, so the mod reads the state and names the entries from game data. UIVelvetRoomDraw.Scene: 2 MAIN
 // (Fusion / Summon / Registration; cursor UIVelvetRoom +0x3C8), 3 COMBINE_SELECT (the method), 4 COMBINE (fusion),
-// 5 the compendium, 6 registration (measured 2026-10-27). The lists, from memory:
-//   UICombine (+0x34 step): 3 base, 4 second, 12 Special, 13 Search, 5 result page, 6 inheritance, 14 status browse.
+// 5 the compendium, 6 registration (measured 2026-10-27). The room's own state is UIVelvetRoom +0x294 (6 the main
+// menu takes input, 9 the compendium runs); the draw animates while its +0x2F9 or +0x2FA is set. The lists, from memory:
+//   UICombine (+0x34 step): 2 the method, 3 base, 4 second, 12 Special, 13 Search, 5 result page, 6 inheritance,
+//     7 and 8 the fusion's animation, 11 the result's level up, 14 status browse; +0x1E4 a pending dialog (-1 none).
 //     Rows +0x138 (count +0x140), 0xA8 each: the Persona entry at +0x18 (id +0x1A, level +0x1C), +0x8C no result;
 //     step 4's results +0x148 (row i = base + row i). Special recipes +0x188 (count +0x190), 0xC0 each: the result
 //     row at +0, materials TArray at +0xA8 (count +0xB0) of rows with +0x8D "can be had". Search results +0x178
@@ -20,10 +22,9 @@
 #include "msg.h"
 #include "persona.h"
 #include "social.h"
-#include "seh.h"
 #include "speech.h"
 #include "ue/scan.h"
-#include <windows.h>
+#include <algorithm>
 #include <cstring>
 #include <format>
 

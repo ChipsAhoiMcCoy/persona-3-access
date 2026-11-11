@@ -1,7 +1,8 @@
 // Tartarus terminals ("SELECT TERMINAL": the Giant Device at the entrance and on the floors). AUIDungeonTransfer,
 // native layout (measured 2026-10-28 on Thebel 5F): +0x340 TArray of 0x10-byte entries, the floors you can go to
-// in floor order (+0x4 the floor, +0xC 1 for the furthest floor reached, also from the entrance), +0x390 the cursor into that array. The floor
-// numbers are sprites; floor 1 is the entrance.
+// in floor order (+0x4 the floor, +0xC 1 for the furthest floor reached, also from the entrance), +0x300 the list's
+// cursor (a ListCursor), +0x390 a copy of the entry under it, for the camera. The floor numbers are sprites; floor 1
+// is the entrance.
 #include "screens/menu.h"
 #include "screens/util.h"
 #include "core/strings.h"

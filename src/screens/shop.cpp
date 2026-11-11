@@ -5,11 +5,13 @@
 //          0x13 antique trade list, 0x14 sell list, 0x16 sell quantity, 0x17 / 0x18 sell confirm.
 //   Top menu: TArray<i32> modes +0x2B8 (count +0x2C0), cursor u16 +0x2C8 (top +0x2CA). Modes: 1-4 Buy Weapon / Armor /
 //          Footwear / Accessory, 0xC Sell, 7 Fuse Equipment, 9 Trade Card, 10 Trade Item.
-//   Members: TArray<u16> ids +0x2D0 (count +0x2D8), cursor u16 +0x2E0 (Q / E switch it from the list too).
+//   Members: TArray<u16> ids +0x2D0 (count +0x2D8), cursor u16 row +0x2E0, top +0x2E2 (Q / E switch it from the
+//          list too). What a member wears: the unit's work +0x28C + slot * 2 (u16 item id, 0x8000 = nothing).
 //   Lists (buy, sell, trade): +0x2E8 (count +0x2F0), 0x28 each: +0 price, +4 u16 item id, +6 u16 how many you can
 //          take (0 = not now), +8 TArray<{u16 id, u16 count}> what a trade takes; cursor u16 row +0x2F8, top +0x2FA,
-//          rows shown u16 +0x2FC; a simple shop's rows also +0x1E u16 what is left of its stock. The draw actor reads these every frame: written directly, with the cursor sound
-//          (the mouse path does the same).
+//          rows shown u16 +0x2FC; a simple shop's rows also +0x1E u16 what is left of its stock. The draw actor reads
+//          these every frame: written directly, with the cursor sound (the mouse path does the same). The sell list's
+//          category (Q / E): cursor u16 row +0x350, top +0x352.
 //   Antique fusion (state 0x10): the base equipment TArray<u16> ids +0x308 (count +0x310), cursor u16 row +0x318,
 //          top +0x31A, rows shown u16 +0x31C (5); state 0x11 lists what it makes in the ordinary list (+0x2E8, with
 //          the materials each takes; seen 2026-10-30). State 0x12 is the game's alone.
@@ -17,17 +19,16 @@
 //          +0x336 equip now, +0x338 sell what they wore before, +0x356 sell (0 = the first choice; left / right, or up
 //          / down when +0x3B8 is set).
 //   State 0xD (after "Equip it now?", FUN_141400cb0): sell the replaced equipment, its id u16 +0x332, price i32 +0x32C.
+//   Input gates, bool virtuals by vtable offset: +0x648 the shop takes input at all, +0x748 / +0x750 a simple shop's
+//          buy list is held (state 7), +0x760 its Buy / Quit panel is (state 10).
 #include "screens/menu.h"
 #include "screens/util.h"
 #include "core/strings.h"
-#include "core/text_clean.h"
 #include "items.h"
 #include "msg.h"
 #include "party.h"
 #include "speech.h"
 #include "stats.h"
-#include <windows.h>
-#include <algorithm>
 #include <format>
 
 namespace p3a::screens {

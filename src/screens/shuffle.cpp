@@ -1,7 +1,12 @@
 // Shuffle Time after a battle (BtlShuffleMainBase, BP_BtlShuffleUI_C): the cards are art, each card's effect is a
 // BMD page of BMD_BtlShuffleMsg ("Obtain the Lovers Persona, Pixie."), its variables filled per card by the game.
 // Reflected: ShowCardsMax (cards dealt), EnableSelectNum (cards you may take), SelectCoursorIndex (the card under the
-// cursor), _PersonaStatusActor (a Persona card's status page), GetAppearCard (a card's type and id), GetMegNoDetailArcanaSelectCard (the dialog of a card's effect page).
+// cursor), _PersonaStatusActor (a Persona card's status page), GetAppearCard (a card as an FAppPropsCardParam: Type
+// +0, 1 a Persona, 2 a Major Arcana, 3 a suit card; ID +4; Rank +8), GetMegNoDetailArcanaSelectCard (the dialog of a
+// card's effect page).
+// Unreflected: +0x278 the deal's state (2 choosing, 4 Persona Overstock, 6 Arcana Burst's row), +0xF71 the input
+// step's "took input" byte, and the cards themselves, 0x10 each: +0 kind (1 a Persona, 2..5 a suit, 6 and up a Major
+// Arcana), +4 rank, +8 value (a Persona card's Persona id); the deal's five at +0x27C, Arcana Burst's four at +0x2CC.
 // The info panel (BP Tick part, BP_BtlShuffleUI "preSelectCardIdx"): when SelectCoursorIndex changes it fades
 // the old card's page out (selectCardInfoOutStart, SelectCardFadeTimer counting down), and only when the timer runs
 // out sets showCardInfoIndex to the new card and builds its page. So the page on screen is showCardInfoIndex's, never
@@ -18,7 +23,6 @@
 #include "msg.h"
 #include "persona.h"
 #include "speech.h"
-#include <windows.h>
 #include <array>
 #include <cstring>
 #include <format>
@@ -42,14 +46,14 @@ UObject* shuffle_ui() {
 // game builds for it, and puts the cursor back. A card whose data changes is read again (no Major Arcana changes the others: CheckChangeCard is the card
 // models' spawn; the Star's extra pick and Arcana Burst's row are the in-deal changes, 2026-11-02).
 // Arcana Burst (all the day's Major Arcana collected; isShowBonousCard, state 6 SelectCardAllGetBonus): a second row of
-// four Minor Arcana cards (+0x2CC, 0x10 each: type, rank, value) after the deal, taken EnableSelectNum times ("Draw 2"),
+// four Minor Arcana cards (+0x2CC, 0x10 each: kind, rank, value) after the deal, taken EnableSelectNum times ("Draw 2"),
 // C cancelling the last; the same cursor, info page and picks (SelectedCardNum / GetSelectedCardIndex) as the deal.
 // An item card (GetItemNumSelectCard >= 0) says how many you own (GetHaveItemNumBySelectCard), as the game shows.
 // Persona Overstock (state 4, a Persona card taken with the stock full; isEndPersonaListInFlag once it is in): a list
 // of the new Persona ("Gain", row 0) and the stock in order (rows 1..), PersonaSelectCoursorIndex, wrapping, moved
 // with Up / Down; Enter releases the Persona under it (row 0: the new one is not taken), F shows its stats. Its rows
-// are drawn natively (UBtlShufflePersonaList, unreflected): they follow the card (ActionCardIndex's slot: type 1, the
-// Persona's id) and the stock, checked against the screen 2026-11-02 (7 rows over a 6-Persona stock). F opens the
+// are drawn natively (UBtlShufflePersonaList, unreflected): they follow the card (ActionCardIndex's slot: kind 1, the
+// Persona's id its value) and the stock, checked against the screen 2026-11-02 (7 rows over a 6-Persona stock). F opens the
 // row's status page (_PersonaStatusActor, +0x528 == 5 while shown, the field cleared on close; Q / E move the list's
 // cursor with it).
 class ShuffleScreen : public MenuScreen {

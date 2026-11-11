@@ -1,7 +1,8 @@
 #pragma once
 // The battle's own words and numbers, from its database (UBtlDataBaseComponent on BP_BtlTopUI_C: GetUnitName,
-// GetUnitHP, GetSkillName, GetSkillCost, GatAnalizeAttr, GetAttackName, GetPersonaName, CheckSupport). Used by the
-// battle screen (battle.cpp).
+// GetUnitHP, GetSkillName, GetSkillCost, GatAnalizeAttr, GetAttackName, GetPersonaName, GetBadStatus, CheckSupport,
+// GetSupportTurn). Used by the battle screen (battle.cpp), the battle's lists and the detail buffer
+// (battle_menus.cpp).
 #include "screens/util.h"
 #include "core/strings.h"
 #include "party.h"
@@ -11,11 +12,10 @@
 #include <vector>
 
 namespace p3a::screens {
-using namespace ue;   // as in every screen file; this header is included by battle.cpp only
+using namespace ue;   // as in every screen file; this header is included by battle.cpp and battle_menus.cpp only
 class BtlWords {
   Finder top_{"BP_BtlTopUI_C"};
  public:
-  using UObject = ue::UObject;
   UObject* db() { UObject* t = top_.get(); return t ? get<UObject*>(t, "BtlDataBase") : nullptr; }
   // A database call taking one actor, returning an int.
   int unit_int(const char* fn, UObject* a) {
@@ -170,7 +170,7 @@ class BtlWords {
       int n = support_turn(a, type);
       out.push_back(n > 0 ? std::format("{}, {}", word, turns_text(n)) : std::string(word));
     };
-    // The HUD's stats (buffs() above), then what the info panel draws beside them, then the rest of EBtlDataSupportTable.
+    // The HUD's stats (buffs() below), then what the info panel draws beside them, then the rest of EBtlDataSupportTable.
     effect(has_support(a, 0), 0, strings::kBuffs[0]);
     effect(has_support(a, 1), 1, strings::kBuffs[1]);
     effect(has_support(a, 4), 4, strings::kBuffs[2]);

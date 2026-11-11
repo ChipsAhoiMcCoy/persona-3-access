@@ -5,6 +5,8 @@
 // and the words come from the game's own battle database (UBtlDataBaseComponent: GetUnitName, GetUnitHP,
 // GetSkillName, GetSkillCost, GatAnalizeAttr, GetAttackName). Keyboard: Space attack, E skills (Persona),
 // R items, C guard, A and D change target (measured 2026-10-27 on the 4/9 rooftop battle).
+// What happens is watched on UBtlCoreComponent (PlayerList, EnemyList, CurrentPhase, CurrentAction, the Rush request)
+// and the hit popups (BP_BtlGuiDamage2_C); Analyze's own target list is BP_BtlGuiAnalyze_C's (EnemyList, TargetIndex).
 // The wheel is played with the game's own keys (the player's call, 2026-11-01: no command list); F1 names the open
 // ones. Left and right step BP_BtlGuiComponent_C.EnemyList (sorted live targets; "Target Index" + 1 mod its length,
 // On Select Next Target): a target's position there is its "1 of 2". The game clears IsCreateEnemyList as the wheel
@@ -313,9 +315,9 @@ class BattleScreen : public Screen {
     speech::speak(s, false);   // queued after what just happened
   }
 
-  // TOP: whose turn it is and the target (said from background(): the command list is the menu in front).
-  // Left or right pressed since the last tick (the keys and the D-pad), read every tick so that a press from another
-  // list or from the field is never taken for one on the wheel.
+  // TOP: whose turn it is and the target, said from background() (top_tick).
+  // target_press: left or right pressed since the last tick (the keys and the D-pad), read every tick so that a press
+  // from another list or from the field is never taken for one on the wheel.
   uint32_t target_keys_seen_ = 0;
   uint16_t target_pad_was_ = 0;
   bool target_press() {
@@ -339,7 +341,7 @@ class BattleScreen : public Screen {
     if (a && turn_due_) {   // no acting member (between turns): nothing to say yet
       turn_due_ = false;
       // The same member acting again right after knocking an enemy down: the game's "1 More".
-      bool again = a && a == last_actor_.resolve() && downed_since_turn_;
+      bool again = a == last_actor_.resolve() && downed_since_turn_;
       // After a 1 More the wheel shows Shift (B) once it is unlocked (BP_BtlTopUI_C "Shift" is 1 then, but it
       // stays 1 between turns too, 2026-10-28: only said with the 1 More).
       UObject* top = top_.get();
@@ -482,7 +484,7 @@ class BattleScreen : public Screen {
         screens::set_keys(strings::kGuardKeys);
         speech::speak(std::format("{} {}", strings::kGuardTitle, strings::kGuardKeys()), true);
         break;
-      case 8: {   // Analyze: the target's name, level, health and the affinities found so far; A and D move it
+      case 8: {   // Analyze: the target's name, health, the affinities found so far and its level; Q / E (A / D) move it
         UObject* t = cursor_target();
         if (entering) screens::set_keys(strings::kAnalyzeKeys);
         if (!t || (!entering && t == target_.resolve())) break;
