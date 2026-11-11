@@ -99,12 +99,21 @@ highlight (the stick, the mouse, a page change) the mod follows it.
 
 F2 (or both triggers and View) opens the mod's settings from anywhere; the game's own Config screen lists it with
 its keys (F1 there). While the settings are open the game gets none of your keys or buttons, but it keeps running:
-in Tartarus, open them from the camp menu's Config to be safe. It works like every other menu: the up and down arrows
-(D-pad) choose and wrap, Home and End jump to the first and last row, typing letters jumps to a setting by name, left
+in Tartarus, open them from the camp menu's Config to be safe. The settings are in five categories, each a short
+list of its own: Exploring, Sonar, Sound, Dialogue and movies, Controls and help. Tab and Shift+Tab (Page Down and
+Page Up; RB and LB) go to the next and previous category, wrapping, and its name is said as you land. It works like
+every other menu: the up and down arrows
+(D-pad) choose and wrap, Home and End jump to the first and last row, typing letters jumps to a setting in the category by name, left
 and right change the value, Space or Enter (A) steps through the values, F1 (Menu) reads these keys, Escape,
 Backspace or F2 (B or View) closes. Changes are saved at
 once, to `%LOCALAPPDATA%\P3RAccess\settings.ini`. The menu plays the game's own menu sounds: opening and closing
 (the camp menu's), the cursor on each move, and a sound on each value change.
+
+Exploring holds Wall tones, Beacon, Nearby chimes, Shadow alerts, Points of interest range and Wall tone volume.
+Sonar holds everything named Sonar. Sound holds 3D sound for headphones, Lower pitch behind you, Mod master volume
+and Beeps and chimes volume. Dialogue and movies holds Voiced dialogue, When a line ends, Read cutscene subtitles and
+the two Audio description settings. Controls and help holds Controller trigger delay, Menu key hints on entry and
+Mod keys.
 
 - Wall tones: on, off
 - Sonar: on, off (also F3): every point of interest near you repeats its own sound from where it is, faster and louder the closer it is (see Sounds)
@@ -246,13 +255,14 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   reversed or ready to rank up. Space on a link opens its page on its first line, the link with its latest memo, then each person
   in it with their profile; Q and E switch link (the new page opens on its first line too).
 - Battles: each turn is played with the game's own keys, as the game has it (no command list; F1 names the keys open
-  this turn). Whose turn it is with HP and SP, the target with its health and place ("1 of 2", so two of the same
-  Shadow are told apart), its buffs and debuffs ("attack up", "agility down") and the affinities you have
-  discovered
-  ("weak to Fire Attack"), the skill list with costs and descriptions, items with counts, target choice, what enemies
+  this turn). A turn opens with a short line: whose turn it is with HP and SP, then the target with its health, its
+  buffs and debuffs ("attack up", "agility down") and the affinities you have discovered ("Junpei, HP 99, SP 17.
+  Cowardly Maya, 35%, Down, weak to Slash, Fire"). Moving the target adds its place ("1 of 2", so two of the same
+  Shadow are told apart). The skill list reads each skill's name and cost; what it does is the second line of its
+  details (Ctrl+Down or the right stick down, see below). Items with counts, target choice, what enemies
   and members acting of their own accord used, a counter included (a skill, item or Guard you picked yourself is not
   read back, for any member you control), damage, healing and defeats (on the one target you chose yourself the number alone, "14 damage"; with the name everywhere else). Battle keys: Space attack, E skills, R items, C guard, Q analyze, W tactics,
-  Tab rush, A and D or the left and right arrows change target (the target never wraps around: at the first or last enemy a further press says who you are still on; the same in Analyze and in target lists; a skill or item that hits a whole side reads as one choice, "All enemies" or "All allies" with their names), S survey (the up and down arrows go through everyone in the battle), F assist (the navigator's advice). Anyone in focus says their ailments with their health ("Jin, 96%, Downed, Poisoned"). The details of who is in focus (the target on the command wheel or a target list, whoever Survey, Shift or Tactics is on, the acting member in their skills and items): they start at the top each time you land on someone, and Ctrl+Down or the right stick down moves down through them line by line, Ctrl+Up or the stick up back toward the top: name and level, HP, SP, each ailment with the turns it can still last, each buff and debuff with its turns left, guarding, the affinities you have found, and for a party member their Persona, stats and Theurgy gauge. After a 1 More, B (Shift) passes the turn: each member is read with HP and SP. C asks "Guard?" before guarding and says the buttons (Space to guard, Escape to cancel), and when a member's Theurgy gauge is full the turn summary says "Theurgy ready, T": T opens the Theurgy list (left and right arrows
+  Tab rush, A and D or the left and right arrows change target (the target never wraps around: at the first or last enemy a further press says who you are still on; the same in Analyze and in target lists; a skill or item that hits a whole side reads as one choice, "All enemies" or "All allies" with their names), S survey (the up and down arrows go through everyone in the battle), F assist (the navigator's advice). Anyone in focus says their ailments with their health ("Jin, 96%, Down, Poisoned"). The details of who is in focus (the target on the command wheel or a target list, whoever Survey, Shift or Tactics is on, the acting member in their items; in the skill list the skill, what it does, then the acting member): they start at the top each time you land on someone, and Ctrl+Down or the right stick down moves down through them line by line, Ctrl+Up or the stick up back toward the top: name and level, HP, SP, each ailment with the turns it can still last, each buff and debuff with its turns left, guarding, the affinities you have found, and for a party member their Persona, stats and Theurgy gauge. After a 1 More, B (Shift) passes the turn: each member is read with HP and SP. C asks "Guard?" before guarding and says the buttons (Space to guard, Escape to cancel), and when a member's Theurgy gauge is full the turn summary says "Theurgy ready, T": T opens the Theurgy list (left and right arrows
   choose, each read with its effect, Space uses it); in skill lists Space confirms, Q and E change Persona, F shows the Persona's status page, Escape goes back.
   Backslash repeats the turn summary. The navigator's and the party's remarks during a battle ("Two targets! You can
   handle them!") are not read, so they never cut off the battle's own news; they stay in the log (B, after the battle).
@@ -283,12 +293,14 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   Fusion, System) that Q and E (LB and RB) switch, each named as you reach it; an empty tab says so. Button icons in
   tutorials are read as key names.
 - Camp Item and Skill: items with how many you own; when you choose who casts a skill or who gets an item or a
-  healing skill, each member is read with their HP and SP, and the new HP once it lands.
+  healing skill, each member is read with their HP and SP (no level), and the new HP once it lands.
 - Learning a skill (a skill card from Item, or a Persona's level up): the skill, then the Persona with its stats
   and skills; Q and E switch Persona, Space learns. When the eight slots are full and the game asks which to
   forget, the arrow keys move over the slots (two columns of four), each read with its cost; Space picks it, C goes
   back. Choosing who takes a skill card reads each Persona with its skills.
-- Stats: each party member with level, HP and SP ("Yukari, level 3, HP 74 of 74, SP 61 of 61"); Space opens their
+- Stats: each party member with level, HP, SP and their Persona ("Yukari, level 3, HP 74 of 74, SP 61 of 61, 2 of 3,
+  Io, Lovers, level 3"). Ctrl+Down or the right stick down walks the rest line by line (the Persona's stats, each
+  skill with its cost, its affinities), Ctrl+Up or the stick up goes back; Space opens their
   page, read as lines to move through: the member, (for you) your social stats, their Persona, its stats, each skill
   with its description, its affinities; Q and E switch member. Once someone in the party knows a Theurgy, Z on a
   member's page opens the Theurgy list: "Makoto, Cadenza, 1 of 2" and its effect; left and right arrows choose, Q and E switch

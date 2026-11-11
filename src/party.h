@@ -15,7 +15,7 @@ const uint8_t* persona_entry(int id);  // the member's equipped Persona entry (F
 uint8_t* global_work();                // the UGlobalWork object (the save data), or null
 uint8_t* unit_work(int id);            // its FDatUnitWork for character id 1..10 (+0x1B0 + 0x2B4 * id), or null
 bool flag(int id);                     // a story flag (GlobalWorkBpLib.GWorkFlagChkValue)
-std::string line(const Member& m);     // "Yukari, level 2, HP 74 of 80, SP 61 of 65"
+std::string line(const Member& m, bool level = true);   // "Yukari, level 2, HP 74 of 80, SP 61 of 65"
 std::string summary();                 // every member's line
 // Outside battle and the camp menu, a member's HP or SP changing is spoken (Auto-Recover, the entrance clock, field
 // pickups): battles and the camp's own lists speak theirs.

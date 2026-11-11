@@ -102,14 +102,30 @@ class BattleSkills : public BattleList {
       std::string s = w_.skill_name(id);
       std::string cost = w_.skill_cost(id, who);
       if (!cost.empty()) s += ", " + cost;
-      auto v = game_item(m_, i, [s] { return s; });
-      describe_with(v, [id] { return persona::skill_help(id); });
-      b.add_item(slot(std::format("skills.{}", pid), i), v);
+      // Name and cost alone: the description was heard on every move through skills cast dozens of times a night. It
+      // is the detail buffer's second line, and the review key still reads it (the user's call, 2026-11-11).
+      b.add_item(slot(std::format("skills.{}", pid), i), game_item(m_, i, [s] { return s; }, [id] { return persona::skill_help(id); }));
     }
     b.pop_context();
     if (int c = m_.cursor(); c >= 0) b.set_start(slot(std::format("skills.{}", pid), c));
   }
   void on_tick() override { m_.key = std::format("skills.{}", persona()); }
+  // The focused skill, what it does, then the acting member's own details.
+  int focused_skill() { return focused_row(m_.key); }
+  bool has_details() override { return focused_skill() >= 0; }
+  std::vector<std::string> detail_lines() override {
+    UObject* l = list_.get();
+    auto* ids = l ? field<TArray<int32_t>>(l, "SkillIDList") : nullptr;
+    int i = focused_skill();
+    if (!ids || i < 0 || i >= ids->num) return {};
+    int id = ids->data[i];
+    UObject* who = actor();
+    std::string s = w_.skill_name(id), cost = w_.skill_cost(id, who);
+    std::vector<std::string> out{cost.empty() ? s : s + ", " + cost};
+    if (std::string help = persona::skill_help(id); !help.empty()) out.push_back(help);
+    for (auto& d : w_.details(who)) out.push_back(d);
+    return out;
+  }
 };
 
 class BattleItems : public BattleList {
@@ -460,8 +476,10 @@ class BattleSurvey : public BattleList {
 // The details of whoever is in focus (the Say the Spire model): the right stick up and down, or Ctrl+Up and Ctrl+Down,
 // walk the lines of BtlWords::details from the top, the unit's name: down goes on, up goes back (the user's call,
 // 2026-11-05); each read is fresh, and landing on someone starts at their top again. Who is in focus is the game's own
-// cursor in each state; a list of the acting member's own (skills, items) reads them. A flick is one line. The stick is
-// hidden from the game only while someone is in focus; no battle Blueprint reads it.
+// cursor in each state; a list of the acting member's own (items) reads them. A flick is one line. The stick is
+// hidden from the game only while something is in focus; no battle Blueprint reads it.
+// Since 2026-11-11 the same buffer serves any menu row that declares details (MenuScreen::has_details), in a battle
+// or out of one: the skill list's rows, the Stats list's members.
 namespace {
 BtlWords& buffer_words() { static BtlWords w; return w; }
 Finder& target_list() { static Finder f{"BP_BtlTargetSelect_C"}; return f; }
@@ -505,17 +523,26 @@ UObject* focused_unit() {
     default: return nullptr;
   }
 }
+// A menu row with details of its own (MenuScreen::has_details: a skill, a member on the Stats list) comes before the
+// battle's unit; outside a battle it is the only source.
+MenuScreen* detail_menu() {
+  MenuScreen* m = menu::active();
+  return m && m->has_details() ? m : nullptr;
+}
 WeakObj g_detail_unit;
+std::string g_detail_row;   // the menu row's identity, empty for a unit
 int g_detail_line = 0;
-void detail_landing(UObject* u) {
-  WeakObj w = WeakObj::of(u);
-  if (!(w == g_detail_unit)) { g_detail_unit = w; g_detail_line = 0; }
+void detail_landing(MenuScreen* m, UObject* u) {
+  std::string row = m ? m->detail_key() : std::string();
+  WeakObj w = m ? WeakObj() : WeakObj::of(u);
+  if (!(w == g_detail_unit) || row != g_detail_row) { g_detail_unit = w; g_detail_row = row; g_detail_line = 0; }
 }
 std::string detail_step(int dir) {
-  UObject* u = focused_unit();
-  if (!u) return {};
-  detail_landing(u);
-  auto lines = buffer_words().details(u);
+  MenuScreen* m = detail_menu();
+  UObject* u = m ? nullptr : focused_unit();
+  if (!m && !u) return {};
+  detail_landing(m, u);
+  auto lines = m ? m->detail_lines() : buffer_words().details(u);
   if (lines.empty()) return {};
   g_detail_line = std::clamp(g_detail_line + dir, 0, (int)lines.size() - 1);
   return lines[g_detail_line];
@@ -523,14 +550,14 @@ std::string detail_step(int dir) {
 }  // namespace
 
 namespace battle_details {
-bool in_focus() { bool on = false; guarded([&] { on = focused_unit() != nullptr; }); return on && !msg::current().blocking; }
+bool in_focus() { bool on = false; guarded([&] { on = detail_menu() || focused_unit(); }); return on && !msg::current().blocking; }
 void step(int dir) {
   std::string l;
   guarded([&] { l = detail_step(dir); });
   if (!l.empty()) speech::speak(l, true);
 }
 void frame() {
-  guarded([] { detail_landing(focused_unit()); });
+  guarded([] { MenuScreen* m = detail_menu(); detail_landing(m, m ? nullptr : focused_unit()); });
   bool on = in_focus() && !input::modal();
   input::claim_right_stick(on);
   if (int d = input::take_right_flick(); d && on) step(-d);   // a flick up is +1: back toward the top

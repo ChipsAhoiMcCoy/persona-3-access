@@ -60,9 +60,11 @@ template <class T> TArray<T>* arr(void* base, int off) {
   return a->data && a->num > 0 && a->num < 2000 ? a : nullptr;
 }
 int i32(void* base, int off) { return base ? *(int32_t*)((uint8_t*)base + off) : -1; }
-std::string member_line(int id) {
+// `level` false: a member being picked for an item, a skill or gear, where the level tells nothing (the user's call,
+// 2026-11-11).
+std::string member_line(int id, bool level = true) {
   party::Member m;
-  if (party::member(id, m)) return party::line(m);
+  if (party::member(id, m)) return party::line(m, level);
   return party::name(id);
 }
 // A game function by its rva (the `set`s below call what the game's own move calls).
@@ -177,7 +179,7 @@ class CampItem : public MenuScreen {
       b.push_context(strings::kUseOnWhom);
       for (int i = 0; ids && i < ids->num; ++i) {
         int id = ids->data[i];
-        auto v = game_item(who_, i, [id] { return member_line(id); });
+        auto v = game_item(who_, i, [id] { return member_line(id, false); });
         v->announcements[0].live = true;   // the new HP or SP is read once the item lands
         b.add_item(slot("item.member", i), v);
       }
@@ -266,7 +268,7 @@ class CampSkill : public MenuScreen {
       if (st == 5) b.push_context(strings::kUseOnWhom);
       for (int i = 0; ids && i < ids->num; ++i) {
         int id = ids->data[i];
-        auto v = game_item(mm, i, [id] { return member_line(id); });
+        auto v = game_item(mm, i, [id] { return member_line(id, false); });
         v->announcements[0].live = true;   // a healing skill's result (and the caster's SP) once it lands
         b.add_item(slot(mm.key, i), v);
       }
@@ -398,7 +400,7 @@ class CampEquip : public MenuScreen {
       b.begin_stop("equip.member");
       for (int i = 0; ids && i < ids->num; ++i) {
         int id = ids->data[i];
-        b.add_item(slot("equip.member", i), game_item(who_, i, [id] { return member_line(id); }));
+        b.add_item(slot("equip.member", i), game_item(who_, i, [id] { return member_line(id, false); }));
       }
       if (int c = who_.cursor(); c >= 0) b.set_start(slot("equip.member", c));
       return;
@@ -571,7 +573,29 @@ class CampStats : public MenuScreen {
   bool holds_keys() override { int md = mode(); return md == 1 || md == 3 || md == 4; }
   std::string title() override { return strings::kCampItems[4]; }
   void on_enter() override {
-    screens::set_keys([this] { int md = mode(); return std::string(md == 1 ? strings::kStatsKeys() : md == 3 ? strings::kTacticsListKeys() : strings::kListKeys()); });
+    screens::set_keys([this] {
+      int md = mode();
+      if (md == 1) return std::string(strings::kStatsKeys()) + " " + strings::kDetailKeys();
+      return std::string(md == 3 ? strings::kTacticsListKeys() : strings::kListKeys());
+    });
+  }
+  // A member on the party list: their line, their Persona, then its stats, skills with costs and affinities.
+  int focused_member() {
+    int i = mode() == 1 ? focused_row("stats") : -1;
+    uint8_t* u = ui();
+    auto* ids = u && i >= 0 ? arr<uint16_t>(u, 0x28) : nullptr;
+    return ids && i < ids->num ? ids->data[i] : -1;
+  }
+  bool has_details() override { return focused_member() >= 0; }
+  std::vector<std::string> detail_lines() override {
+    int id = focused_member();
+    if (id < 0) return {};
+    std::vector<std::string> out{member_line(id)};
+    if (const uint8_t* e = party::persona_entry(id)) {
+      if (int pid = *(const uint16_t*)(e + 2)) out.push_back(persona::describe(pid, *(const uint16_t*)(e + 4)));
+      for (auto& l : persona::detail_lines(e)) out.push_back(l);
+    }
+    return out;
   }
   void on_tick() override {
     if (mode() != 4) return;
@@ -622,8 +646,14 @@ class CampStats : public MenuScreen {
           const uint8_t* e = party::persona_entry(id);
           return e ? persona::status_line(e) : std::string();
         };
+        // The row names the Persona; its stats, skills and affinities are the detail buffer's lines (detail_lines), and
+        // the review key reads them all at once. They were one 40-word line on every move (the user's call, 2026-11-11).
         auto v = game_item(list_, i, [id] { return member_line(id); }, persona_line);
-        describe_with(v, persona_line);
+        describe_with(v, [id] {
+          const uint8_t* e = party::persona_entry(id);
+          int pid = e ? *(const uint16_t*)(e + 2) : 0;
+          return pid ? persona::describe(pid, *(const uint16_t*)(e + 4)) : std::string();
+        });
         b.add_item(slot(key, i), v);
       }
     }

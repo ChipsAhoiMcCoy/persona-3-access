@@ -125,7 +125,7 @@ inline constexpr const char* kBadStatus[] = {"is dizzy", "is charmed", "is distr
                                             "is poisoned", "", "", "", "", "is down"};
 // A unit's ailments as they stand (EBtlDataBadStatus; empty = not said): on focus and in the details.
 inline constexpr const char* kAilments[] = {"Dizzy", "Charmed", "Distressed", "Panicked", "Afraid", "Enraged", "Frozen", "Shocked",
-                                            "Poisoned", "Orgia Mode", "Overheated", "Time bomb", "", "Downed"};
+                                            "Poisoned", "Orgia Mode", "Overheated", "Time bomb", "", "Down"};
 inline constexpr const char* kNoAilments = "No ailments";
 inline constexpr const char* kNoEffects = "No buffs or debuffs";
 inline constexpr const char* kGuarding = "Guarding";
@@ -134,7 +134,7 @@ inline constexpr const char* kTurn = "turn";
 inline constexpr const char* kTurns = "turns";
 inline constexpr const char* kPersonaWord = "Persona";
 inline constexpr const char* kTheurgyCharge = "Theurgy gauge";
-inline constexpr Hint kDetailKeys{"Control and the up and down arrows read the details of who is in focus.", "The right stick, up and down, reads the details of who is in focus."};
+inline constexpr Hint kDetailKeys{"Control and the up and down arrows read the details of what is in focus.", "The right stick, up and down, reads the details of what is in focus."};
 inline constexpr const char* kOneMore = "1 More!";
 inline constexpr const char* kRushOn = "Rush";
 inline constexpr const char* kRushOff = "Rush off";
@@ -249,8 +249,14 @@ inline constexpr const char* kPadLayer = "Hold both triggers, then";
 // The mod settings menu (settings.cpp)
 inline constexpr const char* kModSettings = "Mod settings";
 inline constexpr const char* kModSettingsClosed = "Mod settings closed";
-inline constexpr Hint kModSettingsKeys{"Up and down arrows choose, letters jump to a setting, left and right arrows change, Space changes or reads, Escape closes.",
-                                       "Up and down choose, left and right change, A changes or reads, B closes."};
+inline constexpr Hint kModSettingsKeys{"Up and down arrows choose, Tab and Shift+Tab change category, letters jump to a setting in it, left and right arrows change, Space changes or reads, Escape closes.",
+                                       "Up and down choose, LB and RB change category, left and right change, A changes or reads, B closes."};
+// Its categories, in order.
+inline constexpr const char* kCatExploring = "Exploring";
+inline constexpr const char* kCatSonar = "Sonar";
+inline constexpr const char* kCatSound = "Sound";
+inline constexpr const char* kCatDialogue = "Dialogue and movies";
+inline constexpr const char* kCatControls = "Controls and help";
 inline constexpr const char* kSetWallTones = "Wall tones";
 inline constexpr const char* kSetSonar = "Sonar";
 inline constexpr const char* kSetSonarScope = "Sonar plays";

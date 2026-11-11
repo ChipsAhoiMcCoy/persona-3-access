@@ -120,8 +120,8 @@ static std::string label(Id id) {
   }
 }
 
-// ---- the menu, on core/navigator like every bespoke menu: one item per option, then "Mod keys" (reads the mod's
-// keys). The navigator owns focus, positions, edges and type-ahead (letters jump to an option by name); Left/Right
+// ---- the menu, on core/navigator like every bespoke menu: one item per option in its category, "Mod keys" (reads
+// the mod's keys) last. The navigator owns focus, positions, edges and type-ahead (letters jump to an option by name); Left/Right
 // adjust the focused option (on_adjust), Space/Enter steps it on. It plays the game's own menu sounds (the camp menu's
 // open, close, cursor and confirm cues; Config's option cue on a change). Keys reach it through keys::set_modal. ----
 static bool g_open = false;
@@ -140,27 +140,51 @@ static void change(Id id, int delta) {
   else voice::play_system_sound(voice::CueOption);   // the game's Config plays it on every value change (FUN_141391c40)
 }
 
+// The categories (the user's call, 2026-11-11: one list of 27 rows had grown too long). Each is a stop of its own: a
+// short list with its own positions, its name said on landing; Tab / Shift+Tab (Page Down / Page Up, RB / LB) go to
+// the next / previous one, wrapping. By Id, so the table's order above stays the file's.
+enum Category { CatExploring, CatSonar, CatSound, CatDialogue, CatControls, CatCount };
+static const char* const kCategoryNames[CatCount] = {strings::kCatExploring, strings::kCatSonar, strings::kCatSound,
+                                                     strings::kCatDialogue, strings::kCatControls};
+static Category category(Id id) {
+  switch (id) {
+    case WallTones: case WallVolume: case Beacon: case NearbyChimes: case ShadowAlerts: case PoiRange: return CatExploring;
+    case Sonar: case SonarScope: case SonarRange: case SonarExits: case SonarDoors: case SonarPeople: case SonarShops:
+    case SonarThings: case SonarVolume: return CatSonar;
+    case Hrtf: case BehindPitch: case MasterVolume: case SoundVolume: return CatSound;
+    case VoicedLines: case VoiceEndSound: case Subtitles: case AudioDescription: case DescriptionVolume: return CatDialogue;
+    default: return CatControls;   // TriggerDelay, EntryHints, and anything new until it is given a place
+  }
+}
+
 struct Menu : ui::Screen {
   std::string_view key() const override { return "mod_settings"; }
   std::string screen_name() const override { return strings::kModSettings; }
   bool wrap() const override { return true; }
   void build(ui::GraphBuilder& b) override {
     namespace k = ui::announcement_kinds;
-    b.begin_stop("options");
-    for (int i = 0; i < Count; ++i) {
-      Id id = (Id)i;
-      auto v = std::make_shared<ui::NodeVtable>();
-      v->announcements = {ui::NodeAnnouncement([id] { return std::string(kDefs[id].name); }, false, k::kLabel),
-                          ui::NodeAnnouncement([id] { return label(id); }, true, k::kValue)};
-      v->on_adjust = [id](int sign, bool) { change(id, sign); };
-      v->on_activate = [id] { change(id, 0); };
-      v->state_text = [id] { return label(id); };
-      b.add_item(ui::ControlId::structural(kDefs[i].key), v);
+    for (int c = 0; c < CatCount; ++c) {
+      b.begin_stop(std::format("cat{}", c));
+      b.push_context(kCategoryNames[c]);
+      for (int i = 0; i < Count; ++i) {
+        Id id = (Id)i;
+        if (category(id) != c) continue;
+        auto v = std::make_shared<ui::NodeVtable>();
+        v->announcements = {ui::NodeAnnouncement([id] { return std::string(kDefs[id].name); }, false, k::kLabel),
+                            ui::NodeAnnouncement([id] { return label(id); }, true, k::kValue)};
+        v->on_adjust = [id](int sign, bool) { change(id, sign); };
+        v->on_activate = [id] { change(id, 0); };
+        v->state_text = [id] { return label(id); };
+        b.add_item(ui::ControlId::structural(kDefs[i].key), v);
+      }
+      if (c == CatControls) {
+        auto v = std::make_shared<ui::NodeVtable>();
+        v->announcements = {ui::NodeAnnouncement([] { return std::string(strings::kModKeys); }, false, k::kLabel)};
+        v->on_activate = [] { voice::play_system_sound(voice::CueDecide); speech::speak(keys::help(), true); };
+        b.add_item(ui::ControlId::structural("mod_keys"), v);
+      }
+      b.pop_context();
     }
-    auto v = std::make_shared<ui::NodeVtable>();
-    v->announcements = {ui::NodeAnnouncement([] { return std::string(strings::kModKeys); }, false, k::kLabel)};
-    v->on_activate = [] { voice::play_system_sound(voice::CueDecide); speech::speak(keys::help(), true); };
-    b.add_item(ui::ControlId::structural("mod_keys"), v);
   }
 };
 static Menu g_menu;
@@ -201,6 +225,9 @@ static void on_key(uint32_t vk, bool repeat) {
     case VK_RIGHT: action(Right); break;
     case VK_HOME: action(Home); break;
     case VK_END: action(End); break;
+    case VK_TAB: action(GetKeyState(VK_SHIFT) & 0x8000 ? Prev : Next); break;
+    case VK_NEXT: action(Next); break;
+    case VK_PRIOR: action(Prev); break;
     case VK_SPACE: case VK_RETURN: if (!repeat) action(Activate); break;
     case VK_ESCAPE: case VK_BACK: case VK_F2: if (!repeat) close(); break;
     case VK_F1: if (!repeat) speech::speak(strings::kModSettingsKeys(), true); break;
@@ -217,6 +244,8 @@ static void on_pad(uint16_t button, bool repeat) {
     case XINPUT_GAMEPAD_DPAD_DOWN: arrow(Down, false); break;
     case XINPUT_GAMEPAD_DPAD_LEFT: action(Left); break;
     case XINPUT_GAMEPAD_DPAD_RIGHT: action(Right); break;
+    case XINPUT_GAMEPAD_RIGHT_SHOULDER: action(Next); break;
+    case XINPUT_GAMEPAD_LEFT_SHOULDER: action(Prev); break;
     case XINPUT_GAMEPAD_A: if (!repeat) action(Activate); break;
     case XINPUT_GAMEPAD_B: case XINPUT_GAMEPAD_BACK: if (!repeat) close(); break;
     case XINPUT_GAMEPAD_START: if (!repeat) speech::speak(strings::kModSettingsKeys(), true); break;

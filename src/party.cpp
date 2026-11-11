@@ -115,8 +115,8 @@ const uint8_t* persona_entry(int id) {
   return e;
 }
 
-std::string line(const Member& m) {
-  std::string s = std::format("{}, {} {}", m.name, strings::kLevel, m.level);
+std::string line(const Member& m, bool level) {
+  std::string s = level ? std::format("{}, {} {}", m.name, strings::kLevel, m.level) : m.name;
   s += m.max_hp > 0 ? std::format(", {} {} {} {}", strings::kHP, m.hp, strings::kOf, m.max_hp) : std::format(", {} {}", strings::kHP, m.hp);
   s += m.max_sp > 0 ? std::format(", {} {} {} {}", strings::kSP, m.sp, strings::kOf, m.max_sp) : std::format(", {} {}", strings::kSP, m.sp);
   return s;

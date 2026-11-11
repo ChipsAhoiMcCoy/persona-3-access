@@ -137,6 +137,7 @@ class BattleScreen : public Screen {
     return bits;
   }
   std::map<WeakObj::Key, Unit> units_;
+  std::set<WeakObj::Key> won_enemies_;   // the enemies left when the battle was won (watch())
   std::string banner_;
   WeakObj banner_action_;     // whose action it was up under
   bool banner_gone_ = true;   // none drawn since banner_: the same words now are a new banner
@@ -246,7 +247,9 @@ class BattleScreen : public Screen {
         WeakObj w = WeakObj::of(u);
         auto key = w.key();
         Unit cur{w_.unit_name(u), w_.unit_int("GetUnitHP", u), list[0] == 'E', 0};
-        if (won && cur.enemy) cur.hp = 0;
+        // Once counted as defeated an enemy stays so: with the card taken the deal no longer says the battle is won,
+        // and the HP they still hold read as "healed 54", "is down" and a second "defeated" (2026-11-10).
+        if (cur.enemy && (won || won_enemies_.count(key))) { cur.hp = 0; won_enemies_.insert(key); }
         cur.status = cur.hp > 0 ? status_of(u) : 0;
         if (!cur.enemy) {   // party levels as the battle began, for the victory screen's level ups
           int id = w_.unit_int("GetUnitID", u);
@@ -283,6 +286,7 @@ class BattleScreen : public Screen {
     for (auto& [k, u] : units_)
       if (u.enemy && u.hp > 0 && !next.count(k)) defeated.push_back(u.name);
     units_.swap(next);
+    std::erase_if(won_enemies_, [&](const WeakObj::Key& k) { return !units_.count(k); });   // gone with the battle
     // Enemies falling together (an All-Out Attack) in one line: "2 Cowardly Maya defeated", not the same line twice.
     if (!defeated.empty()) {
       std::map<std::string, int> count;
@@ -299,11 +303,13 @@ class BattleScreen : public Screen {
     UObject* t = wheel_target();
     actor_ = WeakObj::of(a);
     target_ = WeakObj::of(t);
-    std::string s = std::format("{}. {}", w_.unit_name(a), w_.hp_sp(a));
+    // Kept short, it is heard every turn (the user's call, 2026-11-11): HP and SP without their maxima, and the
+    // target without its place in the row. A move reads the place; the details and the review key the rest.
+    std::string s = std::format("{}, {}", w_.unit_name(a), w_.hp_sp_short(a));
     // The Theurgy gauge (GetUnitTP / GetUnitMaxTP): full means the Theurgy command is open.
     int tp = w_.unit_int("GetUnitTP", a), max_tp = w_.unit_int("GetUnitMaxTP", a);
     if (max_tp > 0 && tp >= max_tp) s += std::string(", ") + strings::kTheurgyReady();
-    if (t) s += std::format(". {} {}", strings::kTarget, target_line(t));
+    if (t) s += ". " + w_.enemy(t);
     speech::speak(s, false);   // queued after what just happened
   }
 
@@ -392,7 +398,7 @@ class BattleScreen : public Screen {
     if (!repeat) say_end(st, e.on);
     return true;
   }
-  uint16_t end_pad_was_ = 0;
+  uint16_t end_pad_was_ = 0, end_hidden_was_ = 0;
   void end_pad(int st) {
     Ends e = mine() ? ends(st) : Ends{};
     uint16_t hide = 0;
@@ -407,8 +413,11 @@ class BattleScreen : public Screen {
     input::block_ends(hide, sticks);
     uint16_t pad = input::layer_open() ? 0 : input::real_buttons() & (XINPUT_GAMEPAD_DPAD_LEFT | XINPUT_GAMEPAD_DPAD_RIGHT |
                                                                         XINPUT_GAMEPAD_LEFT_SHOULDER | XINPUT_GAMEPAD_RIGHT_SHOULDER);
-    if (pad & ~end_pad_was_ & hide) say_end(st, e.on);
+    // Only a press the game never got: its button was already hidden when it came. The press that brought the cursor
+    // to this end was the game's, and the move says itself (both spoke: every target was sent twice, 2026-11-10).
+    if (pad & ~end_pad_was_ & hide & end_hidden_was_) say_end(st, e.on);
     end_pad_was_ = pad;
+    end_hidden_was_ = hide;
   }
   int bg_state_ = -1;
   // Said the current prompt (state 5 / 11): set when it is said, cleared when the game's state changes. The All-Out
@@ -429,7 +438,7 @@ class BattleScreen : public Screen {
     bool target_pressed = target_press();
     UObject* core = core_.get();
     end_pad(core ? gui_state() : 0);
-    if (!core) { units_.clear(); forget_battle_start(); downed_since_turn_ = false; last_actor_ = {}; rush_ = false; popups_seen_.clear(); return; }
+    if (!core) { units_.clear(); won_enemies_.clear(); forget_battle_start(); downed_since_turn_ = false; last_actor_ = {}; rush_ = false; popups_seen_.clear(); return; }
     watch();
     int st = gui_state();
     // Assist (13, BTL_STATE_NAVIGATION) only plays the navigator's advice over the wheel: back from it is the same

@@ -101,6 +101,14 @@ class MenuScreen : public Screen, public ui::Screen {
   // Whether W / A / S / D are the game's: a screen where they are commands, not movement (the battle wheel: W tactics,
   // S survey, A / D target). Elsewhere a menu drops them, so the arrows are the only keyboard movement.
   virtual bool game_wasd() { return false; }
+  // The detail buffer (battle_details): what the right stick up and down, or Ctrl+Up and Ctrl+Down, walk line by line
+  // for the focused item, its own line first. What a row would otherwise say on every move (a skill's description, a
+  // member's Persona, stats and skills) goes here (the user's call, 2026-11-11). has_details is asked every frame and
+  // is cheap; the lines are built on a press.
+  virtual bool has_details() { return false; }
+  virtual std::vector<std::string> detail_lines() { return {}; }
+  // The focused item's identity: landing on another starts the buffer at its top again.
+  std::string detail_key() const;
 
   // The id of a mirrored list's item i.
   static ui::ControlId slot(const std::string& key, int i);

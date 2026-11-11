@@ -84,6 +84,10 @@ class BtlWords {
     return std::format("{} {} {} {}, {} {} {} {}", strings::kHP, unit_int("GetUnitHP", a), strings::kOf, unit_int("GetUnitMaxHP", a),
                        strings::kSP, unit_int("GetUnitSP", a), strings::kOf, unit_int("GetUnitMaxSP", a)) + ailments(a) + buffs(a);
   }
+  // A turn's opening: "HP 99, SP 17" and what the member is under. The maxima are in their details.
+  std::string hp_sp_short(UObject* a) {
+    return std::format("{} {}, {} {}", strings::kHP, unit_int("GetUnitHP", a), strings::kSP, unit_int("GetUnitSP", a)) + ailments(a) + buffs(a);
+  }
   // BtlDataBase GetBadStatus(EBtlDataBadStatus): the same answer the info panel's icons draw from.
   bool has_ailment(UObject* a, int type) {
     UObject* d = db();
@@ -103,7 +107,7 @@ class BtlWords {
     if (!a || type < 0 || type > 11) return 0;
     return *((int8_t*)a + 0x38E + type);
   }
-  // ", Downed, Poisoned": what a focused unit is suffering, Down first.
+  // ", Down, Poisoned": what a focused unit is suffering, Down first.
   std::string ailments(UObject* a) {
     std::string s;
     if (has_ailment(a, 13)) s += std::string(", ") + strings::kAilments[13];
@@ -222,7 +226,13 @@ class BtlWords {
     for (auto& l : affinity_groups(e)) s += ", " + l;
     return s;
   }
-  // The affinities the player has found out, a line per kind: "weak to Fire Attack, Ice Attack".
+  // The affinities the player has found out, a line per kind: "weak to Fire, Ice". The game's names are "Fire
+  // Attack", "Ice Attack": the word is dropped, it was said with every target (the user's call, 2026-11-11).
+  static std::string short_attack(std::string n) {
+    static constexpr std::string_view tail = " Attack";
+    if (n.size() > tail.size() && n.ends_with(tail)) n.resize(n.size() - tail.size());
+    return n;
+  }
   std::vector<std::string> affinity_groups(UObject* e) {
     std::vector<std::string> out;
     UObject* d = db();
@@ -235,7 +245,7 @@ class BtlWords {
       p.set<uint8_t>("attr", (uint8_t)attr);
       call(d, p);
       int a = p.ret<uint8_t>();
-      std::string name = a >= 1 && a <= 5 ? attack_name(attr) : std::string();
+      std::string name = a >= 1 && a <= 5 ? short_attack(attack_name(attr)) : std::string();
       if (!name.empty()) by[a].push_back(name);
     }
     static const int order[] = {4, 5, 1, 2, 3};   // weak, resists, nulls, repels, drains

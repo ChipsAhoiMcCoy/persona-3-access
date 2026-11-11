@@ -128,7 +128,8 @@ void armed_press() {
 }
 
 bool on_key(uint32_t vk, int mods, bool repeat) {
-  // Ctrl+Up / Ctrl+Down: the details of who is in focus in a battle. Elsewhere the keys stay the game's.
+  // Ctrl+Up / Ctrl+Down: the details of what is in focus (a battle's units, a menu row that has some). Elsewhere the
+  // keys stay the game's.
   if (mods == keys::Ctrl && (vk == VK_UP || vk == VK_DOWN) && battle_details::in_focus()) {
     if (!repeat) battle_details::step(vk == VK_DOWN ? 1 : -1);
     return true;
@@ -530,6 +531,11 @@ int MenuScreen::focused_row(const std::string& key) const {
 }
 
 std::optional<ui::ControlId> MenuScreen::focused() const { return g_active == this ? nav().focused_id() : std::nullopt; }
+
+std::string MenuScreen::detail_key() const {
+  auto f = focused();
+  return std::format("{}/{}", id(), f && f->structural_key().is_string() ? f->structural_key().text() : std::string());
+}
 
 bool MenuScreen::keeps_edges() {
   auto id = focused();

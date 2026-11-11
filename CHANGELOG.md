@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Less to listen to
+- A battle turn opens with a shorter line: "Junpei, HP 99, SP 17. Cowardly Maya, 35%, Down, weak to Slash, Fire". The HP and SP maxima, the word "Target" and the target's place are gone from it; moving the target still says its place.
+- Affinities drop the word "Attack": "weak to Fire, Ice" instead of "weak to Fire Attack, Ice Attack". "Downed" is now "Down".
+- The battle skill list reads name and cost only ("Agi, 3 SP, 2 of 3"). What the skill does is one flick away: Ctrl+Down or the right stick down reads it, then the acting member's details.
+- The Stats list reads each member with their Persona's name only. Ctrl+Down or the right stick down walks the Persona's stats, skills with costs and affinities line by line. This is the same details list battles have, now outside battle too.
+- Choosing who gets an item, casts or receives a skill, or changes gear no longer reads each member's level.
+- The mod settings are in five categories instead of one list of 27: Exploring, Sonar, Sound, Dialogue and movies, Controls and help. Tab and Shift+Tab, Page Down and Page Up, or RB and LB change category.
+
+### Fixes
+- After Shuffle Time, enemies finished by an All-Out Attack are no longer read as healed, down and defeated a second time.
+- On a controller, moving to the first or last target on the command wheel sent its line to the screen reader twice.
+
 ## 0.1.0-alpha.3
 
 ### Sonar (new)
