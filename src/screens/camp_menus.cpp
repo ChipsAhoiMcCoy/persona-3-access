@@ -310,7 +310,6 @@ class CampEquip : public MenuScreen {
   Mirror& who_ = mirror("equip.member", [this] { return state() == 3 ? ListCursor(m() + 0x44).index() : -1; });
   Mirror& slot_ = mirror("equip.slot", [this] { return state() == 5 ? ListCursor(m() + 0x80).index() : -1; });
   Mirror& gear_ = mirror("equip.gear", [this] { int s = state(); return s == 8 || s == 0xB ? ListCursor(m() + 0xBC).index() : -1; });
-  static constexpr int kSlotNibble[5] = {0, 1, 2, 3, 8};
   int member() {
     uint8_t* s = sys();
     auto* ids = s ? arr<int16_t>(s, 0x28) : nullptr;
@@ -1346,7 +1345,6 @@ class CampStatsPage : public MenuScreen {
     return ids && c >= 0 && c < ids->num ? ids->data[c] : 0;
   }
   int shown_ = 0;
-  static std::string skill_help(int id) { return persona::skill_help(id); }
  public:
   const char* id() const override { return "camp_stats_page"; }
   int priority() const override { return 17; }
@@ -1385,8 +1383,8 @@ class CampStatsPage : public MenuScreen {
       for (int i = 0; i < 8; ++i) if (int sid = skill_at(i)) {
         std::string sl = persona::skill_name(sid), cost = persona::skill_cost(sid);
         if (!cost.empty()) sl += ", " + cost;
-        auto v = item([sl] { return sl; }, {}, [sid] { return skill_help(sid); });
-        buffer_with(v, [sid] { return skill_help(sid); });
+        auto v = item([sl] { return sl; }, {}, [sid] { return persona::skill_help(sid); });
+        buffer_with(v, [sid] { return persona::skill_help(sid); });
         b.add_item(ui::ControlId::structural(std::format("{}.skill{}", k, i)), v);
       }
       b.pop_context();

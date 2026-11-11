@@ -122,8 +122,6 @@ class ConfigScreen : public MenuScreen {
     if (!enabled) r.value += (r.value.empty() ? "" : ", ") + std::string(strings::kUnavailable);
     return r;
   }
-  // "Camera Speed: 2 of 4" (the tab list: just the title).
-  std::string name(const Row& r, bool tabs) { return !tabs && !r.value.empty() ? r.title + ": " + r.value : r.title; }
   std::string desc(const Row& r) {
     std::string d = r.desc;
     while (!d.empty() && (d.back() == '.' || d.back() == ' ')) d.pop_back();

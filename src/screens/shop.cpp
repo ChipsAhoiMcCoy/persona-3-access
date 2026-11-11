@@ -59,7 +59,6 @@ class ShopScreen : public MenuScreen {
   Mirror& fuse_ = mirror("shop.fuse", [this] { return state() == 0x10 ? u16(0x318) + u16(0x31A) : -1; });
   Mirror& yn_ = mirror("shop.yn", [this] { int st = state(); return yes_no(st) ? u16(yn_off(st)) : -1; });
   int qty_ = -1;
-  std::string bought_line_;
 
   static std::string mode_name(int mode) {
     switch (mode) {

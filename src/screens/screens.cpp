@@ -46,7 +46,6 @@ static std::map<Screen*, std::set<std::string>> g_titled;
 bool title_due(const char* step) {
   return g_current && g_titled[g_current].insert(step).second;
 }
-static bool g_any_screen;
 // A save is loading from the boot (the game fills in the last save's money, stats and links a frame or two before the
 // title appears: 21 "New Social Link" lines at startup, 2026-10-28) and whenever the title or the save list is up,
 // until the hero is in the field again. A hot reload in the field finds the hero at once.
@@ -151,7 +150,6 @@ void tick() {
     if (g_current) guarded([&] { g_current->leave(); });
     log::writef("screen: {} -> {}", g_current ? g_current->id() : "none", best ? best->id() : "none");
     g_current = best;
-    if (g_current) g_any_screen = true;
     if (g_current) guarded([&] { g_current->enter(); });
   }
   track_loading();

@@ -80,11 +80,6 @@ class TitleScreen : public Screen {
     std::string n = name_of(class_of(s));
     return n.rfind("TitleState", 0) == 0 ? n.substr(10) : n;
   }
-  int count(UObject* sel) {
-    int last = *(int*)((uint8_t*)sel + 0xa0);
-    return last >= 1 && last <= 5 ? last + 1 : 4;
-  }
-  std::string item(int i) { return i >= 0 && i < 4 ? strings::kTitleItems[i] : std::format("item {}", i + 1); }
 
  public:
   const char* id() const override { return "title"; }

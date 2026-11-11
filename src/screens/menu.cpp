@@ -86,7 +86,7 @@ bool has_focus_now() {
   if (!g_active || screens::current() != g_active) return false;
   if (msg::current().blocking && !g_active->over_messages()) return false;   // the log opens over a conversation
   bool keys = true;
-  guarded([&] { keys = g_active->holds_keys() && !g_active->follow_only(); });
+  guarded([&] { keys = g_active->holds_keys(); });
   return keys;
 }
 
@@ -105,7 +105,6 @@ bool triggers_are_game() { bool t = false; guarded([&] { t = g_active->game_trig
 bool bumpers() { bool t = false; guarded([&] { t = g_active->takes_bumpers(); }); return t; }
 void bumper(int dir) { guarded([&] { g_active->on_bumper(dir); }); }
 bool status_blocked() { bool t = false; guarded([&] { t = g_active->blocks_status(); }); return t; }
-bool game_wasd() { bool t = false; guarded([&] { t = g_active->game_wasd(); }); return t; }
 // Where the game's details key is blocked (the details are read with each row), it reads the focused row again,
 // position and description included (the user's call, 2026-11-01).
 void reread() {
@@ -185,7 +184,7 @@ bool on_key(uint32_t vk, int mods, bool repeat) {
         reread();
         return true;
       // The game's D-pad keys would move its cursor behind the navigator's back (wrapping at the ends).
-      case 'W': case 'A': case 'S': case 'D': return !game_wasd();
+      case 'W': case 'A': case 'S': case 'D': return true;
       case 'Q': case 'E':
         if (!bumpers()) return false;
         bumper(vk == 'E' ? 1 : -1);
@@ -349,7 +348,6 @@ struct MenuHost {
       }
       if (fkey != m.key || fi < 0) continue;
       if (fi == c) { m.target = -1; continue; }
-      if (s.follow_only()) continue;
       if (m.target != fi) { m.target = fi; m.steps = 0; m.step_at = 0; }
       // A move made just before the game stopped taking them (takes_input drops any made since): it waits. A key sent
       // now would be dropped; a write could be undone by the opening.
@@ -416,7 +414,7 @@ struct MenuHost {
     int i = -1;
     if (!parse_slot(id, key, i)) return false;
     Mirror* m = s.mirror_of(key);
-    return m && m->drives_game() && m->seen != i && !s.follow_only();
+    return m && m->drives_game() && m->seen != i;
   }
 };
 
@@ -594,7 +592,6 @@ void MenuScreen::enter() {
   bool every = false;
   guarded([&] { every = title_every_entry(); });
   std::string t = title_due() || every ? title() : std::string();
-  if (forget_) { nav().screen_closed(this); forget_ = false; }
   nav().attach(this);
   bool say = true;
   guarded([&] { say = announce_entry(); });

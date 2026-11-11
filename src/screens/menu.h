@@ -76,9 +76,6 @@ class MenuScreen : public Screen, public ui::Screen {
   virtual bool holds_keys() { return true; }
   // A key down going to the game while it has the keys (a screen that reads what the game does with it).
   virtual void on_game_key(uint32_t, int) {}
-  // Follow only: the game keeps its keys (a cursor that moves spatially, not along a list); the menu reads whatever
-  // the game's cursor lands on and never drives it.
-  virtual bool follow_only() { return false; }
   // Whether the title is said on every entry (not once per opening of what is underneath).
   virtual bool title_every_entry() { return false; }
   // Whether entering the menu reads its focused item (false: something else has just said where the player is).
@@ -98,9 +95,6 @@ class MenuScreen : public Screen, public ui::Screen {
   virtual void on_bumper(int) {}
   // Whether F and X (the game's Persona status page) do nothing: a screen that already is that page.
   virtual bool blocks_status() { return false; }
-  // Whether W / A / S / D are the game's: a screen where they are commands, not movement (the battle wheel: W tactics,
-  // S survey, A / D target). Elsewhere a menu drops them, so the arrows are the only keyboard movement.
-  virtual bool game_wasd() { return false; }
   // The detail buffer (battle_details): what the right stick up and down, or Ctrl+Up and Ctrl+Down, walk line by line
   // for the focused item, its own line first. What a row would otherwise say on every move (a skill's description, a
   // member's Persona, stats and skills) goes here (the user's call, 2026-11-11). has_details is asked every frame and
@@ -140,8 +134,6 @@ class MenuScreen : public Screen, public ui::Screen {
   virtual void on_leave() {}
   Mirror& mirror(std::string key, std::function<int()> cursor);
   Mirror* mirror_of(const std::string& key);
-  // Start the next entry fresh (focus on the start item) even when keep_state_on_pop() keeps it otherwise.
-  void forget_focus() { forget_ = true; }
   // Confirm in the game on the mirrored item once its cursor is there.
   void confirm(Mirror& m, int i);
   // Move the mod's focus (announced, interrupting unless `interrupt` is false) without a key: a screen that changed
@@ -168,7 +160,6 @@ class MenuScreen : public Screen, public ui::Screen {
   uint64_t confirm_moves_ = 0;
   Mirror* confirm_mirror_ = nullptr;
   bool attached_ = false;
-  bool forget_ = false;
   // The opening line, said once the list takes input.
   bool entry_due_ = false;
   bool entry_say_ = true;
