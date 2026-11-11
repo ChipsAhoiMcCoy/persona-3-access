@@ -1,5 +1,6 @@
 #include "nav.h"
 #include "audio.h"
+#include "core/approach.h"
 #include "core/sonar_cues.h"
 #include "core/strings.h"
 #include "devserver.h"
@@ -15,6 +16,7 @@
 #include "settings.h"
 #include "watch.h"
 #include "world.h"
+#include <algorithm>
 #include <cmath>
 #include <format>
 #include <memory>
@@ -36,6 +38,10 @@ static bool g_detour_on = false;
 static int g_detours = 0;            // detours tried on this walk
 static float g_detour_base = 0;      // the side first blocked on (radians from the target)
 static bool g_direct = false;        // after a detour: straight for the target, not back along the path
+static bool g_off_mesh = false;      // the target's own spot has no navmesh path: it stands inside something
+static bool g_planned = false;       // the ways in were looked for on this walk
+static std::vector<FVector> g_entries;   // a standing point outside each way in to the target, nearest first
+static size_t g_entry_next = 0;
 static uint32_t g_held[2] = {0, 0};
 constexpr float kArrive = 110.0f;      // cm from the target's location
 constexpr float kWaypointReached = 70.0f;
@@ -76,8 +82,11 @@ static void arrived_at() { log::writef("nav: arrived, {}", g_name); }
 static bool refresh_path(const FVector& me) {
   ue::UObject* t = g_target.resolve();
   if (!t) return false;
-  FVector to = world::actor_location(t);
+  // On the way round to another side of the target, the path leads to that side's standing point.
+  bool round = g_walking && g_detour_on;
+  FVector to = round ? g_detour : world::actor_location(t);
   g_path = world::find_path(me, to);
+  if (!round) g_off_mesh = g_path.empty();
   // A thing standing off the navmesh (the entrance terminal, 2026-10-28) has no path to its centre: path to the
   // nearest navmesh point beside it, then head straight in.
   FVector beside{};
@@ -93,14 +102,17 @@ void walk_to(const WeakObj& target, const std::string& name) {
   if (!world::player_location(me) || watch::get(battle)) { speech::speak(strings::kNotInField, true); return; }
   g_target = target;
   g_name = name;
+  g_detour_on = false;
+  g_detours = 0;
+  g_direct = false;
+  g_planned = false;
+  g_entries.clear();
+  g_entry_next = 0;
   if (!refresh_path(me)) { speech::speak(strings::kNoPath, true); return; }
   g_walking = true;
   g_progress_at = GetTickCount64();
   g_progress_pos = me;
   g_last_valid = false;
-  g_detour_on = false;
-  g_detours = 0;
-  g_direct = false;
   // Nothing said on starting (the player's call, 2026-10-29): only arriving, stopping or getting stuck is spoken.
 }
 
@@ -135,6 +147,90 @@ static bool inside(const Box& b, const FVector& p, float margin) {
   // location is about 90 cm above the floor; allow a step's worth more.
   return std::fabs(lx) <= b.extent.x + margin && std::fabs(ly) <= b.extent.y + margin &&
          std::fabs(p.z - b.center.z) <= b.extent.z + 150.0f;
+}
+
+// ---- the ways in to a target that stands inside something solid ----
+// A teleporter's trigger is a 64 cm box in the middle of the device, between two walls and four corner pillars: the
+// hero gets in through a 96 cm gap on one side or a 67 cm one opposite, and nowhere else (Thebel 11, 2026-11-10).
+// Circling it a sixth of a turn at a time from the side first bumped missed both gaps every time. The ways in are
+// asked of the engine instead: the hero's own body swept toward the trigger from every side.
+struct Goal { bool has_box = false; Box box{}; FVector at{}; };
+static FVector centre(const Goal& g) { return g.has_box ? g.box.center : g.at; }
+// Arrived = inside the trigger box; a target without one = close to its location.
+static bool reaches(const Goal& g, const FVector& p) { return g.has_box ? inside(g.box, p, -5.0f) : flat(g.at, p) < kArrive; }
+
+static void hero_body(float& radius, float& half) {
+  radius = 26.5f; half = 85.0f;
+  ue::UObject* h = world::player();
+  ue::UObject* cap = h ? ue::get<ue::UObject*>(h, "CapsuleComponent") : nullptr;
+  if (!cap) return;
+  ue::Params r(ue::find_function(ue::class_of(cap), "GetScaledCapsuleRadius")), hh(ue::find_function(ue::class_of(cap), "GetScaledCapsuleHalfHeight"));
+  if (ue::call(cap, r) && ue::call(cap, hh)) { radius = r.ret<float>(); half = hh.ret<float>(); }
+}
+
+static float path_length(const std::vector<FVector>& p) {
+  float d = 0;
+  for (size_t i = 1; i < p.size(); ++i) d += flat(p[i - 1], p[i]);
+  return d;
+}
+
+// The body swept from `from` to the target's middle gets far enough to count as arrived. `me` gives the height.
+static bool sweep_reaches(const Goal& g, const FVector& from, const FVector& me, float radius, float half,
+                          std::vector<ue::UObject*>& people) {
+  FVector c = centre(g);
+  // Lifted off the floor by a step's height, as the hero's own movement steps over a low edge.
+  float z = me.z + 10.0f, h = std::max(radius + 1.0f, half - 30.0f);
+  world::Hit hit = world::sweep(FVector{from.x, from.y, z}, FVector{c.x, c.y, z}, radius, h, &people);
+  if (hit.start_inside) return false;
+  return !hit.hit || reaches(g, FVector{hit.location.x, hit.location.y, me.z});
+}
+
+// A standing point outside each way in, the shortest walk first. Empty: no side is open (or every side is).
+static std::vector<FVector> find_entries(const Goal& g, const FVector& me, std::string* report = nullptr) {
+  constexpr int kDirs = 72;   // 5 degrees apart: the narrow gap above is 8 degrees wide from its middle
+  float radius, half;
+  hero_body(radius, half);
+  FVector c = centre(g);
+  std::vector<ue::UObject*> people;   // party members and other characters do not close a way in
+  // Where the hero can stand on that side, on the navmesh and clear of the walls, with a free run in from there.
+  auto stand = [&](float a, float spare, FVector& out) {
+    for (float r : {330.0f, 240.0f, 170.0f}) {
+      FVector on{};
+      if (!world::project_to_nav(FVector{c.x + r * std::cos(a), c.y + r * std::sin(a), me.z - half}, 60.0f, on)) continue;
+      if (!sweep_reaches(g, on, me, radius + spare, half, people)) continue;
+      out = FVector{on.x, on.y, me.z};
+      return true;
+    }
+    return false;
+  };
+  struct Entry { FVector at; float walk; };
+  std::vector<Entry> found;
+  // First with 10 cm to spare on each side, so a gap the hero only just fits is left for last: the walk holds its
+  // line to about that.
+  for (float spare : {10.0f, 2.0f}) {
+    std::vector<bool> clear(kDirs);
+    std::vector<FVector> at(kDirs);
+    for (int i = 0; i < kDirs; ++i) clear[i] = stand(6.28318531f * (float)i / kDirs, spare, at[i]);
+    auto open = core::openings(clear);
+    if (report) *report += std::format("spare {:.0f} cm: {} opening(s)\n", spare, open.size());
+    if (open.size() == 1 && open[0].width > 6.2f) return {};   // open all round: nothing to find
+    for (const core::Opening& o : open) {
+      FVector s{};
+      if (!stand(o.angle, spare, s)) s = at[o.index];
+      bool partial = false;
+      auto path = world::find_path(me, s, &partial);
+      bool ok = !path.empty() && !partial;
+      if (report)
+        *report += std::format("  at {:.0f} deg, {:.0f} deg wide: stand at ({:.0f}, {:.0f}), {}\n", o.angle * 57.29578f, o.width * 57.29578f, s.x, s.y,
+                               ok ? std::format("{:.0f} cm to walk", path_length(path)) : std::string("no path to it"));
+      if (ok) found.push_back(Entry{s, path_length(path)});
+    }
+    if (!found.empty()) break;
+  }
+  std::sort(found.begin(), found.end(), [](const Entry& a, const Entry& b) { return a.walk < b.walk; });
+  std::vector<FVector> out;
+  for (const Entry& e : found) out.push_back(e.at);
+  return out;
 }
 
 // The game shows a hit actor's prompt only while the hero faces the way its mHeroDirectType_ asks: Back = against
@@ -226,17 +322,48 @@ void tick() {
     bool has_box = trigger_box(t, box);
     bool arrived = has_box ? inside(box, me, -5.0f) : flat(goal, me) < kArrive;
     if (arrived) { stop(false); face(t, me); arrived_at(); return; }
+    Goal target{has_box, box, goal};
+    // The next way in: walk round to its standing point (the path leads there while g_detour_on), then straight in.
+    auto next_entry = [&] {
+      if (g_entry_next >= g_entries.size()) return false;
+      g_detour = g_entries[g_entry_next++];
+      g_detour_on = true;
+      g_direct = false;
+      refresh_path(me);
+      g_progress_at = now; g_progress_pos = me;
+      log::writef("nav: way in {} of {} via ({:.0f}, {:.0f})", g_entry_next, g_entries.size(), g_detour.x, g_detour.y);
+      return true;
+    };
+    auto plan = [&] {
+      g_planned = true;
+      g_entries = find_entries(target, me);
+      g_entry_next = 0;
+      log::writef("nav: {} way(s) in to {}", g_entries.size(), g_name);
+    };
+    // A target with no navmesh path to its own spot stands inside something. Close to it, before bumping into it:
+    // when the hero's body cannot run straight in from here, find the sides it can come in from.
+    if (g_off_mesh && !g_planned && flat(centre(target), me) < 500.0f) {
+      float radius, half;
+      hero_body(radius, half);
+      std::vector<ue::UObject*> people;
+      if (sweep_reaches(target, me, me, radius, half, people)) g_planned = true;
+      else { plan(); next_entry(); }
+    }
     if (now - g_path_at > 700) refresh_path(me);
     FVector wp;
     if (!next_waypoint(me, wp)) { log::write("nav: stopped, no path"); stop(true); return; }
-    // The navmesh path ends where the floor ends (beside the bed); from its last point head straight for the box.
-    if (g_path.size() == 1 && flat(wp, me) < kWaypointReached + 30.0f && has_box) wp = box.center;
-    // A detour around something in the way (below): first its waypoint, then on to the target.
     if (g_detour_on) {
-      if (flat(g_detour, me) < 80.0f) { g_detour_on = false; g_direct = true; }
-      else wp = g_detour;
+      // Round to another side of the target: at its standing point, turn in.
+      if (flat(g_detour, me) < 80.0f) { g_detour_on = false; g_direct = true; refresh_path(me); }
+    } else if (g_direct) {
+      // Straight in from there, held to the line: a way in can be a gap with 20 cm to spare on each side.
+      FVector c = centre(target);
+      core::Vec2 w = core::follow(core::Vec2{g_detour.x, g_detour.y}, core::Vec2{c.x, c.y}, core::Vec2{me.x, me.y}, 40.0f);
+      wp = FVector{w.x, w.y, me.z};
+    } else if (g_path.size() == 1 && flat(wp, me) < kWaypointReached + 30.0f && has_box) {
+      // The navmesh path ends where the floor ends (beside the bed); from its last point head straight for the box.
+      wp = box.center;
     }
-    if (g_direct && !g_detour_on) wp = has_box ? box.center : goal;
     // 8-way chord toward the waypoint, camera-relative (the game's own movement is camera-relative too).
     float b = world::bearing(me, wp);
     int sector = ((int)std::lround(b / 45.0f) % 8 + 8) % 8;
@@ -246,18 +373,26 @@ void tick() {
       if (flat(me, g_progress_pos) < 40.0f) {
         // Blocked by the thing itself (a chest's collision) while its prompt is already up: that is arriving.
         bool there = poi::prompt() == g_name;
-        // Blocked close to it (the teleporter pad's pylons, 2026-10-27): circle round and come in from another
-        // side.
-        // Six tries, a sixth of a turn apart: the entrance terminal opens only to one side (2026-10-28).
-        if (!there && g_detours < 6 && flat(goal, me) < 600.0f) {
-          if (g_detours == 0) g_detour_base = std::atan2(me.y - goal.y, me.x - goal.x);
-          ++g_detours;
-          float a = g_detour_base + g_detours * 3.14159265f / 3.0f;
-          g_detour = FVector{goal.x + 330.0f * std::cos(a), goal.y + 330.0f * std::sin(a), me.z};
-          g_detour_on = true;
-          g_progress_at = now; g_progress_pos = me;
-          log::writef("nav: blocked at ({:.0f}, {:.0f}), detour {} via ({:.0f}, {:.0f})", me.x, me.y, g_detours, g_detour.x, g_detour.y);
-          return;
+        // Blocked close to it (the teleporter pad's pylons, 2026-10-27; the entrance terminal opens only to one
+        // side, 2026-10-28): come in through the next way in the engine's sweeps found.
+        if (!there && flat(goal, me) < 600.0f) {
+          log::writef("nav: blocked at ({:.0f}, {:.0f})", me.x, me.y);
+          if (!g_planned) plan();
+          if (next_entry()) return;
+          // No side the sweeps call open (the target's box may be reached some other way): circle round and come
+          // in from another side, six tries a sixth of a turn apart.
+          if (g_entries.empty() && g_detours < 6) {
+            if (g_detours == 0) g_detour_base = std::atan2(me.y - goal.y, me.x - goal.x);
+            ++g_detours;
+            float a = g_detour_base + g_detours * 3.14159265f / 3.0f;
+            g_detour = FVector{goal.x + 330.0f * std::cos(a), goal.y + 330.0f * std::sin(a), me.z};
+            g_detour_on = true;
+            g_direct = false;
+            refresh_path(me);
+            g_progress_at = now; g_progress_pos = me;
+            log::writef("nav: detour {} via ({:.0f}, {:.0f})", g_detours, g_detour.x, g_detour.y);
+            return;
+          }
         }
         stop(false);
         if (there) arrived_at(); else speech::speak(strings::kStuck, true);
@@ -352,7 +487,33 @@ void install() {
         walk_to(WeakObj::of(o), n.empty() ? ue::name_of(o) : n); });
     }
     if (dev::has(r, "stop")) hooks::run_on_game_thread([] { stop(true); });
+    if (dev::has(r, "plan")) {
+      // The ways in to a target as the walk would find them from here (reads only: sweeps and paths).
+      int obj = (int)dev::arg_int(r, "plan", -1);
+      auto out = std::make_shared<std::string>("timeout\n");
+      hooks::run_on_game_thread([out, obj] {
+        ue::UObject* o = ue::object_at(obj);
+        FVector me;
+        if (!o || !world::player_location(me)) { *out = "no player or target\n"; return; }
+        Goal g;
+        g.has_box = trigger_box(o, g.box);
+        g.at = world::actor_location(o);
+        float radius, half;
+        hero_body(radius, half);
+        std::vector<ue::UObject*> people;
+        FVector c = centre(g);
+        std::string s = std::format("target ({:.0f}, {:.0f}, {:.0f}) box={} hero ({:.0f}, {:.0f}) body {:.1f} x {:.1f}\nstraight in from here: {}\n", c.x, c.y, c.z,
+                                    g.has_box, me.x, me.y, radius, half, sweep_reaches(g, me, me, radius, half, people) ? "clear" : "blocked");
+        LARGE_INTEGER a, z, f;
+        QueryPerformanceCounter(&a);
+        auto entries = find_entries(g, me, &s);
+        QueryPerformanceCounter(&z); QueryPerformanceFrequency(&f);
+        s += std::format("{} way(s) in, found in {} us\n", entries.size(), (z.QuadPart - a.QuadPart) * 1000000 / f.QuadPart);
+        *out = s;
+      });
+      return *out;
+    }
     return status();
-  }, "?walk=objindex | ?stop=1 the auto-walk");
+  }, "?walk=objindex | ?stop=1 the auto-walk | ?plan=objindex the ways in to a target");
 }
 }  // namespace p3a::nav
