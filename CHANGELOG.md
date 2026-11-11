@@ -9,6 +9,12 @@
 - Inside 2 to 3 m a thing plays a clipped form of its sound so that it can repeat that fast: one knock, one whistled note, the higher bell strike, a puff of air, the start of the pluck.
 - With many things around, the near ones keep most of their speed and the far ones wait longer. The turns used to be shared so evenly that a thing beside you in a full room repeated less than once a second.
 
+### Events: Gatekeepers and scenes you walk into
+- Points of interest have a new category, Events, between Objects and Shadows: spots that start a fight or a scene when you walk into them, with nothing to press. On a Tartarus Gatekeeper's floor it lists "Gatekeeper", where the fight starts, until the Gatekeeper is beaten.
+- Events have a sonar sound of their own, a quick trill between two hollow notes. They used to share the objects' plucked note. There is a "Sonar: events" setting and a "Sonar: event" row in the Sound test.
+- Fixed: the sonar could tick for an unnamed event spot that the points of interest list did not have. On a Tartarus floor it sounded like an object right beside you that could not be found in the list.
+- An unnamed event spot that is already finished is no longer listed.
+
 ### Less to listen to
 - A battle turn opens with a shorter line: "Junpei, HP 99, SP 17. Cowardly Maya, 35%, Down, weak to Slash, Fire". The HP and SP maxima, the word "Target" and the target's place are gone from it; moving the target still says its place.
 - Affinities drop the word "Attack": "weak to Fire, Ice" instead of "weak to Fire Attack, Ice Attack". "Downed" is now "Down".

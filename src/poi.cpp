@@ -42,6 +42,7 @@ static const char* kind_name(Kind k) {
     case Kind::Shop: return strings::kPoiShop;
     case Kind::Door: return strings::kPoiDoor;
     case Kind::Enemy: return strings::kPoiShadow;
+    case Kind::Event: return strings::kPoiEvent;
     default: return strings::kPoiThing;
   }
 }
@@ -203,15 +204,21 @@ std::vector<Poi> scan(float radius) {
   if (!world::player_location(me)) return out;
   UObject* hero = world::player();
   bool dungeon = hero && name_of(class_of(hero)).find("DUNGEON") != std::string::npos;
+  // Whether the unnamed triggers are listed (below) is one answer for every caller: it goes by what the list's own
+  // range holds, not by `radius`. The sonar reads 10 m around the player, found nothing else that near, and sounded
+  // a trigger the list (60 m, a chest and the stairs in it) did not have (a Tartarus floor, 2026-11-11).
+  const float list_radius = std::max(radius, settings::get(settings::PoiRange) * 100.0f);
+  bool beyond = false;   // something past `radius` that the list has
   auto add = [&](UObject* a, Kind k, std::string name, bool any_floor = false) {
     world::FVector v{};
     if (!guarded([&] { v = world::actor_location(a); })) return;
     float d = std::sqrt((v.x - me.x) * (v.x - me.x) + (v.y - me.y) * (v.y - me.y) + (v.z - me.z) * (v.z - me.z));
-    if (d > radius) return;
     // Floors of one building share a level, stacked about 3.4 m apart and joined by teleporting stairs (the dorm,
     // 2026-10-27): another floor's things count only when the navmesh walks there (Tartarus' raised entrance does).
     // Tartarus floors are levels of their own with raised and sunken parts: no floor filter there.
-    if (!dungeon && !any_floor && std::fabs(v.z - (me.z - 90.0f)) > 280.0f && !walkable(a, me, v)) return;
+    bool other_floor = !dungeon && !any_floor && std::fabs(v.z - (me.z - 90.0f)) > 280.0f;
+    if (d > radius) { beyond |= d <= list_radius && !other_floor; return; }
+    if (other_floor && !walkable(a, me, v)) return;
     // The daily and the Dark Hour version of a hit often stand on the same spot: one entry per name and place.
     for (auto& o : out)
       if (o.name == name && std::fabs(o.loc.x - v.x) + std::fabs(o.loc.y - v.y) + std::fabs(o.loc.z - v.z) < 150.0f) return;
@@ -242,11 +249,9 @@ std::vector<Poi> scan(float radius) {
     // Story triggers: unnamed boxes that only run a blueprint when walked through (the first Tartarus floor's
     // tutorial gates, 2026-10-27). Nothing there to use, but where the story leads: kept for an area with nothing
     // else (the monorail tracks, whose way on is a row of them, 2026-10-27).
-    if (get<int32_t>(a, "mNameIndex_", -1) < 0 && !get<UObject*>(a, "mKeyPushBluePrint_") && get<UObject*>(a, "mOverlapBluePrint_")) {
-      if (std::string beat = story_beat(a); !beat.empty()) add(a, Kind::Thing, std::format("{}: {}", strings::kPoiEvent, beat), true);
-      else triggers.push_back(a);
-      continue;
-    }
+    bool trigger = get<int32_t>(a, "mNameIndex_", -1) < 0 && !get<UObject*>(a, "mKeyPushBluePrint_") && get<UObject*>(a, "mOverlapBluePrint_");
+    if (trigger)
+      if (std::string beat = story_beat(a); !beat.empty()) { add(a, Kind::Event, std::format("{}: {}", strings::kPoiEvent, beat), true); continue; }
     // Done already: an opened treasure chest keeps its hit, with its story flag on (FLD_TAR_TBOX_OPENED_04).
     if (auto* ex = field<FName>(a, "mExecutedFlagName_"); ex && ex->index > 0) {
       std::string flag = fname(*ex);
@@ -257,6 +262,14 @@ std::vector<Poi> scan(float radius) {
     if (auto* off = field<FName>(a, "mOffFlagName_"); off && off->index > 0) {
       std::string flag = fname(*off);
       if (!flag.empty() && flag != "None" && flag_on(flag)) continue;
+    }
+    if (trigger) {
+      // A Gatekeeper's floor: the box that starts its fight (BP_FldHit_Tartarus_GateKeeper, the Abyss of Time's too),
+      // off once it is beaten (FLD_BATTLE_DEFEAT_GK_*, checked above). Always listed: it is what the floor is for.
+      // The other unnamed boxes were never checked against their flags: a finished one is left out now.
+      if (name_of(get<UObject*>(a, "mOverlapBluePrint_")) == "BP_FldHit_Tartarus_GateKeeper_C") add(a, Kind::Event, strings::kPoiGatekeeper);
+      else triggers.push_back(a);
+      continue;
     }
     std::string type;
     if (FField* tp = find_prop(class_of(a), "mType_")) type = enum_name(prop_inner_object(tp), *(uint8_t*)((uint8_t*)a + prop_offset(tp)));
@@ -286,7 +299,7 @@ std::vector<Poi> scan(float radius) {
     if (get_bool(a, "bHidden")) continue;
     add(a, Kind::Enemy, strings::kPoiShadow);
   }
-  if (out.empty()) for (UObject* a : triggers) add(a, Kind::Thing, strings::kPoiEvent);
+  if (out.empty() && !beyond) for (UObject* a : triggers) add(a, Kind::Event, strings::kPoiEvent);
   std::sort(out.begin(), out.end(), [](const Poi& a, const Poi& b) { return a.dist < b.dist; });
   // A door between two rooms is two exits a step apart, one on each side, each named for where it leads (the
   // monorail's cars, 1.4 m apart, 2026-10-27): only the one on the player's side, the nearer, counts.
@@ -311,7 +324,7 @@ std::string describe(const Poi& p) {
 // ---- the review selection ----
 // Categories (left and right) each hold their points of interest nearest first (up and down). Changing category, or
 // opening the controller's mod layer, selects the nearest; an empty category is skipped.
-enum class Cat { Exits, Doors, People, Shops, Things, Shadows, Count };
+enum class Cat { Exits, Doors, People, Shops, Things, Events, Shadows, Count };
 static const char* cat_name(Cat c) {
   switch (c) {
     case Cat::Exits: return strings::kCatExits;
@@ -319,6 +332,7 @@ static const char* cat_name(Cat c) {
     case Cat::People: return strings::kCatPeople;
     case Cat::Shops: return strings::kCatShops;
     case Cat::Things: return strings::kCatThings;
+    case Cat::Events: return strings::kCatEvents;
     default: return strings::kCatShadows;
   }
 }
@@ -333,6 +347,7 @@ static bool in_cat(const Poi& p, Cat c) {
     case Cat::People: return p.kind == Kind::Person;
     case Cat::Shops: return p.kind == Kind::Shop;
     case Cat::Things: return p.kind == Kind::Thing;
+    case Cat::Events: return p.kind == Kind::Event;
     default: return p.kind == Kind::Enemy;
   }
 }

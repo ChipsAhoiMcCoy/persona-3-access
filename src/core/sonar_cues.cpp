@@ -237,6 +237,25 @@ std::vector<float> lost_cue(int rate) {
   return v;
 }
 
+// Event: a trill, two hollow notes a fourth apart taking turns (odd overtones only: a reed, where the alarm's
+// sawtooth is a buzz and the whistle is pure). Nothing else of the mod's flutters between two pitches.
+std::vector<float> event_cue(int rate, bool brief) {
+  const double note = brief ? 0.032 : 0.034;
+  const int notes = brief ? 2 : 4;
+  std::vector<float> v(frames(rate, brief ? kBrief : 0.14), 0.0f);
+  for (int k = 0; k < notes; ++k) {
+    const double hz = k % 2 ? 932.0 : 698.0;   // F5, B flat 5
+    const int start = frames(rate, k * note), count = frames(rate, note);
+    for (int i = 0; i < count && start + i < (int)v.size(); ++i) {
+      double sec = (double)i / rate, s = 0;
+      for (int h = 1; h * hz < 7000.0; h += 2) s += std::sin(2.0 * kPi * hz * h * sec) / h;
+      double env = (1.0 - std::exp(-sec / 0.002)) * std::min(1.0, (count - i) / (rate * 0.006));
+      v[start + i] += (float)(s * env);
+    }
+  }
+  return v;
+}
+
 // Silence at both ends (a few ms of fade, so nothing clicks), no DC, then the common loudness.
 void finish(std::vector<float>& v, int rate, float rms_target) {
   if (v.empty()) return;
@@ -264,6 +283,7 @@ std::vector<float> raw(SonarCue cue, int rate, bool brief) {
     case SonarCue::Door: return door_cue(rate, brief);
     case SonarCue::Person: return person_cue(rate, brief);
     case SonarCue::Shop: return shop_cue(rate, brief);
+    case SonarCue::Event: return event_cue(rate, brief);
     default: return thing_cue(rate, brief ? kBrief : 0.11);
   }
 }

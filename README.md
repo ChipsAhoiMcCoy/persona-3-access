@@ -116,7 +116,7 @@ the two Audio description settings. Controls and help holds Controller trigger d
 Mod keys.
 
 Sound test is where to learn the mod's sounds. Space or Enter (A) on a row plays its sound, wherever you are and
-whatever is switched off, and the row says what the sound means. It holds the five sonar sounds, one of them from behind you,
+whatever is switched off, and the row says what the sound means. It holds the six sonar sounds, one of them from behind you,
 the Shadow's growl (plain and hunting you), the Shadow alarm and the sound of a Shadow losing you, the two
 strike-reach rings, the four wall tones and the controller layer's tick. They play at the volumes set under Sound.
 
@@ -124,7 +124,7 @@ strike-reach rings, the four wall tones and the controller layer's tick. They pl
 - Sonar: on, off (also F3): every point of interest near you repeats its own sound from where it is, faster and louder the closer it is (see Sounds)
 - Sonar plays: everything nearby, the list's category only, the selected point only (at any distance): narrows the sonar to the category the points of interest list is on, or to the one point you selected there, which then sounds however far away it is
 - Sonar range: 10 meters; 5, 15, 20, 30 or 40
-- Sonar: exits, Sonar: doors, Sonar: people, Sonar: shops, Sonar: objects: on, off: each kind of thing on its own. Changing one plays its sound, so this is also where to learn them
+- Sonar: exits, Sonar: doors, Sonar: people, Sonar: shops, Sonar: objects, Sonar: events: on, off: each kind of thing on its own. Changing one plays its sound, so this is also where to learn them
 - Shadow alerts: on, off: in Tartarus, the Shadow pulse, the alarm when one notices you, the strike-reach ring (for Shadows and breakable objects) and the back-turned / facing-you cues
 - 3D sound for headphones: on, off: the sonar and the Shadow cues come from where their source is, ahead, behind, above or below (Steam Audio's HRTF; far sounds are also a little duller). Off pans them left and right only, as before
 - Lower pitch behind you: on, off: the sonar's sounds and the Shadow pulse play lower when their source is behind you
@@ -186,8 +186,10 @@ line on screen is read.
 Points of interest come in categories: exits (each leads to another area and is named for where it goes:
 "Gekkoukan High School" there is the way into the school, not out of it), doors (rooms you check to go in: classrooms,
 offices, restrooms, the dorm's bedrooms), people, shops (businesses, food, vendors and vending machines), objects
-(everything else you can check) and, in Tartarus, Shadows. Each category lists its points nearest first, and a
-category with nothing in it is skipped. The sonar has one sound for each of the first five
+(everything else you can check), events (spots that start a fight or a scene when you walk into them, with nothing
+to press: a Tartarus Gatekeeper's floor lists "Gatekeeper" until it is beaten) and, in Tartarus, Shadows. Each
+category lists its points nearest first, and a category with nothing in it is skipped. The sonar has one sound for
+each of the first six
 (see Sounds). Points are spoken with their name, distance, clock direction and position: "Iwatodai Station, 6 meters, 2 o'clock, 1 of 3". The category is said first when you change category or open the controller layer.
 12 o'clock is straight ahead (where pushing forward walks), 3 o'clock is to your right.
 With the sonar on, each point you land on in the list also plays its kind's sound once from where it is, however far.
@@ -392,10 +394,10 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   goes by distance alone, whatever the range is set to: about once a second at 10 m, twice a second at 5 m, three
   times at 3 m, five times at 2 m and eight times at 1 m, so each halving of the distance nearly doubles it. Inside
   2 to 3 m a thing plays a clipped form of its sound, so that it can repeat that fast: one knock, one whistled note,
-  one (the higher) bell strike, a puff of air, the start of the pluck. Each kind has a sound of its
+  one (the higher) bell strike, a puff of air, the start of the pluck, one turn of the trill. Each kind has a sound of its
   own: exits (ways into another area) a rising breath of air over a low thump, doors two knocks on wood, people a
-  two-note whistle (the second note lower, a "yoo-hoo"), shops two strikes of a small bell, and objects (things to check or open) a bright
-  plucked note. Directions follow the camera: a sound straight ahead is where pushing forward walks, and turning the
+  two-note whistle (the second note lower, a "yoo-hoo"), shops two strikes of a small bell, objects (things to check or open) a bright
+  plucked note, and events (a Gatekeeper, a story scene you walk into) a quick trill between two hollow notes. Directions follow the camera: a sound straight ahead is where pushing forward walks, and turning the
   camera turns the whole field around you. A sound played lower is behind you (Lower pitch behind you). To keep
   crowded places readable only the six nearest things sound, at most three of one kind; things on another floor are
   left out unless you can walk there. The point selected in the points of interest list always has a place among

@@ -24,7 +24,7 @@ using core::SonarCue;
 using world::FVector;
 
 constexpr int kKinds = (int)SonarCue::Count;
-constexpr const char* kKindName[kKinds] = {"exit", "door", "person", "shop", "object"};
+constexpr const char* kKindName[kKinds] = {"exit", "door", "person", "shop", "object", "event"};
 constexpr size_t kMaxSources = 6;      // the nearest things that sound at once
 constexpr int kMaxPerKind = 3;         // of one kind: a corridor of students must not drown the door beside you
 constexpr float kNearM = 1.5f;         // at and under this: full volume (the rhythm has its own scale: core/sonar_field)
@@ -37,7 +37,7 @@ constexpr float kLookAheadCm = 300.0f; // how far past the range that reading lo
 
 // Per-kind level trims in dB (the cues are made at one RMS; a kind that still stands out is trimmed here; dev:
 // /sonar?trim=kind,dB).
-float g_trim_db[kKinds] = {0, 0, 0, 0, 0};
+float g_trim_db[kKinds] = {0, 0, 0, 0, 0, 0};
 
 struct Source { ue::WeakObj obj; int kind; FVector loc; bool selected; };
 std::vector<Source> g_sources;
@@ -52,11 +52,13 @@ int cue_of(poi::Kind k) {
     case poi::Kind::Person: return (int)SonarCue::Person;
     case poi::Kind::Shop: return (int)SonarCue::Shop;
     case poi::Kind::Thing: return (int)SonarCue::Thing;
+    case poi::Kind::Event: return (int)SonarCue::Event;
     default: return -1;   // Shadows: their own pulse
   }
 }
 bool kind_on(int kind) {
-  static const settings::Id ids[kKinds] = {settings::SonarExits, settings::SonarDoors, settings::SonarPeople, settings::SonarShops, settings::SonarThings};
+  static const settings::Id ids[kKinds] = {settings::SonarExits, settings::SonarDoors, settings::SonarPeople, settings::SonarShops, settings::SonarThings,
+                                           settings::SonarEvents};
   return kind >= 0 && kind < kKinds && settings::on(ids[kind]);
 }
 
@@ -193,7 +195,7 @@ void selected(const poi::Poi& p) {
 
 bool preview(settings::Id id) {
   int kind = id == settings::SonarExits ? 0 : id == settings::SonarDoors ? 1 : id == settings::SonarPeople ? 2 :
-             id == settings::SonarShops ? 3 : id == settings::SonarThings ? 4 : id == settings::SonarVolume ? (int)SonarCue::Thing : -1;
+             id == settings::SonarShops ? 3 : id == settings::SonarThings ? 4 : id == settings::SonarEvents ? 5 : id == settings::SonarVolume ? (int)SonarCue::Thing : -1;
   if (kind < 0) return false;
   audio::play(cue(kind), 1.0f, audio::Spot{}, audio::Bus::Sonar);   // straight ahead, at arm's length
   return true;
