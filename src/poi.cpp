@@ -629,23 +629,36 @@ static void prompt_tick() {
   bool field_up = !panel || panel_state == 3;
   if (field_up && !field_was) field_since = GetTickCount64();
   field_was = field_up;
-  if (!msg::current().open && field_up)
+  if (!msg::current().open && field_up) {
+    // The panel's lines, top to bottom. It can hold several objectives at once, each in brackets with its own lines
+    // under it: a Tartarus floor showed "Face Nyx", "Defeat Strega" and a second bracketed one, "Explore the floor"
+    // (2026-11-11). A line is said when it comes into the panel, not while it stays: with one slot for the bracketed
+    // line, two of them took turns in it and were said over and over, every frame.
+    static std::vector<std::string> shown;   // the panel's lines last time it was drawn
+    std::vector<std::pair<float, std::string>> lines;
     for (auto& t : textcap::snapshot(200)) {
-      if (t.source != 0 || t.seen_ms <= field_since || !core::has_words(t.text)) continue;
-      // U+300E opening corner bracket, top right
-      if (t.x > 1400 && t.y < 320 && t.text.rfind("\xE3\x80\x8E", 0) == 0) {
-        std::string o = t.text.substr(3);
+      if (t.source != 0 || t.seen_ms <= field_since || !core::has_words(t.text) || t.x <= 1400 || t.y >= 420) continue;
+      std::string o = t.text;
+      // U+300E / U+300F corner brackets around an objective's own line
+      if (o.rfind("\xE3\x80\x8E", 0) == 0) {
+        o = o.substr(3);
         if (o.size() >= 3 && o.compare(o.size() - 3, 3, "\xE3\x80\x8F") == 0) o.resize(o.size() - 3);
-        if (o != g_objective) { g_objective = o; g_sub_objective.clear(); speech::speak(std::string(strings::kObjective) + ": " + o, false); }
-        continue;
-      }
-      // Further objectives stack under the first in the same top-right panel, without brackets.
-      if (t.x > 1400 && t.y < 320) {
-        std::string o = core::clean_text(t.text);
-        std::string& sub = g_sub_objective;
-        if (o != sub && o != g_objective) { sub = o; speech::speak(std::string(strings::kObjective) + ": " + o, false); }
-      }
+      } else o = core::clean_text(o);
+      if (std::none_of(lines.begin(), lines.end(), [&](auto& l) { return l.second == o; })) lines.push_back({t.y, o});
     }
+    if (!lines.empty()) {
+      std::sort(lines.begin(), lines.end(), [](auto& a, auto& b) { return a.first < b.first; });
+      std::vector<std::string> now;
+      for (auto& l : lines) {
+        now.push_back(l.second);
+        if (std::find(shown.begin(), shown.end(), l.second) == shown.end()) speech::speak(std::string(strings::kObjective) + ": " + l.second, false);
+      }
+      shown = now;
+      g_objective = now[0];
+      g_sub_objective.clear();
+      for (size_t i = 1; i < now.size(); ++i) g_sub_objective += (i > 1 ? ". " : "") + now[i];
+    }
+  }
   std::string& last = g_prompt;
   static WeakObj prompt_of;   // the point of interest that prompt belongs to; none for a party member's
   std::string label = misc_check_label();

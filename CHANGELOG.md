@@ -13,6 +13,10 @@
 - A Twilight Fragment's prompt is said with its verb, "Check: Something Shining", like any other thing's. It is said again when you walk away from the fragment and come back; it used to stay silent until some other prompt had shown.
 - Fixed: after a prompt went away the mod looked its thing up in a fresh list of points of interest every frame, and never stopped once that thing had left the list. It now asks the thing itself.
 
+### Objectives
+- Fixed: with two objectives on screen at once (a story objective and a Tartarus floor's "Explore the floor"), both were said again and again without end. Each line of the objective panel is now said once, when it appears.
+- A fourth line of the panel ("Find a valuable treasure chest") is read too; it was below where the mod looked.
+
 ### Auto-walk: round people in the way
 - The auto-walk's path knows the walls but not who is standing on the floor. With a student walking toward you down a hallway, it pushed into them and said "Stuck, stopping". It now sees someone in the next step of its path and steps to one side of them, then goes on.
 - When it is blocked by anything else its path does not know of, it tries a step to either side before giving up. It says "Stuck, stopping" after three such steps that brought it no nearer.
