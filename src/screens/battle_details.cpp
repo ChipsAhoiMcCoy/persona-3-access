@@ -108,7 +108,8 @@ void install() {
         UObject* u = focused_unit();
         // ?ailment=N: type N on the focused unit by the game's own route: its flag (SetBadStatus) and then the turn
         // counters the battle gives it (FUN_140fe2ef0(actor, bit), +0x38E and +0x3A6), for testing what a skill would do.
-        if (give >= 0 && give < 12 && u) {
+        // This build's address: on another build nothing is given.
+        if (give >= 0 && give < 12 && u && known_build()) {
           UObject* db = btl_words().db();
           UFunction* f = db ? find_function(class_of(db), "SetBadStatus") : nullptr;
           if (f) { Params p(f); p.set<UObject*>("Actor", u); p.set<int32_t>("Type", give); call(db, p); }

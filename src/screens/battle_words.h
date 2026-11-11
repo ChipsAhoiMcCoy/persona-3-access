@@ -4,6 +4,7 @@
 // GetSupportTurn). One instance (btl_words) serves the battle screen (battle.cpp), the battle's lists
 // (battle_menus.cpp) and the detail buffer (battle_details.cpp).
 #include "screens/util.h"
+#include "core/battle_text.h"
 #include "core/strings.h"
 #include "party.h"
 #include <format>
@@ -95,8 +96,6 @@ class BtlWords {
   std::string hp_sp_short(ue::UObject* a) {
     return std::format("{} {}, {} {}", strings::kHP, unit_int("GetUnitHP", a), strings::kSP, unit_int("GetUnitSP", a)) + ailments(a) + buffs(a);
   }
-  // Health as a share of the maximum, rounded up (1 HP left is never 0%).
-  static int health_share(int hp, int mx) { return (hp * 100 + mx - 1) / mx; }
   // BtlDataBase GetBadStatus(EBtlDataBadStatus): the same answer the info panel's icons draw from.
   bool has_ailment(ue::UObject* a, int type) { return typed_call<bool>("GetBadStatus", a, type, false); }
   // ABtlActor +0x38E: one signed byte per status bit, the turns the ailment can still last; a roll can end it sooner
@@ -104,6 +103,7 @@ class BtlWords {
   // Bit i is 1 << i; the enum's first 12 are bits 0-11 (FUN_14102b0a0). Poison stays at 0 until it is cured, and Down
   // has no count: those read without one.
   int ailment_turns(ue::UObject* a, int type) {
+    if (!ue::known_build()) return 0;   // the offset is this build's: on another the ailment reads without a count
     if (!a || type < 0 || type > 11) return 0;
     return *((int8_t*)a + 0x38E + type);
   }
@@ -115,7 +115,6 @@ class BtlWords {
       if (has_ailment(a, t)) s += std::string(", ") + strings::kAilments[t];
     return s;
   }
-  std::string turns_text(int n) { return std::format("{} {}", n, n == 1 ? strings::kTurn : strings::kTurns); }
   // BtlDataBase GetSupportTurn: turns left on a buff or debuff (BP_BtlTargetInfo marks 1 as its last).
   int support_turn(ue::UObject* a, int type) { return typed_call<int32_t>("GetSupportTurn", a, type, 0); }
   // BtlDataBase CheckSupport(EBtlDataSupportTable): the buff or debuff is on the unit.
@@ -140,7 +139,7 @@ class BtlWords {
     if (!foe && party::member(unit_int("GetUnitID", a), m)) level = m.level;
     out.push_back(std::format("{}, {} {}", unit_name(a), strings::kLevel, level));
     int hp = unit_int("GetUnitHP", a), mx = unit_int("GetUnitMaxHP", a);
-    if (foe) { if (mx > 0) out.push_back(std::format("{} {}%", strings::kHP, health_share(hp, mx))); }
+    if (foe) { if (mx > 0) out.push_back(std::format("{} {}%", strings::kHP, core::health_share(hp, mx))); }
     else {
       out.push_back(std::format("{} {} {} {}", strings::kHP, hp, strings::kOf, mx));
       out.push_back(std::format("{} {} {} {}", strings::kSP, unit_int("GetUnitSP", a), strings::kOf, unit_int("GetUnitMaxSP", a)));
@@ -151,7 +150,7 @@ class BtlWords {
       if (!has_ailment(a, t)) continue;
       any = true;
       int n = ailment_turns(a, t);
-      out.push_back(n > 0 ? std::format("{}, {} {}", strings::kAilments[t], strings::kUpTo, turns_text(n)) : std::string(strings::kAilments[t]));
+      out.push_back(n > 0 ? std::format("{}, {} {}", strings::kAilments[t], strings::kUpTo, core::turns_text(n)) : std::string(strings::kAilments[t]));
     }
     if (!any) out.push_back(strings::kNoAilments);
     if (ue::call_ret<bool>(a, "IsGuard")) out.push_back(strings::kGuarding);
@@ -159,7 +158,7 @@ class BtlWords {
     auto effect = [&](bool on, int type, const char* word) {
       if (!on) return;
       int n = support_turn(a, type);
-      out.push_back(n > 0 ? std::format("{}, {}", word, turns_text(n)) : std::string(word));
+      out.push_back(n > 0 ? std::format("{}, {}", word, core::turns_text(n)) : std::string(word));
     };
     // The HUD's stats (hud_buff), then what the info panel draws beside them, then the rest of EBtlDataSupportTable.
     for (int i = 0; i < 6; ++i) { int type = hud_buff(a, i); effect(type >= 0, type, strings::kBuffs[i]); }
@@ -193,7 +192,7 @@ class BtlWords {
   std::string enemy(ue::UObject* e) {
     std::string s = unit_name(e);
     int hp = unit_int("GetUnitHP", e), mx = unit_int("GetUnitMaxHP", e);
-    if (mx > 0) s += std::format(", {}%", health_share(hp, mx));
+    if (mx > 0) s += std::format(", {}%", core::health_share(hp, mx));
     s += ailments(e);
     s += buffs(e);
     for (auto& l : affinity_groups(e)) s += ", " + l;
@@ -204,12 +203,8 @@ class BtlWords {
     return ue::get_bool(u, "EnemyFlag") ? enemy(u) : std::format("{}, {}", unit_name(u), hp_sp(u));
   }
   // The affinities the player has found out, a line per kind: "weak to Fire, Ice". The game's names are "Fire
-  // Attack", "Ice Attack": the word is dropped, it was said with every target (the user's call, 2026-11-11).
-  static std::string short_attack(std::string n) {
-    static constexpr std::string_view tail = " Attack";
-    if (n.size() > tail.size() && n.ends_with(tail)) n.resize(n.size() - tail.size());
-    return n;
-  }
+  // Attack", "Ice Attack": the word is dropped (core::short_attack), it was said with every target (the user's call,
+  // 2026-11-11).
   std::vector<std::string> affinity_groups(ue::UObject* e) {
     std::vector<std::string> out;
     ue::UObject* d = db();
@@ -222,7 +217,7 @@ class BtlWords {
       p.set<uint8_t>("attr", (uint8_t)attr);
       ue::call(d, p);
       int a = p.ret<uint8_t>();
-      std::string name = a >= 1 && a <= 5 ? short_attack(attack_name(attr)) : std::string();
+      std::string name = a >= 1 && a <= 5 ? core::short_attack(attack_name(attr)) : std::string();
       if (!name.empty()) by[a].push_back(name);
     }
     static const int order[] = {4, 5, 1, 2, 3};   // weak, resists, nulls, repels, drains

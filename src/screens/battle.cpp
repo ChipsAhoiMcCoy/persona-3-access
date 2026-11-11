@@ -25,6 +25,7 @@
 #include "persona.h"
 #include "speech.h"
 #include "textcap.h"
+#include "core/battle_text.h"
 #include "core/text_clean.h"
 #include <windows.h>
 #include <xinput.h>
@@ -164,48 +165,61 @@ class BattleScreen : public Screen {
     std::string who = actor ? w_.unit_name(actor) : "";
     speech::speak(who.empty() ? b : std::format("{}: {}", who, b), false);
   }
+  // Everything that happened since the last tick, in the order it is said: Rush, the action's banner, what each hit
+  // was, then every unit's HP and ailments and who fell.
   void watch() {
     UObject* core = battle_core();
     if (!core) return;
     int st = gui_state();
-    // On is said at once, over anything else: it answers the player's own press. Off queues: the game also ends a rush
-    // itself (a boss's mid-battle lines: DisableRush), with the last blow's news still being read.
+    watch_rush(core);
+    UObject* action_now = get<UObject*>(core, "CurrentAction");
+    watch_commands(st, action_now);
+    watch_banner(st, action_now);
+    hit_words(action_now, st);
+    watch_units(core, st, action_now);
+  }
+  // On is said at once, over anything else: it answers the player's own press. Off queues: the game also ends a rush
+  // itself (a boss's mid-battle lines: DisableRush), with the last blow's news still being read.
+  void watch_rush(UObject* core) {
     if (bool rush = call_ret<bool>(core, "CheckRequestRushMode"); rush != rush_) {
       rush_ = rush;
       speech::speak(rush ? strings::kRushOn : strings::kRushOff, rush);
     }
+  }
+  // Whose action is the player's own (picked_, commanded_): set while the wheel or one of its lists is up, dropped
+  // once anyone else acts.
+  void watch_commands(int st, UObject* action_now) {
     if (st == 1) picked_ = {};
     else if (st == 2 || st == 3 || st == 4 || st == 7 || st == 11) picked_ = WeakObj::of(acting_member());
-    // The action banner (only while no battle menu is up: menus draw names in the same band).
+    if (st == 0 && action_now && !(WeakObj::of(action_now) == picked_)) picked_ = {};
+    if (st != 0) commanded_ = WeakObj::of(acting_member());
+    else if (action_now && !(WeakObj::of(action_now) == commanded_)) commanded_ = {};
+  }
+  // The action banner (only while no battle menu is up: menus draw names in the same band).
+  void watch_banner(int st, UObject* action_now) {
     std::string b;
     if (st == 0 && !result_phase())   // results draw names in that band too
     for (auto& t : textcap::snapshot(200))
       if (t.source == 2 && t.y > 95 && t.y < 115 && t.x > 300 && t.x < 700 && (t.color & 0xff) == 0xff && core::has_words(t.text)) { b = t.text; break; }
-    UObject* action_now = get<UObject*>(core, "CurrentAction");
-    if (st == 0 && action_now && !(WeakObj::of(action_now) == picked_)) picked_ = {};
-    if (st != 0) commanded_ = WeakObj::of(acting_member());
-    else if (action_now && !(WeakObj::of(action_now) == commanded_)) commanded_ = {};
-    if (b.empty()) {
-      banner_gone_ = true;
-    } else {
-      // GetActionType (EBtlCommandType): 0 nothing chosen yet, so the same words are the last action's, still up as the
-      // next unit's turn begins ("Merciless Maya: Guard", 2026-11-06).
-      int type = action_now ? call_ret<uint8_t>(action_now, "GetActionType") : 0;
-      if (b != banner_ || banner_gone_ || (!(WeakObj::of(action_now) == banner_action_) && type != 0)) {
-        banner_ = b;
-        banner_action_ = WeakObj::of(action_now);
-        // 1 a plain attack has no banner, and a skill's is its own name: anything else is a passive of the one attacked
-        // (a counter: "High Counter" came under the attacker's name, 2026-11-06).
-        bool theirs = type != 1 && (type != 2 || w_.skill_name(call_ret<int32_t>(action_now, "GetSkillID")) == b);
-        say_banner(theirs ? action_now : attacked(action_now), b);
-      }
-      banner_gone_ = false;
+    if (b.empty()) { banner_gone_ = true; return; }
+    // GetActionType (EBtlCommandType): 0 nothing chosen yet, so the same words are the last action's, still up as the
+    // next unit's turn begins ("Merciless Maya: Guard", 2026-11-06).
+    int type = action_now ? call_ret<uint8_t>(action_now, "GetActionType") : 0;
+    if (b != banner_ || banner_gone_ || (!(WeakObj::of(action_now) == banner_action_) && type != 0)) {
+      banner_ = b;
+      banner_action_ = WeakObj::of(action_now);
+      // 1 a plain attack has no banner, and a skill's is its own name: anything else is a passive of the one attacked
+      // (a counter: "High Counter" came under the attacker's name, 2026-11-06).
+      bool theirs = type != 1 && (type != 2 || w_.skill_name(call_ret<int32_t>(action_now, "GetSkillID")) == b);
+      say_banner(theirs ? action_now : attacked(action_now), b);
     }
-    hit_words(action_now, st);
-    // HP changes and defeats. The enemies an All-Out Attack finishes keep their HP until the results take them away,
-    // after Shuffle Time ("2 Muttering Tiara defeated" came after the cards, 2026-11-09): a deal with a card still to
-    // take (the next battle's comes on the same actor, its last deal's picks all made) means the battle is won, and
-    // whoever is left is defeated now.
+    banner_gone_ = false;
+  }
+  // HP changes, ailments and defeats. The enemies an All-Out Attack finishes keep their HP until the results take them
+  // away, after Shuffle Time ("2 Muttering Tiara defeated" came after the cards, 2026-11-09): a deal with a card still
+  // to take (the next battle's comes on the same actor, its last deal's picks all made) means the battle is won, and
+  // whoever is left is defeated now.
+  void watch_units(UObject* core, int st, UObject* action_now) {
     UObject* deal = shuffle_ui();
     int picks = deal ? get<int32_t>(deal, "EnableSelectNum") : 0;
     bool won = picks > 0 && get<int32_t>(deal, "SelectedCardNum") < picks;
@@ -260,14 +274,7 @@ class BattleScreen : public Screen {
     units_.swap(next);
     std::erase_if(won_enemies_, [&](const WeakObj::Key& k) { return !units_.count(k); });   // gone with the battle
     // Enemies falling together (an All-Out Attack) in one line: "2 Cowardly Maya defeated", not the same line twice.
-    if (!defeated.empty()) {
-      std::map<std::string, int> count;
-      std::vector<std::string> order;
-      for (auto& n : defeated) if (!count[n]++) order.push_back(n);
-      std::string s;
-      for (auto& n : order) s += (s.empty() ? "" : ", ") + (count[n] > 1 ? std::format("{} {}", count[n], n) : n);
-      speech::speak(std::format("{} {}", s, strings::kDefeated), false);
-    }
+    if (!defeated.empty()) speech::speak(core::defeated_line(defeated), false);
   }
 
   void announce_top() {
@@ -280,7 +287,7 @@ class BattleScreen : public Screen {
     std::string s = std::format("{}, {}", w_.unit_name(a), w_.hp_sp_short(a));
     // The Theurgy gauge (GetUnitTP / GetUnitMaxTP): full means the Theurgy command is open.
     int tp = w_.unit_int("GetUnitTP", a), max_tp = w_.unit_int("GetUnitMaxTP", a);
-    if (max_tp > 0 && tp >= max_tp) s += std::string(", ") + strings::kTheurgyReady();
+    if (max_tp > 0 && tp >= max_tp) s += std::string(", ") + strings::kTheurgyReadyWords;
     if (t) s += ". " + w_.enemy(t);
     speech::speak(s, false);   // queued after what just happened
   }
@@ -316,7 +323,7 @@ class BattleScreen : public Screen {
       // stays 1 between turns too, 2026-10-28: only said with the 1 More).
       UObject* top = top_.get();
       bool shift = top && get<float>(top, "Shift") > 0.5f;
-      if (again) speech::speak(shift ? std::format("{} {}", strings::kOneMore, strings::kShiftAvailable()) : std::string(strings::kOneMore), false);
+      if (again) speech::speak(shift ? std::format("{} {}", strings::kOneMore, strings::kShiftAvailableWords) : std::string(strings::kOneMore), false);
       downed_since_turn_ = false;
       last_actor_ = WeakObj::of(a);
       announce_top();
@@ -350,12 +357,6 @@ class BattleScreen : public Screen {
     return {*i == 0, *i == l->num - 1, l->data[*i]};
   }
   bool mine() { return screens::current() == this && !msg::current().blocking && !input::modal(); }
-  // -1: the press lowers the index, +1 raises it, 0: not a target key in this state.
-  static int key_step(int st, uint32_t vk) {
-    if (st == 1) return vk == VK_LEFT || vk == 'A' ? -1 : vk == VK_RIGHT || vk == 'D' ? 1 : 0;
-    if (st == 8) return vk == 'E' || vk == 'D' ? -1 : vk == 'Q' || vk == 'A' ? 1 : 0;   // R1 / L1 on the keyboard
-    return 0;
-  }
   std::string analyze_line(UObject* t) { return std::format("{}, {} {}", w_.enemy(t), strings::kLevel, w_.unit_int("GetUnitLevel", t)); }
   void say_end(int st, UObject* t) {
     // Interrupting, like a menu's end: each press says it afresh instead of queueing the name (the user's call, 2026-11-09).
@@ -363,7 +364,7 @@ class BattleScreen : public Screen {
   }
   bool end_key(uint32_t vk, bool repeat) {
     if (!mine()) return false;
-    int st = gui_state(), step = key_step(st, vk);
+    int st = gui_state(), step = core::target_key_step(st, vk);   // -1 lowers the game's index, +1 raises it
     if (!step) return false;
     Ends e = ends(st);
     if (!(step < 0 ? e.low : e.high)) return false;

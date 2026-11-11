@@ -23,7 +23,6 @@
 #include "msg.h"
 #include "persona.h"
 #include "social.h"
-#include "speech.h"
 #include "ue/scan.h"
 #include <algorithm>
 #include <cstring>
@@ -31,18 +30,24 @@
 
 namespace p3a::screens {
 using namespace ue;
-std::string velvet_result_bonus();
 
 class VelvetScreen : public MenuScreen {
+  // The lists' row sizes: a Persona row (fusion, the compendium, registration, a recipe's materials), a Special
+  // recipe, a Search result.
+  static constexpr int kRow = 0xA8, kSpecialRow = 0xC0, kSearchRow = 0x1F8;
   Finder room_{"UIVelvetRoom"}, draw_{"UIVelvetRoomDraw"}, combine_{"UICombine"}, book_{"UICompleteBook"}, regist_{"UICompleteBookRegist"};
   Finder ps_{"PersonaStatus"};
   int page_ = 0;   // the Persona the status page showed last (0: no page)
   // A fusion's result page opens on the result; Q / E page through its materials, which are not the result.
   int result_id_ = 0;
   int scene() { UObject* d = draw_.get(); return d ? get<uint8_t>(d, "Scene") : 0; }
-  static int i32(void* o, int off) { return o ? *(int32_t*)((uint8_t*)o + off) : -1; }
   uint8_t* cb() { return (uint8_t*)combine_.get(); }
   int step() { return i32(cb(), 0x34); }
+  bool inheriting() { return scene() == 4 && step() == 6; }    // the inheritance list (and Igor's question over it)
+  bool fusion_page() { return scene() == 4 && step() == 5; }   // a fusion's result page
+  // The room's draw runs no animation: what the main menu's and the method's moves and confirms wait for.
+  bool draw_idle() { auto* d = (uint8_t*)draw_.get(); return d && !d[0x2F9] && !d[0x2FA]; }
+  std::string result_bonus();
   // Whether a list is up (a status page has the keys otherwise: Q / E page it, F switches it).
   bool on_list() {
     int sc = scene();
@@ -60,7 +65,7 @@ class VelvetScreen : public MenuScreen {
   });
   Mirror& inherit_ = mirror("velvet.inherit", [this] {
     uint8_t* p = (uint8_t*)ps_.get();
-    return scene() == 4 && step() == 6 && p ? *(int32_t*)(p + 0x484) + *(int32_t*)(p + 0x488) : -1;
+    return inheriting() && p ? *(int32_t*)(p + 0x484) + *(int32_t*)(p + 0x488) : -1;
   });
   Mirror& book_list_ = mirror("velvet.book", [this] {
     uint8_t* b = (uint8_t*)book_.get();
@@ -97,8 +102,7 @@ class VelvetScreen : public MenuScreen {
     // 0x25F) and the card's turn. It takes it in the room's state 6 with the draw not animating (+0x2F9 / +0x2FA).
     top_.ready = [this] {
       UObject* r = room_.get();
-      auto* d = (uint8_t*)draw_.get();
-      return r && i32(r, 0x294) == 6 && d && !d[0x2F9] && !d[0x2FA];
+      return r && i32(r, 0x294) == 6 && draw_idle();
     };
     top_.set = [this](int i) {
       UObject* r = room_.get();
@@ -107,10 +111,7 @@ class VelvetScreen : public MenuScreen {
     };
     // The method: the cursor, the sound (0x25F) and the card (exe+0x1586b40(draw, row)), as UICombine's step 2 moves
     // it; not while its sub-dialog is pending (+0x1E4), and only with the draw idle, what its confirm waits for (FUN_141574cd0).
-    method_.ready = [this] {
-      auto* d = (uint8_t*)draw_.get();
-      return step() == 2 && i32(cb(), 0x1E4) == -1 && d && !d[0x2F9] && !d[0x2FA];
-    };
+    method_.ready = [this] { return step() == 2 && i32(cb(), 0x1E4) == -1 && draw_idle(); };
     method_.set = [this](int i) {
       uint8_t* c = cb();
       UObject* d = draw_.get();
@@ -129,7 +130,7 @@ class VelvetScreen : public MenuScreen {
     };
     inherit_.set = [this](int i) {
       uint8_t* p = (uint8_t*)ps_.get();
-      if (!p || scene() != 4 || step() != 6) return false;
+      if (!p || !inheriting()) return false;
       int n = *(int32_t*)(p + 0x478);
       if (i < 0 || i >= n) return false;
       int top = core::scroll_top(i, *(int32_t*)(p + 0x488), 6, n);
@@ -160,7 +161,7 @@ class VelvetScreen : public MenuScreen {
       auto* rows = (TArray<uint8_t>*)(b + 0x48);
       UObject* d = draw_.get();
       if (d && rows->data && i < rows->num) {
-        int price = *(int32_t*)(rows->data + (size_t)i * 0xA8 + 0x94);
+        int price = *(int32_t*)(rows->data + (size_t)i * kRow + 0x94);
         uintptr_t base = scan::exe_base();
         *(int32_t*)(base + 0x56b6bfc) = price;
         ((void (*)(void*, uint8_t, int))(base + 0x15a4590))(d, 0, -price);
@@ -233,7 +234,7 @@ class VelvetScreen : public MenuScreen {
   // takes no Tab (FUN_1415777d0 step 2).
   bool game_tab() override { return on_page() && scene() == 6; }
   void background() override {
-    if (scene() != 4 || step() != 6) { inherit_said_ = accepted_ = false; answer_ = -1; return; }
+    if (!inheriting()) { inherit_said_ = accepted_ = false; answer_ = -1; return; }
     msg::Current c = msg::current();
     if (c.choices.empty()) {   // "Hold on" (the second answer) goes back to the list
       if (answer_ == 0) accepted_ = true;
@@ -249,22 +250,22 @@ class VelvetScreen : public MenuScreen {
     std::string list;
     for (int i = 0; chosen && chosen->data && i < chosen->num && i < 8; ++i)
       list += (list.empty() ? "" : ", ") + persona::skill_name(chosen->data[i]);
-    if (!list.empty()) speech::speak(std::format("{} {}", strings::kInherits, list), false);
+    if (!list.empty()) say(std::format("{} {}", strings::kInherits, list), false);
   }
   int chosen_ = -1;   // the inheritance's chosen count last tick: a drop is said ("chosen" is the item's own part)
   bool fusing_ = false;   // the fusion's animation (steps 7 and 8: Igor's cards, then the Persona appears) was said
   void on_tick() override {
     // The animation runs 20 seconds with nothing to read until the Persona speaks: say it started (Tab skips it).
     if (scene() == 4 && (step() == 7 || step() == 8)) {
-      if (!fusing_) { fusing_ = true; screens::set_keys(strings::kFusingKeys); speech::speak(strings::kFusing, true); }
+      if (!fusing_) { fusing_ = true; screens::set_keys(strings::kFusingKeys); say(strings::kFusing, true); }
     } else if (scene() != 4 || step() < 7) {
       fusing_ = false;
       memset(before_, 0, sizeof before_);   // a later fusion of the same Persona compares with its own values
     }
     {
       auto* p = (uint8_t*)ps_.get();
-      int n = scene() == 4 && step() == 6 && p ? ((TArray<uint16_t>*)(p + 0x510))->num : -1;
-      if (n >= 0 && chosen_ >= 0 && n < chosen_) speech::speak(strings::kNotChosen, true);
+      int n = inheriting() && p ? ((TArray<uint16_t>*)(p + 0x510))->num : -1;
+      if (n >= 0 && chosen_ >= 0 && n < chosen_) say(strings::kNotChosen, true);
       chosen_ = n;
     }
     if (!on_page()) { page_ = 0; result_id_ = 0; return; }
@@ -272,8 +273,8 @@ class VelvetScreen : public MenuScreen {
     int id = e ? *(uint16_t*)(e + 2) : 0;
     if (!id || id == page_) return;
     // A new page, or Q / E paging to another Persona: its name line, read from the top.
-    if (!page_ && scene() == 4 && step() == 5) result_id_ = id;
-    if (!page_) screens::set_keys(scene() == 4 && step() == 5 ? strings::kFusionConfirmKeys : scene() == 4 ? strings::kPersonaStatusKeys
+    if (!page_ && fusion_page()) result_id_ = id;
+    if (!page_) screens::set_keys(fusion_page() ? strings::kFusionConfirmKeys : scene() == 4 ? strings::kPersonaStatusKeys
                                : scene() == 5 ? strings::kCompendiumPageKeys : strings::kStatusConfirmKeys);
     else focus(status_name_id(id));
     page_ = id;
@@ -295,12 +296,12 @@ class VelvetScreen : public MenuScreen {
       if (int c = method_.cursor(); c >= 0) b.set_start(slot("velvet.method", c));
     } else if (on_page()) {   // before the compendium's and registration's lists: their pages are in the same scene
       const uint8_t* e = persona::shown_status();
-      bool fusion = sc == 4 && step() == 5;
+      bool fusion = fusion_page();
       bool result = fusion && (!result_id_ || (e && *(uint16_t*)(e + 2) == result_id_));
       // The compendium's and registration's pages are a question: confirming summons or registers the Persona.
       const char* lead = result ? strings::kFusionResult : fusion ? strings::kFusionMaterial
                          : sc == 5 ? strings::kSummonThis : sc == 6 ? strings::kRegisterThis : "";
-      build_status_page(b, e, lead, result ? velvet_result_bonus() : "", nullptr);
+      build_status_page(b, e, lead, result ? result_bonus() : "", nullptr);
     } else if (sc == 5) {
       build_book(b);
     } else if (sc == 6) {
@@ -338,10 +339,10 @@ void VelvetScreen::build_lists(ui::GraphBuilder& b, int st) {
     auto stock = persona::stock();
     auto owned = [&stock](int id) { for (auto& o : stock) if (o.id == id) return true; return false; };
     for (int i = 0; rows->data && i < rows->num && i < 64; ++i) {
-      uint8_t* r = rows->data + i * 0xA8;
+      uint8_t* r = rows->data + i * kRow;
       std::string l = entry_line(r);
       if (st == 4) {
-        uint8_t* x = res->data && i < res->num ? res->data + i * 0xA8 : nullptr;
+        uint8_t* x = res->data && i < res->num ? res->data + i * kRow : nullptr;
         std::string out = x && !r[0x8C] ? entry_line(x) : std::string();
         l += out.empty() ? std::format(", {}", strings::kFusionImpossible) : std::format(", {} {}", strings::kFusionGives, out);
         if (!out.empty() && hero > 0 && *(uint16_t*)(x + 0x1C) > hero) l += std::format(", {}", strings::kAboveYourLevel);
@@ -358,12 +359,12 @@ void VelvetScreen::build_lists(ui::GraphBuilder& b, int st) {
     b.push_context(strings::kSpecialFusion);
     auto* rs = (TArray<uint8_t>*)(c + 0x188);
     for (int i = 0; rs->data && i < rs->num && i < 200; ++i) {
-      uint8_t* r = rs->data + i * 0xC0;
+      uint8_t* r = rs->data + i * kSpecialRow;
       std::string l = entry_line(r), mats;
       auto* m = (TArray<uint8_t>*)(r + 0xA8);
       int need = 0, have = 0;
       for (int k = 0; m->data && k < m->num && k < 8; ++k) {
-        uint8_t* x = m->data + k * 0xA8;
+        uint8_t* x = m->data + k * kRow;
         ++need;
         if (x[0x8D]) ++have;
         mats += (mats.empty() ? "" : ", ") + persona::name(*(uint16_t*)(x + 0x1A));
@@ -379,7 +380,7 @@ void VelvetScreen::build_lists(ui::GraphBuilder& b, int st) {
     b.push_context(strings::kFusionSearch);
     auto* rs = (TArray<uint8_t>*)(c + 0x178);
     for (int i = 0; rs->data && i < rs->num && i < 400; ++i) {
-      uint8_t* r = rs->data + i * 0x1F8;
+      uint8_t* r = rs->data + i * kSearchRow;
       std::string l = std::format("{}, {} {} {} {}", entry_line(r), strings::kFusionFrom, persona::name(*(uint16_t*)(r + 0xC2)),
                                   strings::kFusionAnd, persona::name(*(uint16_t*)(r + 0x16A)));
       if (i == fr) walk = persona::detail_lines(r + 0x18);
@@ -432,7 +433,7 @@ void VelvetScreen::build_book(ui::GraphBuilder& b) {
   b.push_context(strings::kCompendium);
   auto stock = persona::stock();
   for (int i = 0; rows->data && i < rows->num && i < 600; ++i) {
-    uint8_t* e = rows->data + i * 0xA8;
+    uint8_t* e = rows->data + i * kRow;
     int id = *(uint16_t*)(e + 0x1A), level = *(uint16_t*)(e + 0x1C);
     std::string l = e[0x88] ? std::format("{}, {} {}", persona::describe(id, level), *(int32_t*)(e + 0x94), strings::kYen)
                             : std::format("{}, {} {}, {}", social::arcana_name(persona::arcana(id)), strings::kLevel, level, strings::kNotRegistered);
@@ -441,7 +442,7 @@ void VelvetScreen::build_book(ui::GraphBuilder& b) {
   }
   // A registered Persona's details to the right, as registered (the row's entry at +0x18).
   int n = rows->data ? std::min(rows->num, 600) : 0, f = focused_row(key);
-  if (f >= 0 && f < n && rows->data[f * 0xA8 + 0x88]) add_walk(b, key, f, n, persona::detail_lines(rows->data + f * 0xA8 + 0x18));
+  if (f >= 0 && f < n && rows->data[f * kRow + 0x88]) add_walk(b, key, f, n, persona::detail_lines(rows->data + f * kRow + 0x18));
   b.pop_context();
   if (int c = book_list_.cursor(); c >= 0) b.set_start(slot(key, c));
 }
@@ -456,25 +457,22 @@ void VelvetScreen::build_regist(ui::GraphBuilder& b) {
   b.begin_stop(key);
   b.push_context(strings::kRegister);
   for (int i = 0; rows->data && i < rows->num && i < 64; ++i) {
-    uint8_t* e = rows->data + i * 0xA8;
+    uint8_t* e = rows->data + i * kRow;
     std::string l = entry_line(e);
     if (e[0x8A]) l += std::string(", ") + strings::kMarked;
     b.add_item(slot(key, i), game_item(regist_list_, i, [l] { return l; }));
   }
   int n = rows->data ? std::min(rows->num, 64) : 0, f = focused_row(key);
-  if (f >= 0 && f < n) add_walk(b, key, f, n, persona::detail_lines(rows->data + f * 0xA8 + 0x18));
+  if (f >= 0 && f < n) add_walk(b, key, f, n, persona::detail_lines(rows->data + f * kRow + 0x18));
   b.pop_context();
   if (int c = regist_list_.cursor(); c >= 0) b.set_start(slot(key, c));
 }
 
 // A fusion's result page (scene 4, step 5): the arcana's Social Link rank and the EXP it adds, as the page's bonus
 // plate shows them (APersonaStatusDraw +0x858 ArcanaRank, +0x85C ExpBonusPoints; p3rpc.nativetypes).
-std::string velvet_result_bonus() {
-  static Finder draw{"UIVelvetRoomDraw"}, combine{"UICombine"}, ps{"PersonaStatus"};
-  UObject* d = draw.get();
-  auto* c = (uint8_t*)combine.get();
-  UObject* p = ps.get();
-  if (!d || !c || !p || get<uint8_t>(d, "Scene") != 4 || *(int32_t*)(c + 0x34) != 5) return {};
+std::string VelvetScreen::result_bonus() {
+  UObject* p = ps_.get();
+  if (!p || !fusion_page()) return {};
   auto* sd = (uint8_t*)get<UObject*>(p, "pPersonaStatusDraw");
   if (!sd) return {};
   int rank = *(int32_t*)(sd + 0x858), exp = *(int32_t*)(sd + 0x85C);

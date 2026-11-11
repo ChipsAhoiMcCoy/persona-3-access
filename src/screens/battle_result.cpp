@@ -3,6 +3,7 @@
 #include "screens/battle.h"
 #include "screens/battle_state.h"
 #include "screens/persona_status.h"
+#include "core/battle_text.h"
 #include "core/strings.h"
 #include "items.h"
 #include "log.h"
@@ -85,7 +86,7 @@ class BattleResultScreen : public MenuScreen {
       std::string name = take(e + 8);
       if (name.empty()) name = items::name_of(id);
       if (name.empty()) continue;
-      out.push_back(num > 1 ? std::format("{} {} x{}", strings::kGot, name, num) : std::format("{} {}", strings::kGot, name));
+      out.push_back(num > 1 ? std::format(strings::kGotMany, strings::kGot, name, num) : std::format("{} {}", strings::kGot, name));
     }
     return out;
   }
@@ -136,8 +137,8 @@ class BattleResultScreen : public MenuScreen {
     Params q(lv);
     call(ui, q);
     out.push_back(std::format("{} {}, {} {}", strings::kLevelUp, name, strings::kLevel, q.ret<int32_t>("Level")));
-    out.push_back(std::format("HP {} {} {}", *(int32_t*)(r + 0x10), strings::kOf, *(int32_t*)(r + 0x14)));
-    out.push_back(std::format("SP {} {} {}", *(int32_t*)(r + 0x18), strings::kOf, *(int32_t*)(r + 0x1C)));
+    out.push_back(std::format("{} {} {} {}", strings::kHP, *(int32_t*)(r + 0x10), strings::kOf, *(int32_t*)(r + 0x14)));
+    out.push_back(std::format("{} {} {} {}", strings::kSP, *(int32_t*)(r + 0x18), strings::kOf, *(int32_t*)(r + 0x1C)));
     out.push_back(std::format("{} {}", *(int64_t*)(r + 0x20), strings::kExpToNext));
     return out;
   }
@@ -167,24 +168,21 @@ class BattleResultScreen : public MenuScreen {
   // What a status page is up for (the game's "NEW SKILL!!"): `now` holds a skill `was` did not.
   static std::string learned_line(const uint8_t* now, const uint8_t* was) {
     std::string learned;
-    for (int i = 0; now && i < 8; ++i) {
-      uint16_t sid = *(uint16_t*)(now + 0xC + i * 2);
-      bool had = false;
-      for (int j = 0; j < 8; ++j) had |= *(uint16_t*)(was + 0xC + j * 2) == sid;
-      if (sid && !had) learned += (learned.empty() ? "" : ", ") + persona::skill_name(sid);
-    }
+    if (now)   // the entries' eight skill ids are at +0xC
+      for (int sid : core::new_skills((const uint16_t*)(now + 0xC), (const uint16_t*)(was + 0xC)))
+        learned += (learned.empty() ? "" : ", ") + persona::skill_name(sid);
     return learned.empty() ? learned : std::format("{} {}", strings::kLearned, learned);
   }
   // A status page coming up: the level, then what it animates, the skill learned and the stats that rose. The rest of
   // the page is for the arrows.
   static void say_status(const uint8_t* now, const uint8_t* was) {
     const uint8_t* e = now ? now : was;
-    speech::speak(std::format("{} {}", strings::kLevelUp, persona::describe(*(uint16_t*)(e + 2), *(uint16_t*)(e + 4))), true);
+    say(std::format("{} {}", strings::kLevelUp, persona::describe(*(uint16_t*)(e + 2), *(uint16_t*)(e + 4))), true);
     if (!now) return;
-    if (std::string l = learned_line(now, was); !l.empty()) speech::speak(l, false);
+    if (std::string l = learned_line(now, was); !l.empty()) say(l, false);
     for (int i = 0; i < 5; ++i) {
       int v = persona::stat_total(now, i), up = v - persona::stat_total(was, i);
-      if (up > 0) speech::speak(std::format("{} {}, {} {}", strings::kStatNames[i], v, strings::kUp, up), false);
+      if (up > 0) say(std::format("{} {}, {} {}", strings::kStatNames[i], v, strings::kUp, up), false);
     }
   }
   static ui::ControlId line_id(const std::string& key, int i) { return ui::ControlId::structural(std::format("res.{}.{}", key, i)); }
@@ -237,7 +235,7 @@ class BattleResultScreen : public MenuScreen {
     if (lines.empty()) return;
     bool go_there = page_.empty() || pressed_;
     bool cut = pressed_;
-    for (auto& l : lines) { speech::speak(l, cut); cut = false; }
+    for (auto& l : lines) { say(l, cut); cut = false; }
     page_.push_back({key, std::move(lines)});
     if (go_there) focus_quietly(line_id(key, 0));
     pressed_ = false;
@@ -261,10 +259,11 @@ class BattleResultScreen : public MenuScreen {
     screens::set_keys(state_ == 7 ? strings::kLevelUpKeys : strings::kResultKeys);
     if (state_ == 7) return;
     // Back from a message window over the page, which cut its reading off (the hero's level-up notices, a second into
-    // the page): the page again.
+    // the page): the page again. Through the menu's guard: a page already said, with nothing spoken and no press
+    // since, is not said twice.
     bool cut = true;
     for (auto& sec : page_)
-      for (auto& l : sec.lines) { speech::speak(l, cut); cut = false; }
+      for (auto& l : sec.lines) { say(l, cut); cut = false; }
   }
   // Tartarus keeps its battle core between fights, so the levels each battle starts from are forgotten here, not
   // when the core goes ("level up to 6" after every later victory, 2026-10-27).

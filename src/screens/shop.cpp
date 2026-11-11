@@ -23,6 +23,7 @@
 //          buy list is held (state 7), +0x760 its Buy / Quit panel is (state 10).
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "core/battle_text.h"
 #include "core/strings.h"
 #include "items.h"
 #include "msg.h"
@@ -61,16 +62,6 @@ class ShopScreen : public MenuScreen {
   Mirror& yn_ = mirror("shop.yn", [this] { int st = state(); return yes_no(st) ? u16(yn_off(st)) : -1; });
   int qty_ = -1;
 
-  static std::string mode_name(int mode) {
-    switch (mode) {
-      case 1: case 2: case 3: case 4: return strings::kWeaponShopMenu[mode - 1];
-      case 0xC: return strings::kWeaponShopMenu[4];
-      case 7: return strings::kAntiqueMenu[0];
-      case 9: return strings::kAntiqueMenu[1];
-      case 10: return strings::kAntiqueMenu[2];
-      default: return std::format("{} {}", strings::kOption, mode);
-    }
-  }
   // Write a u16 row / top pair (the lists' cursors) for index i, then the cursor sound.
   bool write_rows(int row_off, int i, int count, int shown) {
     if (!s() || i < 0 || i >= count) return false;
@@ -121,9 +112,7 @@ class ShopScreen : public MenuScreen {
       int stock = *(uint16_t*)(e + 0x1E), have = known ? items::owned(in) : -1, yen = stats::money();
       if (stock > 0 && stock < 99) n += std::format(", {} {}", stock, strings::kLeft);
       if (can) return n;
-      const char* why = !stock ? strings::kOutOfStock : have >= 99 ? strings::kCarryingMax
-                      : price > 0 && yen >= 0 && yen < price ? strings::kNotEnoughYen : strings::kCannotBuy;
-      return n + ", " + why;
+      return n + ", " + core::cannot_buy_reason(stock, have, price, yen);
     }
     if (!can) n += std::string(", ") + (st == 0x14 ? strings::kUnavailable : strings::kCannotBuy);
     return n;
@@ -213,7 +202,9 @@ class ShopScreen : public MenuScreen {
     std::string line = std::to_string(q);
     // +0xBA8 is the item shop's own (AFclItemShop is 0x1128 bytes; the weapon and simple shops end before it)
     if (st == 9 && is_a(shop(), "FclItemShop")) if (int total = *(int32_t*)(s() + 0xBA8); total > 0) line += std::format(", {} {}", total, strings::kYen);
-    speech::speak(qty_ < 0 ? std::format("{} {}", strings::kHowMany(), line) : line, true);
+    // Not through the menu's no-repeat guard: the game has the keys here, so nothing tells the guard of a press, and
+    // a number gone back to (2, 3, 2) is said again. The keys are F1's (keys(): kHowMany).
+    speech::speak(qty_ < 0 ? std::format("{} {}", strings::kHowManyWords, line) : line, true);
     qty_ = q;
   }
   void build(ui::GraphBuilder& b) override {
@@ -222,7 +213,7 @@ class ShopScreen : public MenuScreen {
       auto* modes = (TArray<int32_t>*)(s() + 0x2B8);
       b.begin_stop("shop.top");
       for (int i = 0; modes->data && i < modes->num && i < 16; ++i) {
-        std::string l = mode_name(modes->data[i]);
+        std::string l = core::shop_mode_name(modes->data[i]);
         b.add_item(slot("shop.top", i), game_item(top_, i, [l] { return l; }));
       }
       if (int c = top_.cursor(); c >= 0) b.set_start(slot("shop.top", c));
@@ -247,7 +238,7 @@ class ShopScreen : public MenuScreen {
       std::string key = std::format("shop.list.{}.{}.{}.{}", st, member(), cat, rows->num);
       list_.key = key;
       b.begin_stop(key);
-      std::string ctx = st == 0x14 ? std::string(strings::kWeaponShopMenu[4]) : st == 0x11 ? std::string(strings::kAntiqueMenu[0]) : mode ? mode_name(mode) : std::string();
+      std::string ctx = st == 0x14 ? std::string(strings::kWeaponShopMenu[4]) : st == 0x11 ? std::string(strings::kAntiqueMenu[0]) : mode ? core::shop_mode_name(mode) : std::string();
       if (int who = member(); who && mode >= 1 && mode <= 4) ctx += std::format(", {} {}", strings::kFor, party::name(who));
       b.push_context(ctx);
       std::string worn = worn_now(mode);

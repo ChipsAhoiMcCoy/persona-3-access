@@ -33,12 +33,7 @@ class TerminalScreen : public MenuScreen {
  public:
   TerminalScreen() {
     list_.reversed = true;
-    list_.set = [this](int i) {
-      uint8_t* p = u();
-      if (!p || !ListCursor(p + 0x300).set(i)) return false;
-      cursor_sound();
-      return true;
-    };
+    list_.set = [this](int i) { uint8_t* p = u(); return p && write_cursor(ListCursor(p + 0x300), i); };
   }
   const char* id() const override { return "terminal"; }
   int priority() const override { return 20; }

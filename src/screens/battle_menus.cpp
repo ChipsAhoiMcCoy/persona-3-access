@@ -24,7 +24,6 @@
 #include "core/strings.h"
 #include "items.h"
 #include "persona.h"
-#include "speech.h"
 #include <format>
 
 namespace p3a::screens {
@@ -361,7 +360,7 @@ class BattleTactics : public BattleList {
   // A row that cannot be chosen now: it says so, and so does confirming it.
   static ui::NodeVtablePtr unavailable(std::function<std::string()> label) {
     return item([label] { return std::format("{}, {}", label(), strings::kUnavailable); },
-                [] { speech::speak(strings::kUnavailable, true); });
+                [] { say(strings::kUnavailable, true); });
   }
  public:
   BattleTactics() : BattleList(10, "BP_BtlStrategyInstruct_C") {

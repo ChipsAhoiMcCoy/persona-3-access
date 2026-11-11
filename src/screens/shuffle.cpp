@@ -19,11 +19,11 @@
 #include "screens/util.h"
 #include "screens/battle.h"
 #include "screens/persona_status.h"
+#include "core/battle_text.h"
 #include "core/strings.h"
 #include "log.h"
 #include "msg.h"
 #include "persona.h"
-#include "speech.h"
 #include <array>
 #include <cstring>
 #include <format>
@@ -88,24 +88,24 @@ class ShuffleScreen : public MenuScreen {
     while (n < 4 && *(int32_t*)((uint8_t*)ui + 0x2CC + n * 0x10) != 0) ++n;
     return n;
   }
-  static int card_call(UObject* ui, const char* fn, int i) {
-    UFunction* f = find_function(class_of(ui), fn);
-    if (!f) return -1;
-    Params p(f);
+  // One of the deal's UFunctions about card i ("idx", and "isBonusCard" for Arcana Burst's row), run: its parameter
+  // block, whose `fn` is null when the function is absent (nothing was called).
+  static Params card_fn(UObject* ui, const char* fn, int i) {
+    Params p(find_function(class_of(ui), fn));
+    if (!p.fn) return p;
     p.set<int32_t>("idx", i);
     p.set<bool>("isBonusCard", bonus(ui));
     call(ui, p);
-    return p.ret<int32_t>();
+    return p;
+  }
+  static int card_call(UObject* ui, const char* fn, int i) {
+    Params p = card_fn(ui, fn, i);
+    return p.fn ? p.ret<int32_t>() : -1;
   }
   static Param param(UObject* ui, int i) {
     Param out{};
-    UFunction* f = find_function(class_of(ui), "GetAppearCard");
-    if (!f) return out;
-    Params p(f);
-    p.set<int32_t>("idx", i);
-    p.set<bool>("isBonusCard", bonus(ui));
-    call(ui, p);
-    if (auto* o = p.at<uint8_t>("Output")) std::memcpy(out.data(), o, out.size());
+    Params p = card_fn(ui, "GetAppearCard", i);
+    if (auto* o = p.fn ? p.at<uint8_t>("Output") : nullptr) std::memcpy(out.data(), o, out.size());
     return out;
   }
   static int detail_dialog(UObject* ui, int i) {
@@ -140,10 +140,14 @@ class ShuffleScreen : public MenuScreen {
     if (!t.empty() && t.back() == '.') t.pop_back();   // joined with the mod's own full stops
     return t;
   }
-  // Puts the game's cursor on card i with no sound and no fade: its info is built on the game's next tick.
-  void show(UObject* ui, int i) {
+  // The game's cursor onto card i: the index confirm takes, shown (the first press of a deal only shows it).
+  static void put_cursor(UObject* ui, int i) {
     if (bool* first = field<bool>(ui, "IsFirstSelect")) *first = false;
     if (int32_t* c = field<int32_t>(ui, "SelectCoursorIndex")) *c = i;
+  }
+  // Puts the game's cursor on card i with no sound and no fade: its info is built on the game's next tick.
+  void show(UObject* ui, int i) {
+    put_cursor(ui, i);
     if (float* t = field<float>(ui, "SelectCardFadeTimer")) *t = 0.f;
     if (const void* buf = bmd_buffer(ui)) msg::forget_pages(buf);
     mark_ = msg::created_seq();
@@ -197,19 +201,10 @@ class ShuffleScreen : public MenuScreen {
   }
   // What the card's face shows (the art, its number and the name bar: "Fool", a suit card's suit and number), which
   // the effect page does not say (the user's call, 2026-11-09). A Persona card's page names it already. The effect
-  // page's dialog tells the card: BMD_BtlShuffleMsg in order, 4 Sword, 5 Coin, 6..25 Cup, 26 Wand, 27..39 Fool to
-  // Hanged Man, 92..98 Temperance to Judgement (there is no Death card). A suit card's number is Rank + 1 (Rank 0
-  // under the "1" drawn on the Wand, 2026-11-09).
+  // page's dialog tells the card (core::card_face has the mapping: BMD_BtlShuffleMsg in order). A suit card's number
+  // is Rank + 1 (Rank 0 under the "1" drawn on the Wand, 2026-11-09).
   static std::string face(UObject* ui, int i, const Param& p) {
-    int type = p[0], rank = *(const int32_t*)(p.data() + 8), d = detail_dialog(ui, i);
-    if (type == 2) {
-      int arcana = d >= 27 && d <= 39 ? d - 26 : d >= 92 && d <= 98 ? d - 77 : 0;
-      return arcana ? strings::kArcana[arcana] : "";
-    }
-    if (type != 3) return {};
-    const char* suit = d == 4 ? strings::kSuitSwords : d == 5 ? strings::kSuitCoins : d >= 6 && d <= 25 ? strings::kSuitCups :
-                       d == 26 ? strings::kSuitWands : nullptr;
-    return suit ? std::format("{} {}", suit, rank + 1) : std::string();
+    return core::card_face(p[0], *(const int32_t*)(p.data() + 8), detail_dialog(ui, i));
   }
   std::string label(int i) {
     if (i < 0 || i >= (int)cards_.size()) return {};
@@ -263,8 +258,7 @@ class ShuffleScreen : public MenuScreen {
     row_.set = [this](int i) {
       UObject* ui = shuffle_ui();
       if (reading_ || !choosing(ui) || i < 0 || i >= count(ui) || taken(ui, i)) return false;
-      if (bool* first = field<bool>(ui, "IsFirstSelect")) *first = false;
-      if (int32_t* c = field<int32_t>(ui, "SelectCoursorIndex")) *c = i;
+      put_cursor(ui, i);
       cursor_sound(4002);
       return true;
     };
@@ -330,7 +324,7 @@ class ShuffleScreen : public MenuScreen {
     // A Persona card's status page: read it when it comes.
     if (const uint8_t* e = persona_page(ui)) {
       std::string p = persona::status_line(e);
-      if (!p.empty() && p != persona_) { persona_ = p; speech::speak(std::format("{}. {}", strings::kPersonaStatus, p), true); }
+      if (!p.empty() && p != persona_) { persona_ = p; say(std::format("{}. {}", strings::kPersonaStatus, p), true); }
       return;
     }
     persona_.clear();
@@ -338,7 +332,7 @@ class ShuffleScreen : public MenuScreen {
       overstock_ = !overstock_;
       screens::set_keys(overstock_ ? strings::kOverstockKeys : strings::kShuffleKeys);
       if (overstock_) {
-        speech::speak(strings::kPersonaOverstock, true);
+        say(strings::kPersonaOverstock, true);
         focus(slot("release", get<int32_t>(ui, "PersonaSelectCoursorIndex")), false);
       }
     }
@@ -364,12 +358,12 @@ class ShuffleScreen : public MenuScreen {
     // Arcana Burst's row has come: its title, then the card under the cursor.
     int k = get<int32_t>(ui, "SelectedCardNum"), left = get<int32_t>(ui, "EnableSelectNum") - k;
     if (!was && bonus_) {
-      speech::speak(std::format("{}. {} {}", strings::kArcanaBurst, strings::kChoose, left), true);
+      say(std::format("{}. {} {}", strings::kArcanaBurst, strings::kChoose, left), true);
       if (int c = row_.cursor(); c >= 0) focus(slot("cards", c), false);
     }
     // A card taken with more still to take, or a pick cancelled (C): how many are left (the game's "Draw 1").
-    else if (k > picked_ && left > 0) speech::speak(std::format("{} {} {}", strings::kChoose, left, strings::kMore), false);
-    else if (k < picked_) speech::speak(std::format("{} {}", strings::kChoose, left), false);
+    else if (k > picked_ && left > 0) say(std::format("{} {} {}", strings::kChoose, left, strings::kMore), false);
+    else if (k < picked_) say(std::format("{} {}", strings::kChoose, left), false);
     picked_ = k;
   }
   void build(ui::GraphBuilder& b) override {
