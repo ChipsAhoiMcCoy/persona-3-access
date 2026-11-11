@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include "audio.h"
+#include "core/boxes.h"
 #include "ue/ue.h"
 
 namespace p3a::world {
@@ -31,6 +32,14 @@ Hit sweep(const FVector& from, const FVector& to, float radius, float half_heigh
 Hit line(const FVector& from, const FVector& to, const char* profile = "Pawn", std::vector<ue::UObject*>* people = nullptr);
 std::string status();
 ue::FVector actor_location(ue::UObject* a);
+float yaw_of(ue::UObject* actor);   // the actor's yaw (K2_GetActorRotation)
+// A BoxComponent as it stands in the world now (centre, scaled extent, yaw). False without one, or when it is not
+// more than 1 cm to each side on the ground.
+bool read_box(ue::UObject* box_component, core::Box& out);
+// The actor's CapsuleComponent: scaled radius and half height. False (and both left as they were) when it has none.
+bool capsule_of(ue::UObject* actor, float& radius, float& half_height);
+inline core::Vec3 vec3(const FVector& v) { return core::Vec3{v.x, v.y, v.z}; }
+inline FVector fvec(const core::Vec3& v) { return FVector{v.x, v.y, v.z}; }
 bool actor_visible_level(ue::UObject* a);   // its level is the persistent level or a visible streamed one
 std::vector<std::string> visible_levels();   // the visible levels' map names ("LV_F103_101_BG_Night_Only")
 uint64_t levels_stamp();   // goes up whenever the set of visible levels is found changed

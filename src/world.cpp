@@ -249,6 +249,30 @@ FVector actor_location(UObject* a) {
   return p.ret<FVector>();
 }
 
+float yaw_of(UObject* actor) {
+  Params p(find_function(class_of(actor), "K2_GetActorRotation"));
+  call(actor, p);
+  return p.ret<FRotator>().yaw;
+}
+
+bool read_box(UObject* box, core::Box& b) {
+  if (!box) return false;
+  auto vcall = [&](const char* fn) { Params p(find_function(class_of(box), fn)); call(box, p); return p; };
+  b.center = vec3(vcall("K2_GetComponentLocation").ret<FVector>());
+  b.extent = vec3(vcall("GetScaledBoxExtent").ret<FVector>());
+  b.yaw = vcall("K2_GetComponentRotation").ret<FRotator>().yaw;
+  return b.extent.x > 1.0f && b.extent.y > 1.0f;
+}
+
+bool capsule_of(UObject* actor, float& radius, float& half_height) {
+  UObject* cap = actor ? get<UObject*>(actor, "CapsuleComponent") : nullptr;
+  if (!cap) return false;
+  Params r(find_function(class_of(cap), "GetScaledCapsuleRadius")), h(find_function(class_of(cap), "GetScaledCapsuleHalfHeight"));
+  if (!call(cap, r) || !call(cap, h)) return false;
+  radius = r.ret<float>(); half_height = h.ret<float>();
+  return true;
+}
+
 // Camera-relative bearing of `to` from `from` in degrees: 0 ahead, 90 right, 180 behind, -90 left.
 float bearing(const FVector& from, const FVector& to) {
   float a = std::atan2(to.y - from.y, to.x - from.x) * 180.0f / 3.14159265f - g_cam_yaw;

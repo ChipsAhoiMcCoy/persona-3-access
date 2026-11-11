@@ -1,5 +1,6 @@
 #include "nav.h"
 #include "core/approach.h"
+#include "core/boxes.h"
 #include "core/strings.h"
 #include "devserver.h"
 #include "doors.h"
@@ -48,7 +49,7 @@ static uint32_t g_held[2] = {0, 0};
 constexpr float kArrive = 110.0f;      // cm from the target's location
 constexpr float kWaypointReached = 70.0f;
 
-static float flat(const FVector& a, const FVector& b) { return std::sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)); }
+static float flat(const FVector& a, const FVector& b) { return core::flat(world::vec3(a), world::vec3(b)); }
 
 // Keys let go of while the game took no field input (a battle opening, a message window, a menu): the key-up reaches
 // the window but not the player controller, which kept A held into a battle (the target wheel ran left every 100 ms,
@@ -125,37 +126,31 @@ void walk_to(const WeakObj& target, const std::string& name) {
 }
 
 // A hit actor's trigger box (HitComp_: BoxComponent world centre, scaled extent, yaw), or false if it has none.
-struct Box { FVector center, extent; float yaw; };
+using core::Box;
 static bool trigger_box(ue::UObject* t, Box& b) {
   ue::UObject* hc = ue::get<ue::UObject*>(t, "HitComp_");
   if (!hc) return false;
   bool box = ue::is_a(hc, "BoxComponent"), sphere = ue::is_a(hc, "SphereComponent");   // Tartarus devices use spheres
   if (!box && !sphere) return false;
-  auto vcall = [&](const char* fn) {
-    ue::Params p(ue::find_function(ue::class_of(hc), fn));
-    ue::call(hc, p);
-    return p;
-  };
-  b.center = vcall("K2_GetComponentLocation").ret<FVector>();
   if (box) {
-    b.extent = vcall("GetScaledBoxExtent").ret<FVector>();
-    b.yaw = vcall("K2_GetComponentRotation").ret<ue::FRotator>().yaw;
+    world::read_box(hc, b);   // a trigger counts however thin it is
   } else {
+    auto vcall = [&](const char* fn) {
+      ue::Params p(ue::find_function(ue::class_of(hc), fn));
+      ue::call(hc, p);
+      return p;
+    };
+    b.center = world::vec3(vcall("K2_GetComponentLocation").ret<FVector>());
     float r = vcall("GetScaledSphereRadius").ret<float>() * 0.7f;   // the square inside the circle
-    b.extent = FVector{r, r, r};
+    b.extent = core::Vec3{r, r, r};
     b.yaw = 0;
   }
   return true;
 }
-static bool inside(const Box& b, const FVector& p, float margin) {
-  float a = -b.yaw * 3.14159265f / 180.0f;
-  float dx = p.x - b.center.x, dy = p.y - b.center.y;
-  float lx = dx * std::cos(a) - dy * std::sin(a), ly = dx * std::sin(a) + dy * std::cos(a);
-  // Height too: a door upstairs is right above a spot downstairs (the dorm's "Your Room", 2026-10-27). The hero's
-  // location is about 90 cm above the floor; allow a step's worth more.
-  return std::fabs(lx) <= b.extent.x + margin && std::fabs(ly) <= b.extent.y + margin &&
-         std::fabs(p.z - b.center.z) <= b.extent.z + 150.0f;
-}
+// The point is inside the trigger, `margin` cm in from (negative) or out past its sides.
+// Height too: a door upstairs is right above a spot downstairs (the dorm's "Your Room", 2026-10-27). The hero's
+// location is about 90 cm above the floor; allow a step's worth more.
+static bool inside(const Box& b, const FVector& p, float margin) { return core::box_holds(b, world::vec3(p), margin, 150.0f); }
 
 // ---- the ways in to a target that stands inside something solid ----
 // A teleporter's trigger is a 64 cm box in the middle of the device, between two walls and four corner pillars: the
@@ -163,17 +158,13 @@ static bool inside(const Box& b, const FVector& p, float margin) {
 // Circling it a sixth of a turn at a time from the side first bumped missed both gaps every time. The ways in are
 // asked of the engine instead: the hero's own body swept toward the trigger from every side.
 struct Goal { bool has_box = false; Box box{}; FVector at{}; };
-static FVector centre(const Goal& g) { return g.has_box ? g.box.center : g.at; }
+static FVector centre(const Goal& g) { return g.has_box ? world::fvec(g.box.center) : g.at; }
 // Arrived = inside the trigger box; a target without one = close to its location.
 static bool reaches(const Goal& g, const FVector& p) { return g.has_box ? inside(g.box, p, -5.0f) : flat(g.at, p) < kArrive; }
 
 static void hero_body(float& radius, float& half) {
   radius = 26.5f; half = 85.0f;
-  ue::UObject* h = world::player();
-  ue::UObject* cap = h ? ue::get<ue::UObject*>(h, "CapsuleComponent") : nullptr;
-  if (!cap) return;
-  ue::Params r(ue::find_function(ue::class_of(cap), "GetScaledCapsuleRadius")), hh(ue::find_function(ue::class_of(cap), "GetScaledCapsuleHalfHeight"));
-  if (ue::call(cap, r) && ue::call(cap, hh)) { radius = r.ret<float>(); half = hh.ret<float>(); }
+  world::capsule_of(world::player(), radius, half);
 }
 
 static float path_length(const std::vector<FVector>& p) {
@@ -313,11 +304,8 @@ static bool find_sidestep(const FVector& me, const FVector& wp, int skip, FVecto
 // Turn the hero that way on arrival, as a sighted player would.
 static void face(ue::UObject* t, const FVector& me) {
   // Things without a facing rule (Tartarus' breakables) are faced straight on, so a strike lands.
-  ue::FField* p = ue::find_prop(ue::class_of(t), "mHeroDirectType_");
-  std::string type = p ? ue::enum_name(ue::prop_inner_object(p), *(uint8_t*)((uint8_t*)t + ue::prop_offset(p))) : "Center";
-  ue::Params rp(ue::find_function(ue::class_of(t), "K2_GetActorRotation"));
-  ue::call(t, rp);
-  float yaw = rp.ret<ue::FRotator>().yaw;
+  std::string type = ue::find_prop(ue::class_of(t), "mHeroDirectType_") ? ue::enum_prop_name(t, "mHeroDirectType_") : "Center";
+  float yaw = world::yaw_of(t);
   if (type == "Back") yaw += 180.0f;
   else if (type == "Left") yaw -= 90.0f;
   else if (type == "Right") yaw += 90.0f;
@@ -433,7 +421,7 @@ void tick() {
       wp = FVector{w.x, w.y, me.z};
     } else if (g_path.size() == 1 && flat(wp, me) < kWaypointReached + 30.0f && has_box) {
       // The navmesh path ends where the floor ends (beside the bed); from its last point head straight for the box.
-      wp = box.center;
+      wp = world::fvec(box.center);
     }
     // Somebody in the way is stepped round before the hero walks into them.
     FVector on_path = wp;

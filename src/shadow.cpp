@@ -13,6 +13,7 @@
 //    long-range strike (IsUsingLongRangeAttack) the target is LockOnActor instead (UNTESTED).
 #include "shadow.h"
 #include "audio.h"
+#include "core/boxes.h"
 #include "core/sonar_cues.h"
 #include "core/strings.h"
 #include "devserver.h"
@@ -32,10 +33,15 @@
 namespace p3a::shadow {
 namespace {
 using namespace ue;
+using core::angle_diff;
+using core::Box;
+using core::boxes_meet;
+using core::kPi;
 using core::SignalCue;
 using world::FVector;
+using world::read_box;
+using world::yaw_of;
 
-constexpr float kPi = 3.14159265f;
 // cm: the growl. 15 m at first, and only for a Shadow within 3 m of the hero's height: it was not heard until it was
 // about to strike (the user, 2026-11-10). A Tartarus floor has raised and sunken parts, so height filters nothing now.
 constexpr float kPulseRange = 3000.0f;
@@ -49,12 +55,6 @@ struct Seen { UObject* actor; FVector at; float dist; Raw raw; };
 
 std::vector<UObject*> live(std::string_view cls) { return watch::all(watch::want(cls, true)); }
 float flat(const FVector& a, const FVector& b) { return std::hypot(a.x - b.x, a.y - b.y); }
-float yaw_of(UObject* a) {
-  Params p(find_function(class_of(a), "K2_GetActorRotation"));
-  call(a, p);
-  return p.ret<FRotator>().yaw;
-}
-float angle_diff(float a, float b) { return std::fabs(std::fmod(a - b + 540.0f, 360.0f) - 180.0f); }
 
 // A struct property's first member, an object pointer (TrackingTarget.Pawn, an effect param's Asset).
 UObject* first_object(UObject* o, const char* prop) {
@@ -71,14 +71,10 @@ Raw raw_of(UObject* comp) {
   return r;
 }
 
-struct Holder { UObject* actor; UObject* comp; };
+// The enemy manager's entries that have both an actor and a component.
 std::vector<Holder> holders() {
-  static const int id = watch::want("FldEnemyManager");
   std::vector<Holder> out;
-  UObject* mgr = watch::get(id);
-  auto* arr = mgr ? field<TArray<Holder>>(mgr, "Enemies") : nullptr;
-  if (arr && arr->data && arr->num > 0 && arr->num < 256)
-    guarded([&] { for (int i = 0; i < arr->num; ++i) if (arr->data[i].actor && arr->data[i].comp) out.push_back(arr->data[i]); });
+  for (const Holder& h : enemy_holders()) if (h.actor && h.comp) out.push_back(h);
   return out;
 }
 
@@ -100,55 +96,24 @@ std::vector<Seen> look(const FVector& me) {
 }
 
 // ---- the strike's reach ----
-struct Box { FVector center, extent; float yaw; };
 UObject* dungeon_comp() {
   static const int id = watch::want("FldPlayerDungeonComp");
   return watch::get(id);
-}
-// A box component as it stands in the world now.
-bool read_box(UObject* box, Box& b) {
-  if (!box) return false;
-  auto vcall = [&](const char* fn) { Params p(find_function(class_of(box), fn)); call(box, p); return p; };
-  b.center = vcall("K2_GetComponentLocation").ret<FVector>();
-  b.extent = vcall("GetScaledBoxExtent").ret<FVector>();
-  b.yaw = vcall("K2_GetComponentRotation").ret<FRotator>().yaw;
-  return b.extent.x > 1.0f && b.extent.y > 1.0f;
 }
 bool strike_box(UObject* dc, Box& b) {
   UObject* area = dc ? get<UObject*>(dc, "AttackArea") : nullptr;
   return read_box(area ? get<UObject*>(area, "AreaComp") : nullptr, b);
 }
-// Two boxes (each turned about the vertical only) share space: the separating-axis test on the ground plane over
-// both boxes' sides, and their heights overlapping.
-bool boxes_meet(const Box& a, const Box& b) {
-  if (std::fabs(a.center.z - b.center.z) > a.extent.z + b.extent.z) return false;
-  const float ya = a.yaw * kPi / 180.0f, yb = b.yaw * kPi / 180.0f;
-  const float ax[4][2] = {{std::cos(ya), std::sin(ya)}, {-std::sin(ya), std::cos(ya)}, {std::cos(yb), std::sin(yb)}, {-std::sin(yb), std::cos(yb)}};
-  const float dx = b.center.x - a.center.x, dy = b.center.y - a.center.y;
-  for (const auto& n : ax) {
-    // Each box's half width along this axis: its two sides' extents projected on it.
-    float ra = a.extent.x * std::fabs(n[0] * ax[0][0] + n[1] * ax[0][1]) + a.extent.y * std::fabs(n[0] * ax[1][0] + n[1] * ax[1][1]);
-    float rb = b.extent.x * std::fabs(n[0] * ax[2][0] + n[1] * ax[2][1]) + b.extent.y * std::fabs(n[0] * ax[3][0] + n[1] * ax[3][1]);
-    if (std::fabs(dx * n[0] + dy * n[1]) > ra + rb) return false;
-  }
-  return true;
-}
 // A Shadow's body as the box meets it: its capsule (radius, half height), else a slim guess.
 void body_of(UObject* shadow, float& radius, float& half_height) {
   radius = 30.0f; half_height = 60.0f;
-  UObject* cap = get<UObject*>(shadow, "CapsuleComponent");
-  if (!cap) return;
-  Params r(find_function(class_of(cap), "GetScaledCapsuleRadius")), h(find_function(class_of(cap), "GetScaledCapsuleHalfHeight"));
-  if (call(cap, r) && call(cap, h)) { radius = r.ret<float>(); half_height = h.ret<float>(); }
+  world::capsule_of(shadow, radius, half_height);
 }
 // The body's middle inside the box grown by part of the body. A roaming Shadow's capsule is 1 m in radius (floor 2,
 // 2026-11-10); only six tenths of it is counted, so the ring means the strike is well inside its reach, not at the
 // edge of it, and a Shadow that takes a step back is still hit.
 bool box_holds(const Box& b, const FVector& p, float radius, float half_height) {
-  float a = -b.yaw * kPi / 180.0f, dx = p.x - b.center.x, dy = p.y - b.center.y;
-  float lx = dx * std::cos(a) - dy * std::sin(a), ly = dx * std::sin(a) + dy * std::cos(a);
-  const float grow = radius * 0.6f;
-  return std::fabs(lx) <= b.extent.x + grow && std::fabs(ly) <= b.extent.y + grow && std::fabs(p.z - b.center.z) <= b.extent.z + half_height;
+  return core::box_holds(b, world::vec3(p), radius * 0.6f, half_height);
 }
 // The strike would connect with this Shadow now. `known` false: the game's hit area could not be read.
 bool in_reach(UObject* shadow, const FVector& at, bool& known) {
@@ -253,6 +218,16 @@ void mind_cues(const std::vector<Seen>& seen, const FVector& me) {
 }
 }  // namespace
 
+std::vector<Holder> enemy_holders() {
+  static const int id = watch::want("FldEnemyManager");
+  std::vector<Holder> out;
+  UObject* mgr = watch::get(id);
+  auto* arr = mgr ? field<TArray<Holder>>(mgr, "Enemies") : nullptr;
+  if (arr && arr->data && arr->num > 0 && arr->num < 256)
+    guarded([&] { for (int i = 0; i < arr->num; ++i) out.push_back(arr->data[i]); });
+  return out;
+}
+
 void tick() {
   if (!settings::on(settings::ShadowAlerts)) return;
   FVector me;
@@ -308,7 +283,7 @@ void install() {
                        dc ? get_bool(dc, "IsUsingLongRangeAttack") : false, dc && get<UObject*>(dc, "LockOnActor") ? name_of(get<UObject*>(dc, "LockOnActor")) : "-");
       if (has_box)
         s += std::format("strike box centre ({:.0f}, {:.0f}, {:.0f}) extent ({:.0f}, {:.0f}, {:.0f}) yaw {:.0f}, {:.0f} cm from the hero\n", b.center.x, b.center.y,
-                         b.center.z, b.extent.x, b.extent.y, b.extent.z, b.yaw, flat(b.center, me));
+                         b.center.z, b.extent.x, b.extent.y, b.extent.z, b.yaw, flat(world::fvec(b.center), me));
       else s += "no strike box\n";
       for (UObject* a : live("FldDungeonObjectActor")) {
         if (!poi::breakable(a)) continue;
