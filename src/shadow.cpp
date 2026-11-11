@@ -105,15 +105,33 @@ UObject* dungeon_comp() {
   static const int id = watch::want("FldPlayerDungeonComp");
   return watch::get(id);
 }
-bool strike_box(UObject* dc, Box& b) {
-  UObject* area = dc ? get<UObject*>(dc, "AttackArea") : nullptr;
-  UObject* box = area ? get<UObject*>(area, "AreaComp") : nullptr;
+// A box component as it stands in the world now.
+bool read_box(UObject* box, Box& b) {
   if (!box) return false;
   auto vcall = [&](const char* fn) { Params p(find_function(class_of(box), fn)); call(box, p); return p; };
   b.center = vcall("K2_GetComponentLocation").ret<FVector>();
   b.extent = vcall("GetScaledBoxExtent").ret<FVector>();
   b.yaw = vcall("K2_GetComponentRotation").ret<FRotator>().yaw;
   return b.extent.x > 1.0f && b.extent.y > 1.0f;
+}
+bool strike_box(UObject* dc, Box& b) {
+  UObject* area = dc ? get<UObject*>(dc, "AttackArea") : nullptr;
+  return read_box(area ? get<UObject*>(area, "AreaComp") : nullptr, b);
+}
+// Two boxes (each turned about the vertical only) share space: the separating-axis test on the ground plane over
+// both boxes' sides, and their heights overlapping.
+bool boxes_meet(const Box& a, const Box& b) {
+  if (std::fabs(a.center.z - b.center.z) > a.extent.z + b.extent.z) return false;
+  const float ya = a.yaw * kPi / 180.0f, yb = b.yaw * kPi / 180.0f;
+  const float ax[4][2] = {{std::cos(ya), std::sin(ya)}, {-std::sin(ya), std::cos(ya)}, {std::cos(yb), std::sin(yb)}, {-std::sin(yb), std::cos(yb)}};
+  const float dx = b.center.x - a.center.x, dy = b.center.y - a.center.y;
+  for (const auto& n : ax) {
+    // Each box's half width along this axis: its two sides' extents projected on it.
+    float ra = a.extent.x * std::fabs(n[0] * ax[0][0] + n[1] * ax[0][1]) + a.extent.y * std::fabs(n[0] * ax[1][0] + n[1] * ax[1][1]);
+    float rb = b.extent.x * std::fabs(n[0] * ax[2][0] + n[1] * ax[2][1]) + b.extent.y * std::fabs(n[0] * ax[3][0] + n[1] * ax[3][1]);
+    if (std::fabs(dx * n[0] + dy * n[1]) > ra + rb) return false;
+  }
+  return true;
 }
 // A Shadow's body as the box meets it: its capsule (radius, half height), else a slim guess.
 void body_of(UObject* shadow, float& radius, float& half_height) {
@@ -147,24 +165,22 @@ bool in_reach(UObject* shadow, const FVector& at, bool& known) {
 }
 
 // A breakable thing (Tartarus' Shadow remains) the strike would break now: the game's hit test takes them from the
-// same box as the Shadows (the actors overlapping AttackArea's AreaComp), so the engine's own overlap is asked.
+// same box as the Shadows (the actors overlapping AttackArea's AreaComp). That box collides with nothing between
+// swings (CollisionEnabled NoCollision at rest, seen in the player's game 2026-11-10: the engine's overlap answered
+// false beside a breakable), so the two boxes are compared here: the strike's and the breakable's own Box.
 bool breakable_in_reach(const FVector& me, FVector& at) {
   UObject* dc = dungeon_comp();
-  UObject* area = dc ? get<UObject*>(dc, "AttackArea") : nullptr;
-  UObject* box = area ? get<UObject*>(area, "AreaComp") : nullptr;
-  if (!box || get_bool(dc, "IsUsingLongRangeAttack")) return false;
-  UFunction* overlaps = find_function(class_of(box), "IsOverlappingActor");
-  if (!overlaps) return false;
+  Box strike;
+  if (!dc || get_bool(dc, "IsUsingLongRangeAttack") || !strike_box(dc, strike)) return false;
   UObject* found = nullptr;
-  float best = 500.0f;   // cm: nothing farther is in the box
+  float best = 600.0f;   // cm: nothing farther is in the box
   guarded([&] {
     for (UObject* a : live("FldDungeonObjectActor")) {
       FVector v = world::actor_location(a);
       float d = std::hypot(flat(v, me), v.z - me.z);
       if (d >= best || !poi::breakable(a)) continue;
-      Params p(overlaps);
-      p.set<UObject*>("Other", a);
-      if (call(box, p) && p.ret<bool>()) { best = d; found = a; at = v; }
+      Box body;
+      if (read_box(get<UObject*>(a, "Box"), body) && boxes_meet(strike, body)) { best = d; found = a; at = v; }
     }
   });
   static WeakObj logged;
@@ -296,7 +312,11 @@ void install() {
         FVector v = world::actor_location(a);
         bool engine = false;
         if (comp) { Params p(find_function(class_of(comp), "IsOverlappingActor")); p.set<UObject*>("Other", a); if (call(comp, p)) engine = p.ret<bool>(); }
-        s += std::format("  breakable {} #{} {:.0f} cm bearing {:.0f} engine overlap={}\n", name_of(a), index_of(a), std::hypot(flat(v, me), v.z - me.z), world::bearing(me, v), engine);
+        Box body{};
+        bool has_body = read_box(get<UObject*>(a, "Box"), body);
+        s += std::format("  breakable {} #{} {:.0f} cm bearing {:.0f} engine overlap={} box centre ({:.0f}, {:.0f}, {:.0f}) extent ({:.0f}, {:.0f}, {:.0f}) yaw {:.0f} meets={}\n",
+                         name_of(a), index_of(a), std::hypot(flat(v, me), v.z - me.z), world::bearing(me, v), engine, body.center.x, body.center.y, body.center.z,
+                         body.extent.x, body.extent.y, body.extent.z, body.yaw, has_body && has_box && boxes_meet(b, body));
       }
       if (FVector at; breakable_in_reach(me, at)) s += "  a breakable is in the strike's reach\n";
       for (const Seen& e : look(me)) {
