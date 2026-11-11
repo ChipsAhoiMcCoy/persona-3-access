@@ -14,4 +14,7 @@ void tick();   // follows the hero: every time he may have changed sides of a do
 // map has no doors, and for a thing no path leads to (nothing says a door is why).
 bool behind(ue::UObject* a, const ue::FVector& me, const ue::FVector& at);
 void install();   // dev route
+// Counts the hero changing sides: a door passed, a jump (stairs, an exit), a level coming or going. What was worked
+// out about reaching a thing holds while it stands.
+uint64_t side_stamp();
 }  // namespace p3a::doors

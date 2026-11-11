@@ -30,19 +30,20 @@
 namespace p3a::poi {
 using namespace ue;
 
-// A complete navmesh path ends near the thing (cached per actor for a few seconds: scans run twice a second).
+// A complete navmesh path ends near the thing. Kept per actor while the hero stays on his side of the map (floors
+// are joined by stairs that jump him: doors::side_stamp counts those, doors passed and levels changing).
 static bool walkable(UObject* a, const world::FVector& me, const world::FVector& v) {
-  static std::map<WeakObj::Key, std::pair<ULONGLONG, bool>> cache;
+  static std::map<WeakObj::Key, bool> cache;
+  static uint64_t side = 0;
+  if (uint64_t s = doors::side_stamp(); s != side) { side = s; cache.clear(); }
   auto key = WeakObj::of(a).key();
-  ULONGLONG now = GetTickCount64();
   auto it = cache.find(key);
-  if (it != cache.end() && now - it->second.first < 4000) return it->second.second;
+  if (it != cache.end()) return it->second;
   bool partial = true;
   auto path = world::find_path(me, v, &partial);
   bool ok = !partial && !path.empty() && std::fabs(path.back().z - v.z) < 250.0f &&
             std::hypot(path.back().x - v.x, path.back().y - v.y) < 300.0f;
-  if (cache.size() > 2000) cache.clear();
-  cache[key] = {now, ok};
+  cache[key] = ok;
   return ok;
 }
 

@@ -16,7 +16,7 @@ namespace p3a::world {
 using namespace ue;
 
 static WeakObj g_player;
-static ULONGLONG g_player_scan = 0;
+static uint64_t g_frame = 0;   // world::tick's count: what is worked out once per frame is keyed by it
 static float g_cam_yaw = 0;
 static WeakObj g_cam_mgr;
 
@@ -35,9 +35,10 @@ static UObject* find_player() {
 
 UObject* player() {
   if (UObject* p = g_player.resolve()) return p;
-  ULONGLONG now = GetTickCount64();
-  if (now - g_player_scan < 1000) return nullptr;
-  g_player_scan = now;
+  // None yet (the title, a load): looked for once a frame, among the few hero actors the watcher holds.
+  static uint64_t looked = ~0ull;
+  if (looked == g_frame) return nullptr;
+  looked = g_frame;
   UObject* p = find_player();
   g_player = WeakObj::of(p);
   return p;
@@ -53,7 +54,6 @@ bool scene_fast() { return scene_flag("IsHighSpeed"); }
 // A battle keeps the field's hero and, between turns, shows no screen: only its own component says it is on
 // (BtlCoreComponent, as the auto-walk checks). The wall tones went on through battles and
 // story scenes until every field sound asked here (the user, 2026-11-10).
-static uint64_t g_frame = 0;   // world::tick's count: exploring() is worked out once per frame, on its first asking
 static bool exploring_now() {
   static const int battle = watch::want("BtlCoreComponent");
   if (!player() || screens::current() || msg::current().blocking || watch::get(battle) || input::modal()) return false;
@@ -87,15 +87,11 @@ void tick() {
   }
   // The sounds that are playing stay at their places while the hero walks and the camera turns.
   if (FVector me; player_location(me)) audio::follow([&](float x, float y, float z) { return spot(me, FVector{x, y, z}); });
-  // A mode change (daily -> dark hour -> dungeon) swaps the active player actor: re-pick it now and then.
-  static ULONGLONG last_check = 0;
-  ULONGLONG now = GetTickCount64();
-  if (now - last_check > 2000) {
-    last_check = now;
-    if (UObject* p = g_player.resolve()) {
-      FVector v; player_location(v);
-      if (v.z < -2500.0f) g_player = {};
-    }
+  // A mode change (daily -> dark hour -> dungeon) swaps the active player actor: the one held is let go the frame it
+  // is parked under the map, and player() picks the active one.
+  if (g_player.resolve()) {
+    FVector v;
+    if (player_location(v) && v.z < -2500.0f) g_player = {};
   }
 }
 
@@ -205,13 +201,13 @@ std::string status() {
 // level that is visible right now (hidden sublevels keep their actors, parked at the origin; measured 2026-10-27).
 // The levels are kept by index and name, not by pointer: a level that has gone matches nothing.
 static std::vector<WeakObj> g_visible_levels;
-static ULONGLONG g_levels_at = 0;
 static uint64_t g_levels_stamp = 0;
 uint64_t levels_stamp() { return g_levels_stamp; }
 static void refresh_levels() {
-  ULONGLONG now = GetTickCount64();
-  if (now - g_levels_at < 1000) return;
-  g_levels_at = now;
+  // Once a frame: each streamed level's own "is visible" bit (what ULevelStreaming::IsLevelVisible answers from).
+  static uint64_t at = ~0ull;
+  if (at == g_frame) return;
+  at = g_frame;
   // The list as it was: a change of it is counted (levels_stamp) when this one is complete.
   struct Count { std::vector<WeakObj> was; ~Count() { if (!(was == g_visible_levels)) ++g_levels_stamp; } } count{g_visible_levels};
   g_visible_levels.clear();
@@ -220,13 +216,18 @@ static void refresh_levels() {
   if (UObject* pl = get<UObject*>(w, "PersistentLevel")) g_visible_levels.push_back(WeakObj::of(pl));
   auto* levels = field<TArray<UObject*>>(w, "StreamingLevels");
   if (!levels) return;
+  // A district streams a few hundred levels: the two properties are looked up once a frame (every streaming class
+  // has LoadedLevel from ULevelStreaming, every level bIsVisible from ULevel) and each level is two reads.
+  int32_t loaded = -1;
+  FField* visible = nullptr;
   for (int i = 0; i < levels->num; ++i) {
     UObject* ls = levels->data[i];
     if (!ls) continue;
-    Params p(find_function(class_of(ls), "IsLevelVisible"));
-    call(ls, p);
-    if (!p.ret<bool>()) continue;
-    if (UObject* lvl = get<UObject*>(ls, "LoadedLevel")) g_visible_levels.push_back(WeakObj::of(lvl));
+    if (loaded < 0 && (loaded = offset_of(class_of(ls), "LoadedLevel")) < 0) return;
+    UObject* lvl = *(UObject**)((uint8_t*)ls + loaded);
+    if (!lvl) continue;
+    if (!visible && !(visible = find_prop(class_of(lvl), "bIsVisible"))) return;
+    if (prop_bool(visible, lvl)) g_visible_levels.push_back(WeakObj::of(lvl));
   }
 }
 bool actor_visible_level(UObject* a) {
@@ -238,7 +239,6 @@ bool actor_visible_level(UObject* a) {
   return false;
 }
 std::vector<std::string> visible_levels() {
-  g_levels_at = 0;   // fresh: the names are read from the level objects themselves
   refresh_levels();
   std::vector<std::string> out;
   for (const WeakObj& v : g_visible_levels)

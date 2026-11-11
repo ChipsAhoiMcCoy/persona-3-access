@@ -28,6 +28,7 @@ static std::vector<Door> g_doors;                   // the visible levels' doors
 static std::vector<WeakObj::Key> g_keys;
 // Counts every time the hero may be in another part of the map than before: answers are kept per count.
 static uint64_t g_side = 1;
+uint64_t side_stamp() { return g_side; }
 
 // The doors come and go with their levels: read again when the set of visible levels changes (every door of every
 // loaded level each frame cost 10 us, 2026-11-11), and while a visible door has no bounds yet (a level just shown).
