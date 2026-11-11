@@ -8,9 +8,9 @@
 //   state 9 Shift     BP_BtlGuiShiftSelect_C PlayerList, TargetIndex
 //   state 10 Tactics  BP_BtlStrategyInstruct_C inputState (0 Order/Escape, 1 member, 2 order), CursorIndex[level],
 //                     PlayerList, OperationNameList (the game's English names); a member's order: GetOperation
-// The game's state is ABtlGuiStateManager.nowState; whose turn it is, BP_BtlTargetManager_C.MainCharacter. A skill's
-// description is its help line from the game's file (persona::skill_help): the skill list keeps it for the detail
-// buffer and the review key, Theurgy reads it after the name.
+// The game's state (gui_state) and whose turn it is (acting_member) come from battle_state.h. A skill's description
+// is its help line from the game's file (persona::skill_help): the skill list keeps it for the detail buffer
+// (battle_details.cpp) and the review key, Theurgy reads it after the name.
 //
 // Moving the game's cursors (no keys): the lists are actors (BP_BtlGuiBaseActor_C), not widgets.
 // The native lists (skills, items, Theurgy, Tactics) take UBtlGuiListComponent.SetCursor(CurrentIndex), which moves
@@ -19,26 +19,18 @@
 // TargetIndex and runs UpdateTargets. A list takes moves while its state is current, set up and bound (gui_ready).
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "screens/battle_state.h"
 #include "screens/battle_words.h"
-#include "screens/battle.h"
 #include "core/strings.h"
 #include "items.h"
 #include "persona.h"
-#include "devserver.h"
-#include "input.h"
-#include "msg.h"
-#include "seh.h"
 #include "speech.h"
-#include "ue/scan.h"
-#include <algorithm>
 #include <format>
 
 namespace p3a::screens {
 using namespace ue;
 
 namespace {
-Finder& gui_state_mgr() { static Finder f{"BtlGuiStateManager"}; return f; }
-int gui_state() { UObject* g = gui_state_mgr().get(); return g ? get<uint8_t>(g, "nowState") : 0; }
 // The GUI actor `a` takes moves: its state is the game's, set up and bound (BP_BtlGuiBaseActor_C).
 bool gui_ready(UObject* a, int state) {
   return a && gui_state() == state && get_bool(a, "isStateInit") && get<uint8_t>(a, "State") == get<uint8_t>(a, "MainState") &&
@@ -59,11 +51,11 @@ constexpr int kTargetSound = 224;   // BtlSEPlay(224): a target change
 // One battle list: open while the GUI state is `state`.
 class BattleList : public MenuScreen {
  protected:
-  BtlWords w_;
+  BtlWords& w_ = btl_words();
   int state_;
   Finder list_;
-  Finder tmgr_{"BP_BtlTargetManager_C"};
-  UObject* actor() { UObject* m = tmgr_.get(); return m ? get<UObject*>(m, "MainCharacter") : nullptr; }
+  // The list actor's array of units `prop` (the targets, the party), null while the actor is not there.
+  TArray<UObject*>* units(const char* prop) { UObject* l = list_.get(); return l ? field<TArray<UObject*>>(l, prop) : nullptr; }
   const strings::Hint& keys_;   // F1
   BattleList(int state, const char* cls, const strings::Hint& keys = strings::kListKeys) : state_(state), list_(cls), keys_(keys) {}
  public:
@@ -75,7 +67,13 @@ class BattleList : public MenuScreen {
 class BattleSkills : public BattleList {
   // SelectCursor: the index confirm uses (CursorIndex is the row on screen).
   Mirror& m_ = mirror("skills", [this] { UObject* l = list_.get(); return l ? get<int32_t>(l, "SelectCursor") : -1; });
-  int persona() { return w_.unit_int("GetPersonaEquipID", actor()); }
+  int persona() { return w_.unit_int("GetPersonaEquipID", acting_member()); }
+  TArray<int32_t>* skill_ids() { UObject* l = list_.get(); return l ? field<TArray<int32_t>>(l, "SkillIDList") : nullptr; }
+  // A skill's row: its name and what it costs `who` now.
+  std::string row(int id, UObject* who) {
+    std::string s = w_.skill_name(id), cost = w_.skill_cost(id, who);
+    return cost.empty() ? s : s + ", " + cost;
+  }
  public:
   BattleSkills() : BattleList(2, "BP_BtlSkillList_C", strings::kSkillKeys) {
     // Not while Q / E change the Persona (that moves BtlGuiListPersona).
@@ -91,19 +89,16 @@ class BattleSkills : public BattleList {
   const char* id() const override { return "battle_skills"; }
   std::string title() override { return strings::kSkills; }
   void build(ui::GraphBuilder& b) override {
-    UObject* l = list_.get();
-    auto* ids = l ? field<TArray<int32_t>>(l, "SkillIDList") : nullptr;
+    auto* ids = skill_ids();
     if (!ids) return;
     // The equipped Persona heads the list; switching it (Q / E) is a new list.
     int pid = persona();
     b.begin_stop("skills");
     b.push_context(pid > 0 ? w_.persona_name(pid) : std::string(strings::kSkills));
-    UObject* who = actor();
+    UObject* who = acting_member();
     for (int i = 0; i < ids->num; ++i) {
       int id = ids->data[i];
-      std::string s = w_.skill_name(id);
-      std::string cost = w_.skill_cost(id, who);
-      if (!cost.empty()) s += ", " + cost;
+      std::string s = row(id, who);
       // Name and cost alone: the description was heard on every move through skills cast dozens of times a night. It
       // is the detail buffer's second line, and the review key still reads it (the user's call, 2026-11-11).
       b.add_item(slot(std::format("skills.{}", pid), i), game_item(m_, i, [s] { return s; }, [id] { return persona::skill_help(id); }));
@@ -116,14 +111,12 @@ class BattleSkills : public BattleList {
   int focused_skill() { return focused_row(m_.key); }
   bool has_details() override { return focused_skill() >= 0; }
   std::vector<std::string> detail_lines() override {
-    UObject* l = list_.get();
-    auto* ids = l ? field<TArray<int32_t>>(l, "SkillIDList") : nullptr;
+    auto* ids = skill_ids();
     int i = focused_skill();
     if (!ids || i < 0 || i >= ids->num) return {};
     int id = ids->data[i];
-    UObject* who = actor();
-    std::string s = w_.skill_name(id), cost = w_.skill_cost(id, who);
-    std::vector<std::string> out{cost.empty() ? s : s + ", " + cost};
+    UObject* who = acting_member();
+    std::vector<std::string> out{row(id, who)};
     if (std::string help = persona::skill_help(id); !help.empty()) out.push_back(help);
     for (auto& d : w_.details(who)) out.push_back(d);
     return out;
@@ -176,7 +169,7 @@ class BattleTargets : public BattleList {
   // buttons, as Guard's is, and names nobody: each hit says who it landed on (the user's call, 2026-11-11).
   bool all() {
     UObject* l = list_.get();
-    auto* list = l ? field<TArray<UObject*>>(l, "targetList") : nullptr;
+    auto* list = units("targetList");
     return list && list->num > 1 && get<uint8_t>(l, "TargetType") != 0;
   }
   // What is being used: the GUI's CommandID, an item's id when the list came from the items (state 3), else a skill's
@@ -187,7 +180,7 @@ class BattleTargets : public BattleList {
     FField* p = gui ? find_prop(class_of(gui), "CommandID") : nullptr;
     int id = p ? get<int32_t>(gui, "CommandID") : -1;
     if (id < 0) return {};
-    UObject* mgr = gui_state_mgr().get();
+    UObject* mgr = battle_objects().gui.get();
     return mgr && call_ret<uint8_t>(mgr, "GetPrevState") == 3 ? items::name_of(id) : w_.skill_name(id);
   }
   Mirror& m_ = mirror("targets", [this] {
@@ -202,12 +195,12 @@ class BattleTargets : public BattleList {
     m_.keep_edges = true;   // the game's row wraps
     m_.ready = [this] {
       UObject* l = list_.get();
-      auto* list = l ? field<TArray<UObject*>>(l, "targetList") : nullptr;
+      auto* list = units("targetList");
       return gui_ready(l, 4) && list && list->num > 0 && get_bool(l, "IsCreateTargetList") && get<int32_t>(l, "FrameVisible") == 0;
     };
     m_.set = [this](int i) {
       UObject* l = list_.get();
-      auto* list = l ? field<TArray<UObject*>>(l, "targetList") : nullptr;
+      auto* list = units("targetList");
       int32_t* ti = l ? field<int32_t>(l, "TargetIndex") : nullptr;
       if (!list || !ti || i < 0 || i >= list->num) return false;
       if (all()) return true;   // one item, nothing to move
@@ -222,8 +215,7 @@ class BattleTargets : public BattleList {
     screens::set_keys([this] { return std::string(all() ? strings::kAllTargetsKeys() : strings::kTargetKeys()); });
   }
   void build(ui::GraphBuilder& b) override {
-    UObject* l = list_.get();
-    auto* list = l ? field<TArray<UObject*>>(l, "targetList") : nullptr;
+    auto* list = units("targetList");
     if (!list) return;
     b.begin_stop("targets");
     if (all()) {
@@ -246,12 +238,10 @@ class BattleTargets : public BattleList {
     }
     b.start_row("targets");
     for (int i = 0; i < list->num; ++i) {
-      UObject* t = list->data[i];
-      WeakObj wt = WeakObj::of(t);
+      WeakObj wt = WeakObj::of(list->data[i]);
       b.add_item(slot("targets", i), game_item(m_, i, [this, wt] {
         UObject* t = wt.resolve();
-        if (!t) return std::string();
-        return get_bool(t, "EnemyFlag") ? w_.enemy(t) : std::format("{}, {}", w_.unit_name(t), w_.hp_sp(t));
+        return t ? w_.unit_line(t) : std::string();
       }));
     }
     b.end_row();
@@ -308,12 +298,12 @@ class BattleShift : public BattleList {
     m_.keep_edges = true;   // the game's row wraps
     m_.ready = [this] {
       UObject* l = list_.get();
-      auto* list = l ? field<TArray<UObject*>>(l, "PlayerList") : nullptr;
+      auto* list = units("PlayerList");
       return gui_ready(l, 9) && list && list->num > 0;
     };
     m_.set = [this](int i) {
       UObject* l = list_.get();
-      auto* list = l ? field<TArray<UObject*>>(l, "PlayerList") : nullptr;
+      auto* list = units("PlayerList");
       int32_t* ti = l ? field<int32_t>(l, "TargetIndex") : nullptr;
       UFunction* f = l ? find_function(class_of(l), "UpdateTargets") : nullptr;
       if (!list || !ti || !f || i < 0 || i >= list->num) return false;
@@ -327,8 +317,7 @@ class BattleShift : public BattleList {
   const char* id() const override { return "battle_shift"; }
   std::string title() override { return strings::kShift; }
   void build(ui::GraphBuilder& b) override {
-    UObject* l = list_.get();
-    auto* list = l ? field<TArray<UObject*>>(l, "PlayerList") : nullptr;
+    auto* list = units("PlayerList");
     if (!list) return;
     b.begin_stop("shift");
     b.start_row("shift");
@@ -347,14 +336,14 @@ class BattleShift : public BattleList {
 // Tactics: three levels, one list each; the level in front is the menu.
 class BattleTactics : public BattleList {
   int level() { UObject* s = list_.get(); return s ? get<int32_t>(s, "inputState") : -1; }
-  int cursor_at(int lv) {
+  int level_cursor(int lv) {
     UObject* s = list_.get();
     auto* cur = s ? field<TArray<int32_t>>(s, "CursorIndex") : nullptr;
     return cur && lv >= 0 && lv < cur->num && level() == lv ? cur->data[lv] : -1;
   }
-  Mirror& m0_ = mirror("tactics0", [this] { return cursor_at(0); });
-  Mirror& m1_ = mirror("tactics1", [this] { return cursor_at(1); });
-  Mirror& m2_ = mirror("tactics2", [this] { return cursor_at(2); });
+  Mirror& m0_ = mirror("tactics0", [this] { return level_cursor(0); });
+  Mirror& m1_ = mirror("tactics1", [this] { return level_cursor(1); });
+  Mirror& m2_ = mirror("tactics2", [this] { return level_cursor(2); });
   std::string operation_name(int op) {
     UObject* s = list_.get();
     auto* names = s ? field<TArray<FString>>(s, "OperationNameList") : nullptr;
@@ -368,6 +357,11 @@ class BattleTactics : public BattleList {
     p.set<UObject*>("Action", a);
     call(d, p);
     return p.ret<int32_t>();
+  }
+  // A row that cannot be chosen now: it says so, and so does confirming it.
+  static ui::NodeVtablePtr unavailable(std::function<std::string()> label) {
+    return item([label] { return std::format("{}, {}", label(), strings::kUnavailable); },
+                [] { speech::speak(strings::kUnavailable, true); });
   }
  public:
   BattleTactics() : BattleList(10, "BP_BtlStrategyInstruct_C") {
@@ -397,19 +391,18 @@ class BattleTactics : public BattleList {
       // only the leader acts); otherwise it is hidden and Escape is item 0 (CallOK, 2026-10-31: a confirm on "Order"
       // there tried to flee). Escape works only where the battle allows it (permissionEscape; not in a boss fight).
       bool order = get_bool(s, "EnableStrategyChange");
-      auto unavailable = [&](const char* id, const char* name) {
-        b.add_item(ui::ControlId::structural(id), item([name] { return std::format("{}, {}", name, strings::kUnavailable); },
-                                                       [] { speech::speak(strings::kUnavailable, true); }));
+      auto off = [&](const char* id, const char* name) {
+        b.add_item(ui::ControlId::structural(id), unavailable([name] { return std::string(name); }));
       };
       if (order) b.add_item(slot("tactics0", 0), game_item(m0_, 0, [] { return std::string(strings::kTacticsOrder); }));
-      else unavailable("tactics0.order", strings::kTacticsOrder);
+      else off("tactics0.order", strings::kTacticsOrder);
       if (get_bool(s, "permissionEscape") || !order) {
         int e = order ? 1 : 0;
         b.add_item(slot("tactics0", e), game_item(m0_, e, [] { return std::string(strings::kTacticsEscape); }));
       } else {
-        unavailable("tactics0.escape", strings::kTacticsEscape);
+        off("tactics0.escape", strings::kTacticsEscape);
       }
-      if (int c = cursor_at(0); c >= 0) b.set_start(slot("tactics0", c));
+      if (int c = level_cursor(0); c >= 0) b.set_start(slot("tactics0", c));
     } else if (lv == 1) {
       auto* party = field<TArray<UObject*>>(s, "PlayerList");
       if (!party) return;
@@ -427,12 +420,11 @@ class BattleTactics : public BattleList {
           };
         }
         if (on && i < on->num && !on->data[i])
-          b.add_item(ui::ControlId::structural(std::format("tactics1.off{}", i)), item([label] { return std::format("{}, {}", label(), strings::kUnavailable); },
-                                                                                      [] { speech::speak(strings::kUnavailable, true); }));
+          b.add_item(ui::ControlId::structural(std::format("tactics1.off{}", i)), unavailable(label));
         else b.add_item(slot("tactics1", i), game_item(m1_, i, label));
       }
       b.pop_context();
-      if (int c = cursor_at(1); c >= 0) b.set_start(slot("tactics1", c));
+      if (int c = level_cursor(1); c >= 0) b.set_start(slot("tactics1", c));
     } else if (lv == 2) {
       auto* names = field<TArray<FString>>(s, "OperationNameList");
       if (!names) return;
@@ -443,7 +435,7 @@ class BattleTactics : public BattleList {
         b.add_item(slot("tactics2", i), game_item(m2_, i, [n] { return n; }));
       }
       b.pop_context();
-      if (int c = cursor_at(2); c >= 0) b.set_start(slot("tactics2", c));
+      if (int c = level_cursor(2); c >= 0) b.set_start(slot("tactics2", c));
     }
   }
 };
@@ -459,12 +451,12 @@ class BattleSurvey : public BattleList {
     m_.keep_edges = true;
     m_.ready = [this] {
       UObject* l = list_.get();
-      auto* list = l ? field<TArray<UObject*>>(l, "CursorList") : nullptr;
+      auto* list = units("CursorList");
       return gui_ready(l, 6) && list && list->num > 0;
     };
     m_.set = [this](int i) {
       UObject* l = list_.get();
-      auto* list = l ? field<TArray<UObject*>>(l, "CursorList") : nullptr;
+      auto* list = units("CursorList");
       UFunction* f = l ? find_function(class_of(l), "moveCursor") : nullptr;
       if (!list || !f || i < 0 || i >= list->num || !list->data[i]) return false;
       Params p(f);
@@ -475,136 +467,19 @@ class BattleSurvey : public BattleList {
   const char* id() const override { return "battle_survey"; }
   std::string title() override { return strings::kSurveyTitle; }
   void build(ui::GraphBuilder& b) override {
-    UObject* l = list_.get();
-    auto* list = l ? field<TArray<UObject*>>(l, "CursorList") : nullptr;
+    auto* list = units("CursorList");
     if (!list) return;
     b.begin_stop("survey");
     for (int i = 0; i < list->num; ++i) {
       WeakObj wt = WeakObj::of(list->data[i]);
       b.add_item(slot("survey", i), game_item(m_, i, [this, wt] {
         UObject* t = wt.resolve();
-        if (!t) return std::string();
-        return get_bool(t, "EnemyFlag") ? w_.enemy(t) : std::format("{}, {}", w_.unit_name(t), w_.hp_sp(t));
+        return t ? w_.unit_line(t) : std::string();
       }));
     }
     if (int c = m_.cursor(); c >= 0) b.set_start(slot("survey", c));
   }
 };
-
-// The details of whoever is in focus (the Say the Spire model): the right stick up and down, or Ctrl+Up and Ctrl+Down,
-// walk the lines of BtlWords::details from the top, the unit's name: down goes on, up goes back (the user's call,
-// 2026-11-05); each read is fresh, and landing on someone starts at their top again. Who is in focus is the game's own
-// cursor in each state; a list of the acting member's own (items) reads them. A flick is one line. The stick is
-// hidden from the game only while something is in focus; no battle Blueprint reads it.
-// Since 2026-11-11 the same buffer serves any menu row that declares details (MenuScreen::has_details), in a battle
-// or out of one: the skill list's rows, the Stats list's members.
-namespace {
-BtlWords& buffer_words() { static BtlWords w; return w; }
-Finder& target_list() { static Finder f{"BP_BtlTargetSelect_C"}; return f; }
-Finder& survey_list() { static Finder f{"BP_BtlTacticsCheck_C"}; return f; }
-Finder& shift_list() { static Finder f{"BP_BtlGuiShiftSelect_C"}; return f; }
-Finder& tactics_list() { static Finder f{"BP_BtlStrategyInstruct_C"}; return f; }
-Finder& target_mgr() { static Finder f{"BP_BtlTargetManager_C"}; return f; }
-Finder& gui_comp() { static Finder f{"BP_BtlGuiComponent_C"}; return f; }
-UObject* at(UObject* o, const char* list, const char* index) {
-  auto* l = o ? field<TArray<UObject*>>(o, list) : nullptr;
-  int32_t* i = o ? field<int32_t>(o, index) : nullptr;
-  return l && i && *i >= 0 && *i < l->num ? l->data[*i] : nullptr;
-}
-UObject* focused_unit() {
-  int st = gui_state();
-  if (!st) return nullptr;
-  UObject* m = target_mgr().get();
-  UObject* acting = m ? get<UObject*>(m, "MainCharacter") : nullptr;
-  auto cursor_target = [&]() -> UObject* {
-    auto* a = m ? field<TArray<UObject*>>(m, "CursorTargets") : nullptr;
-    return a && a->num > 0 ? a->data[0] : nullptr;
-  };
-  switch (st) {
-    case 1: {   // the wheel: the target left and right change
-      UObject* t = at(gui_comp().get(), "EnemyList", "Target Index");
-      return t ? t : cursor_target();
-    }
-    case 2: case 3: case 7: return acting;
-    case 4: return at(target_list().get(), "targetList", "TargetIndex");
-    case 6: return at(survey_list().get(), "CursorList", "TargetIndex");
-    case 8: return cursor_target();
-    case 9: return at(shift_list().get(), "PlayerList", "TargetIndex");
-    case 10: {
-      UObject* s = tactics_list().get();
-      auto* cur = s ? field<TArray<int32_t>>(s, "CursorIndex") : nullptr;
-      if (!s || get<int32_t>(s, "inputState") != 1 || !cur || cur->num < 2) return acting;
-      auto* party = field<TArray<UObject*>>(s, "PlayerList");
-      int k = cur->data[1] - 1;   // item 0 is everyone
-      return party && k >= 0 && k < party->num ? party->data[k] : acting;
-    }
-    default: return nullptr;
-  }
-}
-// A menu row with details of its own (MenuScreen::has_details: a skill, a member on the Stats list) comes before the
-// battle's unit; outside a battle it is the only source.
-MenuScreen* detail_menu() {
-  MenuScreen* m = menu::active();
-  return m && m->has_details() ? m : nullptr;
-}
-WeakObj g_detail_unit;
-std::string g_detail_row;   // the menu row's identity, empty for a unit
-int g_detail_line = 0;
-void detail_landing(MenuScreen* m, UObject* u) {
-  std::string row = m ? m->detail_key() : std::string();
-  WeakObj w = m ? WeakObj() : WeakObj::of(u);
-  if (!(w == g_detail_unit) || row != g_detail_row) { g_detail_unit = w; g_detail_row = row; g_detail_line = 0; }
-}
-std::string detail_step(int dir) {
-  MenuScreen* m = detail_menu();
-  UObject* u = m ? nullptr : focused_unit();
-  if (!m && !u) return {};
-  detail_landing(m, u);
-  auto lines = m ? m->detail_lines() : buffer_words().details(u);
-  if (lines.empty()) return {};
-  g_detail_line = std::clamp(g_detail_line + dir, 0, (int)lines.size() - 1);
-  return lines[g_detail_line];
-}
-}  // namespace
-
-namespace battle_details {
-bool in_focus() { bool on = false; guarded([&] { on = detail_menu() || focused_unit(); }); return on && !msg::current().blocking; }
-void step(int dir) {
-  std::string l;
-  guarded([&] { l = detail_step(dir); });
-  if (!l.empty()) speech::speak(l, true);
-}
-void frame() {
-  guarded([] { MenuScreen* m = detail_menu(); detail_landing(m, m ? nullptr : focused_unit()); });
-  bool on = in_focus() && !input::modal();
-  input::claim_right_stick(on);
-  if (int d = input::take_right_flick(); d && on) step(-d);   // a flick up is +1: back toward the top
-}
-void install() {
-  dev::route("/battle/details", [](const dev::Request& r, int&) {
-    int d = (int)dev::arg_int(r, "step", 0);
-    int give = (int)dev::arg_int(r, "ailment", -1);
-    return dev::on_game([d, give] {
-      std::string out;
-      guarded([&] {
-        UObject* u = focused_unit();
-        // ?ailment=N: type N on the focused unit by the game's own route: its flag (SetBadStatus) and then the turn
-        // counters the battle gives it (FUN_140fe2ef0(actor, bit), +0x38E and +0x3A6), for testing what a skill would do.
-        if (give >= 0 && give < 12 && u) {
-          UObject* db = buffer_words().db();
-          UFunction* f = db ? find_function(class_of(db), "SetBadStatus") : nullptr;
-          if (f) { Params p(f); p.set<UObject*>("Actor", u); p.set<int32_t>("Type", give); call(db, p); }
-          ((void (*)(void*, uint32_t))(scan::exe_base() + 0xfe2ef0))(u, 1u << give);
-        }
-        if (d) step(d);
-        if (u) for (auto& l : buffer_words().details(u)) out += l + "\n";
-        out += std::format("line {}\n", g_detail_line);
-      });
-      return out;
-    });
-  }, "?step=1|-1 ?ailment=N the focused battle unit's detail lines (what the right stick reads)");
-}
-}  // namespace battle_details
 
 std::unique_ptr<Screen> make_battle_survey() { return std::make_unique<BattleSurvey>(); }
 std::unique_ptr<Screen> make_battle_skills() { return std::make_unique<BattleSkills>(); }

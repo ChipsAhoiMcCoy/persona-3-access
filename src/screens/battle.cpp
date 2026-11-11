@@ -1,6 +1,6 @@
 // Battle (the skill, item and target lists are bespoke menus: battle_menus.cpp). The command wheel is a sprite; its
-// state is reflected:
-//   ABtlGuiStateManager.nowState      EBtlGuiState (TOP 1, SKILL 2, ITEM 3, TARGET 4, ...)
+// state is reflected (battle_state.h reads it):
+//   ABtlGuiStateManager.nowState     EBtlGuiState (TOP 1, SKILL 2, ITEM 3, TARGET 4, ...)
 //   BP_BtlTargetManager_C             MainCharacter (whose turn), CursorTargets (the target the wheel points at)
 // and the words come from the game's own battle database (UBtlDataBaseComponent: GetUnitName, GetUnitHP,
 // GetSkillName, GetSkillCost, GatAnalizeAttr, GetAttackName). Keyboard: Space attack, E skills (Persona),
@@ -15,6 +15,7 @@
 #include "screens/screen.h"
 #include "screens/util.h"
 #include "screens/battle.h"
+#include "screens/battle_state.h"
 #include "screens/battle_words.h"
 #include "core/strings.h"
 #include "input.h"
@@ -55,32 +56,18 @@ static void remember_personas(int unit_id) {
 }
 
 class BattleScreen : public Screen {
-  Finder gui_{"BtlGuiStateManager"}, top_{"BP_BtlTopUI_C"}, tmgr_{"BP_BtlTargetManager_C"}, guicomp_{"BP_BtlGuiComponent_C"};
+  Finder top_{"BP_BtlTopUI_C"};
   int state_ = -1;
   WeakObj actor_, target_, last_actor_;
   bool turn_due_ = false;   // the wheel opened a turn whose line is not said yet: it waits for the turn's list
-  BtlWords w_;   // the battle database's words and numbers
+  BtlWords& w_ = btl_words();   // the battle database's words and numbers
   // An enemy on the wheel with its place among the targets left and right go through.
   std::string target_line(UObject* t) {
     std::string s = w_.enemy(t);
-    UObject* g = guicomp_.get();
-    auto* l = g ? field<TArray<UObject*>>(g, "EnemyList") : nullptr;
+    auto* l = wheel_enemies();
     for (int i = 0; l && l->num > 1 && i < l->num; ++i)
       if (l->data[i] == t) { s += std::format(", {} {} {}", i + 1, strings::kOf, l->num); break; }
     return s;
-  }
-  TArray<UObject*>* enemy_list() {
-    UObject* g = guicomp_.get();
-    return g ? field<TArray<UObject*>>(g, "EnemyList") : nullptr;
-  }
-  // The wheel's target: EnemyList["Target Index"], which only the player's left and right (and a new turn's list)
-  // move. CursorTargets also follows other things (it flickered between enemies while a battle opened, 2026-10-27).
-  UObject* wheel_target() {
-    UObject* g = guicomp_.get();
-    auto* l = enemy_list();
-    int32_t* i = g ? field<int32_t>(g, "Target Index") : nullptr;
-    if (l && i && *i >= 0 && *i < l->num && l->data[*i]) return l->data[*i];
-    return cursor_target();
   }
   // The wheel's commands, each with the game's key (or button). key_index: BP_BtlTopUI_C.KeyControl's slot, the one
   // its key checks (0 attack, 1 guard, 2 Persona, 3 item, 4 Shift, 5 analyze, 6 tactics, 7 assist, 8 rush, 9 survey;
@@ -94,7 +81,7 @@ class BattleScreen : public Screen {
   bool open(const Cmd& c) {
     UObject* top = top_.get();
     if (c.key == &strings::kKeyTheurgy) {
-      UObject* a = main_character();
+      UObject* a = acting_member();
       int tp = w_.unit_int("GetUnitTP", a), max_tp = w_.unit_int("GetUnitMaxTP", a);
       return max_tp > 0 && tp >= max_tp;
     }
@@ -110,32 +97,16 @@ class BattleScreen : public Screen {
       if (open(c)) s += (s.empty() ? "" : ", ") + std::string((*c.key)());
     return s + ". " + strings::kChangeTargetKeys();
   }
-  UObject* main_character() { UObject* m = tmgr_.get(); return m ? get<UObject*>(m, "MainCharacter") : nullptr; }
-  UObject* cursor_target() {
-    UObject* m = tmgr_.get();
-    auto* a = m ? field<TArray<UObject*>>(m, "CursorTargets") : nullptr;
-    return a && a->num > 0 ? a->data[0] : nullptr;
-  }
-  int gui_state() { UObject* g = gui_.get(); return g ? get<uint8_t>(g, "nowState") : 0; }
 
   // ---- what happened: every unit's HP is watched, and the action banner (the skill name the game shows at the
   // top while someone acts, FontDrawEx around y 105) is spoken with the actor's name. Damage numbers are sprites.
-  Finder core_{"BtlCoreComponent"};
   struct Unit { std::string name; int hp; bool enemy; uint32_t status = 0; };
   bool downed_since_turn_ = false;
   // EBtlDataBadStatus bits the game tracks per unit: 0 dizzy, 1 charm .. 8 poison, 13 down (GetBadStatus).
   uint32_t status_of(UObject* u) {
-    UObject* d = w_.db();
-    UFunction* f = d ? find_function(class_of(d), "GetBadStatus") : nullptr;
-    if (!f) return 0;
     uint32_t bits = 0;
-    for (int t : {0, 1, 2, 3, 4, 5, 6, 7, 8, 13}) {
-      Params p(f);
-      p.set<UObject*>("Actor", u);
-      p.set<int32_t>("Type", t);
-      call(d, p);
-      if (p.ret<bool>()) bits |= 1u << t;
-    }
+    for (int t : {0, 1, 2, 3, 4, 5, 6, 7, 8, 13})
+      if (w_.has_ailment(u, t)) bits |= 1u << t;
     return bits;
   }
   std::map<WeakObj::Key, Unit> units_;
@@ -194,7 +165,7 @@ class BattleScreen : public Screen {
     speech::speak(who.empty() ? b : std::format("{}: {}", who, b), false);
   }
   void watch() {
-    UObject* core = core_.get();
+    UObject* core = battle_core();
     if (!core) return;
     int st = gui_state();
     // On is said at once, over anything else: it answers the player's own press. Off queues: the game also ends a rush
@@ -204,16 +175,15 @@ class BattleScreen : public Screen {
       speech::speak(rush ? strings::kRushOn : strings::kRushOff, rush);
     }
     if (st == 1) picked_ = {};
-    else if (st == 2 || st == 3 || st == 4 || st == 7 || st == 11) picked_ = WeakObj::of(main_character());
+    else if (st == 2 || st == 3 || st == 4 || st == 7 || st == 11) picked_ = WeakObj::of(acting_member());
     // The action banner (only while no battle menu is up: menus draw names in the same band).
     std::string b;
-    UObject* phase = get<UObject*>(core, "CurrentPhase");
-    if (st == 0 && !(phase && is_a(phase, "BtlPhaseResult")))   // results draw names in that band too
+    if (st == 0 && !result_phase())   // results draw names in that band too
     for (auto& t : textcap::snapshot(200))
       if (t.source == 2 && t.y > 95 && t.y < 115 && t.x > 300 && t.x < 700 && (t.color & 0xff) == 0xff && core::has_words(t.text)) { b = t.text; break; }
     UObject* action_now = get<UObject*>(core, "CurrentAction");
     if (st == 0 && action_now && !(WeakObj::of(action_now) == picked_)) picked_ = {};
-    if (st != 0) commanded_ = WeakObj::of(main_character());
+    if (st != 0) commanded_ = WeakObj::of(acting_member());
     else if (action_now && !(WeakObj::of(action_now) == commanded_)) commanded_ = {};
     if (b.empty()) {
       banner_gone_ = true;
@@ -301,7 +271,7 @@ class BattleScreen : public Screen {
   }
 
   void announce_top() {
-    UObject* a = main_character();
+    UObject* a = acting_member();
     UObject* t = wheel_target();
     actor_ = WeakObj::of(a);
     target_ = WeakObj::of(t);
@@ -331,11 +301,11 @@ class BattleScreen : public Screen {
     return pressed;
   }
   void top_tick(bool entering, bool target_pressed) {
-    UObject* a = main_character();
+    UObject* a = acting_member();
     if (entering || (a && a != actor_.resolve())) turn_due_ = true;
     // The turn's target and its place are read from the turn's list. The line said before it was built had no "1 of 2"
     // on a battle's first turn, and the list appearing under it swallowed the player's first move (2026-11-05).
-    UObject* g = guicomp_.get();
+    UObject* g = battle_objects().gui_comp.get();
     if (!g || !get_bool(g, "IsCreateEnemyList")) return;
     UObject* t = wheel_target();
     if (a && turn_due_) {   // no acting member (between turns): nothing to say yet
@@ -359,7 +329,7 @@ class BattleScreen : public Screen {
     }
     else if (t && target_pressed && screens::current() == this && !msg::current().blocking && !input::modal()) {
       // The last enemy left: the game's cursor has nowhere to go, so the press is answered with who it is still on.
-      auto* l = enemy_list();
+      auto* l = wheel_enemies();
       if (l && l->num == 1) speech::speak(target_line(t), true);   // interrupting, like a menu's end (say_end)
     }
   }
@@ -372,7 +342,7 @@ class BattleScreen : public Screen {
   Finder analyze_{"BP_BtlGuiAnalyze_C"};
   struct Ends { bool low = false, high = false; UObject* on = nullptr; };   // the cursor is on the first / the last
   Ends ends(int st) {
-    UObject* o = st == 1 ? guicomp_.get() : st == 8 ? analyze_.get() : nullptr;
+    UObject* o = st == 1 ? battle_objects().gui_comp.get() : st == 8 ? analyze_.get() : nullptr;
     if (!o || (st == 1 && !get_bool(o, "IsCreateEnemyList"))) return {};   // the wheel's list is this turn's
     auto* l = field<TArray<UObject*>>(o, "EnemyList");
     int32_t* i = field<int32_t>(o, st == 1 ? "Target Index" : "TargetIndex");
@@ -427,7 +397,10 @@ class BattleScreen : public Screen {
   bool prompt_said_ = false;
 
  public:
-  BattleScreen() { keys::set_capture([this](uint32_t vk, bool repeat) { return end_key(vk, repeat); }); }
+  BattleScreen() {
+    battle_objects();   // the battle's objects are watched for from the start, not from the first battle
+    keys::set_capture([this](uint32_t vk, bool repeat) { return end_key(vk, repeat); });
+  }
   const char* id() const override { return "battle"; }
   // The All-Out and guard prompts and Analyze answer C (Cancel); on the command wheel C is Guard (and so is the
   // game's own Escape there, left to it).
@@ -438,7 +411,7 @@ class BattleScreen : public Screen {
   // Results are watched for as long as a battle exists, not only while a menu is up: the last blow ends the menus.
   void background() override {
     bool target_pressed = target_press();
-    UObject* core = core_.get();
+    UObject* core = battle_core();
     end_pad(core ? gui_state() : 0);
     if (!core) { units_.clear(); won_enemies_.clear(); forget_battle_start(); downed_since_turn_ = false; last_actor_ = {}; rush_ = false; popups_seen_.clear(); return; }
     watch();
@@ -470,9 +443,7 @@ class BattleScreen : public Screen {
       case 5: {
         if (prompt_said_) break;
         // The All-Out state lingers into Shuffle Time and the results: not a prompt then.
-        UObject* core = core_.get();
-        UObject* phase = core ? get<UObject*>(core, "CurrentPhase") : nullptr;
-        if (shuffle_ui() || (phase && is_a(phase, "BtlPhaseResult"))) break;
+        if (shuffle_ui() || result_phase()) break;
         prompt_said_ = true;
         screens::set_keys(strings::kAllOutKeys);
         speech::speak(std::format("{} {}", strings::kAllOutTitle, strings::kAllOutKeys()), true);
@@ -497,7 +468,7 @@ class BattleScreen : public Screen {
     }
   }
   std::string describe() override {
-    UObject* a = main_character();
+    UObject* a = acting_member();
     UObject* t = wheel_target();
     std::string s = a ? std::format("{}. {}", w_.unit_name(a), w_.hp_sp(a)) : std::string(strings::kBattle);
     if (t) s += std::format(". {} {}", strings::kTarget, target_line(t));

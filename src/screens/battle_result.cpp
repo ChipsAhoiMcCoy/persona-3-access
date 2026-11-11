@@ -1,6 +1,7 @@
 #include "screens/menu.h"
 #include "screens/util.h"
 #include "screens/battle.h"
+#include "screens/battle_state.h"
 #include "screens/persona_status.h"
 #include "core/strings.h"
 #include "items.h"
@@ -20,10 +21,8 @@ namespace p3a::screens {
 using namespace ue;
 
 UObject* result_ui() {
-  static Finder core{"BtlCoreComponent"};
-  UObject* c = core.get();
-  UObject* phase = c ? get<UObject*>(c, "CurrentPhase") : nullptr;
-  return phase && is_a(phase, "BtlPhaseResult") ? get<UObject*>(phase, "_uiBase") : nullptr;
+  UObject* phase = result_phase();
+  return phase ? get<UObject*>(phase, "_uiBase") : nullptr;
 }
 int result_state(UObject* ui) { return ui ? get<uint8_t>(ui, "State") : -1; }
 

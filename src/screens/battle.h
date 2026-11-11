@@ -1,4 +1,5 @@
 #pragma once
+#include "screens/battle_details.h"   // the detail buffer: the battle's callers reach it through this header
 #include <array>
 #include <cstdint>
 #include <map>
@@ -20,13 +21,6 @@ namespace p3a::ue { struct UObject; }
 namespace p3a::screens {
 // The live Shuffle Time actor (cards dealt), or null (shuffle.cpp).
 ue::UObject* shuffle_ui();
-// The details of who is in focus in a battle (battle_menus.cpp): the right stick up and down, Ctrl+Up and Ctrl+Down.
-namespace battle_details {
-bool in_focus();     // someone is in focus and no message window is over it
-void step(int dir);  // +1 the next line, -1 the previous, and read it
-void frame();        // every mod tick: claims the stick while someone is in focus and reads its flicks
-void install();
-}  // namespace battle_details
 // The victory screen's UI (the result phase's ABtlResultUIBase) and its EBtlResultState (-1 without one); Shuffle Time
 // comes before it, so a result state of 1 or more ends the deal (battle_result.cpp).
 ue::UObject* result_ui();
