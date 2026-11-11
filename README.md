@@ -139,6 +139,27 @@ Mod keys.
 - Audio description volume: 100 percent; 0 to 100 in steps of 10: the movie narrator
 - Mod keys: Space reads the list of the mod's keys
 
+### Details (the right stick, or Ctrl+Up and Ctrl+Down)
+
+Lists you go through often read only what you need to choose: the name, the cost or count, the position. The rest
+is one flick away. The right stick down, or Ctrl+Down, reads the next line of the focused row's details; the stick
+up, or Ctrl+Up, goes back. Landing on another row starts at its top again, which is the row itself. Backslash still
+reads the row and its description in one go. F1 mentions these keys wherever a row has details. This covers:
+
+- The camp menu's entries ("Item", then "View or use items").
+- Items, in the camp menu and in battle: what the item does.
+- Skills, in the camp menu, in battle and in the fusion skill-inheritance list: what the skill does. In battle the
+  acting member's details follow it.
+- Equip's gear lists: the item's description (its stats stay on the row).
+- A Persona's status page: what each skill it knows or learns later does. A skill it has just learned still says so
+  at once.
+- The Stats list: the member's Persona, its stats, skills with costs and affinities.
+- The game's Config: what the setting does.
+- Battles: whoever is in focus (see Battles below).
+
+Descriptions are still read at once where they are the point of the row: shops, requests, the calendar, Shuffle
+Time's cards, difficulty, a skill being learned, and choices in events.
+
 ### Key hints
 
 The mod does not read key hints by itself: press F1 (or both triggers and the Menu button) to hear the keys of the
@@ -308,8 +329,8 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   D-pad left and right choose, LB and RB switch character, X reads the personality, B goes back.
   Q and E switch to Tactics: each member with their tactic ("Yukari: Direct Commands"); Space opens the tactics. System > Rewind: each day you can go back to.
 - Config (System > Config): each settings page (Game System, Sound, Graphics, Display, Key Configuration), then
-  each setting with its current value and position, then its description ("Vibration: on, 1 of 24. Turn controller
-  vibration on or off": moving on cuts only the description); left and right arrows change the value and the new one
+  each setting with its current value and position ("Vibration: on, 1 of 24"); its description ("Turn controller
+  vibration on or off") is on the details keys; left and right arrows change the value and the new one
   is read; Space saves the changes and H restores defaults. Key Configuration reads the key bound to each action. The
   BGM rows open a playlist: each track as you move, Space sets it, F plays it (see the known issues about reaching it from the keyboard). System > Dictionary: each term as you move, and its
   explanation when you open it.

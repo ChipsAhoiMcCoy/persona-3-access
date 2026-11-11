@@ -66,7 +66,7 @@ class BattleList : public MenuScreen {
   BattleList(int state, const char* cls, const strings::Hint& keys = strings::kListKeys) : state_(state), list_(cls), keys_(keys) {}
  public:
   int priority() const override { return 26; }
-  void on_enter() override { screens::set_keys([this] { return std::string(keys_()) + " " + strings::kDetailKeys(); }); }
+  void on_enter() override { screens::set_keys(keys_); }
   bool active() override { return gui_state() == state_ && list_.get() != nullptr; }
 };
 
@@ -159,7 +159,7 @@ class BattleItems : public BattleList {
       // Its help line from the item's file (FBtlItemData.ID is the full item id the command takes).
       std::string help = idp >= 0 ? items::help(*(int32_t*)(it + idp)) : std::string();
       auto v = game_item(m_, i, [s] { return s; });
-      describe_with(v, [help] { return help; });
+      buffer_with(v, [help] { return help; });
       b.add_item(slot("items", i), v);
     }
     if (c >= 0) b.set_start(slot("items", c));

@@ -62,7 +62,9 @@ void build_status_page(ui::GraphBuilder& b, const uint8_t* e, const std::string&
     for (int j = 0; before && j < 8; ++j) had |= *(uint16_t*)(before + 0xC + j * 2) == sid;
     if (!had) l += std::string(", ") + strings::kNew;
     auto v = M::item([l] { return l; }, {}, [sid] { return skill_help(sid); });
-    M::describe_with(v, [sid] { return skill_help(sid); });
+    // A skill just learned says what it does; one already known keeps that for the detail buffer.
+    if (!had) M::describe_with(v, [sid] { return skill_help(sid); });
+    else M::buffer_with(v, [sid] { return skill_help(sid); });
     b.add_item(ui::ControlId::structural(std::format("{}.skill{}", k, i)), v);
   }
   b.pop_context();
@@ -76,7 +78,7 @@ void build_status_page(ui::GraphBuilder& b, const uint8_t* e, const std::string&
       std::string t = std::format("{}, {} {}", persona::skill_name(l.skill), strings::kLearnsAt, l.level);
       int sid = l.skill;
       auto v = M::item([t] { return t; }, {}, [sid] { return skill_help(sid); });
-      M::describe_with(v, [sid] { return skill_help(sid); });
+      M::buffer_with(v, [sid] { return skill_help(sid); });
       b.add_item(ui::ControlId::structural(std::format("{}.learn{}", k, sid)), v);
     }
     b.pop_context();

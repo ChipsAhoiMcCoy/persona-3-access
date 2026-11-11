@@ -106,7 +106,7 @@ class BattleScreen : public Screen {
     std::string s;
     for (auto& c : kCmds)
       if (open(c)) s += (s.empty() ? "" : ", ") + std::string((*c.key)());
-    return s + ". " + strings::kChangeTargetKeys() + " " + strings::kDetailKeys();
+    return s + ". " + strings::kChangeTargetKeys();
   }
   UObject* main_character() { UObject* m = tmgr_.get(); return m ? get<UObject*>(m, "MainCharacter") : nullptr; }
   UObject* cursor_target() {
@@ -484,7 +484,7 @@ class BattleScreen : public Screen {
         break;
       case 8: {   // Analyze: the target's name, level, health and the affinities found so far; A and D move it
         UObject* t = cursor_target();
-        if (entering) screens::set_keys([] { return std::string(strings::kAnalyzeKeys()) + " " + strings::kDetailKeys(); });
+        if (entering) screens::set_keys(strings::kAnalyzeKeys);
         if (!t || (!entering && t == target_.resolve())) break;
         target_ = WeakObj::of(t);
         std::string s = analyze_line(t);

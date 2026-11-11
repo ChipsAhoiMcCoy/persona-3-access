@@ -167,7 +167,7 @@ class CampItem : public MenuScreen {
         std::string label = std::format("{}, {}{}", name, n, usable ? "" : std::string(", ") + strings::kUnavailable);
         std::string help = items::help(id);   // its file's line, not the drawn page (built once per highlight)
         auto v = game_item(list_, i, [label] { return label; });
-        describe_with(v, [help] { return help; });
+        buffer_with(v, [help] { return help; });
         b.add_item(slot(key, i), v);
       }
       if (!items) b.add_item(ui::ControlId::structural("items.none"), item([] { return std::string(strings::kNoItems); }));
@@ -293,7 +293,7 @@ class CampSkill : public MenuScreen {
       party::Member mm;
       if (party::member(who, mm) && ((sp > 0 && sp > mm.sp) || (hp > 0 && hp >= mm.hp))) label += std::string(", ") + strings::kNotEnough;
       auto v = game_item(list_, i, [label] { return label; });
-      describe_with(v, [id] { return persona::skill_help(id); });
+      buffer_with(v, [id] { return persona::skill_help(id); });
       b.add_item(slot(key, i), v);
     }
     b.pop_context();
@@ -438,7 +438,7 @@ class CampEquip : public MenuScreen {
       // equipped item's while its slot is highlighted in the slot list), so a drawn-page read missed it.
       std::string help = items::help(id);
       auto v = game_item(gear_, i, [label] { return label; });
-      describe_with(v, [help] { return help; });
+      buffer_with(v, [help] { return help; });
       b.add_item(slot(key, i), v);
     }
     b.pop_context();
@@ -575,8 +575,7 @@ class CampStats : public MenuScreen {
   void on_enter() override {
     screens::set_keys([this] {
       int md = mode();
-      if (md == 1) return std::string(strings::kStatsKeys()) + " " + strings::kDetailKeys();
-      return std::string(md == 3 ? strings::kTacticsListKeys() : strings::kListKeys());
+      return std::string(md == 1 ? strings::kStatsKeys() : md == 3 ? strings::kTacticsListKeys() : strings::kListKeys());
     });
   }
   // A member on the party list: their line, their Persona, then its stats, skills with costs and affinities.
@@ -1387,7 +1386,7 @@ class CampStatsPage : public MenuScreen {
         std::string sl = persona::skill_name(sid), cost = persona::skill_cost(sid);
         if (!cost.empty()) sl += ", " + cost;
         auto v = item([sl] { return sl; }, {}, [sid] { return skill_help(sid); });
-        describe_with(v, [sid] { return skill_help(sid); });
+        buffer_with(v, [sid] { return skill_help(sid); });
         b.add_item(ui::ControlId::structural(std::format("{}.skill{}", k, i)), v);
       }
       b.pop_context();

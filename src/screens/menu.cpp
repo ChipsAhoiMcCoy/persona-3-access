@@ -445,6 +445,30 @@ void MenuScreen::describe_with(const ui::NodeVtablePtr& v, std::function<std::st
   v->announcements.push_back(ui::NodeAnnouncement(std::move(text), true, ui::announcement_kinds::kTooltip));
 }
 
+void MenuScreen::buffer_with(const ui::NodeVtablePtr& v, std::function<std::string()> text) {
+  if (!v->details) v->details = text;
+  // The row as it reads now (its label and whatever was declared before this call: a value, a mark), on one line.
+  auto parts = v->announcements;
+  v->detail_lines = [parts, text = std::move(text)] {
+    std::string row;
+    for (auto& p : parts)
+      if (std::string s = p.text ? p.text() : std::string(); !s.empty()) row += (row.empty() ? "" : ", ") + s;
+    std::vector<std::string> out;
+    if (!row.empty()) out.push_back(std::move(row));
+    if (std::string t = text(); !t.empty()) out.push_back(std::move(t));
+    return out;
+  };
+}
+
+bool MenuScreen::has_details() {
+  const ui::GraphNode* n = g_active == this ? nav().focused_node() : nullptr;
+  return n && n->vtable && n->vtable->detail_lines;
+}
+std::vector<std::string> MenuScreen::detail_lines() {
+  const ui::GraphNode* n = g_active == this ? nav().focused_node() : nullptr;
+  return n && n->vtable && n->vtable->detail_lines ? n->vtable->detail_lines() : std::vector<std::string>();
+}
+
 void MenuScreen::add_walk(ui::GraphBuilder& b, const std::string& key, int i, int n, const std::vector<std::string>& lines) {
   ui::ControlId prev = slot(key, i);
   for (size_t j = 0; j < lines.size(); ++j) {

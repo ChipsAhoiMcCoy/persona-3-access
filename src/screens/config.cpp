@@ -249,7 +249,7 @@ class ConfigScreen : public MenuScreen {
       auto v = game_item(list_, i, [this, i, of_list] { return of_list() ? rows_[i].title : std::string(); },
                          [this, i, of_list] { return of_list() ? desc(rows_[i]) : std::string(); });
       if (!tabs_) v->announcements.push_back(ui::NodeAnnouncement([this, i, of_list] { return of_list() ? rows_[i].value : std::string(); }, true, ui::announcement_kinds::kValue));
-      describe_with(v, [this, i, of_list] { return of_list() ? desc(rows_[i]) : std::string(); });
+      buffer_with(v, [this, i, of_list] { return of_list() ? desc(rows_[i]) : std::string(); });
       b.add_item(slot(list_key_, i), v);
     }
     if (int c = list_.cursor(); c >= 0) b.set_start(slot(list_key_, c));

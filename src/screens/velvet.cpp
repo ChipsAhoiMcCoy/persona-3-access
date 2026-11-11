@@ -419,7 +419,7 @@ void VelvetScreen::build_inherit(ui::GraphBuilder& b) {
       bool on = ee && ee->data && i < ee->num && *(uint16_t*)(ee->data + i * 8 + 6) == 1;
       return on ? std::string(strings::kChosen) : std::string();
     }, true, ui::announcement_kinds::kSelected));
-    describe_with(v, [id] { return persona::skill_help(id); });
+    buffer_with(v, [id] { return persona::skill_help(id); });
     b.add_item(slot("velvet.inherit", i), v);
   }
   b.pop_context();

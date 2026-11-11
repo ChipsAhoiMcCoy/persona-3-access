@@ -7,6 +7,8 @@
 - Affinities drop the word "Attack": "weak to Fire, Ice" instead of "weak to Fire Attack, Ice Attack". "Downed" is now "Down".
 - The battle skill list reads name and cost only ("Agi, 3 SP, 2 of 3"). What the skill does is one flick away: Ctrl+Down or the right stick down reads it, then the acting member's details.
 - The Stats list reads each member with their Persona's name only. Ctrl+Down or the right stick down walks the Persona's stats, skills with costs and affinities line by line. This is the same details list battles have, now outside battle too.
+- More lists keep their descriptions for the same details keys instead of reading them after every row: the camp menu's entries, items in the camp menu and in battle, the camp menu's skills, Equip's gear, the skills on a Persona's status page (one just learned still says what it does), the fusion skill-inheritance list and the game's Config. Backslash reads a row with its description in one go, as before. Shops, requests, the calendar, Shuffle Time's cards and event choices still read theirs at once.
+- F1 mentions the details keys wherever the focused row has details.
 - Choosing who gets an item, casts or receives a skill, or changes gear no longer reads each member's level.
 - The mod settings are in five categories instead of one list of 27: Exploring, Sonar, Sound, Dialogue and movies, Controls and help. Tab and Shift+Tab, Page Down and Page Up, or RB and LB change category.
 

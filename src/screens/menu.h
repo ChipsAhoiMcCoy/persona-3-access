@@ -105,8 +105,9 @@ class MenuScreen : public Screen, public ui::Screen {
   // for the focused item, its own line first. What a row would otherwise say on every move (a skill's description, a
   // member's Persona, stats and skills) goes here (the user's call, 2026-11-11). has_details is asked every frame and
   // is cheap; the lines are built on a press.
-  virtual bool has_details() { return false; }
-  virtual std::vector<std::string> detail_lines() { return {}; }
+  // By default they are the focused row's own (buffer_with); a screen overrides both for more.
+  virtual bool has_details();
+  virtual std::vector<std::string> detail_lines();
   // The focused item's identity: landing on another starts the buffer at its top again.
   std::string detail_key() const;
 
@@ -118,6 +119,10 @@ class MenuScreen : public Screen, public ui::Screen {
   // A description read after the item's position, and again when it changes while focused (a page the game builds
   // once its cursor is on the item).
   static void describe_with(const ui::NodeVtablePtr& v, std::function<std::string()> text);
+  // A description kept off the row: the detail buffer's second line (the row's own label is its first), and part of
+  // what the review key reads. For a list gone through often, where the same words after every row were noise (the
+  // user's call, 2026-11-11). A choice made once, or a row whose description is its content, keeps describe_with.
+  static void buffer_with(const ui::NodeVtablePtr& v, std::function<std::string()> text);
   // A mirrored list's item: activation confirms it in the game once the game's cursor is on it.
   ui::NodeVtablePtr game_item(Mirror& m, int i, std::function<std::string()> label, std::function<std::string()> details = {});
   // Lines to the right of a list's row i (of n): Right walks them (each stat, each skill), Left walks back, Up and Down

@@ -93,7 +93,7 @@ class CampScreen : public MenuScreen {
       std::string label = strings::kCampItems[i], help = strings::kCampHelp[i];
       if (party::flag(kLock[i])) label += std::string(", ") + strings::kUnavailable;
       auto v = game_item(list_, i, [label] { return label; }, [help] { return help; });
-      describe_with(v, [help] { return help; });
+      buffer_with(v, [help] { return help; });   // "View or use items": said on every opening and move before
       b.add_item(slot("camp", i), v);
     }
     if (int c = list_.cursor(); c >= 0) b.set_start(slot("camp", c));

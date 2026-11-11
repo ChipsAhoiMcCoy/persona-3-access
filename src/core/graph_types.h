@@ -120,6 +120,9 @@ struct NodeVtable {
   /// Optional. The control's details as text (a description, stats): what the host reads on demand (P3R: the review
   /// key) and what on_tooltip speaks when it is unset.
   std::function<std::string()> details;
+  /// Optional. The control's details as lines the host walks one at a time on demand (P3R: the detail buffer, the
+  /// right stick or Ctrl+Up / Down), the control's own line first.
+  std::function<std::vector<std::string>()> detail_lines;
   /// Optional. The long form of the tooltip (Ctrl+Space) -- what the game shows with its modifier held.
   /// Falls back to on_tooltip when unset.
   std::function<void()> on_tooltip_detail;

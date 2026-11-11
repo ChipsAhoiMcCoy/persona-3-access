@@ -13,6 +13,7 @@
 #include "poi.h"
 #include "gametext.h"
 #include "screens/screen.h"
+#include "screens/battle.h"
 #include "speech.h"
 #include "stats.h"
 #include "social.h"
@@ -56,7 +57,11 @@ static void screen_keys() {
   bool over = screens::current() && screens::current()->over_messages();
   if (m.blocking && !over) k = m.kind == "Tutorial" ? strings::kTutorialKeys() : !m.choices.empty() ? strings::kChooseKeys()
                     : m.kind == "System" ? strings::kSpaceContinues() : strings::kDialogueKeys();
-  else if (screens::current()) k = screens::keys();
+  else if (screens::current()) {
+    k = screens::keys();
+    // Wherever the detail buffer has something to read (a battle's units, a row with a description kept off it).
+    if (screens::battle_details::in_focus()) k += (k.empty() ? "" : " ") + std::string(strings::kDetailKeys());
+  }
   else if (world::player())
     k = std::string(strings::kFieldKeys()) + " " + (poi::tartarus_floor() > 0 ? std::string(strings::kTartarusKeys()) + " " : std::string()) + strings::kModKeysHint();
   if (k.empty()) k = std::string(strings::kNoKeys) + " " + strings::kModKeysHint();
