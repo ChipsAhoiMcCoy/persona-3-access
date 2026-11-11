@@ -20,6 +20,9 @@
 - A Shadow that notices you sounds a harsh two-note alarm from where it is, and its growl is higher, louder and faster while it hunts you. Two soft falling notes mean it has lost you.
 - The strike-reach ring also plays for a breakable object while your strike would break it. A Shadow in reach takes the ring first. Like the other Shadow cues it needs the Shadow alerts setting on.
 
+### Exploring
+- Pushing the controller's left stick stops the auto-walk, as a movement key already did on the keyboard.
+
 ### Sounds
 - A sound with a place in the world now stays at that place while it plays: the sonar's sounds, the beacon, the Shadow cues and the nearby chimes shift in your ears as you walk or turn the camera during them. Each used to stay where it was heard when it started.
 - None of the mod's field sounds play in a battle, a story scene, a conversation, a menu or shop, behind a faded-out screen, or while the mod's settings are open. The wall tones and the nearby chimes used to go on through battles and scenes; the wall tones, the sonar, the chimes, the Shadow cues and the beacon now all follow one rule.

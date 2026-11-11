@@ -283,6 +283,7 @@ static void** iat_slot(const char* dll, WORD ordinal);
 static std::atomic<uint64_t> g_pad_ms{0};
 static std::atomic<bool> g_pad_seen{false};   // a controller answered at least once
 uint64_t pad_ms() { return g_pad_ms; }
+static std::atomic<bool> g_pad_moving{false};
 static void poll_pad() {
   static void** slot = iat_slot("XINPUT1_3.dll", 2);
   if (!slot || !*slot) return;
@@ -304,7 +305,12 @@ static void poll_pad() {
     prev[i] = s;
     g_pad_seen = true;
   }
+  // The left stick pushed on any controller (bits 18 to 21): the player is walking the hero himself.
+  bool moving = false;
+  for (uint32_t s : prev) moving |= (s & (0xFu << 18)) != 0;
+  g_pad_moving = moving;
 }
+bool pad_moving() { return g_pad_moving; }
 
 // Key hints follow the device the player last drove the game with; before any input, a controller that answers.
 bool pad_in_use() {

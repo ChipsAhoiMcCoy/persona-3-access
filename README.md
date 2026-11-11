@@ -64,7 +64,7 @@ nearest point of interest of the current category. While you hold them the game 
 
 - D-pad left / right: Previous / next category of points of interest, read from its nearest
 - D-pad up / down: Previous (nearer) / next (farther) point of interest in the category
-- A: Walk to the selected point of interest (again to stop)
+- A: Walk to the selected point of interest (again, or push the left stick, to stop)
 - B: Describe the area: how the place around you looks
 - X: Repeat the current message, or describe the current screen
 - Y: Where am I

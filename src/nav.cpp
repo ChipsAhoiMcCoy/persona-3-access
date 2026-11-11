@@ -204,6 +204,7 @@ void tick() {
     // hero back from a blocked way, and the walk took him straight into it again, over and over.
     if (blocking) { log::write("nav: stopped, a message or a menu came up"); stop(false); return; }
     if (keys::movement_key_down()) { log::write("nav: stopped, a movement key is held"); stop(true); return; }   // the player took over
+    if (input::pad_moving()) { log::write("nav: stopped, the controller's stick is pushed"); stop(true); return; }
     // Stairs and doors are area changes that move the hero to another part of the map in one frame; the walk ends
     // there (otherwise it re-paths from the new floor and runs on through the next staircase).
     static FVector last{};
