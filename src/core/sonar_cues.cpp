@@ -193,6 +193,54 @@ std::vector<float> layer_cue(int rate) {
   return v;
 }
 
+// Reach: a blade's ring: a hiss that sweeps up fast into two high, slightly sour partials.
+std::vector<float> reach_cue(int rate) {
+  const int n = frames(rate, 0.11);
+  std::vector<float> v(n);
+  Noise noise(0x3c6ef372);
+  BandPass hiss;
+  for (int i = 0; i < n; ++i) {
+    double sec = (double)i / rate;
+    double sweep = 2500.0 + 5500.0 * std::min(1.0, sec / 0.02);
+    double ring = std::sin(2.0 * kPi * 3520.0 * sec) + 0.6 * std::sin(2.0 * kPi * 5310.0 * sec);
+    v[i] = hiss.run(noise.next(), sweep, 3.0, rate) * (float)(2.0 * std::exp(-sec / 0.012)) +
+           (float)(ring * 0.5 * std::exp(-sec / 0.030) * (1.0 - std::exp(-sec / 0.002)));
+  }
+  return v;
+}
+
+// A sawtooth note into v from `at` for `len` seconds (band-limited, quick in and out).
+void saw_note(std::vector<float>& v, int rate, double at, double len, double hz, float level) {
+  int start = frames(rate, at), count = frames(rate, len);
+  for (int i = 0; i < count && start + i < (int)v.size(); ++i) {
+    double sec = (double)i / rate, s = 0;
+    for (int k = 1; k * hz < 6000.0; ++k) s += std::sin(2.0 * kPi * hz * k * sec) / k;
+    double env = (1.0 - std::exp(-sec / 0.003)) * std::min(1.0, (count - i) / (rate * 0.012));
+    v[start + i] += (float)(s * env) * level;
+  }
+}
+// Spotted: two harsh notes a tritone apart, the second higher and longer: an alarm.
+std::vector<float> spotted_cue(int rate) {
+  std::vector<float> v(frames(rate, 0.19), 0.0f);
+  saw_note(v, rate, 0.0, 0.07, 622.0, 0.9f);
+  saw_note(v, rate, 0.075, 0.115, 880.0, 1.0f);
+  return v;
+}
+// Lost: two soft sine notes, falling a fourth.
+std::vector<float> lost_cue(int rate) {
+  std::vector<float> v(frames(rate, 0.19), 0.0f);
+  const double hz[2] = {587.0, 440.0};
+  for (int k = 0; k < 2; ++k) {
+    int start = frames(rate, k * 0.085), count = frames(rate, 0.10);
+    for (int i = 0; i < count && start + i < (int)v.size(); ++i) {
+      double sec = (double)i / rate;
+      double s = std::sin(2.0 * kPi * hz[k] * sec) + 0.2 * std::sin(4.0 * kPi * hz[k] * sec);
+      v[start + i] += (float)(s * (1.0 - std::exp(-sec / 0.008)) * std::exp(-sec / 0.040));
+    }
+  }
+  return v;
+}
+
 // Silence at both ends (a few ms of fade, so nothing clicks), no DC, then the common loudness.
 void finish(std::vector<float>& v, int rate, float rms_target) {
   if (v.empty()) return;
@@ -230,8 +278,16 @@ std::vector<float> sonar_cue(SonarCue cue, int rate) {
 }
 
 std::vector<float> signal_cue(SignalCue cue, int rate) {
-  std::vector<float> v = cue == SignalCue::Beacon ? beacon_cue(rate) : cue == SignalCue::Shadow ? shadow_cue(rate) :
-                         cue == SignalCue::Ambush ? ambush_cue(rate) : layer_cue(rate);
+  std::vector<float> v;
+  switch (cue) {
+    case SignalCue::Beacon: v = beacon_cue(rate); break;
+    case SignalCue::Shadow: v = shadow_cue(rate); break;
+    case SignalCue::Ambush: v = ambush_cue(rate); break;
+    case SignalCue::Reach: v = reach_cue(rate); break;
+    case SignalCue::Spotted: v = spotted_cue(rate); break;
+    case SignalCue::Lost: v = lost_cue(rate); break;
+    default: v = layer_cue(rate); break;
+  }
   finish(v, rate, kSonarCueRms);
   return v;
 }

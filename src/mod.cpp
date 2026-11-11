@@ -20,6 +20,7 @@
 #include "persona.h"
 #include "social.h"
 #include "sonar.h"
+#include "shadow.h"
 #include "bmdfile.h"
 #include "audio.h"
 #include "devserver.h"
@@ -111,6 +112,7 @@ void init(bool speech_ok) {
   voice::install();
   poi::install();
   sonar::install();
+  shadow::install();
   area::install();
   nav::install();
   commands::install();

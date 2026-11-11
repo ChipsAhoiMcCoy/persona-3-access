@@ -15,6 +15,7 @@
 #include "hooks.h"
 #include "seh.h"
 #include "settings.h"
+#include "shadow.h"
 #include "social.h"
 #include "sonar.h"
 #include "speech.h"
@@ -601,68 +602,6 @@ static void prompt_tick() {
   speech::speak((verb.empty() ? label : verb + ": " + label) + (link.empty() ? "" : ", " + link), true);
 }
 
-// A Shadow within 15 m pulses from its direction, faster and louder as it closes in (lower when it is behind).
-// Striking a Shadow from behind starts the battle with the advantage (the game's Chance Encounter). Within 4 m the
-// nearest Shadow's heading is spoken once ("back turned" / "facing you"); while the hero stands behind it, facing
-// it, within reach, a high tick says the strike (Ctrl) will land from behind.
-static float yaw_of(UObject* a) {
-  Params p(find_function(class_of(a), "K2_GetActorRotation"));
-  call(a, p);
-  return p.ret<FRotator>().yaw;
-}
-static float angle_diff(float a, float b) { float d = std::fmod(a - b + 540.0f, 360.0f) - 180.0f; return std::fabs(d); }
-static void ambush_cues(UObject* shadow, const world::FVector& at, const world::FVector& me, float dist) {
-  static WeakObj told;
-  static int told_state = -1;
-  static ULONGLONG tick_at = 0;
-  if (!shadow) return;
-  float to_me = std::atan2(me.y - at.y, me.x - at.x) * 180.0f / 3.14159265f;
-  bool back_turned = angle_diff(yaw_of(shadow), to_me) > 110.0f;   // the hero is outside its front
-  WeakObj w = WeakObj::of(shadow);
-  if (dist < 400.0f) {
-    int st = back_turned ? 1 : 0;
-    if (!(w == told) || st != told_state) {
-      told = w; told_state = st;
-      speech::speak(back_turned ? strings::kShadowBackTurned : strings::kShadowFacingYou, false);
-    }
-  } else if (dist > 600.0f && w.index == told.index) {
-    told_state = -1;
-  }
-  UObject* hero = world::player();
-  if (hero && back_turned && dist < 220.0f) {
-    float to_shadow = std::atan2(at.y - me.y, at.x - me.x) * 180.0f / 3.14159265f;
-    ULONGLONG now = GetTickCount64();
-    if (angle_diff(yaw_of(hero), to_shadow) < 45.0f && now - tick_at > 700) { tick_at = now; audio::signal((int)core::SignalCue::Ambush, 1.2f, world::spot(me, at)); }
-  }
-}
-
-static void shadow_alert() {
-  if (!settings::on(settings::ShadowAlerts)) return;
-  static ULONGLONG next = 0;
-  ULONGLONG now = GetTickCount64();
-  if (now < next) return;
-  world::FVector me;
-  if (!world::player_location(me)) return;
-  float best = 1e9f, bearing = 0;
-  UObject* nearest = nullptr;
-  world::FVector at{};
-  for (UObject* a : live("EnemySymbolBaseCore")) {
-    if (get_bool(a, "bHidden")) continue;
-    world::FVector v{};
-    if (!guarded([&] { v = world::actor_location(a); })) continue;
-    if (std::fabs(v.z - me.z) > 300.0f) continue;
-    float d = std::hypot(v.x - me.x, v.y - me.y);
-    if (d < best) { best = d; bearing = world::bearing(me, v); nearest = a; at = v; }
-  }
-  if (best > 1500.0f) { next = now + 500; return; }
-  ambush_cues(nearest, at, me, best);
-  float b = bearing * 3.14159265f / 180.0f;
-  float closeness = 1.0f - best / 1500.0f;
-  bool behind = std::cos(b) < -0.2f && settings::on(settings::BehindPitch);
-  audio::signal((int)core::SignalCue::Shadow, 0.5f + 1.0f * closeness, world::spot(me, at), behind ? 0.7f : 1.0f);
-  next = now + (ULONGLONG)(250 + 900 * (1.0f - closeness));
-}
-
 // Items picked up in the field (Tartarus chests): "Revival Bead×1" fades in at the left (FontDrawEx, about
 // x 270 y 345, measured 2026-10-27). Spoken once it is fully drawn, when it appears (not again while it stays).
 static void pickup_tick() {
@@ -710,7 +649,7 @@ static void proximity_chimes() {
 void tick() {
   if (screens::current() || msg::current().blocking) return;   // a menu, notice or message has the floor
   pickup_tick();
-  shadow_alert();
+  shadow::tick();
   proximity_chimes();
   prompt_tick();
   // The area is said on arrival: when the hero is a new actor (a field loaded) or the place banner changes (the game

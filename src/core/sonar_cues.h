@@ -27,6 +27,9 @@ enum class SignalCue {
   Shadow,   // a Shadow near: a low, rough growl that dies away
   Ambush,   // the strike will land from behind: two quick glassy ticks, the second higher
   Layer,    // the controller's mod layer opened: one soft tick
+  Reach,    // a Shadow is within the strike's reach: a blade's short ring
+  Spotted,  // a Shadow has noticed the hero: a harsh two-note alarm, rising
+  Lost,     // it has lost him again: two soft notes, falling
   Count
 };
 std::vector<float> signal_cue(SignalCue cue, int rate);

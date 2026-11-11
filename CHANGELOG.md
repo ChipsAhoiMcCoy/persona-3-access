@@ -8,6 +8,10 @@
 - New mod settings: Sonar, Sonar plays (everything nearby, the list's category only, or the selected point only at any distance), Sonar range, a switch for each kind (changing one plays its sound), and Sonar volume.
 - The nearby chimes now play only while the sonar is off.
 
+### Shadows in Tartarus
+- Strike reach: while a Shadow is inside the reach of your strike, a blade's short ring repeats from it, so you know the attack will connect before you swing. It is read from the game's own hit area. Behind the Shadow, the ring is the two quick ticks that mean the strike brings the advantage; those used to rely on an estimate of the distance.
+- A Shadow that notices you sounds a harsh two-note alarm from where it is, and its growl is higher, louder and faster while it hunts you. Two soft falling notes mean it has lost you.
+
 ### Sounds
 - The mod's plain beeps are replaced by sounds made to match the sonar's. The beacon is a short rising chirp, the Shadow pulse a low, rough growl, the "strike from behind" cue two quick high ticks, and the controller layer's tick is softer.
 - A nearby chime is now its kind's sonar sound, played once, instead of a beep at one of five pitches.
