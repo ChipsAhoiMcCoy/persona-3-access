@@ -3,6 +3,7 @@
 #include "commands.h"
 #include "area.h"
 #include "audio.h"
+#include "core/sonar_cues.h"
 #include "core/strings.h"
 #include "keys.h"
 #include "msg.h"
@@ -64,7 +65,7 @@ static void screen_keys() {
 
 // The controller's mod layer opened (both triggers): a tick, and in the field the points of interest at once.
 static void pad_layer() {
-  audio::beep(880.0f, 40, 0.3f, 0.0f);
+  audio::signal((int)core::SignalCue::Layer, 0.9f, audio::Spot{});
   if (!screens::current() && !msg::current().blocking && world::player()) poi::announce_list();
 }
 

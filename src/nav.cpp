@@ -1,5 +1,6 @@
 #include "nav.h"
 #include "audio.h"
+#include "core/sonar_cues.h"
 #include "core/strings.h"
 #include "devserver.h"
 #include "hooks.h"
@@ -274,10 +275,10 @@ void tick() {
         float b = world::bearing(me, wp) * 3.14159265f / 180.0f;
         bool behind = std::cos(b) < -0.2f && settings::on(settings::BehindPitch);
         float dist = flat(p.loc, me);
-        float vol = 0.25f + 0.35f * std::max(0.0f, 1.0f - dist / 3000.0f);
+        float vol = 0.6f + 0.7f * std::max(0.0f, 1.0f - dist / 3000.0f);
         audio::Spot at = world::spot(me, wp);   // from the next waypoint, as far away as the target (air absorption)
         at.dist_m = dist / 100.0f;
-        audio::beep(behind ? 440.0f : 880.0f, 60, vol, at);
+        audio::signal((int)core::SignalCue::Beacon, vol, at, behind ? 0.67f : 1.0f);   // behind: a fifth lower
       }
     }
   }

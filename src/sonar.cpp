@@ -162,6 +162,15 @@ void selected(const poi::Poi& p) {
   emit(kind, me, p.loc, false);
 }
 
+void chime(const poi::Poi& p) {
+  FVector me;
+  int kind = cue_of(p.kind);
+  if (kind < 0 || !world::player_location(me)) return;
+  audio::Spot s = world::spot(me, p.loc);
+  bool behind = s.ahead < -0.2f && settings::on(settings::BehindPitch);
+  audio::play(cue(kind, false), 1.2f, s, audio::Bus::Cues, behind ? kBehindRate : 1.0f);
+}
+
 bool preview(settings::Id id) {
   int kind = id == settings::SonarExits ? 0 : id == settings::SonarDoors ? 1 : id == settings::SonarPeople ? 2 :
              id == settings::SonarShops ? 3 : id == settings::SonarThings ? 4 : id == settings::SonarVolume ? (int)SonarCue::Thing : -1;

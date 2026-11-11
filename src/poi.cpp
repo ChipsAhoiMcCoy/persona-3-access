@@ -1,6 +1,7 @@
 #include "poi.h"
 #include "party.h"
 #include "watch.h"
+#include "core/sonar_cues.h"
 #include "core/strings.h"
 #include "core/units.h"
 #include "core/text_clean.h"
@@ -631,7 +632,7 @@ static void ambush_cues(UObject* shadow, const world::FVector& at, const world::
   if (hero && back_turned && dist < 220.0f) {
     float to_shadow = std::atan2(at.y - me.y, at.x - me.x) * 180.0f / 3.14159265f;
     ULONGLONG now = GetTickCount64();
-    if (angle_diff(yaw_of(hero), to_shadow) < 45.0f && now - tick_at > 700) { tick_at = now; audio::beep(1320.0f, 40, 0.5f, world::spot(me, at)); }
+    if (angle_diff(yaw_of(hero), to_shadow) < 45.0f && now - tick_at > 700) { tick_at = now; audio::signal((int)core::SignalCue::Ambush, 1.2f, world::spot(me, at)); }
   }
 }
 
@@ -658,7 +659,7 @@ static void shadow_alert() {
   float b = bearing * 3.14159265f / 180.0f;
   float closeness = 1.0f - best / 1500.0f;
   bool behind = std::cos(b) < -0.2f && settings::on(settings::BehindPitch);
-  audio::pulse(behind ? 110.0f : 165.0f, 140, 0.15f + 0.45f * closeness, world::spot(me, at));
+  audio::signal((int)core::SignalCue::Shadow, 0.5f + 1.0f * closeness, world::spot(me, at), behind ? 0.7f : 1.0f);
   next = now + (ULONGLONG)(250 + 900 * (1.0f - closeness));
 }
 
@@ -700,11 +701,7 @@ static void proximity_chimes() {
     if (p.dist > 800.0f) { if (armed.count(key)) still.insert(key); continue; }
     still.insert(key);
     if (armed.count(key) || played >= 2) continue;
-    float b = p.bearing * 3.14159265f / 180.0f;
-    float f = p.kind == Kind::Exit ? 392.0f : p.kind == Kind::Door ? 523.0f : p.kind == Kind::Person ? 659.0f :
-              p.kind == Kind::Shop ? 784.0f : 988.0f;
-    if (std::cos(b) < -0.2f && settings::on(settings::BehindPitch)) f *= 0.85f;   // behind: a little lower
-    audio::beep(f, 70, 0.3f, world::spot(me, p.loc));
+    sonar::chime(p);   // its kind's sound (the sonar's), a little lower from behind
     ++played;
   }
   armed.swap(still);

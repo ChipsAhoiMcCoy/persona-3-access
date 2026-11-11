@@ -21,4 +21,14 @@ std::vector<float> sonar_cue(SonarCue cue, int rate);
 std::vector<float> sonar_cue_marked(SonarCue cue, int rate);
 inline constexpr float kSonarCueRms = 0.10f;   // what the spikiest of them (the pluck) reaches under the peak limit
 
+// The mod's other signals, made the same way and at the same loudness (they were plain sine and triangle beeps):
+enum class SignalCue {
+  Beacon,   // the way to the selected point: a clean chirp that rises an octave
+  Shadow,   // a Shadow near: a low, rough growl that dies away
+  Ambush,   // the strike will land from behind: two quick glassy ticks, the second higher
+  Layer,    // the controller's mod layer opened: one soft tick
+  Count
+};
+std::vector<float> signal_cue(SignalCue cue, int rate);
+
 }  // namespace p3a::core

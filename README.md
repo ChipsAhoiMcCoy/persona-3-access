@@ -111,7 +111,7 @@ once, to `%LOCALAPPDATA%\P3RAccess\settings.ini`. The menu plays the game's own 
 - Sonar plays: everything nearby, the list's category only, the selected point only (at any distance): narrows the sonar to the category the points of interest list is on, or to the one point you selected there, which then sounds however far away it is
 - Sonar range: 10 meters; 5, 8, 15, 20 or 30
 - Sonar: exits, Sonar: doors, Sonar: people, Sonar: shops, Sonar: objects: on, off: each kind of thing on its own. Changing one plays its sound, so this is also where to learn them
-- Beacon: off, on (also Shift+Semicolon): a beep from the direction of the path to the selected point of interest
+- Beacon: off, on (also Shift+Semicolon): a chirp from the direction of the path to the selected point of interest
 - Nearby chimes: on, off: the chime when a way to another area, a person or a thing comes within 8 m. Only while the sonar is off: with it on, each thing's own sound tells you it has come near
 - Shadow alerts: on, off: the Shadow pulse and the back-turned / facing-you cues in Tartarus
 - 3D sound for headphones: on, off: the sonar, the beacon, the nearby chimes and the Shadow cues come from where their source is, ahead, behind, above or below (Steam Audio's HRTF; far sounds are also a little duller). Off pans them left and right only, as before
@@ -119,7 +119,7 @@ once, to `%LOCALAPPDATA%\P3RAccess\settings.ini`. The menu plays the game's own 
 - Points of interest range: 60 meters; 20, 40, 100 or 150
 - Mod master volume: 100 percent; 0 to 100 in steps of 10, like the game's volume sliders: every sound the mod plays (not the game's own sounds, which follow the game's settings)
 - Sonar volume: 80 percent; 0 to 100 in steps of 10: the sonar's sounds (changing it plays one)
-- Beeps and chimes volume: 60 percent; 0 to 100 in steps of 10: the beacon, the nearby chimes, the Shadow cues and the other beeps
+- Beeps and chimes volume: 60 percent; 0 to 100 in steps of 10: the beacon, the nearby chimes, the Shadow cues and the controller layer's tick
 - Wall tone volume: 100 percent; 0 to 100 in steps of 10: the wall tones
 - Controller trigger delay: 150 milliseconds; off, 100 or 250
 - Menu key hints on entry: off, on: menus say their keys after their first line, as they used to, besides F1
@@ -154,8 +154,8 @@ Points of interest come in categories: exits (each leads to another area and is 
 "Gekkoukan High School" there is the way into the school, not out of it), doors (rooms you check to go in: classrooms,
 offices, restrooms, the dorm's bedrooms), people, shops (businesses, food, vendors and vending machines), objects
 (everything else you can check) and, in Tartarus, Shadows. Each category lists its points nearest first, and a
-category with nothing in it is skipped. The proximity chimes rise in pitch in the same order: exits lowest, then
-doors, people, shops, and objects highest. They are spoken with their name, distance, clock direction and position: "Iwatodai Station, 6 meters, 2 o'clock, 1 of 3". The category is said first when you change category or open the controller layer.
+category with nothing in it is skipped. The sonar and the nearby chimes have one sound for each of the first five
+(see Sounds). Points are spoken with their name, distance, clock direction and position: "Iwatodai Station, 6 meters, 2 o'clock, 1 of 3". The category is said first when you change category or open the controller layer.
 12 o'clock is straight ahead (where pushing forward walks), 3 o'clock is to your right.
 With the sonar on, each point you land on in the list also plays its kind's sound once from where it is, however far,
 and the one you have selected is marked among the sonar's sounds by a short high tick before its own.
@@ -272,9 +272,9 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   page, and Tab jumps its sections). Space or Enter goes on and stops the reading; pressed before the game takes it, it
   is kept until it does. Enemies that fall together are said in one line ("2 Cowardly
   Maya defeated"), and the All-Out Attack prompt is said once with its buttons (Space to attack, Escape to hold back).
-- Tartarus: Shadows are points of interest (their own category) and pulse from their direction when within 15 m,
-  faster as they close in. Within 4 m you hear whether a Shadow has its back turned or is facing you; a high tick
-  means you stand behind it, facing it, close enough: strike with Ctrl for the advantage. Chest items are read as you
+- Tartarus: Shadows are points of interest (their own category) and growl from their direction when within 15 m,
+  faster and louder as they close in. Within 4 m you hear whether a Shadow has its back turned or is facing you; two quick high ticks
+  mean you stand behind it, facing it, close enough: strike with Ctrl for the advantage. Chest items are read as you
   pick them up, and opened chests leave the list.
 - The camp menu's submenus (Item, Equip, Skill, System and others): the highlighted entry, its position and its
   description. In Equip's gear lists F (X / Square) reads the highlighted item again with its description. System > Tutorial lets you re-read every tutorial, in tabs (Battle, Dungeon, Daily Life,
@@ -361,10 +361,12 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   left out unless you can walk there. The point selected in the points of interest list always has a place among
   them, marked by a short high tick before its sound. The sonar is silent in menus, conversations, story scenes and
   battles. Shadows are not part of it: they keep their own pulse.
-- Beacon: a short beep every 0.6 seconds from the direction of the path to the selected place; a lower beep means it
-  is behind you (Lower pitch behind you).
-- Nearby chimes: when a way to another area, a person or a thing comes within 8 m, it chimes once from its direction,
-  rising from exits (lowest) through doors, people and shops to things to check or open (highest). A slightly lower chime means it is behind you. It chimes again
+- Beacon: a short rising chirp every 0.6 seconds from the direction of the path to the selected place, louder as you
+  near it; a clearly lower chirp means it is behind you (Lower pitch behind you).
+- Shadow pulse: a low, rough growl from a Shadow within 15 m, faster and louder as it closes in, lower when it is
+  behind you. Two quick high ticks, the second higher, mean a strike now would land from behind.
+- Nearby chimes: when a way to another area, a person or a thing comes within 8 m, its kind's sonar sound (the air,
+  the knocks, the "hm", the bell or the plucked note) plays once from its direction, a little lower when it is behind you. It plays again
   once you have been more than 15 m away. The chimes are the sonar's quieter stand-in: they play only while the sonar is off.
 
 The sonar, the beacon, the chimes and the Shadow cues are positioned with Steam Audio (Valve, Apache 2.0; phonon.dll beside

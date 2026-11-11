@@ -17,6 +17,7 @@
 #include <memory>
 #include <mutex>
 #include <vector>
+#include "core/sonar_cues.h"
 #include "hrtf.h"
 #include "log.h"
 
@@ -335,6 +336,12 @@ void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate) {
   g_shots.push_back(std::move(s));
 }
 int sample_rate() { return kRate; }
+void signal(int signal, float volume, const Spot& at, float rate) {
+  static Pcm made[(int)core::SignalCue::Count];   // game thread only: made on first use
+  if (signal < 0 || signal >= (int)core::SignalCue::Count) return;
+  if (!made[signal]) made[signal] = std::make_shared<const std::vector<float>>(core::signal_cue((core::SignalCue)signal, kRate));
+  play(made[signal], volume, at, Bus::Cues, rate);
+}
 void set_hrtf(bool on) { std::lock_guard lk(g_mu); g_hrtf_on = on; }
 
 bool render_beep_wav(float freq, int ms, const Spot& at, const std::string& path) {

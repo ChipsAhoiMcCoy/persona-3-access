@@ -137,6 +137,62 @@ std::vector<float> tick_mark(int rate) {
   return v;
 }
 
+// Beacon: a chirp rising an octave with two overtones, and a breath of noise at its start for the ears to place.
+std::vector<float> beacon_cue(int rate) {
+  const int n = frames(rate, 0.13);
+  std::vector<float> v(n);
+  Noise noise(0x2545f491);
+  double phase = 0;
+  for (int i = 0; i < n; ++i) {
+    double sec = (double)i / rate, t = std::min(1.0, sec / 0.07);   // the rise takes 70 ms, then it rings
+    phase += 2.0 * kPi * 660.0 * std::pow(2.0, t) / rate;
+    double tone = std::sin(phase) + 0.35 * std::sin(2.0 * phase) + 0.15 * std::sin(3.0 * phase);
+    double env = (1.0 - std::exp(-sec / 0.003)) * std::exp(-sec / 0.055);
+    v[i] = (float)(tone * env + noise.next() * 0.35 * std::exp(-sec / 0.004));
+  }
+  return v;
+}
+
+// Shadow: two low sawtooth voices a few hertz apart (they beat: the roughness) under a murmur of noise.
+std::vector<float> shadow_cue(int rate) {
+  const int n = frames(rate, 0.18);
+  std::vector<float> v(n);
+  Noise noise(0x9e3779b9);
+  BandPass murmur;
+  double pa = 0, pb = 0;
+  for (int i = 0; i < n; ++i) {
+    double sec = (double)i / rate, t = (double)i / n;
+    double fa = 82.0 - 10.0 * t, fb = 88.5 - 10.0 * t;   // sinking a little: something heavy
+    pa += 2.0 * kPi * fa / rate; pb += 2.0 * kPi * fb / rate;
+    double s = 0;
+    for (int k = 1; k * fb < 3000.0; ++k) s += (std::sin(k * pa) + std::sin(k * pb)) / std::pow((double)k, 1.15);
+    double env = (1.0 - std::exp(-sec / 0.008)) * (1.0 - t);   // quick in, a straight fade out
+    v[i] = (float)(s * env) + murmur.run(noise.next(), 900.0, 1.2, rate) * (float)(1.5 * env);
+  }
+  return v;
+}
+
+// One glassy tick into v at `at`.
+void glass(std::vector<float>& v, int rate, double at, double hz, float level) {
+  int start = frames(rate, at);
+  for (int i = 0; start + i < (int)v.size(); ++i) {
+    double sec = (double)i / rate;
+    double s = std::sin(2.0 * kPi * hz * sec) + 0.4 * std::sin(2.0 * kPi * hz * 2.41 * sec);
+    v[start + i] += (float)(s * std::exp(-sec / 0.010) * (1.0 - std::exp(-sec / 0.0005))) * level;
+  }
+}
+std::vector<float> ambush_cue(int rate) {
+  std::vector<float> v(frames(rate, 0.10), 0.0f);
+  glass(v, rate, 0.0, 1760.0, 0.85f);
+  glass(v, rate, 0.040, 2637.0, 1.0f);
+  return v;
+}
+std::vector<float> layer_cue(int rate) {
+  std::vector<float> v(frames(rate, 0.05), 0.0f);
+  glass(v, rate, 0.0, 1245.0, 1.0f);
+  return v;
+}
+
 // Silence at both ends (a few ms of fade, so nothing clicks), no DC, then the common loudness.
 void finish(std::vector<float>& v, int rate, float rms_target) {
   if (v.empty()) return;
@@ -169,6 +225,13 @@ std::vector<float> raw(SonarCue cue, int rate) {
 
 std::vector<float> sonar_cue(SonarCue cue, int rate) {
   std::vector<float> v = raw(cue, rate);
+  finish(v, rate, kSonarCueRms);
+  return v;
+}
+
+std::vector<float> signal_cue(SignalCue cue, int rate) {
+  std::vector<float> v = cue == SignalCue::Beacon ? beacon_cue(rate) : cue == SignalCue::Shadow ? shadow_cue(rate) :
+                         cue == SignalCue::Ambush ? ambush_cue(rate) : layer_cue(rate);
   finish(v, rate, kSonarCueRms);
   return v;
 }

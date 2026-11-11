@@ -99,6 +99,27 @@ TEST_CASE("sonar cues: short, clean at both ends, one loudness") {
   }
 }
 
+TEST_CASE("signal cues: short, clean at both ends, the sonar's loudness") {
+  const int rate = 48000;
+  for (int k = 0; k < (int)SignalCue::Count; ++k) {
+    CAPTURE(k);
+    std::vector<float> v = signal_cue((SignalCue)k, rate);
+    REQUIRE(v.size() > (size_t)rate / 50);    // over 20 ms
+    CHECK(v.size() < (size_t)rate / 5);       // under 0.2 s
+    double sum = 0, peak = 0;
+    bool finite = true;
+    for (float s : v) { finite = finite && std::isfinite(s); sum += (double)s * s; peak = std::max(peak, (double)std::fabs(s)); }
+    CHECK(finite);
+    CHECK(peak <= 0.9001);
+    CHECK(std::fabs(v.front()) < 0.01);
+    CHECK(std::fabs(v.back()) < 0.01);
+    double rms = std::sqrt(sum / (double)v.size());
+    CHECK(rms > kSonarCueRms * 0.99);
+    CHECK(rms < kSonarCueRms * 1.01);
+    CHECK(signal_cue((SignalCue)k, rate) == v);
+  }
+}
+
 TEST_CASE("sonar cues: each kind is a different sound") {
   const int rate = 48000;
   for (int a = 0; a < (int)SonarCue::Count; ++a)
