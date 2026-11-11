@@ -4,7 +4,10 @@
 #include "screens/util.h"
 #include "screens/battle_details.h"
 #include "core/graph_announcer.h"
+#include "core/menu_step.h"
 #include "core/navigator.h"
+#include "core/said_once.h"
+#include "core/slot_id.h"
 #include "core/strings.h"
 #include "devserver.h"
 #include "input.h"
@@ -16,7 +19,6 @@
 #include <windows.h>
 #include <xinput.h>
 #include <format>
-#include <set>
 
 namespace p3a::screens {
 struct MenuHost;
@@ -37,19 +39,17 @@ void move_sound();
 // Every line of a menu goes through here, so that a menu can never repeat itself on its own (players heard NVDA "stuck
 // on a menu option", 2026-11-05). A cursor flickering between two values, a live value that alternates, or a screen
 // that keeps being entered would each read the same words over and over: a line already said is dropped until the
-// player presses something or something else speaks. Nothing here counts time.
+// player presses something or something else speaks (core::SaidOnce). Nothing here counts time: the pad's stamp only
+// tells one press from the next.
 uint64_t g_moves = 0;   // the player's moves so far: a confirm waiting for the game's cursor is dropped by the next
 void say_line(std::string_view text, bool interrupt) {
-  static std::set<std::string, std::less<>> said;
-  static uint64_t moves = 0, stick = 0, spoken = 0;
-  uint64_t pad = input::pad_ms();
-  if (moves != g_moves || stick != pad || spoken != speech::count()) { said.clear(); moves = g_moves; stick = pad; }
-  if (!said.emplace(text).second) {
+  static core::SaidOnce said;
+  if (!said.admit(text, g_moves, input::pad_ms(), speech::count())) {
     log::writef("menu: not repeating \"{}\"", text);
     return;
   }
   speech::speak(text, interrupt);
-  spoken = speech::count();
+  said.spoke(speech::count());
 }
 bool g_held_repeat = false;   // the press being handled is a held key's or D-pad's repeat
 // The device of the player's last press in a menu: 0 the keyboard, 1 the controller, -1 none yet. What the menu then
@@ -109,7 +109,7 @@ void reread() {
   const ui::GraphNode* f = nav().focused_node();
   std::optional<std::string> t;
   if (f) guarded([&] { t = ui::GraphAnnouncer::compose_full(f); });
-  if (t && !t->empty()) speech::speak(*t, true);
+  if (t && !t->empty()) say_line(*t, true);
 }
 
 void player_moved() {
@@ -122,6 +122,18 @@ void player_moved() {
 void armed_press() {
   g_press_armed = true;
   g_press_on = nav().focused_id();
+}
+
+// A direction or the confirm, from the keyboard or the pad: whether the menu took it (false: it is the game's).
+// Up and Down are always the menu's. Left and Right are when the navigator moved, or at the end of a row that keeps
+// its edges. The confirm is on an item with something to do: one with nothing (a line of information) leaves it to
+// the game, a status page's confirm.
+bool nav_press(std::string_view action) {
+  using namespace ui::ui_actions;
+  auto& n = nav();
+  if (action == Up || action == Down) { n.on_action(action); return true; }
+  if (action == Left || action == Right) return n.on_action(action) || g_active->keeps_edges();
+  return activatable() && n.on_action(Activate);
 }
 
 bool on_key(uint32_t vk, int mods, bool repeat) {
@@ -164,14 +176,13 @@ bool on_key(uint32_t vk, int mods, bool repeat) {
   auto& n = nav();
   if (mods == keys::None) {
     switch (vk) {
-      case VK_UP: n.on_action(Up); return true;
-      case VK_DOWN: n.on_action(Down); return true;
-      case VK_LEFT: return n.on_action(Left) || g_active->keeps_edges();
-      case VK_RIGHT: return n.on_action(Right) || g_active->keeps_edges();
+      case VK_UP: return nav_press(Up);
+      case VK_DOWN: return nav_press(Down);
+      case VK_LEFT: return nav_press(Left);
+      case VK_RIGHT: return nav_press(Right);
       case VK_HOME: return n.on_action(Home);
       case VK_END: return n.on_action(End);
-      // An item with nothing to do (a line of information) leaves Enter to the game: a status page's confirm.
-      case VK_RETURN: case VK_SPACE: return activatable() && n.on_action(Activate);
+      case VK_RETURN: case VK_SPACE: return nav_press(Activate);
       case VK_TAB:
         if (sections() && !tab_is_game()) return n.on_action(SectionNext);
         return several_stops() && n.on_action(Next);
@@ -208,14 +219,13 @@ void pad_button(uint16_t b) {
   if (!g_active->takes_input()) return;   // like on_key: dropped, as the game drops it
   g_device = 1;
   player_moved();
-  auto& n = nav();
   bool taken = true;
   switch (b) {
-    case XINPUT_GAMEPAD_DPAD_UP: n.on_action(Up); break;
-    case XINPUT_GAMEPAD_DPAD_DOWN: n.on_action(Down); break;
-    case XINPUT_GAMEPAD_DPAD_LEFT: taken = n.on_action(Left) || g_active->keeps_edges(); break;
-    case XINPUT_GAMEPAD_DPAD_RIGHT: taken = n.on_action(Right) || g_active->keeps_edges(); break;
-    case XINPUT_GAMEPAD_A: taken = activatable() && n.on_action(Activate); break;
+    case XINPUT_GAMEPAD_DPAD_UP: taken = nav_press(Up); break;
+    case XINPUT_GAMEPAD_DPAD_DOWN: taken = nav_press(Down); break;
+    case XINPUT_GAMEPAD_DPAD_LEFT: taken = nav_press(Left); break;
+    case XINPUT_GAMEPAD_DPAD_RIGHT: taken = nav_press(Right); break;
+    case XINPUT_GAMEPAD_A: taken = nav_press(Activate); break;
     case XINPUT_GAMEPAD_LEFT_SHOULDER: bumper(-1); break;
     case XINPUT_GAMEPAD_RIGHT_SHOULDER: bumper(1); break;
     case XINPUT_GAMEPAD_X: reread(); break;
@@ -276,20 +286,10 @@ void pad_tick(bool on) {
   }
 }
 
-// "list#3" -> ("list", 3)
+// "list#3" -> ("list", 3) (core/slot_id.h; for a walk line it is false, with the row the line belongs to).
 bool parse_slot(const ui::ControlId& id, std::string& key, int& i) {
   const ui::Key& k = id.structural_key();
-  if (!k.is_string()) return false;
-  const std::string& s = k.text();
-  size_t at = s.rfind('#');
-  if (at == std::string::npos || at + 1 >= s.size()) return false;
-  key = s.substr(0, at);
-  i = 0;
-  for (size_t j = at + 1; j < s.size(); ++j) {
-    if (s[j] < '0' || s[j] > '9') return false;
-    i = i * 10 + (s[j] - '0');
-  }
-  return true;
+  return k.is_string() && core::parse_slot(k.text(), key, i);
 }
 }  // namespace
 
@@ -333,7 +333,7 @@ struct MenuHost {
       if (c != m.seen) {
         bool ours = m.target >= 0;
         if (ours && c == m.target) m.target = -1;
-        else if (ours && m.step_from >= 0 && !m.count && !m.grid && ((m.target - c > 0) != (m.target - m.step_from > 0))) {
+        else if (ours && m.step_from >= 0 && !m.count && !m.grid && core::overshot(c, m.target, m.step_from)) {
           log::writef("menu: {} overshot to {} (wanted {})", m.key, c, m.target);   // the game skips that item
           m.target = -1;
           ours = false;
@@ -368,21 +368,16 @@ struct MenuHost {
         if (g_frame - m.step_at < 2) continue;
       }
       if (++m.steps > 40) { log::writef("menu: {} gave up stepping to {}", m.key, fi); m.target = -1; continue; }
-      int d = fi > c ? 1 : -1;
-      bool horizontal = m.horizontal;
+      core::MenuStep st;
       if (m.grid) {   // the row first, then the column
-        auto [r0, c0] = m.grid(c);
-        auto [r1, c1] = m.grid(fi);
-        if (r0 != r1) { horizontal = false; d = r1 > r0 ? 1 : -1; }
-        else { horizontal = true; d = c1 > c0 ? 1 : -1; }
-      } else if (m.count > 0) {
-        int fwd = ((fi - c) % m.count + m.count) % m.count;
-        d = fwd <= m.count - fwd ? 1 : -1;
+        auto from = m.grid(c);
+        st = core::grid_step(from, m.grid(fi), m.reversed);
+      } else {
+        st = core::list_step(c, fi, m.horizontal, m.reversed, m.count);
       }
-      if (m.reversed) d = -d;
-      uint32_t vk = horizontal ? (d > 0 ? VK_RIGHT : VK_LEFT) : (d > 0 ? VK_DOWN : VK_UP);
-      uint16_t b = horizontal ? (d > 0 ? XINPUT_GAMEPAD_DPAD_RIGHT : XINPUT_GAMEPAD_DPAD_LEFT)
-                              : (d > 0 ? XINPUT_GAMEPAD_DPAD_DOWN : XINPUT_GAMEPAD_DPAD_UP);
+      uint32_t vk = st.horizontal ? (st.dir > 0 ? VK_RIGHT : VK_LEFT) : (st.dir > 0 ? VK_DOWN : VK_UP);
+      uint16_t b = st.horizontal ? (st.dir > 0 ? XINPUT_GAMEPAD_DPAD_RIGHT : XINPUT_GAMEPAD_DPAD_LEFT)
+                                 : (st.dir > 0 ? XINPUT_GAMEPAD_DPAD_DOWN : XINPUT_GAMEPAD_DPAD_UP);
       MenuScreen::press_game(vk, b);
       m.step_from = c;
       m.step_at = g_frame;
@@ -426,7 +421,7 @@ void move_sound() {
 }
 }  // namespace
 
-ui::ControlId MenuScreen::slot(const std::string& key, int i) { return ui::ControlId::structural(std::format("{}#{}", key, i)); }
+ui::ControlId MenuScreen::slot(const std::string& key, int i) { return ui::ControlId::structural(core::slot_id(key, i)); }
 
 ui::NodeVtablePtr MenuScreen::item(std::function<std::string()> label, std::function<void()> activate,
                                    std::function<std::string()> details) {
@@ -543,12 +538,7 @@ void MenuScreen::say_focus() { if (g_active == this) { nav().ensure_focus(); g_e
 int MenuScreen::focused_row(const std::string& key) const {
   auto id = g_active == this ? nav().remembered_focus() : std::nullopt;   // build() runs with no render to ask
   if (!id || !id->structural_key().is_string()) return -1;
-  const std::string& s = id->structural_key().text();
-  if (s.size() <= key.size() + 1 || s.compare(0, key.size(), key) != 0 || s[key.size()] != '#') return -1;
-  int i = 0;
-  size_t j = key.size() + 1;
-  for (; j < s.size() && s[j] >= '0' && s[j] <= '9'; ++j) i = i * 10 + (s[j] - '0');
-  return j > key.size() + 1 && (j == s.size() || s[j] == '.') ? i : -1;
+  return core::slot_row(id->structural_key().text(), key);
 }
 
 std::optional<ui::ControlId> MenuScreen::focused() const { return g_active == this ? nav().focused_id() : std::nullopt; }

@@ -100,8 +100,8 @@ class CampSkill : public MenuScreen {
       uint8_t* e = sk->data + i * 0xC;
       int id = *(uint16_t*)(e + 2), hp = *(int32_t*)(e + 4), sp = *(int32_t*)(e + 8);
       std::string label = persona::skill_name(id);
-      if (sp > 0) label += std::format(", {} SP", sp);
-      else if (hp > 0) label += std::format(", {} HP", hp);
+      if (sp > 0) label += std::format(", {} {}", sp, strings::kSP);
+      else if (hp > 0) label += std::format(", {} {}", hp, strings::kHP);
       // Dimmed in the game when the cost is more than the member has.
       party::Member mm;
       if (party::member(who, mm) && ((sp > 0 && sp > mm.sp) || (hp > 0 && hp >= mm.hp))) label += std::string(", ") + strings::kNotEnough;

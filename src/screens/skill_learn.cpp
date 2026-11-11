@@ -9,7 +9,6 @@
 #include "screens/persona_status.h"
 #include "core/strings.h"
 #include "persona.h"
-#include "speech.h"
 #include <format>
 
 namespace p3a::screens {
@@ -109,11 +108,11 @@ class SkillLearnScreen : public MenuScreen {
     UObject* p = ps_.get();
     const uint8_t* e = persona::shown_status();
     if (!p || !e) return;
-    if (int id = *(uint16_t*)(e + 2); id && id != shown_) { shown_ = id; speech::speak(persona::describe(id, *(uint16_t*)(e + 4)), true); }
+    if (int id = *(uint16_t*)(e + 2); id && id != shown_) { shown_ = id; say(persona::describe(id, *(uint16_t*)(e + 4)), true); }
     // The new skill's id clears once it is learned (the cursor goes to -1); the page then waits for C.
     if (skill_ && new_skill(p) == 0) {
       screens::set_keys(strings::kCBack);
-      speech::speak(std::format("{} {}", strings::kLearned, persona::skill_name(skill_)), true);
+      say(std::format("{} {}", strings::kLearned, persona::skill_name(skill_)), true);
       g_learned = true;
       skill_ = 0;
     }

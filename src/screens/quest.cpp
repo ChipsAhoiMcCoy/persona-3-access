@@ -134,7 +134,7 @@ class CampQuest : public MenuScreen {
           std::string task = quest_page(id, 1, &gap);
           describe_with(v, [this, i, task, gap] {
             std::string fallback = gap ? std::string() : task;
-            if (reqs_.seen != i || reqs_.target >= 0) return fallback;
+            if (!reqs_.settled_on(i)) return fallback;
             std::string head = task.substr(0, std::min<size_t>(task.size(), 8));
             for (auto& pg : msg::visible(500)) { std::string t = core::clean_text(pg.text); if (!head.empty() && t.rfind(head, 0) == 0) return t; }
             return fallback;

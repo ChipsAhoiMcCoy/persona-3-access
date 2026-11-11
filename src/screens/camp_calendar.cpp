@@ -23,8 +23,7 @@
 #include "core/bmd.h"
 #include "core/strings.h"
 #include "core/text_clean.h"
-#include "gametext.h"
-#include "speech.h"
+#include "calendar.h"
 #include "textcap.h"
 #include <algorithm>
 #include <chrono>
@@ -166,7 +165,7 @@ class CampCalendar : public MenuScreen {
     uint8_t* a = actor();
     if (!a || i32(a, 0x2A8) != 1) { plans_said_.clear(); return; }
     std::string p = plans();
-    if (!p.empty() && p != plans_said_) { plans_said_ = p; speech::speak(p, true); }
+    if (!p.empty() && p != plans_said_) { plans_said_ = p; say(p, true); }
   }
   // Today's absolute day (GetNowTotalDay counts as the cursor does), read on entry: the date holds while it is open.
   int today_ = -1;

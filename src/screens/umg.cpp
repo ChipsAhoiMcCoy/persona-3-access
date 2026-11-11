@@ -11,14 +11,7 @@ bool visible(UObject* w) {
   return v != "Collapsed" && v != "Hidden";
 }
 
-bool in_viewport(UObject* uw) {
-  static UFunction* fn = nullptr;
-  if (!fn || !is_live(fn)) fn = find_function(find_class("UserWidget"), "IsInViewport");
-  if (!fn || !uw) return false;
-  Params p(fn);
-  call(uw, p);
-  return p.ret<bool>();
-}
+bool in_viewport(UObject* uw) { return uw && call_ret<bool>(uw, "IsInViewport"); }
 
 static void walk(UObject* w, std::vector<std::string>& out, int depth) {
   if (!w || depth > 40 || !visible(w)) return;

@@ -86,6 +86,29 @@ std::string perf(bool reset) {
   return out;
 }
 
+// The active screen of the highest priority (the first registered among equals), or null. `over_only`: among the
+// screens that open over a message window. `gone` collects the inactive screens whose title was spoken. A screen
+// whose active() faults is logged and counts as inactive.
+static Screen* best_active(bool over_only, std::vector<Screen*>* gone = nullptr) {
+  Screen* best = nullptr;
+  for (auto& s : g_screens) {
+    if (over_only && !s->over_messages()) continue;
+    bool on = false;
+    Timed t(g_perf[s.get()].active);
+    if (!guarded([&] { on = s->active(); })) { log::writef("screens: {} faulted in active()", s->id()); continue; }
+    if (on && (!best || s->priority() > best->priority())) best = s.get();
+    else if (!on && gone && g_titled.count(s.get())) gone->push_back(s.get());
+  }
+  return best;
+}
+
+// The end of every tick: an entry hint queued by this tick's screen, after its lines (`hints`), and the menu host's
+// frame.
+static void end_tick(bool hints = true) {
+  if (hints && !g_hint_due.empty()) { speech::speak(g_hint_due, false); g_hint_due.clear(); }
+  menu::frame();
+}
+
 void tick() {
   // Another build of the game: every screen reads or drives it by fixed offsets, so none runs; the keys stay the game's.
   // Messages and the field (signatures and reflection) go on.
@@ -103,12 +126,7 @@ void tick() {
     if (!was_modal) { log::write("screens: modal on"); msg::window_opened(); }
     was_modal = true; modal_end = 0;
     // A screen that opens over the window (the log, B, in a conversation: it went unread, 2026-10-29) runs anyway.
-    Screen* over = nullptr;
-    for (auto& s : g_screens) {
-      if (!s->over_messages()) continue;
-      bool on = false;
-      if (guarded([&] { on = s->active(); }) && on && (!over || s->priority() > over->priority())) over = s.get();
-    }
+    Screen* over = best_active(true);
     if (over != g_current && (over || (g_current && g_current->over_messages()))) {
       if (g_current) guarded([&] { g_current->leave(); });
       log::writef("screen: {} -> {} (over a message)", g_current ? g_current->id() : "none", over ? over->id() : "none");
@@ -116,19 +134,11 @@ void tick() {
       if (g_current) guarded([&] { g_current->enter(); });
     }
     if (over) { Timed t(g_perf[over].tick); if (!guarded([&] { over->tick(); })) log::writef("screens: {} faulted in tick()", over->id()); }
-    if (!g_hint_due.empty()) { speech::speak(g_hint_due, false); g_hint_due.clear(); }
-    menu::frame();
+    end_tick();
     return;
   }
-  Screen* best = nullptr;
   std::vector<Screen*> gone;   // inactive screens whose title was spoken
-  for (auto& s : g_screens) {
-    bool on = false;
-    Timed t(g_perf[s.get()].active);
-    if (!guarded([&] { on = s->active(); })) { log::writef("screens: {} faulted in active()", s->id()); continue; }
-    if (on && (!best || s->priority() > best->priority())) best = s.get();
-    else if (!on && g_titled.count(s.get())) gone.push_back(s.get());
-  }
+  Screen* best = best_active(false, &gone);
   // A screen left for a message or for one drawn over it (a submenu) is still open underneath; otherwise it closed.
   for (Screen* s : gone)
     if (!msg::current().open && !(best && best->priority() > s->priority())) g_titled.erase(s);
@@ -141,7 +151,7 @@ void tick() {
     // script went on to something else (a boss's talk leaves its proc "between windows" through the whole battle, so
     // the wheel never came up, 2026-11-03).
     bool pressed = std::max(hooks::key_ms(), input::pad_ms()) > modal_end;
-    if (!own && !pressed && best == g_current && (coming || msg::window_session_open())) { menu::frame(); return; }
+    if (!own && !pressed && best == g_current && (coming || msg::window_session_open())) { end_tick(false); return; }   // no screen ran: no hint of this tick's
     was_modal = false;
     log::writef("screens: re-enter after {} ms", GetTickCount64() - modal_end);
     if (g_current && best == g_current) guarded([&] { g_current->enter(); });
@@ -157,8 +167,7 @@ void tick() {
     Timed t(g_perf[g_current].tick);
     if (!guarded([&] { g_current->tick(); })) log::writef("screens: {} faulted in tick()", g_current->id());
   }
-  if (!g_hint_due.empty()) { speech::speak(g_hint_due, false); g_hint_due.clear(); }
-  menu::frame();
+  end_tick();
 }
 
 std::string status() { return std::format("screen={} ({} modelled)", g_current ? g_current->id() : "none", g_screens.size()); }

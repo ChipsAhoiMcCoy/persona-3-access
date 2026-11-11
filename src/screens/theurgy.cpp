@@ -66,7 +66,8 @@ class TheurgyMenu : public MenuScreen {
     if (id == obtained_said_) return;
     obtained_said_ = id;
     std::string d = persona::skill_help(id);
-    speech::speak(std::format("{}: {}{}", strings::kTheurgyObtained, persona::skill_name(id), d.empty() ? "" : ". " + d), true);
+    // Queued: the scene's own line is not cut off (nothing of the player's moved; no screen was entered).
+    speech::speak(std::format("{}: {}{}", strings::kTheurgyObtained, persona::skill_name(id), d.empty() ? "" : ". " + d), false);
   }
   std::string title() override { return strings::kTheurgy; }
   void on_enter() override { screens::set_keys([this] { return std::string(personality() ? strings::kCBack() : strings::kTheurgyListKeys()); }); }
@@ -76,7 +77,7 @@ class TheurgyMenu : public MenuScreen {
     if (personality_said_) return;
     personality_said_ = true;
     std::string t = personality_text(who());
-    if (!t.empty()) speech::speak(std::format("{}: {}", strings::kTheurgyGauge, t), true);
+    if (!t.empty()) say(std::format("{}: {}", strings::kTheurgyGauge, t), true);
   }
   void build(ui::GraphBuilder& b) override {
     uint8_t* p = u();

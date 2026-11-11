@@ -51,6 +51,15 @@ struct Mirror {
   bool keep_edges = false;
   // Whether a game list is behind this at all (Done on the contract has none: nothing to wait for, no cursor to tick).
   bool drives_game() const { return set || ready || widget; }
+  // Whether the game's cursor rests on item i: seen there, and not on its way to another item the focus asked for.
+  // What a screen asks before it reads something the game shows for the item under its cursor (a drawn page).
+  bool settled_on(int i) const { return seen == i && target < 0; }
+  // Another list under this mirror whose cursor the focus does not follow (a page that opens on a line of its own,
+  // not on the game's cursor). Setting `key` alone is the other case: the focus goes to the new list's cursor once.
+  void rekey_unfollowed(const std::string& k) {
+    key = last_key = k;
+    seen = target = step_from = -1;
+  }
   // runtime (host)
   int seen = -1, target = -1, step_from = -1, steps = 0;
   std::string last_key;                    // the key last synced: a new key is a new list, whose cursor the game set

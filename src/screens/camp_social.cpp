@@ -120,7 +120,7 @@ class CampSocialDetails : public MenuScreen, private CampSocialUi {
     // A name the file does not list as drawn: any page of the profile file built with the cursor on them.
     if (first < 0) { first = 0; end = INT_MAX; }
     else if (end < 0) end = (int)f->dialogs.size();
-    if (people_.seen == i && people_.target < 0)
+    if (people_.settled_on(i))
       if (const void* buf = bmdfile::buffer("BMD_CmmProfileHelp"))
         for (auto& p : msg::visible(1000))
           if (p.buf == buf && p.dialog > first && p.dialog < end && p.dialog < (int)f->dialogs.size() &&
@@ -161,10 +161,8 @@ class CampSocialDetails : public MenuScreen, private CampSocialUi {
     auto* ppl = d ? (TArray<uint8_t>*)(d + 0x78) : nullptr;
     if (!ppl || !ppl->data || ppl->num <= 0 || ppl->num > 16) return;
     std::string key = std::format("people.{}", i32(d, 0x58));
-    if (people_.key != key) {   // another link (Q / E): its page opens on its own line too (on_tick), not on a member
-      people_.key = people_.last_key = key;
-      people_.seen = people_.target = people_.step_from = -1;
-    }
+    // Another link (Q / E): its page opens on its own line too (on_tick), not on a member.
+    if (people_.key != key) people_.rekey_unfollowed(key);
     b.begin_stop(key);
     // The link itself first: its rank and memo, read on the way in.
     std::string head = social::describe(link());
