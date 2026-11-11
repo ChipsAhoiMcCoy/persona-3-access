@@ -27,7 +27,7 @@ constexpr int kKinds = (int)SonarCue::Count;
 constexpr const char* kKindName[kKinds] = {"exit", "door", "person", "shop", "object"};
 constexpr size_t kMaxSources = 6;      // the nearest things that sound at once
 constexpr int kMaxPerKind = 3;         // of one kind: a corridor of students must not drown the door beside you
-constexpr float kNearM = 1.5f;         // at and under this: the fastest rhythm, full volume
+constexpr float kNearM = 1.5f;         // at and under this: full volume (the rhythm has its own scale: core/sonar_field)
 // How much quieter a thing is at the range's edge (and beyond, when selected). 14 at first: with the far-off sound's
 // duller treble on top, a thing was not noticed until the player was nearly on it (the user, 2026-11-10).
 constexpr float kEdgeDb = 8.0f;
@@ -61,12 +61,27 @@ bool kind_on(int kind) {
 }
 
 // The sounds, made once at the mixer's rate.
-audio::Pcm cue(int kind) {
-  static audio::Pcm made[kKinds];
+audio::Pcm cue(int kind, bool brief = false) {
+  static audio::Pcm made[kKinds][2];
   if (kind < 0 || kind >= kKinds) return nullptr;
-  audio::Pcm& p = made[kind];
-  if (!p) p = std::make_shared<const std::vector<float>>(core::sonar_cue((SonarCue)kind, audio::sample_rate()));
+  audio::Pcm& p = made[kind][brief ? 1 : 0];
+  if (!p) p = std::make_shared<const std::vector<float>>(core::sonar_cue((SonarCue)kind, audio::sample_rate(), brief));
   return p;
+}
+
+// A thing's sound as it plays from `at`: lower, so longer, from behind; and its brief form once the whole sound,
+// with the breath after it, no longer fits the rhythm of its distance (inside 2 to 3 m).
+struct Voice { audio::Pcm pcm; float rate = 1.0f; float len_s = 0.2f; };
+Voice voice(int kind, const audio::Spot& at, bool whole = false) {
+  Voice v;
+  v.rate = at.ahead < -0.2f && settings::on(settings::BehindPitch) ? kBehindRate : 1.0f;
+  auto pick = [&](bool brief) {
+    v.pcm = cue(kind, brief);
+    v.len_s = v.pcm ? (float)v.pcm->size() / (float)audio::sample_rate() / v.rate : 0.2f;
+  };
+  pick(false);
+  if (!whole && v.len_s + g_field.params().gap_s > g_field.params().period_for(at.dist_m)) pick(true);
+  return v;
 }
 
 float range_m() { return (float)settings::get(settings::SonarRange); }
@@ -77,13 +92,13 @@ float gain_at(float dist_m) {
   return std::pow(10.0f, -kEdgeDb * u / 20.0f);
 }
 
-void emit(int kind, const FVector& me, const FVector& at) {
-  audio::Pcm pcm = cue(kind);
-  if (!pcm) return;
+// whole: the whole sound however near (a point landed on in the list).
+void emit(int kind, const FVector& me, const FVector& at, bool whole = false) {
   audio::Spot s = world::spot(me, at);
-  bool behind = s.ahead < -0.2f && settings::on(settings::BehindPitch);
+  Voice v = voice(kind, s, whole);
+  if (!v.pcm) return;
   float vol = gain_at(s.dist_m) * std::pow(10.0f, g_trim_db[kind] / 20.0f);
-  audio::play(std::move(pcm), vol, s, audio::Bus::Sonar, behind ? kBehindRate : 1.0f);
+  audio::play(std::move(v.pcm), vol, s, audio::Bus::Sonar, v.rate);
   ++g_fired;
 }
 
@@ -139,18 +154,13 @@ void tick() {
   if (!world::player_location(me)) { silence(); return; }
   ULONGLONG now = GetTickCount64();
   if (now - g_scan_at >= kRescanMs) { g_scan_at = now; rescan(); }
-  g_field.params().dist_near = kNearM;
-  g_field.params().dist_far = std::max(range_m(), kNearM + 0.5f);
   std::vector<core::SonarField::Item> items;
   items.reserve(g_sources.size());
   const bool any_distance = settings::get(settings::SonarScope) == settings::ScopeSelected;
   for (const Source& s : g_sources) {
     if (!any_distance && dist_m(me, s.loc) > range_m()) continue;   // read ahead of the range: not in it yet
-    // How long its sound will last as played now (lower, so longer, from behind): the line is held that long.
-    audio::Pcm pcm = cue(s.kind);
-    bool behind = world::spot(me, s.loc).ahead < -0.2f && settings::on(settings::BehindPitch);
-    float len = pcm ? (float)pcm->size() / (float)audio::sample_rate() / (behind ? kBehindRate : 1.0f) : 0.2f;
-    items.push_back({(unsigned)s.obj.index, dist_m(me, s.loc), s.kind, len, s.selected});
+    // How long its sound will last as played now: the line is held that long.
+    items.push_back({(unsigned)s.obj.index, dist_m(me, s.loc), s.kind, voice(s.kind, world::spot(me, s.loc)).len_s, s.selected});
   }
   // What sounded last tick and no longer does is forgotten; a thing's first sound is logged with its distance (how
   // early the player could have heard it).
@@ -178,7 +188,7 @@ void selected(const poi::Poi& p) {
   FVector me;
   int kind = cue_of(p.kind);
   if (kind < 0 || !world::player_location(me)) return;
-  emit(kind, me, p.loc);
+  emit(kind, me, p.loc, true);
 }
 
 bool preview(settings::Id id) {

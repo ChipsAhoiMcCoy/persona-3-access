@@ -9,9 +9,11 @@ double FieldParams::period_for(float dist) const {
   float lo = dist_near > 0.01f ? dist_near : 0.01f;
   float hi = dist_far > lo ? dist_far : lo + 0.01f;
   float d = std::clamp(dist, lo, hi);
-  // Linear in log(distance): d(log d)/dd = 1/d, so the rate swings hardest where d is smallest (up close).
+  // A straight line between the two ends with both axes logarithmic (a power law): halving the distance divides the
+  // period by the same factor wherever it happens, so the rate climbs steeply over the last few metres.
   double u = std::log((double)d / lo) / std::log((double)hi / lo);   // 0 at lo, 1 at hi
-  return period_near + u * (period_far - period_near);
+  double a = period_near > 0.001 ? period_near : 0.001, b = period_far > a ? period_far : a;
+  return a * std::pow(b / a, u);
 }
 
 static double hash01(unsigned id) {   // a stable fraction in [0, 1) per id: neighbouring ids land far apart
@@ -25,8 +27,8 @@ std::vector<SonarField::Ping> SonarField::update(const std::vector<Item>& items,
   started_ = true;
   std::unordered_map<unsigned, Slot> keep;
   keep.reserve(items.size() + slots_.size());
-  // Whose turn: an arrival before anything else, then the most overdue against its own period; among equals the
-  // host's `first`, then the nearer.
+  // Whose turn: an arrival before anything else, then the most overdue against its own period, a short (near)
+  // period counting for more (turn_power); among equals the host's `first`, then the nearer.
   const Item* turn = nullptr;
   bool turn_arrived = false;
   double turn_overdue = 0;
@@ -49,7 +51,7 @@ std::vector<SonarField::Ping> SonarField::update(const std::vector<Item>& items,
       if (s.played) s.want = s.last_start + T;
     }
     if (line_free && now >= s.want) {
-      double overdue = (now - s.want) / T;
+      double overdue = (now - s.want) / std::pow(T, params_.turn_power);
       bool better = !turn || (s.arrived != turn_arrived ? s.arrived
                               : overdue != turn_overdue ? overdue > turn_overdue
                               : it.first != turn->first ? it.first : it.dist < turn->dist);

@@ -388,15 +388,18 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   right (right ear) and left (left ear). Louder means closer; silence means open space. Each tone measures how far
   holding that direction would actually take you: a wall you would just slide along stays quiet.
 - Sonar: every point of interest within range (10 m unless you change it) repeats its own sound from where it is, starting the moment it comes into range.
-  The closer it is, the faster it repeats (from about once a second at the edge to three times a
-  second beside you) and the louder it is, so walking toward a sound makes it quicken. Each kind has a sound of its
+  The closer it is, the faster it repeats and the louder it is, so walking toward a sound makes it quicken. The speed
+  goes by distance alone, whatever the range is set to: about once a second at 10 m, twice a second at 5 m, three
+  times at 3 m, five times at 2 m and eight times at 1 m, so each halving of the distance nearly doubles it. Inside
+  2 to 3 m a thing plays a clipped form of its sound, so that it can repeat that fast: one knock, one whistled note,
+  one (the higher) bell strike, a puff of air, the start of the pluck. Each kind has a sound of its
   own: exits (ways into another area) a rising breath of air over a low thump, doors two knocks on wood, people a
   two-note whistle (the second note lower, a "yoo-hoo"), shops two strikes of a small bell, and objects (things to check or open) a bright
   plucked note. Directions follow the camera: a sound straight ahead is where pushing forward walks, and turning the
   camera turns the whole field around you. A sound played lower is behind you (Lower pitch behind you). To keep
   crowded places readable only the six nearest things sound, at most three of one kind; things on another floor are
   left out unless you can walk there. The point selected in the points of interest list always has a place among
-  them. The sounds take turns: only one plays at a time, each after the one before it has finished, so they never play over one another. Whichever is most overdue for its own rhythm goes next, so the nearest things get the most turns, none is left out, and a thing that has just come into range goes first. With many things close by, each therefore repeats less often than it would alone. The sonar is silent in menus, conversations, story scenes and
+  them. The sounds take turns: only one plays at a time, each after the one before it has finished, so they never play over one another. Whichever is most overdue for its own rhythm goes next, and a near thing's lateness counts for more than a far one's: with many things around, the near ones keep most of their speed and the far ones wait longer (seconds, in a full room), none is left out, and a thing that has just come into range goes first. The sonar is silent in menus, conversations, story scenes and
   battles. Shadows are not part of it: they keep their own pulse.
 - Shadow pulse: a low, rattling snarl from the nearest Shadow within 30 m, whatever its height, faster and louder as it closes in
   (from every 0.8 seconds at 30 m to one unbroken snarl beside you), lower when it is behind you. When a Shadow notices you, a harsh two-note alarm sounds from where it is, and its growl turns higher,

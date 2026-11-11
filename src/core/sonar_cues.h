@@ -15,8 +15,10 @@ enum class SonarCue {
   Count
 };
 
-// The sound at `rate` Hz: starts and ends on silence, under 0.3 s, RMS kSonarCueRms (peak under 0.9).
-std::vector<float> sonar_cue(SonarCue cue, int rate);
+// The sound at `rate` Hz: starts and ends on silence, under 0.2 s, RMS kSonarCueRms (peak under 0.9).
+// brief: its clipped form for a thing too near for the whole sound to fit its rhythm, under 0.07 s: the first knock,
+// the first note, the bell's higher strike, a puff of the air, the pluck's start.
+std::vector<float> sonar_cue(SonarCue cue, int rate, bool brief = false);
 inline constexpr float kSonarCueRms = 0.10f;   // what the spikiest of them (the pluck) reaches under the peak limit
 
 // The mod's other signals, made the same way and at the same loudness (they were plain sine and triangle beeps):

@@ -22,24 +22,29 @@ std::map<unsigned, int> counts(const std::vector<Fired>& fired) {
 }
 }  // namespace
 
-TEST_CASE("sonar field: the period shrinks with distance, logarithmically") {
+TEST_CASE("sonar field: the period shrinks with distance, by a power law") {
   FieldParams p;
   CHECK(p.period_for(0.2f) == doctest::Approx(p.period_near));
   CHECK(p.period_for(p.dist_near) == doctest::Approx(p.period_near));
   CHECK(p.period_for(p.dist_far) == doctest::Approx(p.period_far));
   CHECK(p.period_for(100.0f) == doctest::Approx(p.period_far));
-  // A step up close changes the rate more than the same step far off.
-  double close = p.period_for(3.0f) - p.period_for(2.0f), far_off = p.period_for(9.0f) - p.period_for(8.0f);
-  CHECK(close > far_off * 2);
+  // Halving the distance speeds it up by the same factor wherever it happens.
+  CHECK(p.period_for(8.0f) / p.period_for(4.0f) == doctest::Approx(p.period_for(4.0f) / p.period_for(2.0f)));
+  CHECK(p.period_for(4.0f) / p.period_for(2.0f) > 1.7);
+  // So a step up close changes the rate far more than the same step far off.
+  double close = 1 / p.period_for(2.0f) - 1 / p.period_for(3.0f), far_off = 1 / p.period_for(8.0f) - 1 / p.period_for(9.0f);
+  CHECK(close > far_off * 5);
+  // Much faster beside a thing than a room away.
+  CHECK(p.period_for(10.0f) > p.period_for(1.0f) * 6);
 }
 
 TEST_CASE("sonar field: a thing alone keeps its own rate") {
   SonarField a, b;
-  CHECK(counts(run(a, {{1, 1.0f, 0, 0.2f}}, 10.0))[1] >= 31);   // every 0.30 s
-  CHECK(counts(run(a, {{1, 1.0f, 0, 0.2f}}, 10.0, 10.0))[1] <= 34);
-  int far_n = counts(run(b, {{2, 10.0f, 0, 0.2f}}, 10.0))[2];
-  CHECK(far_n >= 9);    // every 1.00 s
-  CHECK(far_n <= 11);
+  CHECK(counts(run(a, {{1, 1.0f, 0, 0.065f}}, 10.0))[1] >= 70);   // every 0.12 s (0.13 where a 10 ms frame falls late)
+  CHECK(counts(run(a, {{1, 1.0f, 0, 0.065f}}, 10.0, 10.0))[1] <= 85);
+  int far_n = counts(run(b, {{2, 20.0f, 0, 0.16f}}, 10.0))[2];
+  CHECK(far_n >= 6);    // every 1.50 s
+  CHECK(far_n <= 7);
 }
 
 TEST_CASE("sonar field: no sound starts before the one before it is over") {
@@ -60,13 +65,29 @@ TEST_CASE("sonar field: no sound starts before the one before it is over") {
 
 TEST_CASE("sonar field: in a crowd the near thing gets more turns than the far one, and none is starved") {
   SonarField f;
-  std::vector<SonarField::Item> items = {{1, 1.0f, 0, 0.2f}, {2, 1.0f, 0, 0.2f}, {3, 9.0f, 0, 0.2f}, {4, 9.0f, 0, 0.2f},
-                                         {5, 9.0f, 0, 0.2f}, {6, 9.0f, 0, 0.2f}};
+  // Two beside the player (brief sounds), four across the room (whole ones).
+  std::vector<SonarField::Item> items = {{1, 1.0f, 0, 0.065f}, {2, 1.0f, 0, 0.065f}, {3, 9.0f, 0, 0.16f}, {4, 9.0f, 0, 0.16f},
+                                         {5, 9.0f, 0, 0.16f}, {6, 9.0f, 0, 0.16f}};
   auto n = counts(run(f, items, 30.0));
   CHECK(n.size() == 6);
-  CHECK(n[1] > n[3] * 2);
-  CHECK(n[2] > n[4] * 2);
-  CHECK(n[6] >= 10);   // the far ones still sound, a few seconds apart at worst
+  CHECK(n[1] > n[3] * 10);
+  CHECK(n[2] > n[4] * 10);
+  CHECK(n[1] >= 90);   // three times a second and more, each: near is still heard as near
+  CHECK(n[6] >= 3);    // the far ones still sound, though seconds apart
+}
+
+TEST_CASE("sonar field: a near thing keeps most of its rhythm in a full room") {
+  SonarField f;
+  // One at arm's length, five spread over the room: it wants eight turns a second and still gets over three (it
+  // got under one when the line was shared in proportion and the sounds were a quarter of a second).
+  std::vector<SonarField::Item> items = {{1, 1.0f, 0, 0.065f}, {2, 3.0f, 0, 0.16f}, {3, 5.0f, 0, 0.16f}, {4, 6.0f, 0, 0.16f},
+                                         {5, 8.0f, 0, 0.16f}, {6, 10.0f, 0, 0.16f}};
+  auto n = counts(run(f, items, 30.0));
+  CHECK(n.size() == 6);
+  CHECK(n[1] >= 90);   // 3 a second
+  CHECK(n[2] > n[3]);
+  CHECK(n[3] > n[6]);
+  CHECK(n[6] >= 3);
 }
 
 TEST_CASE("sonar field: a thing that arrives in a running field goes next") {
@@ -87,9 +108,9 @@ TEST_CASE("sonar field: a thing that arrives in a running field goes next") {
 
 TEST_CASE("sonar field: a field starting up staggers what is already there") {
   SonarField f;
-  CHECK(f.update({{7, 10.0f, 0, 0.2f}}, 0.0).empty());
+  CHECK(f.update({{7, 20.0f, 0, 0.2f}}, 0.0).empty());
   int n = 0;
-  for (double t = 0.01; t <= f.params().period_far + 0.01; t += 0.01) n += (int)f.update({{7, 10.0f, 0, 0.2f}}, t).size();
+  for (double t = 0.01; t <= f.params().period_far + 0.01; t += 0.01) n += (int)f.update({{7, 20.0f, 0, 0.2f}}, t).size();
   CHECK(n == 1);
 }
 
@@ -105,9 +126,10 @@ TEST_CASE("sonar field: among things equally due the host's first goes first") {
 TEST_CASE("sonar field: a thing that comes closer does not wait out its old, slow period") {
   SonarField f;
   f.update({}, 0.0);
-  REQUIRE(f.update({{9, 10.0f, 0, 0.1f}}, 1.0).size() == 1);   // sounded far off: next in a second
+  REQUIRE(f.update({{9, 10.0f, 0, 0.1f}}, 1.0).size() == 1);   // sounded far off: next in most of a second
   int n = 0;
-  for (double t = 1.01; t <= 1.0 + f.params().period_near + 0.02; t += 0.01) n += (int)f.update({{9, 1.0f, 0, 0.1f}}, t).size();
+  // Beside the player now: again as soon as its sound and the breath (0.14 s) are over.
+  for (double t = 1.01; t <= 1.20; t += 0.01) n += (int)f.update({{9, 1.0f, 0, 0.1f}}, t).size();
   CHECK(n == 1);
 }
 
@@ -128,7 +150,7 @@ TEST_CASE("sonar cues: short, clean at both ends, one loudness") {
     CAPTURE(k);
     std::vector<float> v = sonar_cue((SonarCue)k, rate);
     REQUIRE(v.size() > (size_t)rate / 20);    // over 50 ms
-    CHECK(v.size() < (size_t)rate * 3 / 10);  // under 0.3 s
+    CHECK(v.size() < (size_t)rate * 2 / 10);  // under 0.2 s
     double sum = 0, peak = 0;
     bool finite = true;
     for (float s : v) { finite = finite && std::isfinite(s); sum += (double)s * s; peak = std::max(peak, (double)std::fabs(s)); }
@@ -141,6 +163,28 @@ TEST_CASE("sonar cues: short, clean at both ends, one loudness") {
     CHECK(rms < kSonarCueRms * 1.01);
     // The same sound every time.
     CHECK(sonar_cue((SonarCue)k, rate) == v);
+  }
+}
+
+TEST_CASE("sonar cues: the brief forms fit the fastest rhythm") {
+  const int rate = 48000;
+  FieldParams p;
+  for (int k = 0; k < (int)SonarCue::Count; ++k) {
+    CAPTURE(k);
+    std::vector<float> v = sonar_cue((SonarCue)k, rate, true);
+    double len = (double)v.size() / rate;
+    CHECK(len > 0.04);
+    CHECK(len / 0.84 + p.gap_s <= p.period_near);   // played lower from behind too
+    CHECK(v != sonar_cue((SonarCue)k, rate));
+    double sum = 0, peak = 0;
+    for (float s : v) { sum += (double)s * s; peak = std::max(peak, (double)std::fabs(s)); }
+    CHECK(peak <= 0.9001);
+    CHECK(std::fabs(v.front()) < 0.01);
+    CHECK(std::fabs(v.back()) < 0.01);
+    double rms = std::sqrt(sum / (double)v.size());
+    CHECK(rms > kSonarCueRms * 0.99);
+    CHECK(rms < kSonarCueRms * 1.01);
+    for (int b = k + 1; b < (int)SonarCue::Count; ++b) CHECK(sonar_cue((SonarCue)b, rate, true) != v);
   }
 }
 

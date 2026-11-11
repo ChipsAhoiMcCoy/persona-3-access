@@ -27,9 +27,13 @@ struct BandPass {
 
 int frames(int rate, double seconds) { return (int)std::lround(rate * seconds); }
 
+// How long a brief cue is: with the field's breath after it, one fits the fastest rhythm (0.12 s), played lower
+// from behind too.
+constexpr double kBrief = 0.065;
+
 // Exit: noise through a band that sweeps upward, swelling and fading, over a low thump.
-std::vector<float> exit_cue(int rate) {
-  const int n = frames(rate, 0.24);
+std::vector<float> exit_cue(int rate, double seconds) {
+  const int n = frames(rate, seconds);
   std::vector<float> v(n);
   Noise noise(0x51ed270b);
   BandPass bp;
@@ -60,10 +64,10 @@ void knock(std::vector<float>& v, int rate, double at, float level, uint32_t see
     v[start + i] += (float)(s * (1.0 - std::exp(-sec / 0.0006))) * level;
   }
 }
-std::vector<float> door_cue(int rate) {
-  std::vector<float> v(frames(rate, 0.26), 0.0f);
+std::vector<float> door_cue(int rate, bool brief) {
+  std::vector<float> v(frames(rate, brief ? kBrief : 0.16), 0.0f);
   knock(v, rate, 0.0, 1.0f, 0x1234abcd);
-  knock(v, rate, 0.105, 0.8f, 0x0badf00d);
+  if (!brief) knock(v, rate, 0.07, 0.8f, 0x0badf00d);
   return v;
 }
 
@@ -71,12 +75,13 @@ std::vector<float> door_cue(int rate) {
 // tone that scoops up into its pitch, with a little vibrato and the breath around it (noise through a band at the
 // note's pitch, which also gives the ears something to place). It was a synthetic voiced "hm" at first: strange to
 // hear (the user, 2026-11-10).
-std::vector<float> person_cue(int rate) {
-  const int n = frames(rate, 0.22);
+std::vector<float> person_cue(int rate, bool brief) {
+  const int n = frames(rate, brief ? kBrief : 0.16);
   std::vector<float> v(n, 0.0f);
-  static const struct { double at, len, hz; } notes[] = {{0.0, 0.085, 1568.0}, {0.105, 0.115, 1319.0}};   // G6, E6
+  static const struct { double at, len, hz; } notes[] = {{0.0, 0.07, 1568.0}, {0.075, 0.085, 1319.0}};   // G6, E6
   Noise noise(0x6a09e667);
   for (const auto& note : notes) {
+    if (brief && note.at > 0) break;
     BandPass breath;
     const int start = frames(rate, note.at), count = frames(rate, note.len);
     double phase = 0;
@@ -104,16 +109,19 @@ void strike(std::vector<float>& v, int rate, double at, double hz, float level) 
     v[start + i] += (float)(s * (1.0 - std::exp(-sec / 0.0008))) * level;
   }
 }
-std::vector<float> shop_cue(int rate) {
-  std::vector<float> v(frames(rate, 0.28), 0.0f);
+std::vector<float> shop_cue(int rate, bool brief) {
+  std::vector<float> v(frames(rate, brief ? kBrief : 0.16), 0.0f);
+  // The brief one is the higher strike alone: the lower is the whistle's first note, and one of each would differ in
+  // timbre only.
+  if (brief) { strike(v, rate, 0.0, 2093.0, 1.0f); return v; }
   strike(v, rate, 0.0, 1568.0, 0.8f);     // G6
-  strike(v, rate, 0.085, 2093.0, 1.0f);   // C7: the till's "ching"
+  strike(v, rate, 0.06, 2093.0, 1.0f);    // C7: the till's "ching"
   return v;
 }
 
 // Thing: a plucked string (Karplus-Strong): a burst of noise going round a delay line that dulls it each lap.
-std::vector<float> thing_cue(int rate) {
-  const int n = frames(rate, 0.16);
+std::vector<float> thing_cue(int rate, double seconds) {
+  const int n = frames(rate, seconds);
   const int period = std::max(2, (int)std::lround(rate / 880.0));   // A5
   std::vector<float> line(period), v(n);
   Noise noise(0x7f4a7c15);
@@ -248,19 +256,21 @@ void finish(std::vector<float>& v, int rate, float rms_target) {
   for (float& s : v) s *= (float)g;
 }
 
-std::vector<float> raw(SonarCue cue, int rate) {
+// The full sounds were 0.16 to 0.28 s: the line fitted under four a second, so in a room of six things the nearest
+// repeated about once a second however near it was. They are 0.11 to 0.16 s now (the user's call, 2026-11-11).
+std::vector<float> raw(SonarCue cue, int rate, bool brief) {
   switch (cue) {
-    case SonarCue::Exit: return exit_cue(rate);
-    case SonarCue::Door: return door_cue(rate);
-    case SonarCue::Person: return person_cue(rate);
-    case SonarCue::Shop: return shop_cue(rate);
-    default: return thing_cue(rate);
+    case SonarCue::Exit: return exit_cue(rate, brief ? kBrief : 0.16);
+    case SonarCue::Door: return door_cue(rate, brief);
+    case SonarCue::Person: return person_cue(rate, brief);
+    case SonarCue::Shop: return shop_cue(rate, brief);
+    default: return thing_cue(rate, brief ? kBrief : 0.11);
   }
 }
 }  // namespace
 
-std::vector<float> sonar_cue(SonarCue cue, int rate) {
-  std::vector<float> v = raw(cue, rate);
+std::vector<float> sonar_cue(SonarCue cue, int rate, bool brief) {
+  std::vector<float> v = raw(cue, rate, brief);
   finish(v, rate, kSonarCueRms);
   return v;
 }

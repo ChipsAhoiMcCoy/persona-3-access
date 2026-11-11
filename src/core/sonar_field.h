@@ -1,12 +1,13 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks; zlib, see LICENSES/. This is not the original software.
 #pragma once
 // The sonar as a field of per-thing metronomes that take turns. Every nearby thing wants to repeat its OWN sound at
-// its own rate; the period shrinks as it nears the player -- mapped logarithmically in distance, so a step closer
-// changes the rate a lot up close and little far off. But only one sound plays at a time: when a thing's moment comes
-// it waits for the line to be free (the sound before it over, plus a breath), and of those waiting the one most
-// overdue against its own period goes next. So nothing ever plays over anything else, a near thing (short period,
-// overdue sooner) gets more turns than a far one, and none is starved. (Grim Dark's field lets them overlap and only
-// keeps two of one kind from starting together; six things beside the player were a pile-up here.)
+// its own rate; the period shrinks as it nears the player -- a power law in distance, in metres whatever the sonar's
+// range is, so a given rate always means the same distance and halving the distance speeds it up by the same factor
+// everywhere. But only one sound plays at a time: when a thing's moment comes it waits for the line to be free (the
+// sound before it over, plus a breath), and of those waiting the one most overdue against its own period goes next,
+// a short period counting for more. So nothing ever plays over anything else, a near thing keeps most of its rhythm
+// in a crowd at the far ones' cost, and none is starved. (Grim Dark's field lets them overlap and only keeps two of
+// one kind from starting together; six things beside the player were a pile-up here.)
 // Engine-free: the host hands (id, distance, how long its sound lasts) each frame and plays what `update` reports.
 #include <cstddef>
 #include <unordered_map>
@@ -15,14 +16,21 @@
 namespace p3a::core {
 
 struct FieldParams {
-  double period_near = 0.30;   // seconds between pulses at dist_near and closer
-  double period_far = 1.00;    // seconds at dist_far and beyond (1.4 at first: too sparse to notice at a run)
-  float dist_near = 1.5f;      // metres
-  float dist_far = 10.0f;      // metres (the host sets it to the sonar's range)
+  // 0.30 s at 1.5 m to 1.00 s at the range's edge at first: three to one, and stretched with the range setting, so
+  // being close to a thing was not heard (the user, 2026-11-11). Now 0.12 s at 1 m, 0.30 at 3 m, 0.47 at 5 m, 0.84
+  // at 10 m, 1.5 at 20 m and beyond.
+  double period_near = 0.12;   // seconds between pulses at dist_near and closer
+  double period_far = 1.50;    // seconds at dist_far and beyond
+  float dist_near = 1.0f;      // metres
+  float dist_far = 20.0f;      // metres
+  // How a waiting thing's lateness is weighed: seconds overdue over its period to this power. 1 shares the line in
+  // proportion to the rates wanted (a thing at 1 m among five others got a third of its rate); 2 lets the short
+  // periods keep more of theirs and takes it from the long ones.
+  double turn_power = 2.0;
   double grace_s = 1.5;        // an id missing from the items keeps its place this long (the range's edge, a list
                                // rebuilt without it for a moment) before it is forgotten and counts as new again
   double gap_s = 0.04;         // the breath between one sound's end and the next one's start
-  double period_for(float dist) const;   // log-in-distance interpolation between the two endpoints
+  double period_for(float dist) const;   // a power law through the two endpoints
 };
 
 class SonarField {

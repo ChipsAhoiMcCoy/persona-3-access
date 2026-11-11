@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Sonar: nearness is heard
+- A thing repeats much faster as you close in: about once a second at 10 m, twice at 5 m, three times at 3 m, five times at 2 m and eight times a second at 1 m. It was three times a second at best and once a second at the range's edge.
+- The speed goes by distance alone. It used to stretch with the Sonar range setting, so the same door at the same distance ticked slower with a longer range.
+- The sounds are shorter (0.11 to 0.16 seconds, from 0.16 to 0.28), so more of them fit in a second. They still never play over one another.
+- Inside 2 to 3 m a thing plays a clipped form of its sound so that it can repeat that fast: one knock, one whistled note, the higher bell strike, a puff of air, the start of the pluck.
+- With many things around, the near ones keep most of their speed and the far ones wait longer. The turns used to be shared so evenly that a thing beside you in a full room repeated less than once a second.
+
 ### Less to listen to
 - A battle turn opens with a shorter line: "Junpei, HP 99, SP 17. Cowardly Maya, 35%, Down, weak to Slash, Fire". The HP and SP maxima, the word "Target" and the target's place are gone from it; moving the target still says its place.
 - Affinities drop the word "Attack": "weak to Fire, Ice" instead of "weak to Fire Attack, Ice Attack". "Downed" is now "Down".
