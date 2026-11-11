@@ -355,6 +355,15 @@ void signal(int signal, float volume, const Spot& at, float rate) {
   if (!made[signal]) made[signal] = std::make_shared<const std::vector<float>>(core::signal_cue((core::SignalCue)signal, kRate));
   play(made[signal], volume, at, Bus::Cues, rate);
 }
+void signal_here(int signal, float volume) {
+  if (!g_ready || signal < 0 || signal >= (int)core::SignalCue::Count) return;
+  audio::signal(signal, 0.0f, Spot{});   // makes it on first use (a silent shot)
+  std::lock_guard lk(g_mu);
+  if (g_shots.empty() || g_shots.back().vol != 0.0f || g_shots.back().pos != 0) return;   // the mixer was full: not made
+  Shot& s = g_shots.back();   // that shot: no place, both ears alike
+  s.vol = volume < 0 ? 0 : volume;
+  s.spatial = false;
+}
 void set_hrtf(bool on) { std::lock_guard lk(g_mu); g_hrtf_on = on; }
 
 bool render_beep_wav(float freq, int ms, const Spot& at, const std::string& path) {

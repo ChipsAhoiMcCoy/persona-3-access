@@ -160,7 +160,9 @@ std::vector<float> beacon_cue(int rate) {
 
 // Shadow: two low sawtooth voices a few hertz apart (they beat: the roughness) under a murmur of noise.
 std::vector<float> shadow_cue(int rate) {
-  const int n = frames(rate, 0.18);
+  // 0.28 s (0.18 at first: over before it was noticed), and it flutters: the loudness shakes 38 times a second, a
+  // snarl's rattle, which no other sound of the mod has.
+  const int n = frames(rate, 0.28);
   std::vector<float> v(n);
   Noise noise(0x9e3779b9);
   BandPass murmur;
@@ -174,7 +176,9 @@ std::vector<float> shadow_cue(int rate) {
     double s = 0;
     // The overtones fall off slowly (a snarl, not a hum), so the 500 Hz - 3 kHz band carries it.
     for (int k = 1; k * fb < 4500.0; ++k) s += (std::sin(k * pa) + std::sin(k * pb)) / std::pow((double)k, 0.75);
-    double env = (1.0 - std::exp(-sec / 0.008)) * (1.0 - t);   // quick in, a straight fade out
+    // Quick in, held for the first third, then a straight fade out; the rattle on top.
+    double env = (1.0 - std::exp(-sec / 0.008)) * std::min(1.0, (1.0 - t) * 1.5);
+    env *= 0.62 + 0.38 * std::cos(2.0 * kPi * 38.0 * sec);
     v[i] = (float)(s * env) + murmur.run(noise.next(), 1400.0, 1.0, rate) * (float)(2.5 * env);
   }
   return v;
@@ -201,18 +205,21 @@ std::vector<float> layer_cue(int rate) {
   return v;
 }
 
-// Reach: a blade's ring: a hiss that sweeps up fast into two high, slightly sour partials.
+// Reach: a blade drawn: a hiss that sweeps up, then steel ringing on. The ring was 0.11 s of two partials at 3.5 and
+// 5.3 kHz, thin and soon gone; it now sits at 2 kHz with two more above, a pair a few Hz apart so it shimmers, and
+// rings on for a quarter of a second.
 std::vector<float> reach_cue(int rate) {
-  const int n = frames(rate, 0.11);
+  const int n = frames(rate, 0.26);
   std::vector<float> v(n);
   Noise noise(0x3c6ef372);
   BandPass hiss;
   for (int i = 0; i < n; ++i) {
     double sec = (double)i / rate;
-    double sweep = 2500.0 + 5500.0 * std::min(1.0, sec / 0.02);
-    double ring = std::sin(2.0 * kPi * 3520.0 * sec) + 0.6 * std::sin(2.0 * kPi * 5310.0 * sec);
-    v[i] = hiss.run(noise.next(), sweep, 3.0, rate) * (float)(2.0 * std::exp(-sec / 0.012)) +
-           (float)(ring * 0.5 * std::exp(-sec / 0.030) * (1.0 - std::exp(-sec / 0.002)));
+    double sweep = 2000.0 + 5000.0 * std::min(1.0, sec / 0.045);
+    double ring = std::sin(2.0 * kPi * 1976.0 * sec) + 0.8 * std::sin(2.0 * kPi * 1990.0 * sec) +
+                  0.55 * std::sin(2.0 * kPi * 3140.0 * sec) + 0.35 * std::sin(2.0 * kPi * 4730.0 * sec);
+    v[i] = hiss.run(noise.next(), sweep, 2.5, rate) * (float)(2.2 * std::exp(-sec / 0.022)) +
+           (float)(ring * 0.5 * std::exp(-sec / 0.075) * (1.0 - std::exp(-sec / 0.004)));
   }
   return v;
 }

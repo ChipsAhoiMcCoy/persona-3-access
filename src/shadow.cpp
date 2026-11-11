@@ -40,7 +40,7 @@ constexpr float kPi = 3.14159265f;
 // about to strike (the user, 2026-11-10). A Tartarus floor has raised and sunken parts, so height filters nothing now.
 constexpr float kPulseRange = 3000.0f;
 constexpr float kMindRange = 4000.0f;    // cm: how far off a Shadow's noticing is told
-constexpr ULONGLONG kReachMs = 380;      // the ring's rhythm while in reach
+constexpr ULONGLONG kReachMs = 420;      // the ring's rhythm while in reach (the ring itself lasts 0.26 s)
 
 // What a Shadow's component shows this frame: the mark over its head, and whether it holds the hero as its target.
 enum class Mark { None, Exclamation, Question };
@@ -262,15 +262,16 @@ void tick() {
   const Seen* nearest = nullptr;
   for (const Seen& s : seen) if (!nearest || s.dist < nearest->dist) nearest = &s;
   const bool shadow_near = nearest && nearest->dist <= kPulseRange;
-  // The strike's ring: from the Shadow in reach, else from a breakable thing in reach.
+  // The strike's ring: a Shadow is in reach, else a breakable thing is. It says "you can strike now", so it comes
+  // from the player (no place, both ears alike), not from the thing (the user's call, 2026-11-10).
   int ring = shadow_near ? close_cues(*nearest, me) : -1;
-  FVector ring_at = shadow_near ? nearest->at : FVector{};
+  FVector ring_at{};
   if (ring < 0 && breakable_in_reach(me, ring_at)) ring = (int)SignalCue::Reach;
   ULONGLONG now = GetTickCount64();
   static ULONGLONG rang_at = 0;
   if (ring >= 0 && now - rang_at >= kReachMs) {
     rang_at = now;
-    audio::signal(ring, 1.2f, world::spot(me, ring_at));
+    audio::signal_here(ring, 1.2f);
   }
   if (!shadow_near) return;
   static ULONGLONG next = 0;
@@ -281,7 +282,9 @@ void tick() {
   // Hunting the hero: higher, louder and nearly twice as fast.
   audio::signal((int)SignalCue::Shadow, 1.0f + 0.8f * closeness + (hunted ? 0.3f : 0.0f), world::spot(me, nearest->at),
                 (behind ? 0.7f : 1.0f) * (hunted ? 1.3f : 1.0f));
-  next = now + (ULONGLONG)((220 + 780 * (1.0f - closeness)) * (hunted ? 0.55f : 1.0f));
+  // From every 0.8 s at the range's edge to every 0.2 s beside the hero: under the growl's own length up close, where
+  // one runs into the next and it is one unbroken snarl.
+  next = now + (ULONGLONG)((200 + 600 * (1.0f - closeness)) * (hunted ? 0.55f : 1.0f));
   // A Shadow's first growl is logged with its distance (how early the player could have heard it).
   static WeakObj growled;
   if (WeakObj w = WeakObj::of(nearest->actor); !(w == growled)) {

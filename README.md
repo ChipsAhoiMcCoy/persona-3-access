@@ -365,13 +365,14 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   battles. Shadows are not part of it: they keep their own pulse.
 - Beacon: a short rising chirp every 0.6 seconds from the direction of the path to the selected place, louder as you
   near it; a clearly lower chirp means it is behind you (Lower pitch behind you).
-- Shadow pulse: a rough growl from the nearest Shadow within 30 m, whatever its height, faster and louder as it closes in, lower when it is
-  behind you. When a Shadow notices you, a harsh two-note alarm sounds from where it is, and its growl turns higher,
+- Shadow pulse: a low, rattling snarl from the nearest Shadow within 30 m, whatever its height, faster and louder as it closes in
+  (from every 0.8 seconds at 30 m to one unbroken snarl beside you), lower when it is behind you. When a Shadow notices you, a harsh two-note alarm sounds from where it is, and its growl turns higher,
   louder and nearly twice as fast for as long as it hunts you; two soft falling notes mean it has lost you.
 - Strike reach: while a Shadow stands inside the reach of your strike (the game's own hit area, counted a little short so the ring never comes at its very edge: about 2.3 m ahead of
-  you and 1.2 m to each side, measured to the Shadow's middle), a blade's short ring repeats from it: press the attack now and it connects. When you
+  you and 1.2 m to each side, measured to the Shadow's middle), the sound of a blade drawn and ringing repeats: press the attack now and it connects. It is
+  about you, not the Shadow, so it plays in the middle of your head, the same in both ears, not from the Shadow's direction. When you
   are behind the Shadow the ring is two quick high ticks instead, the second higher: the strike also brings the
-  advantage. No ring means a swing would miss. The same ring comes from a breakable object while your strike would
+  advantage. No ring means a swing would miss. The same ring plays for a breakable object while your strike would
   break it (the game's own hit area again), unless a Shadow is in reach: then the ring is the Shadow's. It is part of
   Shadow alerts, so it is silent while that setting is off.
 - Sounds stay in place: a sound that has a place in the world (the sonar's, the beacon, the Shadow cues, the nearby

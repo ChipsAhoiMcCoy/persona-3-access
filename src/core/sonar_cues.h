@@ -24,10 +24,10 @@ inline constexpr float kSonarCueRms = 0.10f;   // what the spikiest of them (the
 // The mod's other signals, made the same way and at the same loudness (they were plain sine and triangle beeps):
 enum class SignalCue {
   Beacon,   // the way to the selected point: a clean chirp that rises an octave
-  Shadow,   // a Shadow near: a low, rough growl that dies away
+  Shadow,   // a Shadow near: a low, rattling snarl that dies away
   Ambush,   // the strike will land from behind: two quick glassy ticks, the second higher
   Layer,    // the controller's mod layer opened: one soft tick
-  Reach,    // a Shadow is within the strike's reach: a blade's short ring
+  Reach,    // a Shadow or a breakable thing is within the strike's reach: a blade drawn, ringing on
   Spotted,  // a Shadow has noticed the hero: a harsh two-note alarm, rising
   Lost,     // it has lost him again: two soft notes, falling
   Count

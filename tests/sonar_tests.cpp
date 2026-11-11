@@ -154,7 +154,7 @@ TEST_CASE("signal cues: short, clean at both ends, the sonar's loudness") {
     CAPTURE(k);
     std::vector<float> v = signal_cue((SignalCue)k, rate);
     REQUIRE(v.size() > (size_t)rate / 50);    // over 20 ms
-    CHECK(v.size() < (size_t)rate / 5);       // under 0.2 s
+    CHECK(v.size() < (size_t)rate * 3 / 10);  // under 0.3 s
     double sum = 0, peak = 0;
     bool finite = true;
     for (float s : v) { finite = finite && std::isfinite(s); sum += (double)s * s; peak = std::max(peak, (double)std::fabs(s)); }

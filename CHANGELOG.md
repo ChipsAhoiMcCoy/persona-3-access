@@ -15,9 +15,10 @@
 
 ### Shadows in Tartarus
 - The Shadow's growl is heard from 30 m instead of 15, is louder at a distance, and is pitched where headphones carry it. A Shadow above or below you is no longer left out, which could keep one silent until it was on you.
-- Strike reach: while a Shadow is inside the reach of your strike, a blade's short ring repeats from it, so you know the attack will connect before you swing. It is read from the game's own hit area. Behind the Shadow, the ring is the two quick ticks that mean the strike brings the advantage; those used to rely on an estimate of the distance.
+- The Shadow's growl is now a longer, rattling snarl and repeats faster: every 0.8 seconds at 30 m, running together into one unbroken snarl beside you.
+- Strike reach: while a Shadow is inside the reach of your strike, the sound of a blade drawn and ringing repeats in the middle of your head (it is about you, so it has no direction), so you know the attack will connect before you swing. It is read from the game's own hit area. Behind the Shadow, the ring is the two quick ticks that mean the strike brings the advantage; those used to rely on an estimate of the distance.
 - A Shadow that notices you sounds a harsh two-note alarm from where it is, and its growl is higher, louder and faster while it hunts you. Two soft falling notes mean it has lost you.
-- The strike-reach ring also comes from a breakable object while your strike would break it. A Shadow in reach takes the ring first. Like the other Shadow cues it needs the Shadow alerts setting on.
+- The strike-reach ring also plays for a breakable object while your strike would break it. A Shadow in reach takes the ring first. Like the other Shadow cues it needs the Shadow alerts setting on.
 
 ### Sounds
 - A sound with a place in the world now stays at that place while it plays: the sonar's sounds, the beacon, the Shadow cues and the nearby chimes shift in your ears as you walk or turn the camera during them. Each used to stay where it was heard when it started.
