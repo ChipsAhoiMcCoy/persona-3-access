@@ -11,6 +11,7 @@
 #include "screens/util.h"
 #include "textcap.h"
 #include "devserver.h"
+#include "doors.h"
 #include "gametext.h"
 #include "hooks.h"
 #include "seh.h"
@@ -228,6 +229,9 @@ std::vector<Poi> scan(float radius) {
     bool other_floor = !dungeon && !any_floor && std::fabs(v.z - (me.z - 90.0f)) > 280.0f;
     if (d > radius) { beyond |= d <= list_radius && !other_floor; return; }
     if (other_floor && !walkable(a, me, v)) return;
+    // Another part of the map, past a closed door (the corridor's things from the gym hallway, 2026-11-11): listed
+    // once the hero is through it.
+    if (doors::behind(a, me, v)) return;
     // The daily and the Dark Hour version of a hit often stand on the same spot: one entry per name and place.
     for (auto& o : out)
       if (o.name == name && std::fabs(o.loc.x - v.x) + std::fabs(o.loc.y - v.y) + std::fabs(o.loc.z - v.z) < 150.0f) return;
@@ -423,6 +427,7 @@ bool selected(Poi& out) {
   if (!a || get_bool(a, "bHidden")) return false;   // a defeated or parked Shadow
   world::FVector me, v{};
   if (!world::player_location(me) || !guarded([&] { v = world::actor_location(a); })) return false;
+  if (doors::behind(a, me, v)) return false;   // the hero has gone through a door since: it is not in the list now
   out = g_sel_poi;
   out.loc = v;
   out.dist = std::sqrt((v.x - me.x) * (v.x - me.x) + (v.y - me.y) * (v.y - me.y) + (v.z - me.z) * (v.z - me.z));

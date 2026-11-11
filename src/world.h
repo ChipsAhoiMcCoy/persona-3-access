@@ -32,6 +32,7 @@ std::string status();
 ue::FVector actor_location(ue::UObject* a);
 bool actor_visible_level(ue::UObject* a);
 std::vector<std::string> visible_levels();   // the visible levels' map names ("LV_F103_101_BG_Night_Only")
+uint64_t levels_stamp();   // goes up whenever the set of visible levels is found changed
 bool project_to_nav(const ue::FVector& p, float extent, ue::FVector& out);   // nearest navmesh point within extent cm
 std::vector<ue::FVector> find_path(const ue::FVector& from, const ue::FVector& to, bool* partial = nullptr);           // its level is the persistent level or a visible streamed one
 float bearing(const ue::FVector& from, const ue::FVector& to);   // camera-relative degrees, 0 ahead, 90 right

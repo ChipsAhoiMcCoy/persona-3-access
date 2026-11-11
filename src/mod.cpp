@@ -24,6 +24,7 @@
 #include "bmdfile.h"
 #include "audio.h"
 #include "devserver.h"
+#include "doors.h"
 #include "screens/screen.h"
 #include "speech.h"
 #include "textcap.h"
@@ -45,7 +46,7 @@ static bool g_ue_up = false;
 // /perf (the average and worst microseconds per reader since the last reset).
 struct Section { const char* name; void (*fn)(); uint64_t total_us = 0, max_us = 0; };
 static Section g_sections[] = {
-  {"watch", watch::tick}, {"probe", ue::probe_tick}, {"input", input::tick}, {"world", world::tick},
+  {"watch", watch::tick}, {"probe", ue::probe_tick}, {"input", input::tick}, {"world", world::tick}, {"doors", doors::tick},
   {"voice", voice::tick}, {"msg", msg::tick}, {"screens", screens::tick},
   {"walltones", walltones::tick}, {"nav", nav::tick}, {"poi", poi::tick}, {"sonar", sonar::tick}, {"calendar", calendar::tick},
   {"stats", stats::tick}, {"social", social::tick}, {"party", party::tick}, {"ad", ad::tick}, {"cutin", cutin::tick}, {"picture", picture::tick},
@@ -115,6 +116,7 @@ void init(bool speech_ok) {
   shadow::install();
   area::install();
   nav::install();
+  doors::install();
   commands::install();
   bmdfile::install();
   gametext::install();

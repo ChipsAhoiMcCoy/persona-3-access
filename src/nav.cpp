@@ -4,6 +4,7 @@
 #include "core/sonar_cues.h"
 #include "core/strings.h"
 #include "devserver.h"
+#include "doors.h"
 #include "hooks.h"
 #include "input.h"
 #include "keys.h"
@@ -99,6 +100,9 @@ void walk_to(const WeakObj& target, const std::string& name) {
   FVector me;
   static const int battle = watch::want("BtlCoreComponent");
   if (!world::player_location(me) || watch::get(battle)) { speech::speak(strings::kNotInField, true); return; }
+  // Past a closed door: the navmesh runs on under it, so there is a path, and it ends against the door ("Stuck",
+  // the gym hallway, 2026-11-11).
+  if (ue::UObject* t = target.resolve(); t && doors::behind(t, me, world::actor_location(t))) { speech::speak(strings::kNoPath, true); return; }
   g_target = target;
   g_name = name;
   g_detour_on = false;

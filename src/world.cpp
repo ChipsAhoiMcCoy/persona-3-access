@@ -203,10 +203,14 @@ std::string status() {
 // level that is visible right now (hidden sublevels keep their actors, parked at the origin; measured 2026-10-27).
 static std::vector<UObject*> g_visible_levels;
 static ULONGLONG g_levels_at = 0;
+static uint64_t g_levels_stamp = 0;
+uint64_t levels_stamp() { return g_levels_stamp; }
 static void refresh_levels() {
   ULONGLONG now = GetTickCount64();
   if (now - g_levels_at < 1000) return;
   g_levels_at = now;
+  // The list as it was: a change of it is counted (levels_stamp) when this one is complete.
+  struct Count { std::vector<UObject*> was; ~Count() { if (was != g_visible_levels) ++g_levels_stamp; } } count{g_visible_levels};
   g_visible_levels.clear();
   UObject* w = gworld();
   if (!w) return;

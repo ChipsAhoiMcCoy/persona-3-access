@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Points of interest: only the part of the map you are in
+- Some places are two areas in one map with a closed door between them, like the school's Gym Hallway and the Corridor outside it. Everything past the door was listed and sounded on the sonar, and the auto-walk to it ran into the door and said "Stuck, stopping". Things past a closed door are now left out of the points of interest list and the sonar until you go through the door's exit; then that side's things are listed and the other side's are left out.
+- The exit that takes you through the door stays in the list.
+- A point you selected before going through a door is no longer selected once the door is between you and it.
+
 ### Mail
 - Fixed: the phone's mail list read "Mail 1" in place of the sender and subject about every other time it was opened, and a mail opened from such a list read only the sender's name, without its subject or text.
 

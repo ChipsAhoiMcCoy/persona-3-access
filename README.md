@@ -230,7 +230,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   Dorm, Hallway, floor 2"), the story objective when it changes ("Objective: Head to the faculty office"), the
   interaction prompt when you can use something ("Check: Vending Machine", "Go to: Iwatodai Station"; a prompt that already says what you do, like "Head to the Dorm" or "Enter the Velvet Room", and a device you operate are said by name alone; over a Social Link partner also their
   arcana and rank, "Talk: Kenji Tomochika, Magician, rank MAX"), item notices with every item and its count ("Got
-  Bead times 3, 500 yen"), wall tones, points of interest (people by name) and auto-walk.
+  Bead times 3, 500 yen"), wall tones, points of interest (people by name) and auto-walk. The points of interest are those of the part of the map you are in: what lies past a closed door is listed once you have gone through its exit.
 - Describe the area (Semicolon, or both triggers and B): a written description of where you stand, as the
   game shows it now: every area of the town, the school, the dorm (each floor), Yakushima, Kyoto, the full-moon
   operations, Tartarus (each block) and Episode Aigis' Abyss of Time. Outdoors it follows the time of day and the
@@ -404,7 +404,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   plucked note, events (a Gatekeeper, a story scene you walk into) a quick trill between two hollow notes, and Twilight Fragments three high chimes of glass, rising, a sparkle. Directions follow the camera: a sound straight ahead is where pushing forward walks, and turning the
   camera turns the whole field around you. A sound played lower is behind you (Lower pitch behind you). To keep
   crowded places readable only the six nearest things sound, at most three of one kind; things on another floor are
-  left out unless you can walk there. The point selected in the points of interest list always has a place among
+  left out unless you can walk there, and so are things past a closed door (the corridor's from the gym hallway), until you go through it. The point selected in the points of interest list always has a place among
   them. The sounds take turns: only one plays at a time, each after the one before it has finished, so they never play over one another. Whichever is most overdue for its own rhythm goes next, and a near thing's lateness counts for more than a far one's: with many things around, the near ones keep most of their speed and the far ones wait longer (seconds, in a full room), none is left out, and a thing that has just come into range goes first. The sonar is silent in menus, conversations, story scenes and
   battles. Shadows are not part of it: they keep their own pulse.
 - Shadow pulse: a low, rattling snarl from the nearest Shadow within 30 m, whatever its height, faster and louder as it closes in
