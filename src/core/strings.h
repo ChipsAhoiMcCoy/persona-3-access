@@ -548,6 +548,7 @@ inline constexpr const char* kNotEnough = "not enough";
 // Shops (shop.cpp)
 inline constexpr const char* kOption = "Option";
 inline constexpr const char* kCannotBuy = "not now";
+inline constexpr const char* kOutOfStock = "Out of stock";
 inline constexpr const char* kForWhom = "For whom?";
 inline constexpr const char* kFor = "for";
 inline constexpr const char* kSell = "Sell";

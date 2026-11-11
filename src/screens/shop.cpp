@@ -8,7 +8,7 @@
 //   Members: TArray<u16> ids +0x2D0 (count +0x2D8), cursor u16 +0x2E0 (Q / E switch it from the list too).
 //   Lists (buy, sell, trade): +0x2E8 (count +0x2F0), 0x28 each: +0 price, +4 u16 item id, +6 u16 how many you can
 //          take (0 = not now), +8 TArray<{u16 id, u16 count}> what a trade takes; cursor u16 row +0x2F8, top +0x2FA,
-//          rows shown u16 +0x2FC. The draw actor reads these every frame: written directly, with the cursor sound
+//          rows shown u16 +0x2FC; a simple shop's rows also +0x1E u16 what is left of its stock. The draw actor reads these every frame: written directly, with the cursor sound
 //          (the mouse path does the same).
 //   Antique fusion (state 0x10): the base equipment TArray<u16> ids +0x308 (count +0x310), cursor u16 row +0x318,
 //          top +0x31A, rows shown u16 +0x31C (5); state 0x11 lists what it makes in the ordinary list (+0x2E8, with
@@ -119,6 +119,9 @@ class ShopScreen : public MenuScreen {
       }
       n += t;
     }
+    // A simple shop's row holds what is left of its stock (u16 +0x1E, the week's, from the save); the game's count
+    // (+6) is the least of that, what the money buys and what can still be carried. Sold out is said first.
+    if (!can && st == 7 && is_a(shop(), "FclSimpleShop") && !*(uint16_t*)(e + 0x1E)) return std::format("{}, {}", strings::kOutOfStock, n);
     if (!can) n += std::string(", ") + (st == 0x14 ? strings::kUnavailable : strings::kCannotBuy);
     return n;
   }

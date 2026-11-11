@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Shops
+- A vending machine's sold-out drink starts with "Out of stock" ("Out of stock, Nastea, 110 yen, 3 owned"). It ended with "not now", which did not say why Enter did nothing. A machine holds a few of each drink and refills once a week.
+
 ### Sonar: nearness is heard
 - A thing repeats much faster as you close in: about once a second at 10 m, twice at 5 m, three times at 3 m, five times at 2 m and eight times a second at 1 m. It was three times a second at best and once a second at the range's edge.
 - The speed goes by distance alone. It used to stretch with the Sonar range setting, so the same door at the same distance ticked slower with a longer range.
