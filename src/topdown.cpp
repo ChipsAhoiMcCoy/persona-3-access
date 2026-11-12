@@ -50,6 +50,10 @@ int g_scan_dir = -1;   // the compass point the stick is on, -1 at rest
 bool g_dev_stick = false;
 float g_dev_x = 0, g_dev_y = 0;
 uint64_t g_relocks = 0;
+// A run of frames each needing the camera turned back (3553 in one early session, 2026-11-12, cause unknown): its
+// start and end are logged with what the camera was doing, to find what fights the lock.
+int g_relock_run = 0;
+bool g_relocked_now = false;
 
 UObject* op() {
   static const int ops = watch::want("FldOperator");
@@ -87,12 +91,27 @@ void hold_camera(UObject* o) {
   UObject* yaw_comp = cam ? get<UObject*>(cam, "YawSceneComp") : nullptr;
   float yaw = yaw_comp ? get<FRotator>(yaw_comp, "RelativeRotation").yaw : 0.0f;
   float diff = std::remainder(yaw - kNorthYaw, 360.0f);
-  if (!yaw_comp || std::fabs(diff) > 0.5f) {
+  g_relocked_now = !yaw_comp || std::fabs(diff) > 0.5f;
+  if (g_relocked_now) {
+    if (g_relock_run == 0) {
+      UObject* cop = get<UObject*>(o, "OpCameraComp");
+      UObject* hit = cop ? get<UObject*>(cop, "CurrentHitRef") : nullptr;
+      log::writef("topdown: camera turned to {:.1f}, set back to north (behaviour state {}, hit camera {}, view yaw {:.1f})", yaw,
+                  get<int32_t>(b, "State", -1), hit ? name_of(hit) : "none", world::camera_yaw());
+    }
+    ++g_relock_run;
     Params p(find_function(class_of(o), "SetFreeCameraYaw"));
     p.set<float>("Angle", kNorthYaw);
     call(o, p);
     ++g_relocks;
   }
+}
+
+// The end of a run of set-backs: how long it lasted.
+void relock_run_end() {
+  if (g_relocked_now || g_relock_run == 0) return;
+  if (g_relock_run > 1) log::writef("topdown: the camera was set back {} frames in a row", g_relock_run);
+  g_relock_run = 0;
 }
 
 void release_camera() {
@@ -183,6 +202,7 @@ void tick() {
   if (want != g_active) want ? enter() : leave();
   if (!g_active) return;
   hold_camera(o);
+  relock_run_end();
   hold_listener();
   scan_tick();
 }

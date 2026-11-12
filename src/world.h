@@ -23,6 +23,7 @@ bool scene_fast();
 // Shadow cues) plays only while this holds.
 bool exploring();
 bool player_location(FVector& out);
+bool player_velocity(FVector& out);   // the hero's velocity (AActor::GetVelocity), cm/s
 // Unit vectors on the ground plane for a listener-relative direction: 0 ahead, 1 right, 2 behind, 3 left (north,
 // east, south, west in the top-down mode).
 FVector dir_vector(int dir);

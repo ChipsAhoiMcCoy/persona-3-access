@@ -414,7 +414,9 @@ Wrath of the Righteous:
   camera, so up (W, or the left stick up) always walks north, right walks east, and so on.
 - The game's own sounds (footsteps, voices, doors, Shadows) are heard from where you stand, with north ahead, as if
   from above; so are the mod's sonar, Shadow cues and wall tones. A Shadow's growl comes from where the Shadow is.
-- The wall tones are the compass: north, east, south and west of you.
+- The wall tones are the compass: north, east, south and west of you. As in Dark Vision, they play only while you
+  are moving and go quiet when you stop; they reach 3 m, and the tone for the direction behind your walk stays silent
+  (walking north you hear north, east and west; walking north-east, north and east).
 - The points of interest list gives directions by the compass ("Iwatodai Station, 8 meters, north-east").
 - The right stick scans a direction (see On a controller).
 - North is the map's up (the map screen and the corner map draw it that way).

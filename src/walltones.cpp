@@ -11,10 +11,15 @@
 // capsule rides over. So a wall you would slide along, or a corridor that bends a little, reads open; a wall across
 // the key reads at its distance. The old probe (one straight sweep per direction) read any wall that crossed the
 // line, even one you would glide past.
+// In the top-down mode (topdown.cpp) the four directions are the compass, fixed, so a room had a wall within reach in
+// three or four of them all the time and turning no longer quietened them (the user, 2026-11-12). There, as Dark
+// Vision starts its wall tones ("when moving"): they sound only while the hero moves (the game's own velocity, so the
+// stick, the keys and the auto-walk alike), reach 3 m, and the direction behind the walk is left out.
 #include "walltones.h"
 #include "audio.h"
 #include "devserver.h"
 #include "mod.h"
+#include "topdown.h"
 #include "world.h"
 #include <windows.h>
 #include <algorithm>
@@ -25,6 +30,11 @@
 namespace p3a::walltones {
 using world::FVector;
 static float g_range = 500.0f;        // cm
+constexpr float kTopDownRange = 300.0f;   // cm, the top-down mode's reach
+constexpr float kMovingCmS = 30.0f;       // the hero moves: faster than this on the ground (a walk is ~250)
+constexpr float kBehindDeg = 100.0f;      // top-down: a direction more than this from the walk's is behind it
+static bool g_moving = false;
+static float g_heading = 0;               // top-down: the walk's bearing from north, degrees
 static float g_gain = 1.0f;
 static bool g_enabled = true;
 static bool g_loaded = false;
@@ -84,13 +94,13 @@ static bool slide_move(FVector& pos, FVector move) {
 
 // How far along camera-relative direction `d` (0 ahead, 1 right, 2 behind, 3 left) holding that key carries the body,
 // capped at the range.
-static float probe(const FVector& p, int d) {
+static float probe(const FVector& p, int d, float range) {
   FVector v = world::dir_vector(d);
   float tan_deg = std::tan(g_deg * 3.14159265f / 180.0f);
   FVector pos = p;
   float along = 0;
-  for (int step = 0; step < 16 && along < g_range; ++step) {
-    float len = std::min(kStep, g_range - along);
+  for (int step = 0; step < 16 && along < range; ++step) {
+    float len = std::min(kStep, range - along);
     FVector from = pos;
     if (!slide_move(pos, FVector{v.x * len, v.y * len, 0})) break;
     // Knee-high blockers the capsule rides over; a rising floor (a ramp, a low step) is not one.
@@ -114,7 +124,7 @@ static float probe(const FVector& p, int d) {
     if (a - along < len * 0.1f) { along = std::max(along, a); break; }   // stuck against a wall across the key
     along = a;
   }
-  return std::min(std::max(along, 0.0f), g_range);
+  return std::min(std::max(along, 0.0f), range);
 }
 
 // The tones play while the player walks the field with nothing over it (not in a menu, a conversation, a battle or
@@ -144,18 +154,29 @@ void tick() {
   g_people.clear();
   FVector p;
   if (!world::player_location(p)) { silence(); return; }
+  const bool top = topdown::active();
+  FVector vel{};
+  g_moving = world::player_velocity(vel) && std::hypot(vel.x, vel.y) > kMovingCmS;
+  if (top && !g_moving) { silence(); return; }
+  const float range = top ? kTopDownRange : g_range;
+  if (top) g_heading = std::atan2(vel.y, vel.x) * 180.0f / 3.14159265f - topdown::north_yaw();
   for (int i = 0; i < 4; ++i) {
-    float d = probe(p, i);
+    if (top && std::fabs(std::remainder(90.0f * i - g_heading, 360.0f)) > kBehindDeg) {
+      g_dist[i] = range;
+      audio::set_loop_volume(kToneId + i, 0.0f);
+      continue;
+    }
+    float d = probe(p, i, range);
     g_dist[i] = d;
-    float v = d >= g_range ? 0.0f : 1.0f - d / g_range;
+    float v = d >= range ? 0.0f : 1.0f - d / range;
     audio::set_loop_volume(kToneId + i, v * v * g_gain);
   }
 }
 
 void set_enabled(bool on) { g_enabled = on; if (!on) silence(); }
 std::string status() {
-  return std::format("walltones enabled={} range={:.0f} gain={:.2f} h0={:.0f} deg={:.0f} ahead={:.0f} right={:.0f} behind={:.0f} left={:.0f}\n", g_enabled, g_range, g_gain, g_h0, g_deg,
-                     g_dist[0], g_dist[1], g_dist[2], g_dist[3]);
+  return std::format("walltones enabled={} range={:.0f} gain={:.2f} h0={:.0f} deg={:.0f} ahead={:.0f} right={:.0f} behind={:.0f} left={:.0f} topdown={} moving={} heading={:.0f}\n", g_enabled, g_range, g_gain, g_h0, g_deg,
+                     g_dist[0], g_dist[1], g_dist[2], g_dist[3], topdown::active(), g_moving, g_heading);
 }
 
 void install() {
@@ -173,7 +194,7 @@ void install() {
       LARGE_INTEGER f, t0, t1;
       QueryPerformanceFrequency(&f); QueryPerformanceCounter(&t0);
       float d[4];
-      for (int k = 0; k < n; ++k) { g_people.clear(); for (int i = 0; i < 4; ++i) d[i] = probe(p, i); }
+      for (int k = 0; k < n; ++k) { g_people.clear(); for (int i = 0; i < 4; ++i) d[i] = probe(p, i, g_range); }
       QueryPerformanceCounter(&t1);
       return std::format("{:.1f} us per tick ({} ticks): ahead={:.0f} right={:.0f} behind={:.0f} left={:.0f}\n",(double)(t1.QuadPart - t0.QuadPart) * 1e6 / (double)f.QuadPart / n, n, d[0], d[1], d[2], d[3]);
     });

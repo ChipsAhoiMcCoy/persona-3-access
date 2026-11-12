@@ -6,6 +6,7 @@
 - While you walk freely, the camera stays facing north and cannot be turned: up always walks north. The game's own sounds and the mod's are heard from where you stand with north ahead, as if from above, so a Shadow's growl comes from the Shadow. Conversations, story scenes, menus and battles keep the game's camera and sound. The Top-down exploration setting (Exploring) switches it off.
 - The right stick scans a direction: push it toward one to hear the nearest point of interest that way, its distance and how far the wall is, and to hear that point's sound from where it is.
 - Directions in the points of interest list are given by the compass ("north-east") in this mode.
+- The wall tones in this mode play only while you move, reach 3 m and leave out the direction behind your walk: fixed to the compass, they had found a wall in three or four directions all the time.
 - New sound placement, from Dark Vision: left and right by level and by the moment each ear hears a sound, sounds behind darker. The Sound placement setting (Sound) chooses it, Steam Audio's 3D (as before) or a plain pan. It replaces the 3D sound setting.
 - New sonar rhythm, from Dark Vision: everything in range sounds once from west to east, then a pause (Sonar rhythm: sweep). Pulse is the rhythm as it was.
 
