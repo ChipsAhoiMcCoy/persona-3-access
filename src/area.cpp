@@ -12,6 +12,7 @@
 #include "devserver.h"
 #include "calendar.h"
 #include "poi.h"
+#include "portrait.h"
 #include "seh.h"
 #include "speech.h"
 #include "ue/scan.h"
@@ -90,6 +91,7 @@ static ca::Scene scene(std::vector<std::string>* levels_out = nullptr) {
 }
 
 void describe() {
+  if (portrait::describe()) return;   // talking to someone: the character, not the place
   if (!world::player()) { speech::speak(strings::kNotInField, true); return; }
   std::string d = ca::describe(scene());
   speech::speak(d.empty() ? std::string(strings::kNoAreaDescription) + " " + poi::area_name() : d, true);

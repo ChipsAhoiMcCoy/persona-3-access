@@ -13,6 +13,7 @@
 #include "nav.h"
 #include "poi.h"
 #include "area.h"
+#include "portrait.h"
 #include "calendar.h"
 #include "gametext.h"
 #include "stats.h"
@@ -120,6 +121,7 @@ void init(bool speech_ok) {
   sonar::install();
   shadow::install();
   area::install();
+  portrait::install();
   nav::install();
   doors::install();
   commands::install();

@@ -54,7 +54,7 @@ The game's own controls work as usual (keyboard or controller). The mod adds the
 - Shift+Right bracket / Shift+Left bracket: Next / previous category of points of interest, read from its nearest
 - Apostrophe: Walk to the selected point of interest (press again, or any movement key, to stop)
 - Shift+Apostrophe: Party: each member's level, HP and SP
-- Semicolon: Describe the area: how the place around you looks (see below)
+- Semicolon: Describe the area: how the place around you looks, or while someone talks, how they look (see below)
 
 ### On a controller
 
@@ -237,6 +237,9 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   operations, Tartarus (each block) and Episode Aigis' Abyss of Time. Outdoors it follows the time of day and the
   season (cherry blossoms in April, autumn leaves, bare winter trees); the Dark Hour, Christmas in Paulownia Mall and
   the dorm's Christmas tree, and January's fading colours, litter and cult posters each change it too.
+  While someone talks to you with their portrait beside the line, the same key describes that character instead,
+  as the portrait shows them now: their look, the outfit they wear (school uniform, winter coat, swimsuit, yukata,
+  combat gear...) and how they stand. Every outfit of every character with a portrait is described.
 - Points of interest list what you can walk to on your own floor; Tartarus lists its whole floor. Auto-walk turns you to face what you walked to, so its prompt appears;
   stairs and doors end the walk on the far side. A party member's remark on the way pauses the walk; it carries on
   once you close the remark. Social Link partners are listed by name and arcana ("Yukari Takeba (Lovers)"), or as the

@@ -457,6 +457,7 @@ inline constexpr const char* kObjective = "Objective";
 inline constexpr const char* kNoObjective = "No objective shown yet";
 inline constexpr const char* kNothingToReview = "No menu or message to read";
 inline constexpr const char* kNoAreaDescription = "No description for this place:";
+inline constexpr const char* kNoPortraitDescription = "No description for this portrait:";
 inline constexpr const char* kFloor = "floor";
 inline constexpr const char* kTartarus = "Tartarus";
 inline constexpr const char* kUnknownArea = "Unknown area";
@@ -696,7 +697,7 @@ inline constexpr const char* kKeyHelpPoiCatNext = "Next category of points of in
 inline constexpr const char* kKeyHelpPoiCatPrev = "Previous category";
 inline constexpr const char* kKeyHelpParty = "Party: each member's level, HP and SP";
 inline constexpr const char* kKeyHelpWalk = "Walk to the selected point of interest, or stop walking";
-inline constexpr const char* kKeyHelpArea = "Describe the area: how the place around you looks";
+inline constexpr const char* kKeyHelpArea = "Describe the area: how the place around you looks, or while someone talks, how they look";
 // A key's name in that list: its modifiers, then the key as Windows names it (kKeyUnnamed and its code when it has
 // no name).
 inline constexpr const char* kModCtrl = "Ctrl+";
