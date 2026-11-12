@@ -97,9 +97,11 @@ static bool refresh_path(const FVector& me) {
   g_w.path = world::find_path(me, to);
   if (!round) g_w.off_mesh = g_w.path.empty();
   // A thing standing off the navmesh (the entrance terminal, 2026-10-28) has no path to its centre: path to the
-  // nearest navmesh point beside it, then head straight in.
+  // nearest navmesh point beside it, then head straight in. A story trigger can float well above its floor (the box
+  // that starts the Takaya fight is 7 m over the ramp at the top of Tartarus, 2026-11-11: with no point within 3 m
+  // the walk went straight at it, into the pillar the way leads round): the search widens once before giving up.
   FVector beside{};
-  if (g_w.path.empty() && world::project_to_nav(to, 300.0f, beside)) { g_w.path = world::find_path(me, beside); if (!g_w.path.empty()) g_w.path.push_back(to); }
+  if (g_w.path.empty() && (world::project_to_nav(to, 300.0f, beside) || world::project_to_nav(to, 1200.0f, beside))) { g_w.path = world::find_path(me, beside); if (!g_w.path.empty()) g_w.path.push_back(to); }
   if (g_w.path.empty()) g_w.path.push_back(to);   // no navmesh here: head straight for it (the stuck check still guards)
   g_w.path_at = GetTickCount64();
   return true;

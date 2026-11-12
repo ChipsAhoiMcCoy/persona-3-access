@@ -36,6 +36,7 @@
 - A fourth line of the panel ("Find a valuable treasure chest") is read too; it was below where the mod looked.
 
 ### Auto-walk: round people in the way
+- At the top of Tartarus the walk to "Event: Takaya" went straight at it, into the pillar in the middle of the landing, and said "Stuck, stopping". A story trigger that floats well above its floor is now walked to by the floor under it: the walk goes round the pillar and up the ramp.
 - The auto-walk's path knows the walls but not who is standing on the floor. With a student walking toward you down a hallway, it pushed into them and said "Stuck, stopping". It now sees someone in the next step of its path and steps to one side of them, then goes on.
 - When it is blocked by anything else its path does not know of, it tries a step to either side before giving up. It says "Stuck, stopping" after three such steps that brought it no nearer.
 - Fixed: arriving at a Social Link partner sitting at a desk (Kenji in Classroom 2-F) turned you away from them, so the Talk prompt went away and they could not be talked to. You are now turned to face them.
