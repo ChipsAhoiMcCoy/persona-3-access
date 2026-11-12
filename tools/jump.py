@@ -187,11 +187,18 @@ def apply_set(item):
         ok = p3.field(*a)
         print(f"  {p3.http('/area').splitlines()[0]}")
         return ok
-    if kind == "battle":
-        cmd("CALL_FIELDBATTLE", lookup(["encount"], val))
-        return True
-    if kind == "eventbattle":
-        cmd("CALL_EVENTBATTLE", *[int(x, 0) for x in val.split(",")])
+    if kind in ("battle", "eventbattle"):
+        # A bare battle has no script holding the field: a press during it can reach a field hit, and its battle
+        # objects outlive it (the mod then thinks a battle is on). The first one in a game session has always ended
+        # cleanly; a later one crashed the game at its results three times (2026-11-12). Relaunch between them.
+        if any("BATTLE(" in l for l in p3.http("/flow/run").splitlines()):
+            print("  warning: a bare battle already ran in this game session; a second one has crashed the game at its "
+                  "results (relaunch with `p3.py up --slot N` first)")
+        print("  keep the hero 2 m from any object or person: a press in the battle can reach the field behind it")
+        if kind == "battle":
+            cmd("CALL_FIELDBATTLE", lookup(["encount"], val))
+        else:
+            cmd("CALL_EVENTBATTLE", *[int(x, 0) for x in val.split(",")])
         return True
     if kind in ("event", "cmmevent"):
         cmd("CALL_EVENT" if kind == "event" else "CALL_EVENT_CMM", *[int(x, 0) for x in val.split(",")])
@@ -779,6 +786,9 @@ def play(choices, secs=120, quiet_polls=4):
             print("  -- " + scr + ": stopping here")
             return "screen"
         quiet += 1
+        if any(" running " in l for l in p3.http("/flow/run").splitlines()):
+            quiet = 0   # an event (or battle) started through /flow/run has not finished: its quiet stretches count not
+            continue
         if seen and quiet >= quiet_polls:
             return "quiet"
         if not seen and quiet >= 3 * quiet_polls:
@@ -819,6 +829,8 @@ def main(argv, p3mod):
     for s in sets:
         if apply_set(s) is False:
             print("  (not as asked)")
+    if sets and not rest and "--play" in sys.argv:
+        print(f"[{time.time() - t0:5.1f}s] play: " + play([], play_secs))
     if rest:
         query = " ".join(rest)
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

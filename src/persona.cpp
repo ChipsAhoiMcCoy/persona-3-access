@@ -289,8 +289,8 @@ void install() {
     // /persona the hero's stock | ?id=N one Persona's data
     int id = (int)dev::arg_int(r, "id", -1);
     std::string find = dev::arg(r, "find");
-    bool bench = dev::has(r, "bench"), learn = dev::has(r, "learn");
-    return dev::on_game([id, find, bench, learn] {
+    bool bench = dev::has(r, "bench"), learn = dev::has(r, "learn"), levelup = dev::has(r, "levelup");
+    return dev::on_game([id, find, bench, learn, levelup] {
       if (bench) {   // ?bench=1: Fusion Search's work for one cursor move (every stock pair), and one object scan
         LARGE_INTEGER f, t0, t1, t2;
         QueryPerformanceFrequency(&f);
@@ -319,6 +319,14 @@ void install() {
         return s;
       }
       if (id >= 0) return std::format("{} {} arcana {} base level {}; skill {}\n", id, name(id), arcana(id), base_level(id), skill_name(id));
+      if (levelup) {   // ?levelup=1: the equipped Persona one EXP short of its next level (dev: a skill change roll)
+        auto* e = (uint8_t*)stock_entry(equipped());
+        int pid = e ? *(uint16_t*)(e + 2) : 0, level = e ? *(uint16_t*)(e + 4) : 0;
+        int need = e ? exp_for_level(e, level + 1) : 0;
+        if (need <= 0) return std::string("no next level\n");
+        *(uint32_t*)(e + 8) = (uint32_t)(need - 1);
+        return std::format("{} EXP {}: level {} next\n", name(pid), need - 1, level + 1);
+      }
       if (learn) {   // ?learn=1: the equipped Persona one EXP short of the level of its next skill (dev: the victory
                      // screen's skill-learned status page)
         auto* e = (uint8_t*)stock_entry(equipped());
@@ -336,6 +344,6 @@ void install() {
       for (auto& o : stock()) s += std::format("  slot {} id {} {}\n", o.slot, o.id, describe(o.id, o.level));
       return s;
     });
-  }, "the hero's Persona stock | ?id=N one Persona | ?learn=1 the equipped one 1 EXP short of its next skill (dev)");
+  }, "the hero's Persona stock | ?id=N one Persona | ?learn=1 the equipped one 1 EXP short of its next skill | ?levelup=1 of its next level (dev)");
 }
 }  // namespace p3a::persona

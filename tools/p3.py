@@ -648,7 +648,8 @@ def field(major, minor, entry=1, secs=40):
     while time.time() - t0 < secs:
         time.sleep(1.5)
         a = http("/area", check=False)
-        if a.startswith(f"ids {major} {minor} ") and "HTTP" not in a:
+        here = a.startswith(f"ids {major} {minor} ") or major == 299 and f"name 'Tartarus, floor {minor}'" in a
+        if here and "HTTP" not in a:   # a Tartarus floor reports ids 0 0
             time.sleep(2)   # the hero is placed and the points of interest scanned a moment after the level is up
             return True
     return False
