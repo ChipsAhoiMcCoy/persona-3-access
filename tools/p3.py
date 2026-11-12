@@ -19,7 +19,9 @@ server on P3A_PORT (default 8793). Claude drives and observes it from here witho
   python tools/p3.py keys enter wait:2 down    game keys in order, waits in seconds; prints /screen
   python tools/p3.py advance [secs] [key]      play dialogue, pressing the key on each page; stops at a choice
   python tools/p3.py goto "name" [--noact]     auto-walk to a point of interest (or "#id"), then press Space
-  python tools/p3.py scenario list | <name>   jump straight to a test situation (tools/scenarios.py), no playing
+  python tools/p3.py jump --list <text> | <row or query> [--bare] [--dry] | --set key=value ...   reach any situation
+                                               (tools/jump.py: state, fields, events, battles, gifts), no playing
+  python tools/p3.py scenario list | <name>   multi-step test situations (tools/scenarios.py)
   python tools/p3.py flow load [slot] | newgame [--sign] | sleep   title -> save slot | fresh game | home to bed
   python tools/p3.py shot [name.png]           PrintWindow capture of the game window (bare names go to build/shots)
 
@@ -689,7 +691,7 @@ def main():
     # Commands that kill, reload or press keys never touch the player's session unless asked (--force).
     force = "--force" in rest
     rest = [x for x in rest if x != "--force"]
-    if cmd in ("kill", "up", "reload", "keys", "advance", "goto", "flow", "scenario") and not force and player_game():
+    if cmd in ("kill", "up", "reload", "keys", "advance", "goto", "flow", "scenario", "jump") and not force and player_game():
         sys.exit(f"the running game is the player's (mode=play): `{cmd}` would act on it; pass --force if they asked")
     if cmd == "launch":
         launch(rest)
@@ -811,6 +813,11 @@ def main():
         # prints what the mod speaks. Stops early when a choice list appears (sel != null) or a modelled screen opens.
         args = [a for a in rest if not a.startswith("--")]
         advance(float(args[0]) if args else 60, args[1] if len(args) > 1 else "enter", "--choose" in rest)
+    elif cmd == "jump":
+        # p3.py jump ...: tools/jump.py (its docstring is the help).
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import jump
+        jump.main(rest, sys.modules[__name__])
     elif cmd == "scenario":
         # p3.py scenario list | <name>: put the game straight into a test situation (tools/scenarios.py).
         scenario(rest[0] if rest else "list")
