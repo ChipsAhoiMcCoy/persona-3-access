@@ -303,6 +303,12 @@ class BattleScreen : public Screen {
     int tp = w_.unit_int("GetUnitTP", a), max_tp = w_.unit_int("GetUnitMaxTP", a);
     if (max_tp > 0 && tp >= max_tp) s += std::string(", ") + strings::kTheurgyReadyWords;
     if (t) s += ". " + w_.enemy(t);
+    // Main commands the game has greyed out on the wheel (KeyControl: a tutorial's battle, and the last turn of the
+    // final battle, where only the Persona's skills are left, 2026-11-11): named, or a press on one goes unanswered.
+    std::string locked;
+    for (int i = 0; i < 4; ++i)
+      if (!open(kCmds[i])) locked += (locked.empty() ? "" : ", ") + std::string(strings::kWheelCommands[i]);
+    if (!locked.empty()) s += std::format(". {} {}", locked, strings::kUnavailable);
     speech::speak(s, false);   // queued after what just happened
   }
 

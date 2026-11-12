@@ -194,6 +194,9 @@ inline constexpr const char* kGuardTitle = "Guard?";
 // Who moves first, as the splash at a battle's start shows it (its pictures: S.E.E.S. / Shadow, Advantage).
 inline constexpr const char* kAdvantageParty = "S.E.E.S. advantage";
 inline constexpr const char* kAdvantageEnemy = "Shadow advantage";
+// The wheel's four main commands by name, for the turn line when the game has greyed some out ("Attack, Items, Guard
+// unavailable"): the wheel's slots 0 attack, 2 Persona, 3 item, 1 guard.
+inline constexpr const char* kWheelCommands[] = {"Attack", "Skills", "Items", "Guard"};
 inline constexpr const char* kTheurgyReadyWords = "Theurgy ready";
 inline constexpr const char* kShiftAvailableWords = "Shift available";
 // A shop's quantity as it opens, before the number; its keys are kHowMany's (F1).

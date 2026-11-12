@@ -117,7 +117,8 @@ std::vector<Poi> scan(float radius) {
   // A story trigger named for its scene, FldHitActor_<major>_<Scene>_H<n> (FldHitActor_299_Takaya_H0 and _Nyx_H0 at
   // the top of Tartarus, 2026-10-28), is where the story goes next: listed beside everything else, on any floor
   // (Takaya's box floats 7 m up a ramp, with no navmesh path to its centre), until its off flag is set.
-  // UNTESTED: written while the game was in use; verify at Adamah floor 263 (slot 15).
+  // Seen at Adamah floor 263 (2026-11-11): "Event: Takaya" and "Event: Nyx" listed from the landing, and the walk
+  // to each started its fight.
   auto story_beat = [](UObject* a) -> std::string {
     std::string w = core::story_scene(name_of(a));
     if (w.empty() || flag_prop_on(a, "mOffFlagName_")) return {};
@@ -192,7 +193,7 @@ std::vector<Poi> scan(float radius) {
     else if (icon == "Speak" || icon == "Listen") add(a, Kind::Person, nm.empty() ? strings::kPoiPerson : nm);
     // Tartarus' doors are ways onward under the plain Check icon: the Monad door on a floor ("Enter Door", row
     // 10009006; seen on Adamah floors 231 and 243, 2026-11-11), and in the passage "Exit Door", "Proceed Onward" and
-    // the way back (10009007-10009009, 10009012; UNTESTED, from the game's data).
+    // the way back (10009007-10009009, 10009012; all three seen listed on Adamah floor 255, 2026-11-11).
     else if (int idx = get<int32_t>(a, "mNameIndex_", -1); ((idx >= 10009006 && idx <= 10009009) || idx == 10009012) && !nm.empty()) add(a, Kind::Exit, nm);
     else if (fragment_spot(a)) add(a, Kind::Fragment, strings::kPoiFragment);
     else if (nm.empty()) add(a, Kind::Thing, strings::kPoiThing);
@@ -211,7 +212,7 @@ std::vector<Poi> scan(float radius) {
   // One of them is a crystal that always gives a Twilight Fragment (BP_DOBJ_BrokenFragment_C,
   // EDungeonObjType::BrokenFragment; its script is BF_BP_DOBJ_BrokenObject's "Hit_BrokenHakumei_Object"). It is built
   // like the others (the same Box), and was left out of the breakables until 2026-11-11.
-  // UNTESTED: written from the game's data while the game was in use; verify on a floor that has one.
+  // Seen listed on Adamah floor 240 (2026-11-11).
   for (UObject* a : live("FldDungeonObjectActor")) {
     if (!breakable(a)) continue;
     if (name_of(class_of(a)).find("BrokenFragment") != std::string::npos) add(a, Kind::Fragment, strings::kPoiFragmentCrystal);
