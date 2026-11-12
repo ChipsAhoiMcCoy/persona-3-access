@@ -17,11 +17,11 @@ These reached the code but have not been seen working in the game, because no te
 - The TV shopping show.
 - Linked Episodes.
 - Exam results.
-- The final battle, the ending, and the end credits' list of names.
 
 ## Tested less than the rest
 
 - Episode Aigis has not been played through with the mod. Its movies and area descriptions are in place, and its Theurgy list has been checked, but the episode as a whole is untested.
+- The end of the game was played through once with test shortcuts (Jin, Takaya, Nyx, the epilogue, the credits): each part read, but not at a player's pace. The clear save and New Game Plus have not been tried.
 - A late game playthrough has not been completed. Each menu was tested on saves from various points, not by finishing the game with the mod. Monad and the Abyss of Time were visited to check area descriptions, not played through.
 - In Analyze, the stop at the first and last enemy has not been tried in the game. On the command wheel it has.
 - The single "All enemies" or "All allies" choice for a skill or item that hits a whole side has not been tried in the game.
@@ -38,6 +38,7 @@ These reached the code but have not been seen working in the game, because no te
 
 ## Known bugs
 
+- The ending's very last choice ("Close your eyes") opens with neither answer picked. If Enter does nothing there, press Left or Right once, then Enter. A fix is in but could not be tried again without replaying the ending.
 - The BGM playlist in Config: the game opens it with D, but the mod's menu keeps W, A, S and D from the game. It may not be reachable from the keyboard. This comes from reading the code and has not been tried in the game.
 
 ## Behaviours to expect

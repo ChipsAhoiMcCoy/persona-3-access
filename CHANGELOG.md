@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### The end of the game
+- The credits: the review key now reads the names rolling past at that moment ("Credits. Chief Designer, Yuichiro Takada, Art Director, Tomohiro Kumagai, ..."). The roll is not read by itself.
+- The last choice of the ending opened with no answer picked and Enter did nothing until Left or Right was pressed. The mod now picks the focused answer for you (not yet tried again in the game; see the known issues).
+
 ### Calendar
 - When the story moved to another day with only the time-of-day screen (the epilogue's jump to March), just "After School" was said. The new date is now read with it.
 

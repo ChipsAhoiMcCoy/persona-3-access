@@ -27,6 +27,11 @@ class ChoiceScreen : public MenuScreen {
     list_.set = [](int i) {
       auto* s = (uint8_t*)msg::sel_item();
       if (!s || !ListCursor(s + 0x60).set(i)) return false;
+      // The ending's last choice (USelAEventTypeB: two answers side by side) opens with no answer picked: its row on
+      // screen (+0x40) is -1 until Left or Right is pressed, and Enter did nothing meanwhile (2026-11-11; after a
+      // Right it read 1 and Enter was taken). The row is given with the cursor. UNTESTED: the write itself was not
+      // tried (the ending cannot be replayed quickly); if Enter still does nothing there, Left or Right picks one.
+      if (*(int32_t*)(s + 0x40) == -1) *(int32_t*)(s + 0x40) = i;
       cursor_sound();
       return true;
     };
