@@ -1,19 +1,24 @@
 // The dialogue portraits (included by portrait_text.cpp): every outfit of every character the game has a
-// bust-up for (T_BU_<PC|SC|NC><char>_Pose<x>_C<outfit>, 155 outfits in 264 poses; three placeholder textures with no table row are never shown), each rendered from the game's own
+// bust-up for (T_BU_<PC|SC|NC><char>_Pose<x>_C<outfit>, 156 outfits in 267 poses), each rendered from the game's own
 // textures and looked at (tools/bustup/outfits.py, 2026-11-12). An outfit's text is the character's look in it; a
 // pose's text is said after it. Character ids: 1 protagonist, 2 Yukari, 3 Junpei, 4 Akihiko, 5 Mitsuru, 6 Fuuka,
 // 7 Aigis, 8 Ken, 9 Koromaru, 10 Shinjiro, 11 Metis, 12 Aigis (Episode Aigis); 1xx Social Links, 2xx story, 1xxx others.
 const Outfit kOutfits[] = {
-  {1, 0, "The protagonist, a slim teenage boy with dark blue hair cut in a bob, its long fringe falling over "
-         "his right eye, and grey-blue eyes. He wears a plain dark grey top with a small upright collar."},
+  {1, 0, "The protagonist, a slim, pale-skinned teenage boy with soft, dark slate-blue hair cut in a rounded "
+         "bob, a tuft sticking up at the crown and a long fringe falling across his right eye, so only his "
+         "grey-blue left eye shows clearly. He wears a plain dark charcoal-grey top of smooth fabric with a "
+         "small upright collar split into a narrow V at the throat; it has no buttons, prints or trim. No "
+         "jewellery or headphones are visible, and the portrait ends at his upper chest."},
   {2, 1, "Yukari, a slim teenage girl with short, chin-length light brown hair that flips outward at the ends "
          "and brown eyes, wearing small silver stud earrings. She wears a pale grey choker with a heart-shaped "
          "buckle and a white short-sleeved button-up blouse, collar open, with a breast pocket: her school "
          "summer uniform."},
-  {2, 2, "Yukari, a slim teenage girl with short, chin-length light brown hair and brown eyes, wearing small "
-         "silver stud earrings and a pale grey choker with a heart-shaped buckle. She wears her school "
-         "uniform: a pink cardigan over a white shirt with a wide pointed collar and a large red bow at the "
-         "throat."},
+  {2, 2, "Yukari, a slim, fair-skinned teenage girl with short, chin-length light brown hair, side-swept bangs "
+         "and ends flicking outward, brown eyes, pink lips and small silver stud earrings. Around her neck is "
+         "a pale grey leather choker with stitched edges and a heart-shaped buckle. She wears her school "
+         "uniform: a soft pink ribbed cardigan, buttoned, over a white shirt with a wide, sharply pointed "
+         "collar standing out over the cardigan, and a large bright red ribbon bow tied at the throat with its "
+         "tails hanging down."},
   {2, 5, "Yukari, a slim teenage girl with short, chin-length light brown hair and brown eyes, wearing small "
          "silver stud earrings and a pale grey choker with a heart-shaped buckle. She wears casual summer "
          "clothes: a pink camisole with thin red-edged straps and a row of red dots down the front, leaving "
@@ -32,28 +37,44 @@ const Outfit kOutfits[] = {
           "dark grey and red zip-up jacket with a broad layered collar and a round black-and-white badge on the "
           "left sleeve, over a pink top, a white collared shirt and a large red bow. A quiver of black-shafted, "
           "white-fletched arrows sits over her right shoulder."},
-  {2, 102, "Yukari, a slim teenage girl with short, chin-length light brown hair and brown eyes, wearing small "
-           "silver stud earrings. She wears a swimsuit: a pink bikini top with teal halter straps tied behind "
-           "her neck, and dark rectangular sunglasses pushed up on top of her head."},
-  {2, 106, "Yukari, a slim teenage girl with short, chin-length light brown hair and brown eyes, wearing small "
-           "silver stud earrings. She wears a maid outfit: a white frilled lace headdress on a black headband, "
-           "and a black dress with a white bib and tall pointed white collar fastened with black buttons."},
-  {2, 154, "Yukari, a slim teenage girl with short, chin-length light brown hair and brown eyes, wearing small "
-           "silver stud earrings. Her shoulders and arms are bare above a pink towel wrapped around her chest, "
-           "as at a hot spring bath."},
-  {2, 155, "Yukari, a slim teenage girl with short, chin-length light brown hair and brown eyes, wearing small "
-           "silver stud earrings. She wears an inn's robe: a white cotton yukata printed with grey linked rings, "
-           "under a loose navy blue jacket."},
-  {2, 156, "Yukari, a slim teenage girl with short, chin-length light brown hair and brown eyes, wearing small "
-           "silver stud earrings. She wears a summer festival yukata in a pink and white checkerboard pattern, "
-           "printed with yellow, pink and orange flowers on green stems, with a tan sash at the back."},
+  {2, 102, "Yukari, a slim, fair-skinned teenage girl with short, chin-length light brown hair, side-swept bangs "
+           "and ends flicking outward, brown eyes, pink lips and small silver stud earrings. She wears a "
+           "swimsuit: a plain pale pink bikini top with thin teal straps edged in a darker line, tied in a "
+           "halter behind her neck and meeting at a small knot between her cups; her shoulders and arms are "
+           "bare. Pushed up on top of her head are sunglasses with thick, dark slate-grey rectangular frames, "
+           "smoky brown lenses and small gold accents on the arms. She is not wearing her usual choker."},
+  {2, 106, "Yukari, a slim, fair-skinned teenage girl with short, chin-length light brown hair, side-swept bangs "
+           "and ends flicking outward, brown eyes and small silver stud earrings. She wears a maid outfit: on "
+           "her head a black headband carrying a tall white frilled headdress of gathered lace, its scalloped "
+           "edge punched with little eyelet holes. Her dress is charcoal black with puffed shoulders, and down "
+           "its front runs a rounded white bib with a tall, sharply pointed white collar, fastened by a row of "
+           "four round black buttons. She is not wearing her usual choker."},
+  {2, 154, "Yukari, a slim, fair-skinned teenage girl with short, chin-length light brown hair, side-swept bangs "
+           "and ends flicking outward, brown eyes, pink lips and small silver stud earrings. She is wrapped in a "
+           "dusty pink terry-cloth bath towel tucked straight across her chest, its fluffy top edge just above "
+           "her bust, as at a hot spring bath; her shoulders, collarbones and arms are bare. She is not wearing "
+           "her usual choker, and the portrait ends at the top of the towel."},
+  {2, 155, "Yukari, a slim, fair-skinned teenage girl with short, chin-length light brown hair, side-swept bangs "
+           "and ends flicking outward, brown eyes and small silver stud earrings. She wears an inn's robes: a "
+           "white cotton yukata crossed left over right at the neck, printed with a chain of grey outlined "
+           "rings, each ring joined to the next by a small dark grey dot, with thin grey lines along the collar "
+           "edges. Over it hangs a loose, wide-sleeved slate-blue haori jacket, worn open, of plain matte cloth. "
+           "She is not wearing her usual choker."},
+  {2, 156, "Yukari, a slim, fair-skinned teenage girl with short, chin-length light brown hair, side-swept bangs "
+           "and ends flicking outward, brown eyes and small silver stud earrings. She wears a summer festival "
+           "yukata in a large pink and white checkerboard, crossed at the neck, printed with small five-petalled "
+           "flowers in yellow, pink and orange-red on slender green stems with long leaves. A glimpse of a tan "
+           "sash shows at her back, near the bottom of the picture. She is not wearing her usual choker."},
   {2, 157, "Yukari, a slim teenage girl with short, chin-length light brown hair and brown eyes. She wears a "
            "formal New Year's kimono in deep pink printed with large white cherry blossoms, a green-edged collar "
            "and a teal patterned sash, and a hair ornament of pink and white flowers with strands of dangling "
            "pink and silver petals over her left ear."},
-  {2, 159, "Yukari, a slim teenage girl with short, chin-length light brown hair and brown eyes, wearing small "
-           "silver stud earrings and a pale grey choker with a heart-shaped buckle. She wears a red long-sleeved "
-           "top under a pink-and-white striped apron with dark red stitched straps and a front pocket."},
+  {2, 159, "Yukari, a slim, fair-skinned teenage girl with short, chin-length light brown hair, side-swept bangs "
+           "and ends flicking outward, brown eyes, pink lips and small silver stud earrings. She wears her pale "
+           "grey leather choker with stitched edges and a heart-shaped buckle. Under it is a coral-red "
+           "long-sleeved crew-neck top, covered by a work apron striped vertically in pink and white, with dark "
+           "red straps over her shoulders, white stitching along its top edge and straps, and a stitched front "
+           "pocket."},
   {2, 201, "Yukari, a slim teenage girl with short, chin-length light brown hair and brown eyes, wearing small "
            "silver stud earrings and a pale grey choker with a heart-shaped buckle. She wears a dark grey and "
            "red zip-up jacket with a broad layered collar and a round black-and-white badge on the left sleeve, "
@@ -114,9 +135,11 @@ const Outfit kOutfits[] = {
          "plaster on his forehead. He wears the school summer uniform: a white shirt with a black ribbon tie "
          "under a red knitted sweater vest with a small gold pin. A tan leather holster strap is buckled "
          "around his upper arm."},
-  {4, 5, "Akihiko, a lean, athletic young man with short, spiky silver-grey hair, grey eyes and a white "
-         "plaster on his forehead. He wears casual summer clothes: a deep red V-neck shirt with thin pale "
-         "pinstripes, open at the throat."},
+  {4, 5, "Akihiko, a lean, athletic, fair-skinned young man with short, spiky silver-grey hair swept up and "
+         "back in ragged tufts, grey eyes, a strong jaw and a white rectangular plaster stuck at an angle "
+         "above his left eyebrow. He wears casual summer clothes: a deep red V-neck shirt in a soft knit with "
+         "thin pale vertical pinstripes, a darker red band across the top of the shoulder, open at the throat "
+         "to show his collarbones. No jewellery is visible."},
   {4, 6, "Akihiko, a lean, athletic young man with short, spiky silver-grey hair, grey eyes and a white "
          "plaster on his forehead. He wears casual winter clothes: a light grey coat with tan-edged lapels "
          "over a dark charcoal shirt, and a long red ribbed scarf wrapped around his neck with the ends "
@@ -129,27 +152,42 @@ const Outfit kOutfits[] = {
           "plaster on his forehead. Over a white shirt, black ribbon tie and red knitted vest he wears an open "
           "jacket with dark grey front panels, large round brass snaps and bright red sleeves, each sleeve "
           "marked with a round black-and-white quartered patch."},
-  {4, 102, "Akihiko, a lean, athletic young man with short, spiky silver-grey hair, grey eyes and a white "
-           "plaster on his forehead. He wears a plain white crew-neck T-shirt printed on the chest with grey "
-           "lettering reading \"SCUBA DIVING\" above a large \"SOS\"."},
-  {4, 154, "Akihiko, a lean, athletic young man with short, spiky silver-grey hair, grey eyes and a white "
-           "plaster on his forehead. He is shirtless, showing bare, muscular shoulders and chest, as at a bath "
-           "or hot spring."},
-  {4, 155, "Akihiko, a lean, athletic young man with short, spiky silver-grey hair, grey eyes and a white "
-           "plaster on his forehead. He wears an inn's yukata: a white robe printed with a grey chain-of-circles "
-           "pattern, under a loose slate-blue jacket worn open over it."},
-  {4, 159, "Akihiko, a lean, athletic young man with short, spiky silver-grey hair, grey eyes and a white "
-           "plaster on his forehead. He wears a white collarless shirt with faint pinstripes, open at the neck, "
-           "under a dark red bib apron with a stitched front pocket."},
-  {5, 1, "Mitsuru, a tall young woman with long, wavy crimson hair falling past her shoulders, a long fringe "
-         "sweeping over her left eye, and red eyes. She wears the school uniform: a white high-collared blouse "
-         "with full, puffed sleeves and a large red bow tied at the throat."},
-  {5, 2, "Mitsuru, a tall young woman with long, wavy crimson hair falling past her shoulders, a long fringe "
-         "sweeping over her left eye, and red eyes. She wears the school uniform: a white high-collared blouse "
-         "with full, puffed sleeves and a large red bow tied at the throat."},
-  {5, 5, "Mitsuru, a tall young woman with long, wavy crimson hair falling past her shoulders, a long fringe "
-         "sweeping over her left eye, and red eyes. She wears casual summer clothes: a sleeveless white ribbed "
-         "turtleneck that leaves her shoulders bare."},
+  {4, 102, "Akihiko, a lean, athletic, fair-skinned young man with short, spiky silver-grey hair swept up and "
+           "back in ragged tufts, grey eyes, a strong jaw and a white rectangular plaster stuck at an angle "
+           "above his left eyebrow. He wears a plain white crew-neck T-shirt with a ribbed neckband, printed on "
+           "the chest in grey: small lettering reading \"SCUBA DIVING\" above a large bold \"SOS\". No jewellery "
+           "is visible, and the portrait ends just below the lettering."},
+  {4, 154, "Akihiko, a lean, athletic, fair-skinned young man with short, spiky silver-grey hair swept up and "
+           "back in ragged tufts, grey eyes, a strong jaw and a white rectangular plaster stuck at an angle "
+           "above his left eyebrow. He is shirtless, as at a bath or hot spring, showing a thick neck, broad "
+           "bare shoulders, sharp collarbones and the top of a muscular chest. Nothing else is worn, no "
+           "jewellery or towel shows, and the portrait ends at his upper chest."},
+  {4, 155, "Akihiko, a lean, athletic, fair-skinned young man with short, spiky silver-grey hair swept up and "
+           "back in ragged tufts, grey eyes, a strong jaw and a white rectangular plaster stuck at an angle "
+           "above his left eyebrow. He wears an inn's yukata: a white cotton robe crossed loosely at the neck so "
+           "his collarbones show, printed with a chain of grey outlined rings joined by small dark grey dots, "
+           "with thin grey lines along the collar. Over it hangs a loose, wide-sleeved slate-blue haori jacket, "
+           "worn open."},
+  {4, 159, "Akihiko, a lean, athletic, fair-skinned young man with short, spiky silver-grey hair swept up and "
+           "back in ragged tufts, grey eyes, a strong jaw and a white rectangular plaster stuck at an angle "
+           "above his left eyebrow. He wears a white collarless shirt with a narrow band neck and a short open "
+           "slit at the throat, marked with faint vertical pinstripes. Over it is a dark red bib apron with "
+           "straps over his shoulders, its edges and front pocket outlined in dashed stitching."},
+  {5, 1, "Mitsuru, a tall, poised, fair-skinned young woman with long, wavy crimson hair falling past her "
+         "shoulders in heavy waves, one curl flicking outward, a long fringe sweeping over her left eye, red "
+         "eyes and soft coral-pink lipstick. She wears the school uniform: a white blouse with a high, "
+         "close-fitting collar, full puffed sleeves and fine vertical pleats down the front, and a large red "
+         "ribbon bow tied at the throat with wide tails hanging down her chest. No jewellery is visible."},
+  {5, 2, "Mitsuru, a tall, poised, fair-skinned young woman with long, wavy crimson hair falling past her "
+         "shoulders in heavy waves, one curl flicking outward, a long fringe sweeping over her left eye, red "
+         "eyes and soft coral-pink lipstick. She wears the school uniform: a white blouse with a high, "
+         "close-fitting collar, full puffed sleeves and fine vertical pleats down the front, and a large red "
+         "ribbon bow tied at the throat with wide tails hanging down her chest. No jewellery is visible."},
+  {5, 5, "Mitsuru, a tall, poised, fair-skinned young woman with long, wavy crimson hair falling past her "
+         "shoulders in heavy waves, one curl flicking outward, a long fringe sweeping over her left eye, red "
+         "eyes and soft coral-pink lipstick. She wears casual summer clothes: a sleeveless white turtleneck in "
+         "a fine vertical rib knit, its tall neck folded over, cut in deeply at the armholes so her shoulders "
+         "and arms are bare. It has no print or trim, and no jewellery is visible."},
   {5, 6, "Mitsuru, a tall young woman with long, wavy crimson hair falling past her shoulders, a long fringe "
          "sweeping over her left eye, and red eyes. She wears casual winter clothes: a black leather "
          "double-breasted coat with wide lapels and silver snap studs, over a cream high-necked shirt whose "
@@ -162,35 +200,53 @@ const Outfit kOutfits[] = {
           "sweeping over her left eye, and red eyes. Over a white puffed-sleeve blouse and large red bow she "
           "wears a black high-collared vest with a strap across the shoulder fastened by a brass snap, like "
           "combat gear."},
-  {5, 102, "Mitsuru, a tall young woman with long, wavy crimson hair falling past her shoulders, a long fringe "
-           "sweeping over her left eye, and red eyes. She wears a white bikini top with thin shoulder straps, "
-           "and a large red hibiscus flower is pinned at her shoulder."},
-  {5, 154, "Mitsuru, a tall young woman with red eyes and crimson hair, here gathered up into a high, curling "
-           "ponytail with loose strands framing her face. She is wrapped in a pink terry-cloth bath towel tied "
-           "above her chest, shoulders bare."},
-  {5, 155, "Mitsuru, a tall young woman with red eyes and crimson hair, here gathered up into a high, curling "
-           "ponytail. She wears an inn's yukata, a white robe printed with a grey chain-of-circles pattern, "
-           "under a loose slate-blue jacket."},
-  {5, 156, "Mitsuru, a tall young woman with red eyes and crimson hair, here gathered up into a high, curling "
-           "ponytail. She wears a summer festival yukata: white cotton with thin pink stripes, printed with "
-           "sprays of green leaves and hanging purple and pink bell-shaped flowers, tied with a green sash."},
+  {5, 102, "Mitsuru, a tall, poised, fair-skinned young woman with long, wavy crimson hair falling past her "
+           "shoulders in heavy waves, one curl flicking outward, a long fringe sweeping over her left eye, red "
+           "eyes and soft coral-pink lipstick. She wears a swimsuit: a plain white bikini top with thin white "
+           "shoulder straps and a small knot at the centre front, her shoulders and arms bare. A large bright "
+           "red hibiscus flower with a long yellow-tipped stamen is pinned at her left shoulder strap. No "
+           "jewellery is visible."},
+  {5, 154, "Mitsuru, a tall, poised, fair-skinned young woman with red eyes and soft coral-pink lipstick, her "
+           "crimson hair here gathered into a high ponytail at the back of her head that spills in big loose "
+           "curls, with her long fringe still over her left eye and loose strands framing her cheeks. She is "
+           "wrapped in a dusty pink terry-cloth bath towel tucked straight across her chest, its fluffy edge "
+           "just above her bust; her shoulders, collarbones and arms are bare. The portrait ends at the top of "
+           "the towel."},
+  {5, 155, "Mitsuru, a tall, poised, fair-skinned young woman with red eyes and soft coral-pink lipstick, her "
+           "crimson hair here gathered into a high ponytail at the back of her head that spills in big loose "
+           "curls, with her long fringe still over her left eye. She wears an inn's yukata: a white cotton robe "
+           "crossed at the neck, printed with a chain of grey outlined rings joined by small dark grey dots, "
+           "with thin grey lines along the collar. Over it hangs a loose, wide-sleeved slate-blue haori jacket, "
+           "worn open."},
+  {5, 156, "Mitsuru, a tall, poised, fair-skinned young woman with red eyes and soft coral-pink lipstick, her "
+           "crimson hair here gathered into a high ponytail at the back of her head that spills in big loose "
+           "curls, with her long fringe still over her left eye. She wears a summer festival yukata of white "
+           "cotton with thin pink stripes in pairs, printed with sprays of slender green leaves and hanging "
+           "clusters of purple and pink bell-shaped flowers with yellow centres, with loose pink petals falling "
+           "between them. A green sash shows at her back."},
   {5, 157, "Mitsuru, a tall young woman with red eyes and crimson hair, pinned up and decorated with a large "
            "white silk flower, red camellias, gold cords and a hanging gold tassel. She wears a formal New Year "
            "kimono: dark green silk with large red camellia blossoms and scattered orange dots, red and gold "
            "patterned collars, and a gold-patterned sash."},
-  {5, 159, "Mitsuru, a tall young woman with red eyes and crimson hair, here gathered up into a high, curling "
-           "ponytail. She wears a long-sleeved white ribbed turtleneck sweater under a dark brown bib apron with "
-           "olive straps."},
-  {6, 1, "Fuuka, a slight girl with a short teal bob, straight-cut bangs and grey eyes, in her school summer "
-         "uniform. A white long-sleeved blouse with a scalloped, lace-edged collar is tied at the front with a "
-         "thin white ribbon, over a fitted teal turtleneck."},
+  {5, 159, "Mitsuru, a tall, poised, fair-skinned young woman with red eyes and soft coral-pink lipstick, her "
+           "crimson hair here gathered into a high ponytail at the back of her head that spills in big loose "
+           "curls, with her long fringe still over her left eye. She wears a long-sleeved white turtleneck "
+           "sweater in a fine vertical rib knit, with a tall close neck. Over it is a dark brown bib apron hung "
+           "from olive-khaki straps with dashed stitching along their edges."},
+  {6, 1, "Fuuka, a slight, fair-skinned teenage girl with a short teal bob, its choppy, straight-cut bangs "
+         "high on her forehead and its jagged ends curling in at her jaw, and large grey eyes. In her school "
+         "summer uniform: a white long-sleeved blouse of smooth fabric with a wide, round neckline edged in a "
+         "scalloped lace trim, tied at the front with a thin white ribbon bow, over a fitted bright teal "
+         "turtleneck that covers her neck. No jewellery is visible."},
   {6, 2, "Fuuka, a slight girl with a short teal bob, straight-cut bangs and grey eyes, in her school winter "
          "uniform. A dark charcoal blazer with silver piping, a strap with two round silver buttons across the "
          "chest and a red school crest sits over a high teal turtleneck with a faint lace pattern. A thin "
          "white ribbon is tied at the back of her neck, its ends trailing over one shoulder."},
-  {6, 5, "Fuuka, a slight girl with a short teal bob, straight-cut bangs and grey eyes, in summer casual "
-         "clothes. She wears a sleeveless mint-teal dress with ruffled shoulder straps and a ruffled square "
-         "neckline edged with a thin gold line, leaving her arms and collarbones bare."},
+  {6, 5, "Fuuka, a slight, fair-skinned teenage girl with a short teal bob, its choppy, straight-cut bangs "
+         "high on her forehead and its jagged ends curling in at her jaw, and large grey eyes. In summer "
+         "casual clothes: a sleeveless mint-teal dress with wide ruffled shoulder straps and a square neckline "
+         "edged with a soft ruffle and outlined by a thin gold line, leaving her arms and collarbones bare. No "
+         "jewellery is visible."},
   {6, 6, "Fuuka, a slight girl with a short teal bob, straight-cut bangs and grey eyes, in winter casual "
          "clothes. A soft green poncho with white embroidered flower motifs has a wide cream collar trimmed "
          "with fur, tied at the front with a white ribbon ending in fluffy pompoms. Underneath is a grey "
@@ -199,24 +255,37 @@ const Outfit kOutfits[] = {
           "for the Dark Hour. She wears a heavy charcoal greatcoat with a tall stand-up collar fastened by a "
           "strap, brass cross-marked buttons and a short shoulder cape, over a teal top. A silver headset with "
           "large ear cups and a thin microphone arm sits over her hair, and she wears dark fingerless gloves."},
-  {6, 102, "Fuuka, a slight girl with a short teal bob, straight-cut bangs and grey eyes, in a swimsuit. The top "
-           "is plain mint-teal, held by thin white halter straps tied behind her neck, leaving her shoulders and "
-           "arms bare."},
-  {6, 154, "Fuuka, a slight girl with a short teal bob, straight-cut bangs and grey eyes, wrapped in a pink "
-           "terry bath towel. The towel is tucked above her chest, leaving her shoulders and arms bare."},
-  {6, 155, "Fuuka, a slight girl with a short teal bob, straight-cut bangs and grey eyes, in an inn's robes. A "
-           "white cotton yukata printed with grey linked rings is worn under a loose slate-blue haori jacket."},
-  {6, 156, "Fuuka, a slight girl with a short teal bob, straight-cut bangs and grey eyes, in a summer festival "
-           "yukata. It is mid-blue, printed with large yellow sunflowers with brown centres and faint pale green "
-           "rings, with an orange obi bow showing behind her back."},
+  {6, 102, "Fuuka, a slight, fair-skinned teenage girl with a short teal bob, its choppy, straight-cut bangs "
+           "high on her forehead and its jagged ends curling in at her jaw, and large grey eyes. In a swimsuit: "
+           "a plain mint-teal top cut straight across above her bust, with no print or trim, held by thin white "
+           "straps that run up to a halter tie behind her neck, its bow just visible. Her shoulders, collarbones "
+           "and arms are bare, and no jewellery is visible."},
+  {6, 154, "Fuuka, a slight, fair-skinned teenage girl with a short teal bob, its choppy, straight-cut bangs "
+           "high on her forehead and its jagged ends curling in at her jaw, and large grey eyes. She is wrapped "
+           "in a dusty pink terry-cloth bath towel tucked straight across her chest, its fluffy edge just above "
+           "her bust, as at a hot spring; her shoulders, collarbones and arms are bare. The portrait ends at the "
+           "top of the towel."},
+  {6, 155, "Fuuka, a slight, fair-skinned teenage girl with a short teal bob, its choppy, straight-cut bangs "
+           "high on her forehead and its jagged ends curling in at her jaw, and large grey eyes. In an inn's "
+           "robes: a white cotton yukata crossed at the neck, printed with a chain of grey outlined rings joined "
+           "by small dark grey dots, with thin grey lines along the collar. Over it hangs a loose, wide-sleeved "
+           "slate-blue haori jacket, worn open, of plain matte cloth."},
+  {6, 156, "Fuuka, a slight, pale-skinned teenage girl with a short teal bob that falls in feathered layers to "
+           "her jaw, straight-cut bangs and large grey eyes, wearing no jewellery. She wears a summer festival "
+           "yukata of mid-blue cotton, crossed left over right at a V neckline that shows a sliver of white "
+           "underlayer. It is printed with large sunflowers, golden-yellow petals around brown centres dotted "
+           "with yellow seeds, scattered over faint pale green rings. Behind her back at the waist an orange obi "
+           "bow just shows; the portrait ends at her upper chest."},
   {6, 157, "Fuuka, a slight girl with a short teal bob, straight-cut bangs and grey eyes, in a New Year's "
            "kimono. The kimono is bright teal with white, yellow and red chrysanthemums, its collar layered in "
            "cream, orange and olive, with a pink obi in a red diamond pattern and a yellow bow at the back. "
            "Above one ear she wears an ornament of an orange and a yellow fabric flower with green cords ending "
            "in small silver beads."},
-  {6, 901, "Fuuka, shown only as a dark grey silhouette with her features shaded over. The outline shows her "
-           "short bob, the high collar and blazer of her winter uniform and the thin ribbon trailing from the "
-           "back of her neck."},
+  {6, 901, "Fuuka, shown only as a flat dark grey silhouette, her features shaded over by a darker band so only "
+           "faint outlines of eyes and mouth remain. The outline shows her short, feathered bob, the tall "
+           "stand-up collar of her school winter uniform closed at the throat, the shoulders of the blazer with "
+           "a faint button or two, and a thin ribbon tied at the back of her neck whose loops and ends trail "
+           "down behind one shoulder. No colour or pattern can be made out."},
   {7, 2, "Aigis, a girl-shaped android with short pale blonde hair and bright blue eyes. A gold headband cut "
          "with triangular openings crosses her hair, white mechanical ear units with red three-lobed centres "
          "replace her ears, and her neck is white with visible seam lines. Here she wears the school winter "
@@ -260,35 +329,50 @@ const Outfit kOutfits[] = {
            "triangular openings and white mechanical ear units with red centres. She wears a loose pale blue top "
            "like a nightdress, with a white ruffled round collar and a buttoned white placket edged with ruffles "
            "down the front; the seams of her white neck show above it."},
-  {8, 1, "Ken, a small boy with a soft, tousled brown bob and large brown eyes. He wears a sleeveless orange "
-         "hooded vest, unzipped, over a white long-sleeved collared shirt with a thin black string tie hanging "
-         "in loose ends."},
-  {8, 2, "Ken, a small boy with a soft, tousled brown bob and large brown eyes. He wears his school winter "
-         "uniform: an open dark grey zip jacket with a round red-ringed school badge holding a black-and-white "
-         "quartered emblem, over an orange hoodie and a white collared shirt with a thin black string tie."},
-  {8, 5, "Ken, a small boy with a soft, tousled brown bob and large brown eyes. He wears casual clothes: a "
-         "zip-up track jacket in orange and mustard yellow panels edged with white piping, over a dark grey "
-         "T-shirt."},
-  {8, 6, "Ken, a small boy with a soft, tousled brown bob and large brown eyes. He wears winter casual "
-         "clothes: a thick cream cable-knit sweater with a tall rolled turtleneck, its shoulders and sleeves "
-         "in tan and caramel-brown panels."},
+  {8, 1, "Ken, a small, fair-skinned boy of about ten with a soft, tousled light-brown bob, its bangs swept to "
+         "one side and its ends flicking outward over his ears, and large brown eyes. He wears a sleeveless "
+         "orange hooded vest, unzipped, with a silver zip edge and its hood bunched behind his neck. Under it "
+         "is a white long-sleeved collared shirt with small white buttons, and at the collar a thin black "
+         "string tie knotted in a loose bow whose two long ends hang down his chest. No jewellery."},
+  {8, 2, "Ken, a small, fair-skinned boy of about ten with a soft, tousled light-brown bob, its ends flicking "
+         "outward over his ears, and large brown eyes. He wears his school winter uniform: an open dark grey "
+         "zip jacket with a silver zip, a diagonal silver zip pocket and a small brass snap on the chest, and "
+         "a round badge with a red ring lettered in gold Gekkoukan Private Elementary School around a "
+         "black-and-white quartered emblem. Under it are an orange hoodie, its hood spread behind his neck, "
+         "and a white collared shirt with a thin black string tie in loose ends."},
+  {8, 5, "Ken, a small, fair-skinned boy of about ten with a soft, tousled light-brown bob, its ends flicking "
+         "outward over his ears, and large brown eyes. He wears casual clothes: a zip-up track jacket with a "
+         "silver zip, its front and sleeve panels burnt orange and its shoulder yoke and upper sleeves mustard "
+         "yellow, every seam edged with white piping. Under it a dark grey crew-neck T-shirt shows at his "
+         "throat. No jewellery or accessories."},
+  {8, 6, "Ken, a small, fair-skinned boy of about ten with a soft, tousled light-brown bob, its ends flicking "
+         "outward over his ears, and large brown eyes. He wears winter casual clothes: a thick, chunky knit "
+         "sweater in cream with a tall, loose rolled turtleneck that hides his neck up to the chin, its front "
+         "worked in vertical ribs and cable stitches. The shoulders are tan and the sleeves a deeper caramel "
+         "brown, sewn on in raglan panels. No jewellery or accessories."},
   {8, 52, "Ken, a small boy with a soft, tousled brown bob and large brown eyes. He wears his school outfit "
           "ready for battle: a dark grey zip jacket over an orange hoodie and a white collared shirt with a "
           "thin black string tie, a black strap over his shoulder, and a red armband with a black-and-white "
           "emblem around his upper arm."},
-  {8, 159, "Ken, a small boy with a soft, tousled brown bob and large brown eyes. He wears a plain yellow "
-           "T-shirt with a dark grey neckline under a rust-brown apron with stitched edges and a front pocket, "
-           "as if cooking."},
-  {9, 6, "Koromaru, a white Shiba Inu with red eyes, upright pointed ears, two grey brow spots, grey shading "
-         "on his back and a thick curled tail. He wears a sleeveless tan vest and a grey mechanical collar "
-         "with a glowing blue dome on one side and a small white wing fixed behind it."},
+  {8, 159, "Ken, a small, fair-skinned boy of about ten with a soft, tousled light-brown bob, its ends flicking "
+           "outward over his ears, and large brown eyes. He wears a plain lemon-yellow T-shirt with a dark grey "
+           "ribbed crew neckline and short sleeves. Over it is a rust-brown apron hung from narrow straps over "
+           "each shoulder, its edges and straps lined with dashed white stitching and a stitched pocket across "
+           "the bib, as if he is cooking. The portrait ends at his upper chest."},
+  {9, 6, "Koromaru, a white Shiba Inu with red eyes, upright pointed ears with grey insides, two grey brow "
+         "spots, a black nose, a white face and chest, and soft grey shading over his neck, back and thick "
+         "curled tail. He wears a sleeveless cream-beige canvas vest with dashed stitching along its seams. "
+         "Around his neck is a thick grey metal collar with a round housing on one side capped by a glowing "
+         "blue glass dome, and behind it a small white wing on a white disc held by a slotted pale green screw "
+         "cap, sticking out like an angel wing."},
   {9, 52, "Koromaru, a white Shiba Inu with red eyes, upright pointed ears, two grey brow spots and a thick "
           "curled tail. In his battle gear he wears the tan vest and grey mechanical collar with a glowing blue "
           "dome and small white wing, plus a black harness with brass-buckled straps, a round brass tag hanging "
           "at his chest, a white canister with red stripes on his back and a red armband on his foreleg."},
-  {9, 201, "Koromaru, a white Shiba Inu with red eyes, upright pointed ears, two grey brow spots, grey shading "
-           "over his back and a thick curled tail. He wears nothing at all: no collar, vest or gear, just his "
-           "fluffy fur with a pale chest."},
+  {9, 201, "Koromaru, a white Shiba Inu with red eyes, upright pointed ears with grey insides, two grey brow "
+           "spots, a black nose and a white face. Grey shading runs over his neck, shoulders and back, his chest "
+           "is a fluffy paler white ruff, and his thick tail curls up behind him. He wears nothing at all: none "
+           "of his usual tan vest or his metal collar with the blue dome and white wing, just his thick fur."},
   {10, 6, "Shinjiro, a tall young man with shoulder-length, messy brown hair falling over grey eyes, and a long "
           "jaw. He wears a dark grey knit beanie with a small metal plate on the front and a long maroon-red "
           "double-breasted pea coat, buttoned up, with wide dark grey lapels and collar studded with small "
@@ -297,9 +381,12 @@ const Outfit kOutfits[] = {
            "jaw. He wears a dark grey knit beanie with a small metal plate on the front and his long maroon-red "
            "coat with wide studded dark grey lapels, worn open over a black high-necked sweater, a belt buckle "
            "showing at the bottom."},
-  {10, 159, "Shinjiro, a tall young man with shoulder-length, messy brown hair falling over grey eyes, and a long "
-            "jaw. He wears his dark grey knit beanie with its small metal plate, a plain charcoal long-sleeved "
-            "top and a tan canvas apron with stitched edges, as if cooking."},
+  {10, 159, "Shinjiro, a tall young man with fair skin, a long jaw and grey eyes, his shoulder-length brown hair "
+            "messy and falling over his face and out behind his neck in ragged strands. He wears his dark grey "
+            "knit beanie pulled low, its folded ribbed brim fronted by a small rectangular metal plate with two "
+            "rivets and a slanted line engraved on it. Below it is a plain charcoal long-sleeved top with a high "
+            "mock neck. Over it hangs a tan canvas apron on narrow straps, with dashed stitching along its edges "
+            "and a stitched bib pocket, as if he is cooking."},
   {11, 52, "Metis, a slender girl with a short blue-black bob and red eyes. On her head sits a large gold-framed "
            "crown of red butterfly-wing panels with round red ear discs pierced by gold spikes, and it folds "
            "down into a wing-shaped visor over her face. Her body is a seamless dark grey suit with white "
@@ -308,19 +395,29 @@ const Outfit kOutfits[] = {
             "crown of red butterfly-wing panels with round red ear discs pierced by gold spikes, and it folds "
             "down into a wing-shaped visor over her face. Her body is a seamless dark grey suit with white "
             "jointed shoulder parts; unlike her battle look she wears no armband."},
-  {12, 2, "Aigis, a girl-shaped android with short blond hair, blue eyes, a gold lattice headband, "
-          "white-and-red mechanical ear units and a white jointed neck. She wears the Gekkoukan winter uniform: "
-          "a black blazer with a round red-ringed school badge and a large red bow at her throat."},
-  {12, 6, "Aigis, a girl-shaped android with short blond hair, blue eyes, a gold lattice headband, "
-          "white-and-red mechanical ear units and a white jointed neck. She wears casual clothes: a white "
-          "ruffled high-collared blouse with a large, flowing white cravat bow, under an open teal jacket."},
+  {12, 2, "Aigis, a girl-shaped android with fair, smooth skin, short blond hair in a choppy bob with long "
+          "side-swept bangs, and bright blue eyes. A gold headband of open triangular lattice sits on her head, "
+          "and round white mechanical ear units with red three-lobed centres cover her ears; her neck is white "
+          "and jointed. She wears the Gekkoukan winter uniform: a black blazer edged with grey piping, a white "
+          "collar at her throat, a large red ribbon bow with ruffled tails, a small silver zip pull, and a "
+          "round red-ringed badge reading Gekkoukan Private High School around a black-and-white quartered "
+          "emblem."},
+  {12, 6, "Aigis, a girl-shaped android with fair, smooth skin, short blond hair in a choppy bob with long "
+          "side-swept bangs, and bright blue eyes. A gold headband of open triangular lattice sits on her head, "
+          "round white mechanical ear units with red three-lobed centres cover her ears, and her white jointed "
+          "neck shows above her collar. She wears casual clothes: a white blouse with a high frilled collar and "
+          "a pleated front, a large, flowing white cravat tied in a bow with long tails down her chest, and "
+          "over it an open teal jacket with wide lapels."},
   {12, 52, "Aigis, a girl-shaped android with short blond hair, blue eyes, a gold lattice headband, "
            "white-and-red mechanical ear units and a white jointed neck. Her robot body shows: a white chest "
            "with a large red bow at the throat, gold mechanical shoulder joints, and a red armband with a "
            "black-and-white emblem on her upper arm."},
-  {12, 53, "Aigis, a girl-shaped android with short blond hair, blue eyes, a gold lattice headband, "
-           "white-and-red mechanical ear units and a white jointed neck. Her robot body shows: a white chest "
-           "with a large red bow at the throat and gold mechanical shoulder joints, with no armband."},
+  {12, 53, "Aigis, a girl-shaped android with fair, smooth skin, short blond hair in a choppy bob with long "
+           "side-swept bangs, and bright blue eyes. A gold headband of open triangular lattice sits on her head, "
+           "round white mechanical ear units with red three-lobed centres cover her ears, and her neck is white "
+           "and jointed. Her robot body shows bare: a smooth white chest with a large red ribbon bow with "
+           "ruffled tails at the throat, and bulky gold shoulder joints with black ribbed cylinders, round black "
+           "caps and open lattice plates. She wears no armband."},
   {12, 54, "Aigis, a girl-shaped android with short blond hair, blue eyes, white-and-red mechanical ear units "
            "and a white jointed neck. She wears armour: a steel visor band edged in gold across her forehead "
            "over the lattice headband, a steel gorget hanging on chains over her red bow, a dark harness lined "
@@ -330,21 +427,33 @@ const Outfit kOutfits[] = {
             "and a white jointed neck. She wears armour: a steel visor band edged in gold across her forehead, a "
             "steel gorget on chains over her red bow, a dark harness lined with brass bullet cartridges and "
             "ribbed gold shoulder armour, with no armband."},
-  {101, 1, "Kenji, a slim teenage boy with short, messy light-brown hair and brown eyes. He wears the school "
-           "summer uniform: a short-sleeved white shirt with a breast pocket and a thin black ribbon tie hanging "
-           "loose at the collar."},
-  {101, 2, "Kenji, a slim teenage boy with short, messy light-brown hair and brown eyes. He wears the school "
-           "winter uniform: a black blazer over a white shirt with a thin black ribbon tie, a small "
-           "green-and-yellow pin on the lapel and the round red-and-black school crest on the chest."},
-  {101, 6, "Kenji, a slim teenage boy with short, messy light-brown hair and brown eyes. In casual clothes he "
-           "wears an open mustard-yellow zip jacket with a high collar over a dark grey T-shirt layered on a "
-           "white one."},
-  {101, 158, "Kenji, a slim teenage boy with short light-brown hair and brown eyes. He wears a fast-food work "
-             "uniform: an orange visor cap with a looping W logo and a short-sleeved orange shirt with a pale "
-             "yellow collar, button placket and pocket trim."},
-  {102, 1, "Hidetoshi, a lean teenage boy with dark grey hair slicked back from a high forehead, a few strands "
-           "falling forward, and narrow grey eyes. He wears the school summer uniform, a short-sleeved white "
-           "shirt with a thin black ribbon tie, and a yellow armband with black lettering on his left upper arm."},
+  {101, 1, "Kenji, a slim teenage boy with fair skin, short, messy light-brown hair falling in uneven bangs over "
+           "his forehead and ears, and brown eyes. He wears the school summer uniform: a short-sleeved white "
+           "shirt with a pointed collar, small white buttons and a breast pocket. A thin black ribbon tie is "
+           "knotted loosely at the collar, its two long ends hanging crookedly down his chest. No jewellery or "
+           "accessories."},
+  {101, 2, "Kenji, a slim teenage boy with fair skin, short, messy light-brown hair falling in uneven bangs over "
+           "his forehead and ears, and brown eyes. He wears the school winter uniform: a black blazer with "
+           "notched lapels and a silver strip running diagonally across the chest, over a white collared shirt "
+           "with a thin black ribbon tie hanging loose. On the lapel is a small rectangular pin, half green and "
+           "half yellow, and on the chest the round red-ringed badge reading Gekkoukan Private High School "
+           "around a black-and-white quartered emblem."},
+  {101, 6, "Kenji, a slim teenage boy with fair skin, short, messy light-brown hair falling in uneven bangs over "
+           "his forehead and ears, and brown eyes. In casual clothes he wears an open bright mustard-yellow zip "
+           "jacket with a silver zip, a high stand-up collar lined in white, and a row of small snap buttons "
+           "down the front. Under it is a dark grey V-neck T-shirt layered over a white crew-neck one whose "
+           "collar shows at his throat. No jewellery or accessories."},
+  {101, 158, "Kenji, a slim teenage boy with fair skin, short light-brown hair poking up over a cap band and "
+             "falling over his ears, and brown eyes. He wears a fast-food work uniform: an orange visor with a "
+             "long pale yellow brim and a large looping cursive W logo in pale yellow on its front band. His "
+             "short-sleeved shirt is orange with a pale yellow pointed collar, a pale yellow button placket with "
+             "round buttons, a pale yellow strip across the breast pocket, and pale bands at the sleeve ends."},
+  {102, 1, "Hidetoshi, a lean teenage boy with fair skin, dark grey hair slicked back from a high forehead, a "
+           "few strands curling forward over it and the ends flicking out at his nape, and narrow grey eyes. He "
+           "wears the school summer uniform: a short-sleeved white shirt with a pointed collar, small buttons "
+           "and a breast pocket, with a thin black ribbon tie knotted at the collar and its ends hanging down. "
+           "On his left upper arm is a mustard-yellow armband with large black kanji characters, cut off by the "
+           "picture's edge."},
   {102, 2, "Hidetoshi, a lean teenage boy with dark grey hair slicked back from a high forehead and narrow grey "
            "eyes. He wears the school winter uniform, a black blazer with the school crest and a small lapel pin "
            "over a white shirt and thin black ribbon tie, with a yellow armband with black lettering over the "
@@ -353,173 +462,324 @@ const Outfit kOutfits[] = {
            "black rectangular glasses, with a dark mark on his bald forehead. He wears a cream knitted sweater "
            "with a dark ribbed turtleneck collar and a red and blue zigzag pattern across the chest and arms, "
            "and holds a dark wooden tobacco pipe."},
-  {104, 6, "Mitsuko, a small, very old woman with thinning grey hair cut to chin length and a heavily wrinkled "
-           "round face. She wears a lilac blouse printed with grey leaves and small flowers under a dark "
-           "olive-green work apron held by shoulder straps with round brass buttons."},
-  {105, 101, "Kazushi, an athletic teenage boy with short, spiky dark grey hair cut close at the sides and dark "
-             "eyes. He wears a sporty track jacket in grey with white stripes down the front and shoulders, red "
-             "panels at the chest, and a high zipped collar."},
-  {105, 151, "Kazushi, an athletic teenage boy with short, spiky dark grey hair cut close at the sides and dark "
-             "eyes. He wears a dark grey sleeveless athletic vest edged in red, leaving his shoulders and arms "
-             "bare."},
-  {106, 1, "Yuko, a teenage girl with tanned skin, short dark blue-black hair with a small ponytail sticking up "
-           "at the back, a pink hairpin, and brown eyes. She wears the school summer uniform: a short-sleeved "
-           "white blouse with a breast pocket and a large red bow at the collar."},
-  {106, 2, "Yuko, a teenage girl with tanned skin, short dark blue-black hair with a small ponytail at the back, "
-           "a pink hairpin, and brown eyes. She wears the school winter uniform: a black jacket with silver "
-           "buttons and the round school crest over a white blouse with a large red bow."},
-  {106, 6, "Yuko, a teenage girl with tanned skin, short dark blue-black hair with a small ponytail at the back, "
-           "a pink hairpin, and brown eyes. In casual clothes she wears an open black zip-up hoodie with a white "
-           "hood lining and white stripes down the sleeves over a coral-red top."},
-  {106, 101, "Yuko, a teenage girl with tanned skin, short dark blue-black hair with a small ponytail at the back, "
-             "a pink hairpin, and brown eyes. She wears a sporty grey track jacket zipped up to a high collar, "
-             "with white stripes down the front and shoulders and red panels on the chest."},
+  {104, 6, "Mitsuko, a small, very old woman with pale skin, a heavily wrinkled round face with sagging cheeks "
+           "and pouched eyes, and thinning grey hair parted in the middle and cut to chin length. She wears a "
+           "lilac blouse with a round collar and small buttons, printed all over with grey-blue leafy sprigs and "
+           "tiny cream flowers. Over it is a dark olive-green work apron held by broad shoulder straps, each "
+           "fastened to the bib with a round brass button. No jewellery."},
+  {105, 101, "Kazushi, an athletic teenage boy with lightly tanned skin, short, spiky dark grey hair standing up "
+             "on top and cut close at the sides, and dark eyes. He wears a sporty track jacket in grey zipped up "
+             "to a tall stand-up collar, with a silver zip pull at his throat. Twin white stripes run down either "
+             "side of the zip and over the tops of his shoulders, and red panels sit low on each side of the "
+             "chest. No jewellery or accessories."},
+  {105, 151, "Kazushi, an athletic teenage boy with lightly tanned skin, short, spiky dark grey hair standing up "
+             "on top and cut close at the sides, and dark eyes. He wears a dark grey sleeveless athletic vest, a "
+             "basketball-style tank top with a deep scooped neck, its neckline and armholes edged in red trim with "
+             "a black-and-red patch at one shoulder. His lean shoulders, collarbones and arms are bare. No "
+             "jewellery or accessories."},
+  {106, 1, "Yuko, a teenage girl with tanned skin, short dark blue-black hair swept over to one side, a small "
+           "ponytail sticking up at the back of her head, a slim pink hairpin clipped above her left temple, and "
+           "brown eyes. She wears the school summer uniform: a short-sleeved white blouse with a stand-up "
+           "collar, small white buttons down the front and a breast pocket, and a large red ribbon bow at the "
+           "collar with ruffled tails. No earrings or other jewellery."},
+  {106, 2, "Yuko, a teenage girl with tanned skin, short dark blue-black hair swept over to one side, a small "
+           "ponytail sticking up at the back, a slim pink hairpin above her left temple, and brown eyes. She "
+           "wears the school winter uniform: a black jacket edged with grey piping, with a front flap fastened "
+           "by silver buttons and a small silver zip pull, over a white collared blouse with a large red ribbon "
+           "bow. On the chest is the round red-ringed badge reading Gekkoukan Private High School around a "
+           "black-and-white quartered emblem."},
+  {106, 6, "Yuko, a teenage girl with tanned skin, short dark blue-black hair swept over to one side, a small "
+           "ponytail sticking up at the back, a slim pink hairpin above her left temple, and brown eyes. In "
+           "casual clothes she wears an open black zip-up hoodie with a silver zip, its hood lined in white and "
+           "folded around her neck, and a white stripe running down each sleeve from the shoulder. Under it is a "
+           "coral-red top with a wide scooped neck that shows her collarbones. No jewellery."},
+  {106, 101, "Yuko, a teenage girl with tanned skin, short dark blue-black hair swept over to one side, a small "
+             "ponytail sticking up at the back, a slim pink hairpin above her left temple, and brown eyes. She "
+             "wears a sporty grey track jacket zipped up to a tall stand-up collar with a silver zip pull at her "
+             "chin. Twin white stripes run down either side of the zip and over the tops of her shoulders, and red "
+             "panels sit low on each side of the chest. No jewellery."},
   {107, 6, "Maya, an online game avatar drawn as a translucent green hologram made of flat, low-polygon shapes "
            "with horizontal scan lines and a pink and cyan glow at the edges. The figure has a short, "
            "flicked-out bob of hair, one visible eye, and a bulky high-collared coat with stripes and diamond "
            "shapes across it."},
-  {108, 1, "Keisuke, a slim teenage boy with soft, wavy light-brown hair and grey eyes behind black rectangular "
-           "glasses. He wears the school summer uniform: a short-sleeved white shirt with a breast pocket and a "
-           "thin black ribbon tie."},
-  {108, 2, "Keisuke, a slim teenage boy with soft, wavy light-brown hair and grey eyes behind black rectangular "
-           "glasses. He wears the school winter uniform: a black blazer with a small lapel pin and the round "
-           "school crest over a white shirt and thin black ribbon tie."},
-  {108, 6, "Keisuke, a slim teenage boy with soft, wavy light-brown hair and grey eyes behind black rectangular "
-           "glasses. In casual clothes he wears a red, blue and white plaid button-up shirt over a dark green "
-           "T-shirt."},
-  {109, 1, "Chihiro, a slender teenage girl with very long, straight brown hair parted in the middle and falling "
-           "past her shoulders, and brown eyes behind black rectangular glasses. She wears the school summer "
-           "uniform: a white blouse with a large red bow at the collar."},
-  {109, 2, "Chihiro, a slender teenage girl with very long, straight brown hair parted in the middle, and brown "
-           "eyes behind black rectangular glasses. She wears the school winter uniform: a black jacket over a "
-           "white blouse with a large red bow."},
-  {109, 6, "Chihiro, a slender teenage girl with very long, straight brown hair parted in the middle, and brown "
-           "eyes behind black rectangular glasses. In casual clothes she wears a soft tan cardigan with a "
-           "ruffled button front over a cream top with a zigzag-edged high collar."},
-  {110, 6, "Maiko, a little girl with brown hair pulled back into a braided bun held by a pink scrunchie, and "
-           "big brown eyes. She wears an open denim-blue shirt with silver buttons over a pink T-shirt, and a "
-           "red leather school backpack on her shoulders."},
-  {111, 6, "Pharos, a small, pale boy with messy dark blue-grey hair, large bright blue eyes and a small mole "
-           "under his left eye. He wears a long-sleeved shirt with wide grey and white horizontal stripes and a "
-           "short buttoned placket at the neck."},
-  {112, 1, "Bebe, a teenage boy with a blond bowl-cut and bangs, light skin and pale blue eyes. He wears the "
-           "school summer uniform, a short-sleeved white shirt with a thin black ribbon tie, and holds an open "
-           "black folding fan painted with gold butterflies."},
-  {112, 2, "Bebe, a teenage boy with a blond bowl-cut and bangs, light skin and pale blue eyes. He wears the "
-           "school winter uniform, a black blazer with the round school crest and a small lapel pin over a white "
-           "shirt and black ribbon tie, and holds an open black folding fan painted with gold butterflies."},
-  {112, 6, "Bebe, a teenage boy with a blond bowl-cut and bangs, light skin and pale blue eyes. In casual "
-           "clothes he wears a dark charcoal long-sleeved T-shirt with a faint grey dragon printed on the chest."},
-  {113, 6, "President Tanaka, a middle-aged man with thick, wavy dark grey hair and heavy-lidded eyes. He wears "
-           "a grey-green suit jacket over a white shirt and a dark red tie."},
-  {114, 6, "Mutatsu, an elderly, completely bald man with a deeply lined face and heavy brow. He wears a "
-           "Buddhist monk's robes: a dark charcoal kimono-style robe over white under-layers, with a pale cord "
-           "across the chest, and he holds a lit cigar, gold rings on his fingers."},
-  {114, 901, "Mutatsu, an elderly, completely bald man with a deeply lined face and heavy brow. He wears a "
-             "Buddhist monk's robes: a dark charcoal kimono-style robe over white under-layers with a pale cord "
-             "across the chest. Unlike his usual look, he holds no cigar."},
-  {115, 6, "Mamoru, an athletic teenage boy with short, spiky dark grey hair and grey eyes. He wears a light "
-           "teal zip-up hoodie with drawstrings, a small dark triangle logo on the chest, and black-and-white "
-           "stripes printed with triangles down the sleeves."},
-  {116, 1, "Nozomi, a heavyset teenage boy with a round face, chubby cheeks, short black hair with a curl "
-           "sticking up on top and drooping eyes. He wears the school summer uniform: a short-sleeved white "
-           "shirt with a breast pocket and a thin black ribbon tie."},
-  {116, 2, "Nozomi, a heavyset teenage boy with a round face, chubby cheeks, short black hair with a curl "
-           "sticking up on top and drooping eyes. He wears the school winter uniform: a black blazer with the "
-           "round school crest and a small lapel pin over a white shirt and thin black ribbon tie."},
-  {117, 6, "Akinari, a thin, pale young man with straight, chin-length silver-grey hair and grey eyes. He wears "
-           "a loose button-up shirt with bold grey-blue and white vertical stripes, open at the neck."},
-  {201, 6, "Igor, a short, wizened old man with a bald dome of a head, fringes of white hair at the back, "
-           "pointed ears, bulging bloodshot eyes and an extremely long, pointed nose. He wears a black suit with "
-           "white gloves."},
-  {202, 6, "Elizabeth, a young woman with a short silver bob with straight bangs, and bright yellow eyes. She "
-           "wears her Velvet Room attendant uniform: a small blue cap tilted on her head, a blue sleeveless "
-           "dress with a tall collar and a large dark circle with a yellow centre on the chest, and long blue "
-           "gloves."},
-  {202, 901, "Elizabeth, in her usual blue Velvet Room uniform, cap and long gloves, wearing a pair of chunky "
-             "black-rimmed glasses over her yellow eyes."},
-  {202, 902, "Elizabeth, in her usual blue Velvet Room uniform and cap, wearing white cat ears on a band and a "
-             "white cat-muzzle mask with a pink nose and whiskers over her mouth and nose."},
-  {202, 903, "Elizabeth, in her usual blue Velvet Room uniform and cap, wearing joke novelty glasses: swirly round "
-             "lenses, a big pink plastic nose and a black curled moustache."},
-  {202, 904, "Elizabeth, in her usual blue Velvet Room uniform and long gloves, wearing a red Santa hat with white "
-             "fur trim and a pom-pom in place of her cap, and a fluffy white false beard and moustache."},
-  {211, 6, "Takaya, a gaunt man with very long, wavy silver-grey hair held by a thin dark circlet around his "
-           "forehead, yellow eyes and light stubble. He is bare-chested, with purple tattoos on both shoulders, "
-           "a crowned serpent and a sun-like spiral on the right."},
-  {212, 6, "Jin, a young man with straight, dark blue hair falling over one side of his face, and orange-tinted "
-           "rectangular glasses. He wears a green jacket zipped up to a tall collar, with grey stripes down the "
-           "front, black straps over the shoulders and a black band around the upper arm."},
+  {108, 1, "Keisuke, a slim teenage boy with fair skin and thick, soft, wavy light-brown hair that falls in "
+           "loose curls over his forehead, ears and the back of his neck. He has grey eyes behind thin black "
+           "rectangular glasses. He wears the school summer uniform: a crisp white collared shirt with small "
+           "white buttons and a breast pocket, and a thin dark green-black ribbon tied loosely at the collar, "
+           "its two long ends hanging down his chest. The portrait ends at mid-chest."},
+  {108, 2, "Keisuke, a slim teenage boy with fair skin and thick, soft, wavy light-brown hair that falls in "
+           "loose curls over his forehead, ears and the back of his neck. He has grey eyes behind thin black "
+           "rectangular glasses. He wears the school winter uniform: a charcoal-black blazer with notched lapels "
+           "and a thin silver-white piping down its front edge, a small green-and-cream bar pin on the left "
+           "lapel, and the school crest on the chest, a red ring lettered Gekkoukan Private High School around a "
+           "black-and-white quartered circle. Under it are a white collared shirt and a thin dark green-black "
+           "ribbon tie with long loose ends."},
+  {108, 6, "Keisuke, a slim teenage boy with fair skin and thick, soft, wavy light-brown hair that falls in "
+           "loose curls over his forehead, ears and the back of his neck. He has grey eyes behind thin black "
+           "rectangular glasses. In casual clothes he wears a collared button-up shirt in a bold plaid of red, "
+           "sky blue, white and grey checks, with small grey buttons, open at the neck over a dark green T-shirt "
+           "whose round collar just shows. The portrait ends at mid-chest."},
+  {109, 1, "Chihiro, a slender teenage girl with fair skin and very long, straight brown hair parted in the "
+           "middle and swept back off a high forehead, falling past her shoulders and down her back with long "
+           "strands framing her face. She has brown eyes behind black rectangular glasses and soft pink lips. "
+           "She wears the school summer uniform: a white collared blouse with small white buttons, and a large, "
+           "full red bow tied at the collar, its loops and ends spreading over her chest."},
+  {109, 2, "Chihiro, a slender teenage girl with fair skin and very long, straight brown hair parted in the "
+           "middle and swept back off a high forehead, falling past her shoulders and down her back with long "
+           "strands framing her face. She has brown eyes behind black rectangular glasses and soft pink lips. "
+           "She wears the school winter uniform: a charcoal-black jacket with a thin silver-white piping down "
+           "its front edge and the red school crest just visible on the chest, over a white collared blouse with "
+           "white cuffs and a large, full red bow tied at the collar."},
+  {109, 6, "Chihiro, a slender teenage girl with fair skin and very long, straight brown hair parted in the "
+           "middle and swept back off a high forehead, falling past her shoulders and down her back with long "
+           "strands framing her face. She has brown eyes behind black rectangular glasses and soft pink lips. In "
+           "casual clothes she wears a soft, warm tan-orange cardigan with a frilled ruffle running down its "
+           "button front, over a cream top with a high, close-fitting collar whose upper edge is cut in a "
+           "zigzag."},
+  {110, 6, "Maiko, a little girl of about eight with fair skin, a round face and big brown eyes. Her brown hair "
+           "is pulled smoothly back off her forehead into a braided bun at the back of her head, wrapped with a "
+           "ruffled pink scrunchie. She wears an open, slightly oversized denim-blue shirt with a pointed "
+           "collar, silver snap buttons and rolled sleeves over a plain pink T-shirt with a round neck. On her "
+           "back is a glossy red leather school backpack, a randoseru, with red shoulder straps, silver metal "
+           "fittings and a white cord dangling from a clip at its side."},
+  {111, 6, "Pharos, a small, slight, pale boy who looks about ten, with messy, tousled dark blue-grey hair cut "
+           "short with ragged bangs over his forehead, and large, bright cyan-blue eyes. He has a small dark "
+           "mole under his left eye. He wears a long-sleeved shirt with wide horizontal stripes of dark grey and "
+           "off-white, a plain round neckline, and a short placket at the front fastened with three small grey "
+           "buttons."},
+  {112, 1, "Bebe, a slim teenage boy with light skin and a neat, rounded blond bowl cut with thick straight "
+           "bangs down to his eyebrows, and pale turquoise-blue eyes. He wears the school summer uniform: a "
+           "white collared shirt with short sleeves, small white buttons and a breast pocket, and a thin black "
+           "ribbon tie with long loose ends. He holds up an open Japanese folding fan of black paper on black "
+           "ribs, painted with two gold butterflies above sweeping gold arcs and scattered gold dots."},
+  {112, 2, "Bebe, a slim teenage boy with light skin and a neat, rounded blond bowl cut with thick straight "
+           "bangs down to his eyebrows, and pale turquoise-blue eyes. He wears the school winter uniform: a "
+           "charcoal-black blazer with thin silver-white piping down its front edge, a small green-and-cream bar "
+           "pin on the lapel and the school crest on the chest, a red ring lettered Gekkoukan Private High "
+           "School around a black-and-white quartered circle, over a white collared shirt and a thin black "
+           "ribbon tie. He holds up an open black folding fan painted with two gold butterflies above sweeping "
+           "gold arcs and scattered gold dots."},
+  {112, 6, "Bebe, a slim teenage boy with light skin and a neat, rounded blond bowl cut with thick straight "
+           "bangs down to his eyebrows, and pale turquoise-blue eyes. In casual clothes he wears a plain dark "
+           "charcoal-grey long-sleeved T-shirt with a round crew neck, printed on the chest with a faint, "
+           "tone-on-tone grey Eastern dragon, its scaly body coiled and its horned head turned to one side. The "
+           "portrait ends at mid-chest."},
+  {113, 6, "President Tanaka, a middle-aged man with tanned skin, a long face with lines under his eyes, and "
+           "thick, wavy, collar-length dark grey hair swept back and falling loosely over his ears. He has "
+           "narrow, heavy-lidded grey eyes. He wears a grey-green suit jacket with notched lapels over a crisp "
+           "white dress shirt with a pointed collar and a plain dark red tie in a neat knot."},
+  {114, 6, "Mutatsu, an elderly, heavyset and completely bald man with tanned, deeply lined skin, a furrowed "
+           "brow, large ears, grey eyes and loose skin at his neck. He wears a Buddhist monk's robes: a dark "
+           "charcoal-grey kimono-style robe crossed at the chest over white under-layers whose collars show at "
+           "the neck, with a broad pale cream band running down over one shoulder and tied in a knot low on his "
+           "chest. In one hand he holds a fat brown cigar, its ashy tip lit, and thick gold rings on his "
+           "fingers."},
+  {114, 901, "Mutatsu, an elderly, heavyset and completely bald man with tanned, deeply lined skin, a furrowed "
+             "brow, large ears, grey eyes and loose skin at his neck. He wears a Buddhist monk's robes: a dark "
+             "charcoal-grey kimono-style robe crossed at the chest over white under-layers whose collars show at "
+             "the neck, with a broad pale cream band running down over one shoulder and tied in a knot low on his "
+             "chest. Unlike his usual look, he holds no cigar and no hand or ring is in view."},
+  {115, 6, "Mamoru, an athletic teenage boy with lightly tanned skin and short, spiky dark grey hair cropped "
+           "close at the sides, with thick dark eyebrows and grey eyes. He wears a light teal zip-up hoodie with "
+           "the hood down, a silver zipper, grey drawstrings knotted at their ends, and a small dark grey "
+           "triangle logo on the chest. Down each sleeve runs a wide black stripe edged in white and printed "
+           "with a row of grey triangles."},
+  {116, 1, "Nozomi, a heavyset teenage boy with fair skin, a big round face with full, chubby cheeks and a "
+           "double chin, short neat black hair with one curl springing up on top and a curl on his forehead, "
+           "droopy grey eyes and large ears. He wears the school summer uniform: a white collared shirt "
+           "stretched over his broad frame, with small white buttons, a breast pocket and a thin dark "
+           "green-black ribbon tie with long loose ends."},
+  {116, 2, "Nozomi, a heavyset teenage boy with fair skin, a big round face with full, chubby cheeks and a "
+           "double chin, short neat black hair with one curl springing up on top and a curl on his forehead, "
+           "droopy grey eyes and large ears. He wears the school winter uniform: a charcoal-black blazer with "
+           "thin silver-white piping down its front edge, a small green-and-cream bar pin on the lapel and the "
+           "school crest on the chest, a red ring lettered around a black-and-white quartered circle, over a "
+           "white collared shirt and a thin dark green-black ribbon tie with long loose ends."},
+  {117, 6, "Akinari, a thin, pale young man with a narrow face, straight chin-length silver-grey hair with a "
+           "side parting and bangs sweeping across his forehead, and grey eyes. He wears a loose, long-sleeved "
+           "button-up shirt with a pointed collar, in bold vertical stripes of slate grey-blue and pale "
+           "grey-white, with small dark buttons, the top ones undone so it falls open at the neck and shows his "
+           "collarbones."},
+  {201, 6, "Igor, a short, hunched, wizened old man with pale tan skin and a bald dome of a head with wild, "
+           "wispy white hair sticking out at the back and sides. He has long pointed ears, thick dark curling "
+           "eyebrows, huge round bulging white eyes threaded with red veins and tiny pupils, and an extremely "
+           "long, straight pointed nose. He wears a black suit jacket with buttoned cuffs over a white shirt and "
+           "dark tie, white shirt cuffs and thin white gloves on his long bony fingers."},
+  {202, 6, "Elizabeth, a slender young woman with pale skin, a short silver bob with straight blunt bangs and "
+           "the ends curving in at her jaw, bright yellow eyes and pale pink lips. She wears her Velvet Room "
+           "attendant uniform: a small royal-blue cap with a short brim and a button on its side, tilted on her "
+           "head, and a fitted royal-blue sleeveless dress that leaves her shoulders bare, with a tall stand-up "
+           "collar and a dark seam down the front. On the chest is a large round emblem: a dark navy ring, a "
+           "sky-blue ring and a dark centre with a small gold dot. Long royal-blue gloves reach above her "
+           "elbows."},
+  {202, 901, "Elizabeth, a slender young woman with pale skin, a short silver bob with straight blunt bangs, "
+             "bright yellow eyes and pale pink lips, wearing a pair of chunky black glasses with thick, "
+             "rounded-square frames. She wears her Velvet Room attendant uniform: a small royal-blue cap with a "
+             "short brim and a side button, tilted on her head, and a fitted royal-blue sleeveless dress with bare "
+             "shoulders, a tall stand-up collar and a large round emblem on the chest, dark navy and sky-blue "
+             "rings around a dark centre with a gold dot. Long royal-blue gloves reach above her elbows."},
+  {202, 902, "Elizabeth, a slender young woman with pale skin, a short silver bob with straight blunt bangs and "
+             "bright yellow eyes, dressed up as a cat: a pair of fluffy white cat ears with pink insides stands up "
+             "on either side of her head, and a white furry cat-muzzle mask with a pink nose and black whiskers "
+             "covers her nose and upper lip. She still wears her small tilted royal-blue cap and her Velvet Room "
+             "attendant uniform: a fitted royal-blue sleeveless dress with bare shoulders, a tall stand-up collar "
+             "and a large round emblem on the chest, dark navy and sky-blue rings around a dark centre with a gold "
+             "dot. Long royal-blue gloves reach above her elbows."},
+  {202, 903, "Elizabeth, a slender young woman with pale skin and a short silver bob with straight blunt bangs, "
+             "wearing joke novelty glasses: round black frames with white lenses painted with swirling circles "
+             "that hide her eyes, a big pinkish-red plastic nose and a bushy black moustache curled up at the "
+             "ends. She still wears her small tilted royal-blue cap and her Velvet Room attendant uniform: a "
+             "fitted royal-blue sleeveless dress with bare shoulders, a tall stand-up collar and a large round "
+             "emblem on the chest, dark navy and sky-blue rings around a dark centre with a gold dot. Long "
+             "royal-blue gloves reach above her elbows."},
+  {202, 904, "Elizabeth, a slender young woman with pale skin, a short silver bob with straight blunt bangs and "
+             "bright yellow eyes, dressed as Santa: in place of her cap she wears a red Santa hat with a thick "
+             "white fur brim, its tip flopping over to one side and ending in a fluffy white pom-pom, and a fluffy "
+             "white false beard and curled moustache that cover her mouth and chin. Below it is her Velvet Room "
+             "attendant uniform: a fitted royal-blue sleeveless dress with bare shoulders, a tall stand-up collar "
+             "and a large round emblem on the chest, dark navy and sky-blue rings around a dark centre with a gold "
+             "dot. Long royal-blue gloves reach above her elbows."},
+  {211, 6, "Takaya, a gaunt, lean man with pale skin, sunken cheeks and stubble on his jaw and chin, and yellow "
+           "eyes. His very long, wavy silver-grey hair is parted in the middle and falls in loose waves past his "
+           "shoulders and down his chest, held by a thin dark metal circlet across his forehead. He is "
+           "bare-chested, with purple tattoos on both shoulders: on his right, a crowned serpent coiled around a "
+           "spiky sun with a pink spiral at its centre; on his left, a tangle of purple and pale figures mostly "
+           "hidden by his hair. The portrait ends at mid-chest."},
+  {212, 6, "Jin, a lean young man with pale skin and straight, glossy dark blue hair cut in a jaw-length bob, "
+           "its long fringe falling over his left eye. He wears glasses with black rectangular frames and "
+           "orange-tinted lenses. His bright green jacket is zipped right up into a tall stand collar that hides "
+           "his chin, with two light grey stripes running down the front beside the zip. Black harness straps "
+           "with buckles run over both shoulders, and a black band is wrapped around his left upper arm. The "
+           "portrait ends at his upper chest."},
   {213, 6, "Chidori, a pale young woman with very long, straight red hair with blunt bangs and grey eyes with "
            "dark lashes. She wears a frilly white gothic-lolita dress with ruffles, a ribbon choker and ribbons "
            "laced through her hair, a black and white ruffled headdress studded with silver diamonds, and a "
            "large silver dagger-shaped pin through it."},
-  {213, 201, "Chidori, a pale young woman with very long, straight red hair with blunt bangs and grey eyes, "
-             "without her headdress or ribbons. She wears a plain pale blue hospital gown with a wrap-over front."},
-  {221, 2, "Ryoji, a slender teenage boy with dark hair swept back with a few strands sticking up, blue eyes, "
-           "and a small beauty mark under his left eye. He wears the school winter uniform, a white shirt with "
-           "an open dark jacket, and a long pale-yellow scarf wrapped around his neck and hanging down the "
-           "front."},
-  {221, 154, "Ryoji, a slender teenage boy with dark hair swept back with a few strands sticking up, blue eyes, "
-             "and a small beauty mark under his left eye. He is bare-chested and bare-shouldered, as at a bath or "
-             "hot spring."},
-  {221, 155, "Ryoji, a slender teenage boy with dark hair swept back with a few strands sticking up, blue eyes, "
-             "and a small beauty mark under his left eye. He wears an inn-style yukata: a grey-blue outer robe "
-             "over a white inner robe patterned with grey chain-like circles."},
-  {222, 6, "Ikutsuki, a lanky middle-aged man with long, wavy brown hair pulled back from a receding hairline, "
-           "thin wire-rimmed glasses and a small goatee. He wears a tan double-breasted coat over a dark grey "
-           "ribbed turtleneck sweater."},
-  {223, 1, "Natsuki, a teenage girl with tanned skin, long wavy auburn hair with straight bangs and a short "
-           "ponytail tied high at the back, and brown eyes. She wears the school summer uniform: a white blouse "
-           "with a wide collar, a grey knitted sweater vest and a large red bow."},
-  {223, 2, "Natsuki, a teenage girl with tanned skin, long wavy auburn hair with straight bangs and a short high "
-           "ponytail, and brown eyes. She wears the school winter uniform with a dark grey cardigan over a white "
-           "blouse with a wide collar and a large red bow."},
-  {223, 6, "Natsuki, a teenage girl with tanned skin, auburn hair with straight bangs and a short high ponytail, "
-           "here falling to her shoulders, and brown eyes. In casual clothes she wears an oversized cream hooded "
-           "jacket over a pink top and a silver heart-shaped pendant on a chain."},
-  {224, 6, "Takeharu, a stern middle-aged man with dark hair swept to one side and a black eyepatch over his "
-           "right eye. He wears a grey three-piece suit with a dark waistcoat, a white shirt, a dark red tie and "
-           "a small gold pin on the lapel."},
-  {252, 1, "Akihiko as a young boy, with short, tousled silver hair, grey eyes and a bandage across the bridge "
-           "of his nose. He wears a white short-sleeved button-up shirt, open at the neck, over a red T-shirt."},
-  {253, 1, "Mitsuru as a younger teenager, with wavy red hair to her shoulders held back by a purple hairband, "
-           "and red eyes. She wears a school uniform of a grey knitted sweater vest over a white blouse with a "
-           "large red bow at the collar."},
-  {254, 5, "Mitsuru as a little girl, with red hair worn in long ringlet drill curls on both sides, and red "
-           "eyes. She wears a white blouse with fine vertical pleats and buttons, and a large red bow at the "
-           "collar fastened with a dark oval cameo brooch."},
-  {1081, 6, "Mr. Edogawa, a lanky man with messy dark hair, thick black rectangular glasses, stubble and a red "
-            "pencil tucked behind his ear. He wears a rumpled white lab coat over a mustard-yellow T-shirt with a "
-            "dark collar and a white hand-sign print."},
-  {1082, 6, "A middle-aged man with neat grey hair falling to his brows and lined cheeks. He wears a grey suit "
-            "jacket, a white shirt and a purple and grey diagonally striped tie."},
-  {1083, 6, "Mr. Ono, a middle-aged man with a goatee who wears a dark iron samurai helmet with a curved gold "
-            "crescent crest, tied under his chin. Below it he wears a brown plaid suit jacket, a white shirt and "
-            "a red tie."},
-  {1084, 6, "A man in his thirties with tousled dark grey hair parted in the middle and light stubble. He wears a "
-            "dark grey suit jacket, a white shirt and a red tie with a diamond check pattern."},
-  {1085, 6, "Mr. Miyahara, a slight man with a huge round grey afro, small round wire-rimmed glasses and a "
-            "prominent front tooth. He wears a mustard-yellow V-neck sweater over a green pinstriped shirt with a "
-            "tall collar, and carries a large wooden set-square ruler."},
-  {1086, 6, "A police officer, a hard-faced man with short dark hair under a peaked police cap with a gold star "
-            "badge. He wears a navy police uniform jacket with a white shirt and dark tie, a badge on the breast "
-            "and a radio microphone clipped at the shoulder."},
-  {1087, 6, "An old man with long blue-grey hair tied back in a ponytail, a balding crown and a full, shaggy "
-            "blue-grey beard. He wears a white high-collared jacket with brass buttons, like a cook's coat."},
-  {1181, 6, "A heavyset older man with grey hair combed back, a round face with a double chin, small round "
-            "wire-rimmed glasses and a bushy grey moustache. He wears a dark grey suit jacket over a beige "
-            "knitted V-neck vest, a white shirt and a red tie."},
-  {1581, 6, "Ms. Toriumi, a young woman with a chin-length, wavy light-brown bob, brown eyes and small pearl stud "
-            "earrings. She wears a dusty rose suit jacket over a white blouse with a high buttoned collar."},
-  {1582, 6, "A woman with brown hair swept to one side and pinned up at the back, brown eyes behind red-framed "
-            "glasses, and a pearl necklace. She wears a white jacket with a wide collar over a lilac top."},
-  {1583, 6, "Mrs. Terauchi, a woman with shoulder-length brown hair flipped out at the ends and held by a yellow "
-            "hairband, and brown eyes. She wears an orange suit jacket over a white top with a yellow silk scarf "
-            "tied at her throat."},
-  {1586, 6, "A woman with long, wavy black hair pulled back loosely, green eyes and thin rimless glasses worn low "
-            "on her nose. She wears a white top with a high mandarin collar trimmed in green and a thin gold "
-            "choker ring."},
+  {213, 201, "Chidori, a slender, pale young woman with very long, straight red hair with blunt bangs cut straight "
+             "across her brows, the rest falling loose past her shoulders and down her back. She has grey eyes "
+             "rimmed with spiky dark lashes, soft purple eyeshadow and pale pink lips. She is without her usual "
+             "headdress and ribbons and wears no jewellery. She wears a plain pale aqua-blue hospital gown with a "
+             "wrap-over front crossing at her chest and loose sleeves, without any pattern or trim. The portrait "
+             "ends at her chest."},
+  {221, 2, "Ryoji, a slender teenage boy with fair skin and dark grey-black hair swept back from his forehead, a "
+           "few strands sticking up on top and the ends flicking out at his nape. He has blue eyes and a small "
+           "black beauty mark under his left eye. He wears a white button-front shirt with small dark square "
+           "buttons, with narrow dark bands running down either side of his chest, the edges of his open school "
+           "winter jacket. A long, soft pale-yellow scarf, edged in a darker outline, is wrapped high around his "
+           "neck and hangs down the front. The portrait ends at his chest."},
+  {221, 154, "Ryoji, a slender teenage boy with fair skin and dark grey-black hair swept back from his forehead, a "
+             "few strands sticking up on top and the ends flicking out at his nape. He has blue eyes and a small "
+             "black beauty mark under his left eye. He is bare-chested and bare-shouldered, as at a bath or hot "
+             "spring, with no clothing or jewellery at all, not even his usual yellow scarf. The portrait ends at "
+             "his upper chest."},
+  {221, 155, "Ryoji, a slender teenage boy with fair skin and dark grey-black hair swept back from his forehead, a "
+             "few strands sticking up on top and the ends flicking out at his nape. He has blue eyes and a small "
+             "black beauty mark under his left eye. He wears an inn-style yukata: a plain slate grey-blue outer "
+             "robe with wide sleeves, wrapped over a white inner robe whose edged collar shows in a V at his "
+             "throat, patterned with grey chains of interlinked circles. He wears no scarf or jewellery. The "
+             "portrait ends at his chest."},
+  {222, 6, "Ikutsuki, a lanky middle-aged man with pale skin and long, wavy brown hair combed back from a high, "
+           "receding hairline and falling loose behind his shoulders. He has grey eyes behind thin silver "
+           "wire-rimmed glasses with narrow oval lenses, and a small pointed goatee. He wears a light tan "
+           "double-breasted coat with wide notched lapels and pale buttons, over a dark grey turtleneck sweater "
+           "knitted in vertical ribs, its high collar folded up under his chin. The portrait ends at his chest."},
+  {223, 1, "Natsuki, a teenage girl with tanned skin and long, wavy ginger-brown hair with straight, blunt "
+           "bangs, part of it gathered into a short, spiky ponytail tied high at the back of her head and the "
+           "rest falling past her shoulders. She has brown eyes with thick lashes and glossy lips. She wears the "
+           "school summer uniform: a white short-sleeved blouse with a wide, pointed collar, a dark grey knitted "
+           "V-neck sweater vest with ribbed edges, and a large red bow tied at the collar. The portrait ends at "
+           "her chest."},
+  {223, 2, "Natsuki, a teenage girl with tanned skin and long, wavy ginger-brown hair with straight, blunt "
+           "bangs, part of it gathered into a short, spiky ponytail tied high at the back of her head and the "
+           "rest falling past her shoulders. She has brown eyes with thick lashes and glossy lips. She wears the "
+           "school winter uniform: a dark grey knitted V-neck cardigan with long sleeves and ribbed edges over a "
+           "white blouse with a wide, pointed collar, and a large red bow tied at the collar. The portrait ends "
+           "at her chest."},
+  {223, 6, "Natsuki, a teenage girl with tanned skin and ginger-brown hair with straight, blunt bangs and a "
+           "short, spiky ponytail tied high at the back, the rest hanging just to her shoulders. She has brown "
+           "eyes with thick lashes and glossy lips. In casual clothes, she wears an oversized cream hooded "
+           "jacket, hanging open with its hood bunched behind her neck, its lining grey-blue and a round snap "
+           "button on each edge of the front. Under it is a pink scoop-neck top, and a small silver heart-shaped "
+           "pendant hangs on a thin chain at her collarbone. The portrait ends at her chest."},
+  {224, 6, "Takeharu, a stern middle-aged man with pale skin and short dark grey hair swept across his forehead "
+           "to one side. A black eyepatch covers his right eye, its thin black strap running diagonally up "
+           "across his forehead and into his hair; his other eye is grey. He wears a grey three-piece suit: a "
+           "jacket with notched lapels, a darker charcoal waistcoat, a white shirt with a pointed collar and a "
+           "dark red tie. A small round gold pin is fixed on his left lapel. The portrait ends at his chest."},
+  {252, 1, "Akihiko as a young boy, with fair skin and short, tousled silver-white hair, grey eyes and a beige "
+           "sticking plaster across the bridge of his nose. He wears a white collared button-up shirt, "
+           "unbuttoned at the neck, with a breast pocket on the left, over a plain red T-shirt whose round neck "
+           "shows at his throat. He wears no jewellery. The portrait ends at his chest."},
+  {253, 1, "Mitsuru as a younger teenager, with fair skin and wavy red hair falling in loose curls past her "
+           "shoulders, a long side-swept fringe and a thin purple hairband. She has red eyes and soft pink lips. "
+           "She wears a school uniform: a white long-sleeved blouse with a small pointed collar, a dark grey "
+           "knitted sweater vest with ribbed edges, and a large red bow at the collar with long, layered ruffled "
+           "tails. She wears no jewellery. The portrait ends at her chest."},
+  {254, 5, "Mitsuru as a little girl, with fair skin, red eyes and red hair with a side-swept fringe, the rest "
+           "worn in long, springy ringlet drill curls hanging on both sides of her head. She wears a white "
+           "long-sleeved blouse with fine vertical pleats down the front, small round white buttons and a high "
+           "stand collar. A large red bow is tied at the collar, fastened at its centre by a gold-framed oval "
+           "brooch set with a dark green-black stone. The portrait ends at her chest."},
+  {1081, 6, "Mr. Edogawa, a lanky man with pale skin, messy, spiky dark hair, thick black rectangular glasses and "
+            "heavy stubble on his chin and jaw. A red pencil is tucked behind his left ear. He wears a rumpled "
+            "white lab coat, open over a mustard-yellow T-shirt with a dark brown round collar and a white "
+            "outline print of a hand with two fingers raised. He wears no jewellery. The portrait ends at his "
+            "chest."},
+  {1082, 6, "A middle-aged man with fair skin, lined cheeks and neat, straight grey-brown hair cut in a mop "
+            "falling to his brows and over his ears, with grey eyes. He wears a plain grey suit jacket with "
+            "notched lapels, a white shirt with a pointed collar, and a tie striped diagonally in purple and dark "
+            "grey. He wears no glasses or jewellery. The portrait ends at his chest."},
+  {1083, 6, "Mr. Ono, a middle-aged man with tanned skin, brown eyes and a short goatee, who wears a dark iron "
+            "samurai helmet: a domed bowl with a tall, curved gold crescent crest rising from the front, "
+            "gold-tipped side flaps folded back by his temples, and a flared neck guard of riveted plates at the "
+            "back. It is tied under his chin by a dark cord. Below it he wears a brown plaid suit jacket checked "
+            "with darker lines, a white shirt with a pointed collar and a red tie. The portrait ends at his "
+            "chest."},
+  {1084, 6, "A man in his thirties with tanned skin, grey eyes and tousled, dark grey hair parted in the middle "
+            "and falling over his ears, with light stubble along his jaw and chin. He wears a plain dark grey "
+            "suit jacket with notched lapels, a white shirt with a pointed collar, and a red tie with a pattern "
+            "of dark diamond checks. He wears no glasses or jewellery. The portrait ends at his chest."},
+  {1085, 6, "Mr. Miyahara, a slight man with pale skin and a huge, round dark grey afro, grey eyes, small round "
+            "copper wire-rimmed glasses and one large front tooth showing. He wears a mustard-yellow V-neck "
+            "sweater over a green shirt with fine darker green pinstripes and a tall, upturned collar. He carries "
+            "a large brown wooden set-square, a triangular ruler marked with measuring lines, held up over his "
+            "shoulder. The portrait ends at his chest."},
+  {1086, 6, "A police officer, a hard-faced man with tanned skin and short dark hair under a navy peaked police "
+            "cap with a glossy black peak and band, a small silver button at the side, and a gold badge on the "
+            "front: a star in a wreath of laurel leaves inside a dark circle. He wears a navy uniform jacket with "
+            "silver shoulder buttons, a white shirt and a dark navy tie, with a gold badge on his chest and a "
+            "grey radio microphone clipped at his left shoulder, its coiled cord hanging down. The portrait ends "
+            "at his chest."},
+  {1087, 6, "An old man with tanned, deeply wrinkled skin, grey eyes and long blue-grey hair combed back from a "
+            "balding crown and tied in a bushy ponytail at the back of his head, with thick blue-grey eyebrows "
+            "and a full, shaggy blue-grey beard and moustache. He wears a white high-collared jacket with a stand "
+            "collar and round brass buttons, like a cook's coat. He wears no jewellery. The portrait ends at his "
+            "upper chest."},
+  {1181, 6, "A heavyset older man with fair skin, grey hair combed back from his forehead and over his ears, a "
+            "round face with a double chin and a bushy grey moustache. He wears small round silver wire-rimmed "
+            "glasses with red tips on the earpieces. He wears a dark grey suit jacket over a beige knitted V-neck "
+            "sweater vest with ribbed edges, a white shirt with a pointed collar and a red tie. The portrait ends "
+            "at his chest."},
+  {1581, 6, "Ms. Toriumi, a young woman with fair skin and a chin-length, wavy light-brown bob with side-swept "
+            "bangs, its ends flicking out. She has brown eyes, soft pink lipstick and a small pearl stud earring "
+            "in her left ear. She wears a dusty rose suit jacket with notched lapels and a flap pocket, over a "
+            "white blouse with a high stand collar and small round white buttons down the front. The portrait "
+            "ends at her chest."},
+  {1582, 6, "A woman with fair skin and brown hair swept to one side in a long fringe and pinned up into a bun at "
+            "the back, brown eyes behind red oval-rectangular glasses, and pink lips. A necklace of pale pearls "
+            "rests at the base of her throat. She wears a white jacket with a wide, open collar and notched "
+            "lapels over a plain lilac top with a low, straight neckline. She wears no earrings. The portrait "
+            "ends at her chest."},
+  {1583, 6, "Mrs. Terauchi, a woman with fair skin and shoulder-length brown hair with side-swept bangs, flipped "
+            "out at the ends and held back by a yellow hairband. She has brown eyes and pink lipstick. She wears "
+            "an orange suit jacket with notched lapels and round buttons over a white top, with a pale yellow "
+            "silk scarf tied loosely around her throat, its ends fluttering to one side. The portrait ends at her "
+            "chest."},
+  {1586, 6, "A woman with fair skin and long, wavy black hair swept back from her forehead and gathered loosely "
+            "behind her, a few strands curling down by her face, with green eyes and peach lipstick. She wears "
+            "thin, metal-framed rectangular glasses perched low on her nose. She wears a white long-sleeved top "
+            "in a Chinese style, with a high mandarin collar and a diagonal front opening both piped in green. A "
+            "thin gold ring necklace, a rigid hoop, sits loosely around her neck. The portrait ends at her chest."},
 };
 const Pose kPoses[] = {
   {1, 0, 'A', "His head tilts to one side, turned slightly away, looking out from under his fringe."},
