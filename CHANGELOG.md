@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Character descriptions
-- The area key (Semicolon, or both triggers and B) now describes the character talking to you while their portrait is up beside the line: how they look, the outfit the portrait shows (summer or winter uniform, casual clothes, swimsuit, yukata, combat gear and the rest) and how they stand. It follows their outfit as it changes through the year. All 155 outfits of the 54 characters with a portrait are described. Outside a conversation the key describes the place, as before.
+- The area key (Semicolon, or both triggers and B) now describes the character talking to you while their portrait is up beside the line: how they look, the outfit the portrait shows (summer or winter uniform, casual clothes, swimsuit, yukata, combat gear and the rest) and how they stand. It follows their outfit as it changes through the year. All 155 outfits of the 53 characters with a portrait are described. Outside a conversation the key describes the place, as before.
 
 ### Fusion
 - A skill change offered after a level up ("a skill seems to be on the verge of changing") is followed by what the skill would become. Not yet seen in the game: see the known issues.
