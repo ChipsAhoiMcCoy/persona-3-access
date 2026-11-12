@@ -282,6 +282,21 @@ class ShuffleScreen : public MenuScreen {
     };
     release_.count = 0;   // set per build: the list wraps over its rows
     release_.ready = [] { UObject* ui = shuffle_ui(); return ui && overstock(ui); };
+    // The release list's own move (the shuffle actor's tick, exe+0x1011540): the list at +0x400 restarts its row
+    // animation (exe+0x100dcf0), the row goes to PersonaSelectCoursorIndex, then the cursor sound. While a Persona's
+    // status page is up over the list (+0xE90) the game moves the page instead: no write then.
+    release_.set = [](int i) {
+      UObject* ui = shuffle_ui();
+      if (!ui || !ue::known_build() || !overstock(ui) || i < 0) return false;
+      auto* u = (uint8_t*)ui;
+      void* list = *(void**)(u + 0x400);
+      if (!list || *(int32_t*)(u + 0xE90) != 0) return false;
+      if (get<int32_t>(ui, "PersonaSelectCoursorIndex") == i) return true;
+      ((void (*)(void*))(scan::exe_base() + 0x100dcf0))(list);
+      *(int32_t*)(u + 0x34C) = i;
+      cursor_sound();
+      return true;
+    };
   }
   const char* id() const override { return "shuffle"; }
   int priority() const override { return 26; }
