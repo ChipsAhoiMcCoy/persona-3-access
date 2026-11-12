@@ -18,7 +18,6 @@ These reached the code but have not been seen working in the game, because no te
 - Linked Episodes.
 - Exam results.
 - The final battle, the ending, and the end credits' list of names.
-- Learning a skill from a level up during a battle.
 
 ## Tested less than the rest
 
@@ -28,10 +27,10 @@ These reached the code but have not been seen working in the game, because no te
 - The single "All enemies" or "All allies" choice for a skill or item that hits a whole side has not been tried in the game.
 - The victory screen's new pacing was tried in one battle with a member's level-up. The hero's own level-up page and a battle with several level-ups at once have not been tried with it.
 - The compendium's Persona status page (Summon from the Compendium, then a Persona) was not tried in the game after its fix. Registration's page, which had the same fault, was.
-- The game over screen's fixes (the poem read aloud, confirm skipping it, each choice's description, the wait for the list to take input) and the shorter damage line for a target you chose have not been tried in the game.
 - The auto-walk's search for the way in to a walled-in target was tried on one Tartarus teleporter, from one side.
 - The Missing Persons board in the field. The camp's Missing Persons list has been tested.
-- The Persona status page in battle (F on a skill list) was not checked again after the page was reworked.
+- A missing person waiting on a Tartarus floor, the "Rare Shadow" and "The Reaper" names in the points of interest list, and the sound for a Shadow that loses track of you have not been met in a test.
+- Shuffle Time's reading of a card whose text is the same as the card before it was changed and has not come up in a test since.
 - The audio description text was checked by automated timing and transcript checks, not by a person watching every movie.
 - This Release build. Development used a slightly different build type, so the packaged zip is its own test.
 - The menu animation wait in a simple shop opened by the story.
