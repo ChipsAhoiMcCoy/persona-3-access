@@ -17,10 +17,11 @@ namespace p3a::core {
 
 struct FieldParams {
   // 0.30 s at 1.5 m to 1.00 s at the range's edge at first: three to one, and stretched with the range setting, so
-  // being close to a thing was not heard (the user, 2026-11-11). Now 0.12 s at 1 m, 0.30 at 3 m, 0.47 at 5 m, 0.84
-  // at 10 m, 1.5 at 20 m and beyond.
-  double period_near = 0.12;   // seconds between pulses at dist_near and closer
-  double period_far = 1.50;    // seconds at dist_far and beyond
+  // being close to a thing was not heard (the user, 2026-11-11). Then 0.12 s at 1 m to 1.5 at 20 m; a quarter slower
+  // since (the user, 2026-11-12, with every thing on its own clock): 0.15 s at 1 m, 0.27 at 2 m, 0.38 at 3 m, 0.59 at
+  // 5 m, 1.06 at 10 m, 1.9 at 20 m and beyond.
+  double period_near = 0.15;   // seconds between pulses at dist_near and closer
+  double period_far = 1.90;    // seconds at dist_far and beyond
   float dist_near = 1.0f;      // metres
   float dist_far = 20.0f;      // metres
   double collide_s = 0.06;     // two sounds of one kind never start closer together than this (Grim Dark's 0.04, a

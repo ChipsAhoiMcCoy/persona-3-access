@@ -27,7 +27,7 @@ struct BandPass {
 
 int frames(int rate, double seconds) { return (int)std::lround(rate * seconds); }
 
-// How long a brief cue is: with the field's breath after it, one fits the fastest rhythm (0.12 s), played lower
+// How long a brief cue is: with the field's breath after it, one fits the fastest rhythm (0.15 s), played lower
 // from behind too.
 constexpr double kBrief = 0.065;
 

@@ -41,11 +41,11 @@ TEST_CASE("sonar field: the period shrinks with distance, by a power law") {
 
 TEST_CASE("sonar field: a thing alone keeps its own rate") {
   SonarField a, b;
-  CHECK(counts(run(a, {{1, 1.0f, 0}}, 10.0))[1] >= 70);   // every 0.12 s (0.13 where a 10 ms frame falls late)
-  CHECK(counts(run(a, {{1, 1.0f, 0}}, 10.0, 10.0))[1] <= 85);
+  CHECK(counts(run(a, {{1, 1.0f, 0}}, 10.0))[1] >= 60);   // every 0.15 s (0.16 where a 10 ms frame falls late)
+  CHECK(counts(run(a, {{1, 1.0f, 0}}, 10.0, 10.0))[1] <= 68);
   int far_n = counts(run(b, {{2, 20.0f, 0}}, 10.0))[2];
-  CHECK(far_n >= 6);    // every 1.50 s
-  CHECK(far_n <= 7);
+  CHECK(far_n >= 5);    // every 1.90 s
+  CHECK(far_n <= 6);
 }
 
 TEST_CASE("sonar field: things of different kinds keep their own rhythms in a crowd") {
@@ -114,7 +114,7 @@ TEST_CASE("sonar field: a thing that comes closer does not wait out its old, slo
   f.update({}, 0.0);
   REQUIRE(f.update({{9, 10.0f, 0}}, 1.0).size() == 1);   // sounded far off: next in most of a second
   int n = 0;
-  // Beside the player now: again after its near period (0.12 s).
+  // Beside the player now: again after its near period (0.15 s).
   for (double t = 1.01; t <= 1.20; t += 0.01) n += (int)f.update({{9, 1.0f, 0}}, t).size();
   CHECK(n == 1);
 }

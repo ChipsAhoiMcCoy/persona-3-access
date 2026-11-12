@@ -431,9 +431,9 @@ game's own camera.
   holding that direction would actually take you: a wall you would just slide along stays quiet.
 - Sonar: every point of interest within range (10 m unless you change it) repeats its own sound from where it is, starting the moment it comes into range.
   The closer it is, the faster it repeats and the louder it is, so walking toward a sound makes it quicken. The speed
-  goes by distance alone, whatever the range is set to: about once a second at 10 m, twice a second at 5 m, three
-  times at 3 m, five times at 2 m and eight times at 1 m, so each halving of the distance nearly doubles it. Inside
-  2 to 3 m a thing plays a clipped form of its sound, so that it can repeat that fast: one knock, one whistled note,
+  goes by distance alone, whatever the range is set to: about once a second at 10 m, nearly twice a second at 5 m,
+  two and a half times at 3 m, nearly four times at 2 m and almost seven times at 1 m, so each halving of the distance
+  nearly doubles it. Inside 1.5 to 2.5 m a thing plays a clipped form of its sound, so that it can repeat that fast: one knock, one whistled note,
   one (the higher) bell strike, a puff of air, the start of the pluck, one turn of the trill, the last two chimes. Each kind has a sound of its
   own: exits (ways into another area) a rising breath of air over a low thump, doors two knocks on wood, people a
   two-note whistle (the second note lower, a "yoo-hoo"), shops two strikes of a small bell, objects (things to check or open) a bright

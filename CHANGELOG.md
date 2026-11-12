@@ -12,6 +12,7 @@
 ### Sonar
 - Each thing keeps its own rhythm again, as in Grim Dark: things of different kinds sound independently, and only two of one kind are kept a moment apart. In 0.1.0-alpha.3 only one sound played at a time, so in a crowd every thing waited its turn and the rhythms fell into a slow queue.
 - The Sonar rhythm setting is gone with the sweep rhythm; pulse is the only one.
+- Every thing repeats a quarter more slowly than before at each distance: almost seven times a second at 1 m, about once a second at 10 m.
 
 ### Points of interest
 - Empty spots where the game can place a character were listed as "Person" when nobody stood there (three on the dorm's third floor, a step from the hallway), and walking to one stalled. They are no longer listed.
