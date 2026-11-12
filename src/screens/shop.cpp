@@ -136,7 +136,7 @@ class ShopScreen : public MenuScreen {
   // is matched by its dialog, never by when it was built (that read nothing at all, 2026-11-03).
   static std::string drawn_help(int id) {
     std::string d;
-    for (auto& p : msg::visible(300)) if (p.dialog == (id & 0xFFF) && p.text.size() > d.size()) d = p.text;
+    for (auto& p : msg::visible(18)) if (p.dialog == (id & 0xFFF) && p.text.size() > d.size()) d = p.text;
     return d;
   }
   std::string description(int i) {

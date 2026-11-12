@@ -30,12 +30,13 @@ void say_description(const char* text);
 // Every BMD page the game builds (dialogue pages, UI descriptions, help lines), rendered to text, newest last.
 struct Created { uint64_t seq; uint64_t ms; void* wrapper; int dialog; int page; std::string text; void* buf = nullptr; void* data = nullptr; void* obj = nullptr; };   // obj: the FBmdPage
 std::vector<Created> created_since(uint64_t seq);
-// Every page of a BMD buffer the game has laid out, as it reads now; `ms` is when it was last laid out. Unlike the
+// Every page of a BMD buffer the game has laid out, as it reads now; `ms` is when its text was built. Unlike the
 // ring of created pages, a page built again unchanged (a list reopened) is still here.
 std::vector<Created> pages_of(const void* buf);
 uint64_t created_seq();
-// Pages rebuilt within the last max_age_ms (what BMD text is on screen now), oldest first; seq is when its text was built.
-std::vector<Created> visible(unsigned max_age_ms = 200);
+// What BMD text is on screen now, oldest first; seq is when its text was built.
+// Pages laid out within the last `frames` frames of the mod's tick (frames the game ran, not time).
+std::vector<Created> visible(unsigned frames = 12);
 // Forget the pages of one message buffer: the next build of each is a new page, read at once (a page object reused
 // for new text is otherwise re-read only a few times a second).
 void forget_pages(const void* buf);

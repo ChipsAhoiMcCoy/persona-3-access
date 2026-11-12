@@ -32,10 +32,10 @@ static void record(float x, float y, uint32_t color, const ue::FString& s, int s
   std::string key = std::format("{}|{}|{}", (int)x, (int)y, t);
   std::lock_guard lk(g_mu);
   auto& it = g_items[key];
-  it = Item{x, y, color, std::move(t), GetTickCount64(), src};
+  it = Item{x, y, color, std::move(t), hooks::frame(), src};
   if (g_items.size() > 4000) {   // prune the stale half
-    uint64_t now = GetTickCount64();
-    for (auto i = g_items.begin(); i != g_items.end();) i = now - i->second.seen_ms > 2000 ? g_items.erase(i) : std::next(i);
+    uint64_t now = hooks::frame();
+    for (auto i = g_items.begin(); i != g_items.end();) i = now - i->second.seen_frame > 120 ? g_items.erase(i) : std::next(i);
   }
 }
 static void df1_hook(TextData* t, intptr_t a2, float a3, float a4, float a5, float a6, uint8_t a7, int a8) {
@@ -51,12 +51,12 @@ static void fdx_hook(float x, float y, float z, uint32_t color, float size, floa
   g_fdx(x, y, z, color, size, angle, ax, ay, s, id, pt, m);
 }
 
-std::vector<Item> snapshot(unsigned max_age_ms) {
+std::vector<Item> snapshot(unsigned frames) {
   std::vector<Item> out;
-  uint64_t now = GetTickCount64();
+  uint64_t now = hooks::frame();
   {
     std::lock_guard lk(g_mu);
-    for (auto& [k, v] : g_items) if (now - v.seen_ms <= max_age_ms) out.push_back(v);
+    for (auto& [k, v] : g_items) if (now - v.seen_frame <= frames) out.push_back(v);
   }
   std::sort(out.begin(), out.end(), [](const Item& a, const Item& b) { return a.y != b.y ? a.y < b.y : a.x < b.x; });
   return out;

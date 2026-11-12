@@ -124,7 +124,7 @@ class GenericSelectScreen : public MenuScreen {
     // Locked entries stay in the array (the Velvet Room's Talk holds 15 topics and shows 7): the list is what is
     // drawn, in array order.
     int shown = 0;
-    auto drawn = textcap::snapshot(200);
+    auto drawn = textcap::snapshot(12);
     for (auto& n : names) {
       bool on = false;
       for (auto& t : drawn) if (t.source == 2 && core::clean_text(t.text) == n) on = true;

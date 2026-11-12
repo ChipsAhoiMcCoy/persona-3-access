@@ -166,7 +166,7 @@ class DifficultyScreen : public MenuScreen {
   Mirror& list_ = mirror("difficulty", [this] { UObject* a = actor_.get(); return a ? *(int*)((uint8_t*)a + 0x424) : -1; });
   uint8_t* sel() { UObject* a = actor_.get(); return a ? (uint8_t*)a + 0x3D0 : nullptr; }
   std::string description(int c) {
-    for (auto& p : msg::visible(300)) if (p.dialog == 40 + c) return p.text;
+    for (auto& p : msg::visible(18)) if (p.dialog == 40 + c) return p.text;
     std::string best;
     for (auto& p : msg::created_since(0)) if (p.dialog == 40 + c) best = p.text;   // newest wins
     return best;

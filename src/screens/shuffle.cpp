@@ -131,7 +131,7 @@ class ShuffleScreen : public MenuScreen {
     const void* buf = bmd_buffer(ui);
     int want = detail_dialog(ui, i);
     std::string by_dialog, longest;
-    for (auto& c : msg::visible(300)) {
+    for (auto& c : msg::visible(18)) {
       if (c.seq <= mark_ || (buf && c.buf != buf)) continue;
       if (c.dialog == want && c.text.size() > by_dialog.size()) by_dialog = c.text;
       if (c.text.size() > longest.size()) longest = c.text;

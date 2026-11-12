@@ -200,7 +200,7 @@ class BattleScreen : public Screen {
   void watch_banner(int st, UObject* action_now) {
     std::string b;
     if (st == 0 && !result_phase())   // results draw names in that band too
-    for (auto& t : textcap::snapshot(200))
+    for (auto& t : textcap::snapshot(12))
       if (t.source == 2 && t.y > 95 && t.y < 115 && t.x > 300 && t.x < 700 && (t.color & 0xff) == 0xff && core::has_words(t.text)) { b = t.text; break; }
     if (b.empty()) { banner_gone_ = true; return; }
     // GetActionType (EBtlCommandType): 0 nothing chosen yet, so the same words are the last action's, still up as the

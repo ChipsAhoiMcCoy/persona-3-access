@@ -126,7 +126,7 @@ class TownMapScreen : public MenuScreen {
     uint8_t* a = (uint8_t*)map_.get();
     if (!a || step() != 6 || *(int32_t*)(a + 0x3EB4) != 0 || *(float*)(a + 0x3EC0) != 0.0f) return {};
     std::vector<textcap::Item> rows;
-    for (auto& t : textcap::snapshot(100)) {
+    for (auto& t : textcap::snapshot(6)) {
       if (t.source != 2 || t.y < 700 || !core::has_words(t.text)) continue;
       if (std::fabs(t.x - 123) >= 30 && std::fabs(t.x - 533) >= 30) continue;
       uint32_t alpha = t.color & 0xff;

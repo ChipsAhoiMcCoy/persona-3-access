@@ -94,7 +94,7 @@ class CampSocialDetails : public MenuScreen, private CampSocialUi {
     int dialog = l.arcana * 4 + (rev ? 2 : 0);
     auto key = std::make_tuple(l.arcana, l.rank, rev);
     if (const void* buf = bmdfile::buffer("BMD_CmmOutlineHelp"))
-      for (auto& p : msg::visible(1000))
+      for (auto& p : msg::visible(60))
         if (p.buf == buf && (p.dialog == dialog || p.dialog == dialog + 1)) memos_[key] = core::clean_text(p.text);
     if (auto it = memos_.find(key); it != memos_.end()) return it->second;
     auto f = bmdfile::load("BMD_CmmOutlineHelp");
@@ -122,7 +122,7 @@ class CampSocialDetails : public MenuScreen, private CampSocialUi {
     else if (end < 0) end = (int)f->dialogs.size();
     if (people_.settled_on(i))
       if (const void* buf = bmdfile::buffer("BMD_CmmProfileHelp"))
-        for (auto& p : msg::visible(1000))
+        for (auto& p : msg::visible(60))
           if (p.buf == buf && p.dialog > first && p.dialog < end && p.dialog < (int)f->dialogs.size() &&
               !f->dialogs[p.dialog].name.ends_with("_NAME"))
             profiles_[key] = core::clean_text(p.text);

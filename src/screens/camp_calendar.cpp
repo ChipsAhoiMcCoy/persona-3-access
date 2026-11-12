@@ -119,9 +119,9 @@ class CampCalendar : public MenuScreen {
     return out;
   }
   // The day's plans list (mode 1) is read as drawn.
-  std::string plans(unsigned max_age = 200) {
+  std::string plans(unsigned frames = 12) {
     std::vector<textcap::Item> cols;
-    for (auto& t : textcap::snapshot(max_age)) if (t.source == 2 && t.x > 1000 && t.y > 550 && (t.color & 0xff) && core::has_words(t.text)) cols.push_back(t);
+    for (auto& t : textcap::snapshot(frames)) if (t.source == 2 && t.x > 1000 && t.y > 550 && (t.color & 0xff) && core::has_words(t.text)) cols.push_back(t);
     std::sort(cols.begin(), cols.end(), [](auto& a, auto& b) { return a.y < b.y; });
     std::string out;
     for (auto& t : cols) if (out.find(core::clean_text(t.text)) == std::string::npos) out += (out.empty() ? "" : ", ") + core::clean_text(t.text);

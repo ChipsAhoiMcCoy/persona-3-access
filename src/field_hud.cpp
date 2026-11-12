@@ -6,6 +6,7 @@
 //  - The objectives (top right, in corner brackets, then stacked lines) are drawn through AUIDrawBaseActor::DrawFont
 //    (textcap source 0), while the field's panel is up: AUIAccessInfoDraw's task state +0x294 is 3.
 //  - A picked-up item's line ("Revival Bead×1") is drawn at the left through FontDrawEx (textcap source 2).
+#include "hooks.h"
 #include "poi_internal.h"
 #include "core/poi_text.h"
 #include "core/strings.h"
@@ -98,7 +99,7 @@ void prompt_tick() {
   static bool field_was = false;
   static uint64_t field_since = 0;
   bool field_up = !panel || panel_state == 3;
-  if (field_up && !field_was) field_since = GetTickCount64();
+  if (field_up && !field_was) field_since = hooks::frame();
   field_was = field_up;
   if (!msg::current().open && field_up) {
     // The panel's lines, top to bottom. It can hold several objectives at once, each in brackets with its own lines
@@ -107,8 +108,8 @@ void prompt_tick() {
     // line, two of them took turns in it and were said over and over, every frame.
     static std::vector<std::string> shown;   // the panel's lines last time it was drawn
     std::vector<std::pair<float, std::string>> lines;
-    for (auto& t : textcap::snapshot(200)) {
-      if (t.source != 0 || t.seen_ms <= field_since || !core::has_words(t.text) || t.x <= 1400 || t.y >= 420) continue;
+    for (auto& t : textcap::snapshot(12)) {
+      if (t.source != 0 || t.seen_frame <= field_since || !core::has_words(t.text) || t.x <= 1400 || t.y >= 420) continue;
       std::string o = t.text;
       // U+300E / U+300F corner brackets around an objective's own line
       if (o.rfind("\xE3\x80\x8E", 0) == 0) {
@@ -165,7 +166,7 @@ void prompt_tick() {
 void pickup_tick() {
   static std::set<std::string> shown;   // the pickups drawn at full strength last tick
   std::set<std::string> now_shown;
-  for (auto& t : textcap::snapshot(200)) {
+  for (auto& t : textcap::snapshot(12)) {
     if (t.source != 2 || t.x > 600 || t.y < 250 || t.y > 650 || (t.color & 0xff) != 0xff) continue;
     size_t x = t.text.find("\xC3\x97");   // U+00D7 multiplication sign
     if (x == std::string::npos) continue;

@@ -30,7 +30,7 @@ static uint64_t g_created_seq = 0;
 // frame it changes. Two entry points feed it: CreateBmdPage (most UI and
 // message windows) and BmdSetTextSize, the layout pass 37 call sites run on pages they build themselves
 // (subtitles, battle and camp text; exe+0x124b4b0, found 2026-10-27 from the p3rpc.slplus call-site signature).
-struct LivePage { std::string text; uint64_t first_ms, last_ms; void* wrapper; int dialog, page; void* layout = nullptr; void* line = nullptr; uint64_t seq = 0; };   // seq: its text's Created
+struct LivePage { std::string text; uint64_t first_ms, last_frame; void* wrapper; int dialog, page; void* layout = nullptr; void* line = nullptr; uint64_t seq = 0; };   // seq: its text's Created
 static std::map<std::pair<void*, void*>, LivePage> g_live;
 // (buffer, dialog, page) -> text, by CreateBmdPage. A buffer's address is reused by the next message file loaded
 // there, so a dialog built again from its page 0 drops its later pages: a tutorial's page turned must not join a page
@@ -48,7 +48,7 @@ static void record_page(void* r, void* wrapper, int dialog, int page) {
     std::lock_guard lk(g_bmd_mu);
     auto it = g_live.find(key);
     if (it != g_live.end()) {
-      it->second.last_ms = now;
+      it->second.last_frame = hooks::frame();
       if (dialog >= 0) { it->second.dialog = dialog; it->second.page = page; it->second.wrapper = wrapper; }
       // The same page laid out again: nothing new. New text in it: rendered, a new page if the text changed.
       if (it->second.layout == layout && it->second.line == line) return;
@@ -64,8 +64,8 @@ static void record_page(void* r, void* wrapper, int dialog, int page) {
     it->second.text = t;
     it->second.first_ms = now;
   } else {
-    g_live[key] = LivePage{t, now, now, wrapper, dialog, page, layout, line};
-    if (g_live.size() > 512) for (auto i = g_live.begin(); i != g_live.end();) i = now - i->second.last_ms > 5000 ? g_live.erase(i) : std::next(i);
+    g_live[key] = LivePage{t, now, hooks::frame(), wrapper, dialog, page, layout, line};
+    if (g_live.size() > 512) for (auto i = g_live.begin(); i != g_live.end();) i = hooks::frame() - i->second.last_frame > 300 ? g_live.erase(i) : std::next(i);
   }
   if (!t.empty()) {
     g_created.push_back(Created{++g_created_seq, now, wrapper, dialog, page, t, buf, data, r});
@@ -99,12 +99,12 @@ static void* set_text_size_hook(void* page, float a2, uint32_t lines, uint32_t a
   if (page) record_page(page, nullptr, -1, -1);
   return r;
 }
-std::vector<Created> visible(unsigned max_age_ms) {
+std::vector<Created> visible(unsigned frames) {
   std::lock_guard lk(g_bmd_mu);
   std::vector<Created> out;
-  uint64_t now = GetTickCount64();
+  uint64_t now = hooks::frame();
   for (auto& [k, v] : g_live)
-    if (now - v.last_ms <= max_age_ms && !v.text.empty()) out.push_back(Created{v.seq, v.first_ms, v.wrapper, v.dialog, v.page, v.text, k.first, k.second});
+    if (now - v.last_frame <= frames && !v.text.empty()) out.push_back(Created{v.seq, v.first_ms, v.wrapper, v.dialog, v.page, v.text, k.first, k.second});
   std::sort(out.begin(), out.end(), [](const Created& a, const Created& b) { return a.ms < b.ms; });
   return out;
 }
@@ -112,7 +112,7 @@ std::vector<Created> pages_of(const void* buf) {
   std::lock_guard lk(g_bmd_mu);
   std::vector<Created> out;
   for (auto& [k, v] : g_live)
-    if (k.first == buf && !v.text.empty()) out.push_back(Created{v.seq, v.last_ms, v.wrapper, v.dialog, v.page, v.text, k.first, k.second});
+    if (k.first == buf && !v.text.empty()) out.push_back(Created{v.seq, v.first_ms, v.wrapper, v.dialog, v.page, v.text, k.first, k.second});
   return out;
 }
 std::vector<Created> created_since(uint64_t seq) {
@@ -140,7 +140,7 @@ void install_pages(bool renderer) {
     std::string out;
     for (auto& c : created_since((uint64_t)dev::arg_int(r, "since", 0)))
       out += std::format("{} +{}ms d{} p{} w{} buf{} data{}: {}\n", c.seq, GetTickCount64() - c.ms, c.dialog, c.page, c.wrapper, c.buf, c.data, c.text);
-    if (dev::has(r, "live")) { out += "-- visible:\n"; for (auto& c : visible(300)) out += std::format("d{} p{} w{}: {}\n", c.dialog, c.page, c.wrapper, c.text); }
+    if (dev::has(r, "live")) { out += "-- visible:\n"; for (auto& c : visible(18)) out += std::format("d{} p{} w{}: {}\n", c.dialog, c.page, c.wrapper, c.text); }
     return out.empty() ? std::string("none\n") : out;
   }, "?since=seq BMD pages the game built (text); &live=1 adds what is on screen now");
 }
