@@ -15,6 +15,7 @@ void detach_all();   // unload: removes every detour still in (the modules', the
 // keyboard hook refusal. Its detours are recorded with the others; detach_all removes them.
 bool install();
 uint64_t key_ms();         // when the game window last got a key press, or 0
+uint64_t key_count();      // how many key presses the game window has got
 
 // Game-thread work. `tick()` is called once per game frame by pump(); it drains the
 // queued jobs. run_on_game_thread blocks the caller until the job ran or the timeout passed (false). The job owns

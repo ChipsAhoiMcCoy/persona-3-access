@@ -230,6 +230,8 @@ static void** iat_slot(const char* dll, WORD ordinal);
 static std::atomic<uint64_t> g_pad_ms{0};
 static std::atomic<bool> g_pad_seen{false};   // a controller answered at least once
 uint64_t pad_ms() { return g_pad_ms; }
+static std::atomic<uint64_t> g_pad_count{0};
+uint64_t pad_count() { return g_pad_count; }
 static std::atomic<bool> g_pad_moving{false};
 static void poll_pad() {
   static void** slot = iat_slot("XINPUT1_3.dll", 2);
@@ -248,7 +250,7 @@ static void poll_pad() {
     uint32_t s = g.wButtons | (g.bLeftTrigger > 64) << 16 | (g.bRightTrigger > 64) << 17 | (g.sThumbLX > 16000) << 18 |
                  (g.sThumbLX < -16000) << 19 | (g.sThumbLY > 16000) << 20 | (g.sThumbLY < -16000) << 21 |
                  (g.sThumbRY > 16000) << 22 | (g.sThumbRY < -16000) << 23;
-    if (s & ~prev[i]) g_pad_ms = now;
+    if (s & ~prev[i]) { g_pad_ms = now; ++g_pad_count; }
     prev[i] = s;
     g_pad_seen = true;
   }

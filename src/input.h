@@ -34,6 +34,7 @@ void inject_key(uint32_t vk, unsigned hold_ms = 40);
 bool injected_held();   // an injected key is still down (its press not yet delivered in full)
 void tick();   // game thread: announces a pad that was connected before the window existed; polls the player's pad
 uint64_t pad_ms();   // when a controller button or stick direction was last newly pressed, or 0
+uint64_t pad_count();   // how many such presses there have been
 bool pad_moving();   // a real controller's left stick is pushed past its dead zone (as of the last tick)
 bool pad_in_use();   // the player is on a controller (pressed it after the keyboard's last game key)
 bool layer_open();   // both triggers held: the controller is the mod's (keys::bind_pad)

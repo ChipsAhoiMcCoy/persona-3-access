@@ -121,10 +121,12 @@ void tick() {
   for (auto& s : g_screens) if (!guarded([&] { s->background(); })) log::writef("screens: {} faulted in background()", s->id());
   bool modal = msg::current().blocking;
   static bool was_modal = false;
-  static ULONGLONG modal_end = 0;
+  // The presses counted when the window closed (keys and pad): one more since is the player's next press.
+  static uint64_t modal_end = 0;
+  static bool modal_ended = false;
   if (modal) {
     if (!was_modal) { log::write("screens: modal on"); msg::window_opened(); }
-    was_modal = true; modal_end = 0;
+    was_modal = true; modal_ended = false;
     // A screen that opens over the window (the log, B, in a conversation: it went unread, 2026-10-29) runs anyway.
     Screen* over = best_active(true);
     if (over != g_current && (over || (g_current && g_current->over_messages()))) {
@@ -143,17 +145,17 @@ void tick() {
   for (Screen* s : gone)
     if (!msg::current().open && !(best && best->priority() > s->priority())) g_titled.erase(s);
   if (was_modal) {
-    if (!modal_end) { modal_end = GetTickCount64(); log::write("screens: modal off"); }
+    if (!modal_ended) { modal_ended = true; modal_end = hooks::key_count() + input::pad_count(); log::write("screens: modal off"); }
     bool own = false, coming = false;
     if (g_current) guarded([&] { own = g_current->own_messages(); coming = g_current->window_coming(); });
     // Another window of the same notice or conversation is coming while its message session is open; a key or a pad
     // button pressed since the window closed brings the screen back at once. So does another screen coming up: the
     // script went on to something else (a boss's talk leaves its proc "between windows" through the whole battle, so
     // the wheel never came up, 2026-11-03).
-    bool pressed = std::max(hooks::key_ms(), input::pad_ms()) > modal_end;
+    bool pressed = hooks::key_count() + input::pad_count() > modal_end;
     if (!own && !pressed && best == g_current && (coming || msg::window_session_open())) { end_tick(false); return; }   // no screen ran: no hint of this tick's
     was_modal = false;
-    log::writef("screens: re-enter after {} ms", GetTickCount64() - modal_end);
+    log::write(pressed ? "screens: re-enter at the player's press" : "screens: re-enter, the window's session ended");
     if (g_current && best == g_current) guarded([&] { g_current->enter(); });
   }
   if (best != g_current) {
