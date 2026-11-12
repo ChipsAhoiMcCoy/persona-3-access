@@ -35,6 +35,15 @@ SCENARIOS = {
         ],
         "check": "the 'Buy / Don't buy' choice with the Pay money panel; Enter must buy",
     },
+    "club-door": {
+        "about": "Club Escapade's closed door with low Courage (Paulownia Mall, evening): two thoughts, the second of two pages",
+        "steps": [
+            ("cheat", "AtlSetDayTime", {"Month": 4, "Day": 21, "Time": 5}),
+            ("field", 103, 101, 1, 120),   # from the dorm the mall took over 40 s to come up
+            ("goto", "Club Escapade"),
+        ],
+        "check": "each page read once, when it shows: 'I can sense...', then 'I can't bring myself...', then 'If my Courage...'",
+    },
     "ending-choice": {
         "about": "the ending's last choice ('Close your eyes'), event MAIN 220 040",
         "steps": [

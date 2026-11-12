@@ -29,10 +29,11 @@ uint32_t press_count();   // how many such presses so far: a screen that acts on
 void say_description(const char* text);
 
 // Every BMD page the game builds (dialogue pages, UI descriptions, help lines), rendered to text, newest last.
-struct Created { uint64_t seq; uint64_t ms; void* wrapper; int dialog; int page; std::string text; void* buf = nullptr; void* data = nullptr; void* obj = nullptr; };   // obj: the FBmdPage
+struct Created { uint64_t seq; uint64_t ms; void* wrapper; int dialog; int page; std::string text; void* buf = nullptr; void* data = nullptr; void* obj = nullptr; uint64_t frame = 0; };   // obj: the FBmdPage; frame: the frame it was built in
 std::vector<Created> created_since(uint64_t seq);
-// The dialog an FBmdPage was built for (CreateBmdPage's dialog index), or -1 when unknown.
-int dialog_of(const void* page);
+// What an FBmdPage was built as (CreateBmdPage's dialog and page index, -1 when unknown) and the frame its text was built in.
+struct PageInfo { int dialog = -1, page = -1; uint64_t frame = 0; };
+PageInfo page_info(const void* page);
 // Every page of a BMD buffer the game has laid out, as it reads now; `ms` is when its text was built. Unlike the
 // ring of created pages, a page built again unchanged (a list reopened) is still here.
 std::vector<Created> pages_of(const void* buf);

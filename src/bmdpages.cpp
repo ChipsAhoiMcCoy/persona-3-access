@@ -30,7 +30,7 @@ static uint64_t g_created_seq = 0;
 // frame it changes. Two entry points feed it: CreateBmdPage (most UI and
 // message windows) and BmdSetTextSize, the layout pass 37 call sites run on pages they build themselves
 // (subtitles, battle and camp text; exe+0x124b4b0, found 2026-10-27 from the p3rpc.slplus call-site signature).
-struct LivePage { std::string text; uint64_t first_ms, last_frame; void* wrapper; int dialog, page; void* layout = nullptr; void* line = nullptr; uint64_t seq = 0; };   // seq: its text's Created
+struct LivePage { std::string text; uint64_t first_ms, last_frame; void* wrapper; int dialog, page; void* layout = nullptr; void* line = nullptr; uint64_t seq = 0; uint64_t built_frame = 0; };   // seq: its text's Created; built_frame: when its text was built
 static std::map<std::pair<void*, void*>, LivePage> g_live;
 // (buffer, dialog, page) -> text, by CreateBmdPage. A buffer's address is reused by the next message file loaded
 // there, so a dialog built again from its page 0 drops its later pages: a tutorial's page turned must not join a page
@@ -63,12 +63,13 @@ static void record_page(void* r, void* wrapper, int dialog, int page) {
     if (it == g_live.end() || it->second.text == t) return;
     it->second.text = t;
     it->second.first_ms = now;
+    it->second.built_frame = hooks::frame();
   } else {
-    g_live[key] = LivePage{t, now, hooks::frame(), wrapper, dialog, page, layout, line};
+    g_live[key] = LivePage{t, now, hooks::frame(), wrapper, dialog, page, layout, line, 0, hooks::frame()};
     if (g_live.size() > 512) for (auto i = g_live.begin(); i != g_live.end();) i = hooks::frame() - i->second.last_frame > 300 ? g_live.erase(i) : std::next(i);
   }
   if (!t.empty()) {
-    g_created.push_back(Created{++g_created_seq, now, wrapper, dialog, page, t, buf, data, r});
+    g_created.push_back(Created{++g_created_seq, now, wrapper, dialog, page, t, buf, data, r, hooks::frame()});
     if (g_created.size() > 200) g_created.pop_front();
     if (auto it = g_live.find(key); it != g_live.end()) it->second.seq = g_created_seq;
     if (dialog >= 0) {
@@ -115,12 +116,12 @@ std::vector<Created> pages_of(const void* buf) {
     if (k.first == buf && !v.text.empty()) out.push_back(Created{v.seq, v.first_ms, v.wrapper, v.dialog, v.page, v.text, k.first, k.second});
   return out;
 }
-int dialog_of(const void* page) {
+PageInfo page_info(const void* page) {
   void* buf = nullptr; void* data = nullptr;
-  if (!page || !guarded([&] { buf = *(void**)((uint8_t*)page + 0x18); data = *(void**)((uint8_t*)page + 0x20); })) return -1;
+  if (!page || !guarded([&] { buf = *(void**)((uint8_t*)page + 0x18); data = *(void**)((uint8_t*)page + 0x20); })) return {};
   std::lock_guard lk(g_bmd_mu);
   auto it = g_live.find({buf, data});
-  return it != g_live.end() ? it->second.dialog : -1;
+  return it != g_live.end() ? PageInfo{it->second.dialog, it->second.page, it->second.built_frame} : PageInfo{};
 }
 std::vector<Created> created_since(uint64_t seq) {
   std::lock_guard lk(g_bmd_mu);

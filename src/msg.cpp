@@ -346,13 +346,16 @@ static bool read_window(Tick& tk, Seen& s, UObject* item, UObject* sel) {
         s.said.insert(no_digits(t));
       }
     }
-    // The game builds every page of a dialog at once, and often the next dialog's pages while this one still shows
-    // (the club door's two thoughts were both read over the first, then the second again when it showed; the fridge's
-    // notice too, 2026-11-12): only a later page of the dialog shown is this window's.
-    int shown_dialog = dialog_of(page);
+    // The game builds every page of a dialog at once, in one frame: the page the window shows (often into the window's
+    // page object, in place) and the later ones beside it, which show only once the player turns to them. It also builds
+    // the next dialog's pages while this one still shows. Both were read at once: the club door's two thoughts were read
+    // over the first, and the fridge's notice (2026-11-12). Only a later page of the dialog shown, built after the page
+    // shown (a system notice's page 2, built as it is turned to), is this window's.
+    PageInfo shown = page_info(page);
     for (auto& c : created_since(s.seq)) {
       s.seq = c.seq;
-      if (shown_dialog >= 0 && c.dialog >= 0 && c.dialog != shown_dialog) continue;
+      if (shown.dialog >= 0 && c.dialog >= 0 && c.dialog != shown.dialog) continue;
+      if (c.obj != page && shown.dialog >= 0 && c.dialog == shown.dialog && c.page > shown.page && c.frame == shown.frame) continue;
       // A page laid out again (BmdSetTextSize runs on re-layout too) must not be spoken twice in one window.
       bool title = c.text == last_who;   // the window's own title
       if (buf && c.buf == buf && c.text != s.spoken && !s.said.count(no_digits(c.text)) && !title) {
