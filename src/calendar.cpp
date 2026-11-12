@@ -70,7 +70,13 @@ void tick() {
     } else if (t != last_type && t == 1) {
       Now n = now();
       int to = next_tz ? next_tz : n.time_zone;
-      if (std::string s = gametext::time_zone(to); !s.empty()) { speech::speak(s, true); said_tz = to; said_day = n.total; }
+      // The story can move the day with a time change's screen (the epilogue's jump from January 31 to March 4 said
+      // only "After School", 2026-11-11): then the whole date is said, at the new time of day.
+      if (n.valid && said_day >= 0 && n.total != said_day) {
+        n.time_zone = to;
+        speech::speak(describe(n), true);
+        said_tz = to; said_day = n.total;
+      } else if (std::string s = gametext::time_zone(to); !s.empty()) { speech::speak(s, true); said_tz = to; said_day = n.total; }
     }
     if (t != last_type && t) next_tz = 0;
     last_type = t;

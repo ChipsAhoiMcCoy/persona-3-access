@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Calendar
+- When the story moved to another day with only the time-of-day screen (the epilogue's jump to March), just "After School" was said. The new date is now read with it.
+
 ### Less said twice, fewer keys read out
 - Key names are no longer part of spoken lines; F1 reads them, as everywhere else. A turn's line ends "Theurgy ready" (it was "Theurgy ready, T"), a 1 More says "Shift available" (it was "B shifts the turn to another member"), a shop's quantity opens with "How many? 1" (it was "How many? W and S change, Space confirms. 1"), and the Stats up screen no longer ends with "Space continues."
 - Beside a Shadow that kept turning, "Shadow close, facing you" and "Shadow close, back turned" were said every time it turned: over a hundred times in a minute next to one that circled. Each is now said once as you close in on a Shadow; the ring that tells you a strike will connect, and whether from behind, still follows its facing all the time.
