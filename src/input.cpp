@@ -81,13 +81,17 @@ static std::atomic<bool> g_claim_taps{false};
 static std::atomic<int> g_tap{0};
 void claim_trigger_taps(bool on) { g_claim_taps = on; if (!on) g_tap = 0; }
 int take_trigger_tap() { return g_tap.exchange(0); }
-static std::atomic<bool> g_claim_rstick{false};
+static std::atomic<int> g_claim_rstick{0};   // one bit per claimant (StickClaim)
 static std::atomic<int> g_rflick{0};
 static std::atomic<int> g_rstick_xy{0};   // the claimed stick as the player holds it: x in the low 16 bits, y high
 static std::atomic<uint16_t> g_end_buttons{0};
 static std::atomic<int> g_end_sticks{0};
 void block_ends(uint16_t buttons, int stick_sides) { g_end_buttons = buttons; g_end_sticks = stick_sides; }
-void claim_right_stick(bool on) { g_claim_rstick = on; if (!on) g_rflick = 0; }
+void claim_right_stick(bool on, StickClaim who) {
+  int bit = 1 << (int)who;
+  int now = on ? (g_claim_rstick |= bit) : (g_claim_rstick &= ~bit);
+  if (!now) g_rflick = 0;
+}
 int take_right_flick() { return g_rflick.exchange(0); }
 void right_stick(float& x, float& y) {
   int v = g_rstick_xy;

@@ -46,7 +46,10 @@ void claim_trigger_taps(bool on);
 int take_trigger_tap();
 // The right stick for the mod (the battle's details): while claimed the game does not see it; a flick up or down past
 // the stick's dead zone is taken once (+1 up, -1 down) until it is let back toward the middle.
-void claim_right_stick(bool on);
+// Each claimant holds its own claim (the battle's details clear theirs every frame they are not in focus; the
+// top-down mode's scan holds the stick meanwhile): the game sees no stick while any is held.
+enum class StickClaim { BattleDetails, TopDown };
+void claim_right_stick(bool on, StickClaim who = StickClaim::BattleDetails);
 int take_right_flick();
 // The claimed right stick where the player holds it now, each axis -1..1 (up and right positive); 0, 0 unclaimed.
 void right_stick(float& x, float& y);

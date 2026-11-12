@@ -34,6 +34,7 @@ using world::FVector;
 
 constexpr float kNorthYaw = -90.0f;     // world -Y: the maps' up
 constexpr int kStateFree = 1, kKeyEnable = 3;
+constexpr int32_t kBehaviorFree = 1, kBehaviorMoveToDefault = 3;   // EFldCameraBehaviorFreeState
 constexpr float kStopSpeed = 0.0f, kStopMargin = 180.0f;
 constexpr float kScanDeadzone = 0.55f;   // of the stick's travel: a direction is chosen past it
 constexpr float kScanHalfCone = 22.5f;   // degrees either side of the direction
@@ -87,6 +88,13 @@ void hold_camera(UObject* o) {
   }
   *speed = kStopSpeed;
   *margin = kStopMargin;
+  // MoveToDefault (3) swings the camera back behind the hero over many frames (after a menu, a reset press): it fought
+  // the lock for 2744 frames on 2026-11-12. Free (1) instead, and no reset pending.
+  if (int32_t* st = field<int32_t>(b, "State"); st && *st == kBehaviorMoveToDefault) {
+    *st = kBehaviorFree;
+    if (int32_t* nx = field<int32_t>(b, "NextState")) *nx = kBehaviorFree;
+  }
+  if (uint8_t* once = field<uint8_t>(b, "bResetDirectionOnce")) *once = 0;
   UObject* cam = get<UObject*>(o, "FreeCamera");
   UObject* yaw_comp = cam ? get<UObject*>(cam, "YawSceneComp") : nullptr;
   float yaw = yaw_comp ? get<FRotator>(yaw_comp, "RelativeRotation").yaw : 0.0f;
@@ -178,14 +186,14 @@ void scan_tick() {
 void enter() {
   g_active = true;
   world::set_north(true, kNorthYaw);
-  input::claim_right_stick(true);
+  input::claim_right_stick(true, input::StickClaim::TopDown);
   log::write("topdown: on (camera north, listener on the hero)");
 }
 
 void leave() {
   g_active = false;
   world::set_north(false, kNorthYaw);
-  input::claim_right_stick(false);
+  input::claim_right_stick(false, input::StickClaim::TopDown);
   release_camera();
   release_listener();
   g_scan_dir = -1;
