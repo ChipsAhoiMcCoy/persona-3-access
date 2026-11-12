@@ -13,7 +13,7 @@ const Outfit kOutfits[] = {
   {2, 1, "A slim teenage girl with short, chin-length light brown hair that flips outward at the ends, big "
          "brown eyes and small silver stud earrings. Her trademark pale grey choker with a heart-shaped buckle "
          "sits snug at her throat, over a crisp white short-sleeved button-up blouse with the collar open and "
-         "a breast pocket: her school summer uniform. Fresh, neat and a little sporty, she has the bright, "
+         "a breast pocket: her school uniform. Fresh, neat and a little sporty, she has the bright, "
          "put-together look of the popular girl in class, with the heart choker adding a dash of cute "
          "attitude."},
   {2, 2, "A slim, fair-skinned teenage girl with short, chin-length light brown hair, side-swept bangs and "
@@ -23,16 +23,15 @@ const Outfit kOutfits[] = {
          "over it, with a big bright red ribbon bow at the throat, its tails hanging down. All pink, red and "
          "polish, it's her signature look: pretty, spirited and very much the girl everyone notices."},
   {2, 5, "A slim teenage girl with short, chin-length light brown hair and brown eyes, wearing small silver "
-         "stud earrings and her pale grey choker with a heart-shaped buckle. Her casual summer clothes are a "
-         "light pink camisole with thin red-edged straps and a little cluster of red polka dots on the front, "
+         "stud earrings and her pale grey choker with a heart-shaped buckle. Her casual clothes are a light "
+         "pink camisole with thin red-edged straps and a little cluster of red polka dots on the front, "
          "leaving her shoulders bare. It's a breezy, girlish off-duty look, easygoing and sunny, with the "
          "heart choker keeping her trademark touch."},
   {2, 6, "A slim teenage girl with short, chin-length light brown hair and brown eyes, wearing small silver "
-         "stud earrings and her pale grey choker with a heart-shaped buckle. For winter she wears an "
-         "off-the-shoulder pink ribbed knit top with a thick, fluffy white fur trim around the neckline, thin "
-         "dark straps showing over her bare shoulders. Cosy yet stylish, it's a trendy, "
-         "straight-out-of-a-fashion-magazine outfit, all soft pink and snowy fluff, that suits her fashionable "
-         "streak perfectly."},
+         "stud earrings and her pale grey choker with a heart-shaped buckle. She wears an off-the-shoulder "
+         "pink ribbed knit top with a thick, fluffy white fur trim around the neckline, thin dark straps "
+         "showing over her bare shoulders. Cosy yet stylish, it's a trendy, straight-out-of-a-fashion-magazine "
+         "outfit, all soft pink and snowy fluff, that suits her fashionable streak perfectly."},
   {2, 51, "A slim teenage girl with short, chin-length light brown hair and brown eyes, wearing small silver "
           "stud earrings and her pale grey choker with a heart-shaped buckle. She wears her school uniform, a "
           "pink cardigan over a white shirt with a wide pointed collar and a big red bow, plus a red armband on "
@@ -69,11 +68,11 @@ const Outfit kOutfits[] = {
            "slate-blue haori jacket of plain matte cloth, worn open. No choker. Bundled in the comfy inn robes "
            "she looks cosy and unwound, a cute, homey side of her."},
   {2, 156, "A slim, fair-skinned teenage girl with short, chin-length light brown hair, side-swept bangs and "
-           "ends flicking outward, brown eyes, pink lips and small silver stud earrings. Her summer festival "
-           "yukata is a big pink and white checkerboard, crossed at the neck and sprinkled with small "
-           "five-petalled flowers in yellow, pink and orange-red on slender green stems with long leaves; a "
-           "glimpse of tan sash shows at her back near the bottom of the picture. No choker. Bright, bold and "
-           "pretty, she looks ready for fireworks and festival stalls."},
+           "ends flicking outward, brown eyes, pink lips and small silver stud earrings. Her festival yukata is "
+           "a big pink and white checkerboard, crossed at the neck and sprinkled with small five-petalled "
+           "flowers in yellow, pink and orange-red on slender green stems with long leaves; a glimpse of tan "
+           "sash shows at her back near the bottom of the picture. No choker. Bright, bold and pretty, she looks "
+           "ready for fireworks and festival stalls."},
   {2, 157, "A slim teenage girl with short, chin-length light brown hair and brown eyes. She wears a formal New "
            "Year's kimono in deep rose pink printed with large white-outlined cherry blossoms, with a "
            "green-edged collar, a teal patterned sash at the bottom of the picture and a glimpse of a gold and "
@@ -92,32 +91,32 @@ const Outfit kOutfits[] = {
            "black-and-white badge on the left sleeve, over a pink top, a white collared shirt and a large red "
            "bow. Battle-ready but unburdened, she looks brisk, capable and every bit the confident team member."},
   {3, 1, "A lanky young man with short dark hair, grey eyes and a scruffy thin goatee, wears his slate-blue "
-         "baseball cap forward, a white knotwork emblem on its front. This is the summer school uniform: a "
-         "white short-sleeved shirt hanging open, its wide collar flipped up, over a plain navy T-shirt. A "
-         "silver chain necklace carries a small square tag set with red and green studs. Cap, popped collar "
-         "and chain all say class clown with swagger: a goofy, easygoing joker trying hard to look cool."},
+         "baseball cap forward, a white knotwork emblem on its front. This is the school uniform: a white "
+         "short-sleeved shirt hanging open, its wide collar flipped up, over a plain navy T-shirt. A silver "
+         "chain necklace carries a small square tag set with red and green studs. Cap, popped collar and chain "
+         "all say class clown with swagger: a goofy, easygoing joker trying hard to look cool."},
   {3, 2, "A lanky young man with short dark hair, grey eyes and a scruffy thin goatee, wears his slate-blue "
-         "baseball cap with a white knotwork emblem. This is the winter school uniform: a charcoal-black "
-         "blazer over a blue-grey collared shirt left unbuttoned at the neck, collar turned up, with a small "
+         "baseball cap with a white knotwork emblem. This is the school uniform: a charcoal-black blazer over "
+         "a blue-grey collared shirt left unbuttoned at the neck, collar turned up, with a small "
          "green-and-yellow pin on the blazer's lapel. A silver chain necklace carries a small square tag set "
          "with red and green studs. He wears the uniform his own way, sloppy on purpose, with the cap and "
          "chain giving him that lovable slacker swagger."},
   {3, 5, "A lanky young man with short dark hair, grey eyes and a scruffy thin goatee, wears his slate-blue "
-         "baseball cap with a white knotwork emblem. His casual summer clothes are a plain dark grey tank top "
-         "that leaves his thin arms and shoulders bare, and a silver chain necklace with a small square tag "
-         "set with red and green studs. It's a laid-back, hanging-out-at-the-arcade look, gangly and carefree, "
-         "the guy who's always up for goofing around."},
+         "baseball cap with a white knotwork emblem. His casual clothes are a plain dark grey tank top that "
+         "leaves his thin arms and shoulders bare, and a silver chain necklace with a small square tag set "
+         "with red and green studs. It's a laid-back, hanging-out-at-the-arcade look, gangly and carefree, the "
+         "guy who's always up for goofing around."},
   {3, 6, "A lanky young man with short dark hair, grey eyes and a scruffy thin goatee, wears his slate-blue "
-         "baseball cap with a white knotwork emblem. For winter he wears a navy zip-up parka with a big shaggy "
-         "brown fur collar, open over a plain white T-shirt, and his silver chain necklace with a small square "
-         "tag set with red and green studs. That huge fur ruff swallows his skinny neck, giving him a "
-         "bundled-up, streetwise look that's half cool and half comically cosy."},
+         "baseball cap with a white knotwork emblem. He wears a navy zip-up parka with a big shaggy brown fur "
+         "collar, open over a plain white T-shirt, and his silver chain necklace with a small square tag set "
+         "with red and green studs. That huge fur ruff swallows his skinny neck, giving him a bundled-up, "
+         "streetwise look that's half cool and half comically cosy."},
   {3, 51, "A lanky young man with short dark hair, grey eyes and a scruffy thin goatee, wears his slate-blue "
-          "baseball cap with a white knotwork emblem. He's in the winter school uniform, a charcoal-black "
-          "blazer over a blue-grey shirt open at the neck with the collar up and a green-and-yellow lapel pin, "
-          "with a red S.E.E.S. armband around his upper arm. A silver chain necklace carries a small square tag "
-          "set with red and green studs. The armband lends his slouchy style a dash of official hero, which he "
-          "clearly enjoys."},
+          "baseball cap with a white knotwork emblem. He's in the school uniform, a charcoal-black blazer over "
+          "a blue-grey shirt open at the neck with the collar up and a green-and-yellow lapel pin, with a red "
+          "S.E.E.S. armband around his upper arm. A silver chain necklace carries a small square tag set with "
+          "red and green studs. The armband lends his slouchy style a dash of official hero, which he clearly "
+          "enjoys."},
   {3, 52, "A lanky young man with short dark hair, grey eyes and a scruffy thin goatee, wears his slate-blue "
           "baseball cap with a white knotwork emblem. Combat gear: no blazer, just a blue-grey collared shirt "
           "open at the neck, a red S.E.E.S. armband on his upper arm and a wide white leather strap with a "
@@ -145,35 +144,33 @@ const Outfit kOutfits[] = {
            "neck with the collar up, a red S.E.E.S. armband on his upper arm and his silver chain necklace with "
            "a small square tag set with red and green studs. Shirt-sleeved and rumpled, he has the scrappy look "
            "of a guy ready for action, or at least one who wants you to think so."},
-  {3, 901, "A lanky young man with short dark hair, grey eyes and a scruffy thin goatee, in the summer school "
-           "uniform: his baseball cap with its knotwork emblem, a white short-sleeved shirt hanging open over a "
-           "navy T-shirt, and the silver chain with its studded square tag. This version is drawn in dim, cold "
-           "bluish light, the cap and shirt deep in shadow, with dark rings under his eyes. His usual goofy "
-           "energy looks drained and haunted here, worn down and sleepless."},
+  {3, 901, "A lanky young man with short dark hair, grey eyes and a scruffy thin goatee, in the school uniform: "
+           "his baseball cap with its knotwork emblem, a white short-sleeved shirt hanging open over a navy "
+           "T-shirt, and the silver chain with its studded square tag. This version is drawn in dim, cold bluish "
+           "light, the cap and shirt deep in shadow, with dark rings under his eyes. His usual goofy energy "
+           "looks drained and haunted here, worn down and sleepless."},
   {4, 1, "A lean, athletic young man with short, spiky silver-grey hair, grey eyes and a white sticking "
-         "plaster slapped on the left side of his forehead. He wears the school summer uniform: a "
-         "short-sleeved white shirt with a thin black ribbon tie, under a red knitted sweater vest with a "
-         "small gold letter pin on the chest. Clean-cut and sharp-jawed, he has the cool, focused air of the "
-         "star athlete, and that plaster is a boxer's badge of honour, hinting at a fighter who never stops "
-         "training."},
+         "plaster slapped on the left side of his forehead. He wears the school uniform: a short-sleeved white "
+         "shirt with a thin black ribbon tie, under a red knitted sweater vest with a small gold letter pin on "
+         "the chest. Clean-cut and sharp-jawed, he has the cool, focused air of the star athlete, and that "
+         "plaster is a boxer's badge of honour, hinting at a fighter who never stops training."},
   {4, 2, "A lean, athletic young man with short, spiky silver-grey hair, grey eyes and a white plaster on his "
-         "forehead. He wears the school summer uniform: a white shirt with a thin black ribbon tie under a red "
+         "forehead. He wears the school uniform: a white shirt with a thin black ribbon tie under a red "
          "knitted sweater vest with a small gold letter pin, and a tan leather holster strap buckled around "
          "his upper arm. The holster adds a hint of hidden danger to the clean-cut star athlete, a fighter who "
          "always seems ready for the next bout."},
   {4, 5, "A lean, athletic, fair-skinned young man with short, spiky silver-grey hair swept up and back in "
          "ragged tufts, grey eyes, a strong jaw and a white rectangular plaster stuck at an angle above his "
-         "left eyebrow. His casual summer clothes are a deep red V-neck shirt in a soft knit with thin pale "
-         "vertical pinstripes and a darker red band along the top of the shoulder, open at the throat. No "
-         "jewellery. Simple and sporty, it's the no-fuss look of a guy who'd rather be out running than "
-         "shopping, effortlessly sharp without trying."},
+         "left eyebrow. His casual clothes are a deep red V-neck shirt in a soft knit with thin pale vertical "
+         "pinstripes and a darker red band along the top of the shoulder, open at the throat. No jewellery. "
+         "Simple and sporty, it's the no-fuss look of a guy who'd rather be out running than shopping, "
+         "effortlessly sharp without trying."},
   {4, 6, "A lean, athletic young man with short, spiky silver-grey hair, grey eyes and a white plaster on his "
-         "forehead. For winter he wears a light grey coat with tan-edged lapels over a dark charcoal shirt, "
-         "and a long red ribbed scarf wrapped around his neck with the ends hanging down his chest. The bold "
-         "red scarf against the pale coat and silver hair makes a striking, wintry picture, cool and a little "
-         "dashing."},
+         "forehead. He wears a light grey coat with tan-edged lapels over a dark charcoal shirt, and a long "
+         "red ribbed scarf wrapped around his neck with the ends hanging down his chest. The bold red scarf "
+         "against the pale coat and silver hair makes a striking, wintry picture, cool and a little dashing."},
   {4, 51, "A lean, athletic young man with short, spiky silver-grey hair, grey eyes and a white plaster on his "
-          "forehead. He wears the school summer uniform, a white shirt with a thin black ribbon tie under a red "
+          "forehead. He wears the school uniform, a white shirt with a thin black ribbon tie under a red "
           "knitted sweater vest with its small gold letter pin, with a tan holster strap on his upper arm and a "
           "red S.E.E.S. armband around the sleeve below it. Strapped and badged, he looks like the squad's "
           "seasoned senior, disciplined and itching for a fight."},
@@ -219,11 +216,11 @@ const Outfit kOutfits[] = {
          "chest. No jewellery."},
   {5, 5, "A tall, poised, fair-skinned young woman with long, wavy crimson hair tumbling past her shoulders in "
          "heavy waves, one curl flicking outward, a long fringe sweeping over her left eye, red eyes and soft "
-         "coral-pink lipstick. Her summer look is pure understated elegance: a sleeveless white turtleneck in "
-         "a fine vertical rib knit, its tall neck folded over, cut in deep at the armholes so her shoulders "
-         "and arms are bare. No print, no trim, no jewellery; the red hair does all the talking."},
+         "coral-pink lipstick. This look is pure understated elegance: a sleeveless white turtleneck in a fine "
+         "vertical rib knit, its tall neck folded over, cut in deep at the armholes so her shoulders and arms "
+         "are bare. No print, no trim, no jewellery; the red hair does all the talking."},
   {5, 6, "A tall, fair-skinned young woman with long, wavy crimson hair falling past her shoulders, a long "
-         "fringe sweeping over her left eye, red eyes and coral-pink lipstick. Her winter look is sleek and "
+         "fringe sweeping over her left eye, red eyes and coral-pink lipstick. This look is sleek and "
          "commanding, a little biker-chic aristocrat: a black leather double-breasted coat with wide lapels "
          "and silver snap studs, over a cream shirt whose tall collar stands up crisply around her throat. "
          "Cool, expensive and not to be trifled with."},
@@ -270,24 +267,24 @@ const Outfit kOutfits[] = {
            "to cook, is a charmingly unlikely sight."},
   {6, 1, "A slight, fair-skinned teenage girl with a short teal bob, its choppy, straight-cut bangs high on "
          "her forehead and its jagged ends curling in at her jaw, and large grey eyes. She has a soft, gentle, "
-         "bookish air, the shy girl you would find quietly tinkering in the corner. In her school summer "
-         "uniform: a white long-sleeved blouse with a wide, round neckline edged in scalloped lace and tied "
-         "with a thin white ribbon bow, over a fitted bright teal turtleneck. No jewellery."},
+         "bookish air, the shy girl you would find quietly tinkering in the corner. In her school uniform: a "
+         "white long-sleeved blouse with a wide, round neckline edged in scalloped lace and tied with a thin "
+         "white ribbon bow, over a fitted bright teal turtleneck. No jewellery."},
   {6, 2, "A slight, fair-skinned girl with a short teal bob, choppy straight-cut bangs and large grey eyes, "
-         "sweet and a little timid-looking. In her school winter uniform: a dark charcoal blazer with silver "
-         "piping, a strap with two round silver buttons across the chest and a red school crest, over a high "
-         "teal turtleneck with a faint lace pattern. A thin white ribbon is tied at the back of her neck, its "
-         "ends trailing over one shoulder, a delicate touch that suits her."},
+         "sweet and a little timid-looking. In her school uniform: a dark charcoal blazer with silver piping, "
+         "a strap with two round silver buttons across the chest and a red school crest, over a high teal "
+         "turtleneck with a faint lace pattern. A thin white ribbon is tied at the back of her neck, its ends "
+         "trailing over one shoulder, a delicate touch that suits her."},
   {6, 5, "A slight, fair-skinned teenage girl with a short teal bob, its choppy, straight-cut bangs high on "
-         "her forehead and its jagged ends curling in at her jaw, and large grey eyes. Her summer outfit is "
-         "soft and sweet: a sleeveless mint-teal dress with wide ruffled shoulder straps and a square neckline "
-         "edged with a ruffle and outlined by a thin gold line, leaving her arms and collarbones bare. Light, "
-         "frilly and gentle, like a breezy afternoon. No jewellery."},
-  {6, 6, "A slight girl with a short teal bob, choppy straight-cut bangs and large grey eyes, bundled up cosy "
-         "for winter. A soft green poncho with white embroidered flower motifs has a wide cream collar trimmed "
-         "with fur, tied at the front with a white ribbon ending in fluffy pompoms, over a charcoal-grey "
-         "ribbed turtleneck sweater. The whole look is snug and storybook-sweet, a little like a girl out of a "
-         "winter fairy tale."},
+         "her forehead and its jagged ends curling in at her jaw, and large grey eyes. This outfit is soft and "
+         "sweet: a sleeveless mint-teal dress with wide ruffled shoulder straps and a square neckline edged "
+         "with a ruffle and outlined by a thin gold line, leaving her arms and collarbones bare. Light, frilly "
+         "and gentle, like a breezy afternoon. No jewellery."},
+  {6, 6, "A slight girl with a short teal bob, choppy straight-cut bangs and large grey eyes, bundled up cosy. "
+         "A soft green poncho with white embroidered flower motifs has a wide cream collar trimmed with fur, "
+         "tied at the front with a white ribbon ending in fluffy pompoms, over a charcoal-grey ribbed "
+         "turtleneck sweater. The whole look is snug and storybook-sweet, a little like a girl out of a fairy "
+         "tale."},
   {6, 52, "A slight girl with a short teal bob, choppy straight-cut bangs and large grey eyes, kitted out as "
           "the team's navigator for the Dark Hour. A heavy charcoal greatcoat with a tall stand-up collar "
           "closed by a buttoned tab, brass cross-marked buttons, gold cords at one shoulder and a short "
@@ -320,18 +317,18 @@ const Outfit kOutfits[] = {
            "ending in small silver beads. Bright, festive and sweetly demure."},
   {6, 901, "A girl shown only as a flat dark grey silhouette, her features shaded over by a darker band so only "
            "faint outlines of eyes and mouth remain, a mysterious, unknown figure. The outline shows her short, "
-           "feathered bob, the tall stand-up neck of her school winter uniform closed at the throat, the "
-           "shoulders of the blazer with a faint button or two, and a thin ribbon tied at the back of her neck, "
-           "its loops and ends trailing behind one shoulder. No colour or pattern can be made out."},
+           "feathered bob, the tall stand-up neck of her school uniform closed at the throat, the shoulders of "
+           "the blazer with a faint button or two, and a thin ribbon tied at the back of her neck, its loops and "
+           "ends trailing behind one shoulder. No colour or pattern can be made out."},
   {7, 2, "A girl-shaped android with short pale blonde hair and bright, clear blue eyes. A gold headband cut "
          "with triangular openings crosses her hair, white mechanical ear units with red three-lobed centres "
          "replace her ears, and her white neck shows seam lines. She has a serene, doll-like stillness, "
-         "earnest and a little uncanny. Here she wears the school winter uniform: a black blazer with silver "
-         "piping, a large ruffled red ribbon bow at the throat and a round red-and-black Gekkoukan badge with "
-         "a quartered emblem."},
+         "earnest and a little uncanny. Here she wears the school uniform: a black blazer with silver piping, "
+         "a large ruffled red ribbon bow at the throat and a round red-and-black Gekkoukan badge with a "
+         "quartered emblem."},
   {7, 6, "A girl-shaped android with short pale blonde hair, bright blue eyes, a gold headband cut with "
          "triangular openings and white mechanical ear units with red centres; seams line her white neck. Her "
-         "winter clothes are prim and old-fashioned, almost like a porcelain doll dressed for tea: an open "
+         "clothes here are prim and old-fashioned, almost like a porcelain doll dressed for tea: an open "
          "teal-blue jacket over a white blouse with a ruffled high collar, a loose white cravat bow and a "
          "frilled front. Proper, pretty and very earnest."},
   {7, 52, "A girl-shaped android with short pale blonde hair, bright blue eyes, a gold headband cut with "
@@ -346,9 +343,9 @@ const Outfit kOutfits[] = {
            "her look endearingly earnest, as if she studied how relaxing works."},
   {7, 156, "A girl-shaped android with short pale blonde hair, bright blue eyes, a gold headband cut with "
            "triangular openings and white mechanical ear units with red centres; seams line her white neck. Her "
-           "summer festival yukata is deep blue, printed with large white blossoms with orange centres on "
-           "slender stems with leaves and buds, and a red obi bow shows behind her back. Fresh and pretty, with "
-           "that calm, doll-like poise that is all her own."},
+           "festival yukata is deep blue, printed with large white blossoms with orange centres on slender stems "
+           "with leaves and buds, and a red obi bow shows behind her back. Fresh and pretty, with that calm, "
+           "doll-like poise that is all her own."},
   {7, 157, "A girl-shaped android with short pale blonde hair, bright blue eyes, a gold headband cut with "
            "triangular openings and white mechanical ear units with red centres. Her New Year kimono is pale "
            "pink with large cherry blossoms, its collar edged in red and light blue over a gold patterned "
@@ -381,21 +378,21 @@ const Outfit kOutfits[] = {
          "with small buttons and a thin black string tie in a loose bow, its long ends down his chest. No "
          "jewellery."},
   {8, 2, "A small, fair-skinned boy of about ten with a soft, tousled light-brown bob, its ends flicking "
-         "outward over his ears, and large brown eyes. His school winter uniform: an open dark grey zip jacket "
-         "with a silver zip, a diagonal zip pocket, a small brass snap and a round badge, a red ring lettered "
-         "in gold Gekkoukan Private Elementary School round a black-and-white quartered emblem. Under it an "
-         "orange hoodie, hood spread at his neck, and a white collared shirt with a thin black string tie. "
-         "Neat and serious."},
+         "outward over his ears, and large brown eyes. His school uniform: an open dark grey zip jacket with a "
+         "silver zip, a diagonal zip pocket, a small brass snap and a round badge, a red ring lettered in gold "
+         "Gekkoukan Private Elementary School round a black-and-white quartered emblem. Under it an orange "
+         "hoodie, hood spread at his neck, and a white collared shirt with a thin black string tie. Neat and "
+         "serious."},
   {8, 5, "A small, fair-skinned boy of about ten with a soft, tousled light-brown bob, its ends flicking "
          "outward over his ears, and large brown eyes. In casual clothes he looks every bit the sporty kid: a "
          "zip-up track jacket with a silver zip, its lower front and sleeve panels burnt orange and its "
          "shoulder yoke, upper sleeves and zip strips mustard yellow, every seam edged with white piping, over "
          "a dark grey crew-neck T-shirt. No jewellery or accessories."},
   {8, 6, "A small, fair-skinned boy of about ten with a soft, tousled light-brown bob, its ends flicking "
-         "outward over his ears, and large brown eyes. He is bundled up adorably for winter in a thick, chunky "
-         "cream knit sweater whose tall, loose rolled turtleneck swallows him up to the chin, its front worked "
-         "in vertical ribs and cables. The shoulders are tan and the sleeves a deeper caramel brown, sewn on "
-         "in raglan panels. Warm, cosy and very much a little kid. No accessories."},
+         "outward over his ears, and large brown eyes. He is bundled up adorably in a thick, chunky cream knit "
+         "sweater whose tall, loose rolled turtleneck swallows him up to the chin, its front worked in "
+         "vertical ribs and cables. The shoulders are tan and the sleeves a deeper caramel brown, sewn on in "
+         "raglan panels. Warm, cosy and very much a little kid. No accessories."},
   {8, 52, "A small, fair-skinned boy with a soft, tousled light-brown bob and large brown eyes, suited up and "
           "determined for battle. He wears his school outfit, a dark grey zip jacket over an orange hoodie and "
           "a white collared shirt with a thin black string tie, with a black strap over his shoulder and a big "
@@ -450,8 +447,8 @@ const Outfit kOutfits[] = {
   {12, 2, "A girl-shaped android with fair, smooth skin, short blond hair in a choppy bob with long side-swept "
           "bangs, and bright blue eyes, a doll-like stillness about her. A gold headband of open triangular "
           "lattice sits on her head, round white mechanical ear units with red three-lobed centres cover her "
-          "ears, and her neck is white and jointed. She wears the Gekkoukan winter uniform: a black blazer with "
-          "grey piping, a white collar, a large red ruffled bow, a silver zip pull and the round red-ringed "
+          "ears, and her neck is white and jointed. She wears the Gekkoukan uniform: a black blazer with grey "
+          "piping, a white collar, a large red ruffled bow, a silver zip pull and the round red-ringed "
           "Gekkoukan Private High School badge."},
   {12, 6, "A girl-shaped android with fair, smooth skin, short blond hair in a choppy bob with long side-swept "
           "bangs, and bright blue eyes. A gold lattice headband, round white mechanical ear units with red "
@@ -482,11 +479,11 @@ const Outfit kOutfits[] = {
             "plates caps both shoulders, with no armband. A knight and a gunship in one."},
   {101, 1, "A slim teenage boy with fair skin, short, messy light-brown hair falling in uneven bangs over his "
            "forehead and ears, and brown eyes. He has an easygoing, slightly scruffy class-clown energy, the guy "
-           "always chasing his next big crush. He wears the school summer uniform: a short-sleeved white shirt "
-           "with a pointed collar, small white buttons and a breast pocket, with a thin black ribbon tie knotted "
+           "always chasing his next big crush. He wears the school uniform: a short-sleeved white shirt with a "
+           "pointed collar, small white buttons and a breast pocket, with a thin black ribbon tie knotted "
            "loosely, its long ends hanging crookedly. No jewellery or accessories."},
   {101, 2, "A slim teenage boy with fair skin, short, messy light-brown hair falling in uneven bangs, and brown "
-           "eyes, with a casual, slightly scruffy class-clown air. He wears the school winter uniform a little "
+           "eyes, with a casual, slightly scruffy class-clown air. He wears the school uniform a little "
            "carelessly: a black blazer with notched lapels and a silver strip running diagonally across the "
            "chest, a white collared shirt with a thin black ribbon tie hanging loose, a small half-green, "
            "half-yellow pin on the lapel, and the round red-ringed Gekkoukan Private High School badge on the "
@@ -503,14 +500,14 @@ const Outfit kOutfits[] = {
              "strip and sleeve bands."},
   {102, 1, "A lean teenage boy with fair skin, dark grey hair slicked back from a high forehead, a few strands "
            "curling forward and the ends flicking out at his nape, and narrow grey eyes. He has the stiff, "
-           "self-important look of a rule-enforcer who takes himself very seriously. He wears the school summer "
+           "self-important look of a rule-enforcer who takes himself very seriously. He wears the school "
            "uniform: a short-sleeved white shirt with a pointed collar and breast pocket, a thin black ribbon "
            "tie, and a mustard-yellow armband with large black kanji on his upper arm."},
   {102, 2, "A lean teenage boy with fair skin, dark grey hair slicked back from a high forehead with a few "
            "strands curling forward, and narrow grey eyes. Buttoned-up and officious, he looks every bit the "
-           "disciplinary committee man. He wears the school winter uniform: a black blazer with a silver strip "
-           "down its front, a small green-and-yellow lapel pin and the red school crest, over a white shirt and "
-           "thin black ribbon tie, with a mustard-yellow armband with black kanji over the sleeve."},
+           "disciplinary committee man. He wears the school uniform: a black blazer with a silver strip down its "
+           "front, a small green-and-yellow lapel pin and the red school crest, over a white shirt and thin "
+           "black ribbon tie, with a mustard-yellow armband with black kanji over the sleeve."},
   {103, 6, "An elderly man with wild, thinning white hair sticking out in tufts, bushy white eyebrows, a white "
            "moustache, and black rectangular glasses slipping down his nose, with a dark spot on his bald "
            "forehead. He's a cosy, kindly grandpa through and through. He wears a cream knitted sweater with a "
@@ -533,14 +530,14 @@ const Outfit kOutfits[] = {
              "bare. No jewellery or accessories."},
   {106, 1, "A teenage girl with tanned skin, short dark blue-black hair swept over to one side, a small ponytail "
            "sticking up at the back of her head, a slim pink hairpin above her left temple, and brown eyes. "
-           "Sun-kissed and boyish, she has a bright, sporty, big-sister energy. She wears the school summer "
-           "uniform: a short-sleeved white blouse with a stand-up collar, small white buttons and a breast "
-           "pocket, and a large red ribbon bow with ruffled tails at the collar. No earrings or other jewellery."},
+           "Sun-kissed and boyish, she has a bright, sporty, big-sister energy. She wears the school uniform: a "
+           "short-sleeved white blouse with a stand-up collar, small white buttons and a breast pocket, and a "
+           "large red ribbon bow with ruffled tails at the collar. No earrings or other jewellery."},
   {106, 2, "A teenage girl with tanned skin, short dark blue-black hair swept over to one side, a small ponytail "
            "sticking up at the back, a slim pink hairpin above her left temple, and brown eyes, sporty and "
-           "bright. She wears the school winter uniform neatly: a black jacket with grey piping, a front flap "
-           "fastened by silver buttons and a small silver zip pull, over a white collared blouse with a large "
-           "red ribbon bow, and the round red-ringed Gekkoukan Private High School badge on the chest."},
+           "bright. She wears the school uniform neatly: a black jacket with grey piping, a front flap fastened "
+           "by silver buttons and a small silver zip pull, over a white collared blouse with a large red ribbon "
+           "bow, and the round red-ringed Gekkoukan Private High School badge on the chest."},
   {106, 6, "A teenage girl with tanned skin, short dark blue-black hair swept over to one side, a small ponytail "
            "sticking up at the back, a slim pink hairpin above her left temple, and brown eyes. Her off-duty "
            "look is easy, sporty and tomboyish: an open black zip-up hoodie with a silver zip, its hood lined in "
@@ -559,11 +556,11 @@ const Outfit kOutfits[] = {
   {108, 1, "A slim teenage boy with fair skin and thick, soft, wavy light-brown hair that falls in loose curls "
            "over his forehead, ears and the back of his neck, and grey eyes behind thin black rectangular "
            "glasses. He looks gentle and bookish, the quiet, kind type you'd trust with a secret. He wears the "
-           "school summer uniform: a crisp white collared shirt with small white buttons and a breast pocket, "
-           "and a thin dark green-black ribbon tied loosely at the collar. The portrait ends at mid-chest."},
+           "school uniform: a crisp white collared shirt with small white buttons and a breast pocket, and a "
+           "thin dark green-black ribbon tied loosely at the collar. The portrait ends at mid-chest."},
   {108, 2, "A slim teenage boy with fair skin and thick, soft, wavy light-brown hair falling in loose curls, and "
-           "grey eyes behind thin black rectangular glasses, gentle and bookish. He wears the school winter "
-           "uniform tidily: a charcoal-black blazer with notched lapels and thin silver-white piping, a small "
+           "grey eyes behind thin black rectangular glasses, gentle and bookish. He wears the school uniform "
+           "tidily: a charcoal-black blazer with notched lapels and thin silver-white piping, a small "
            "green-and-cream bar pin on the lapel, and the school crest, a red ring lettered Gekkoukan Private "
            "High School around a black-and-white quartered circle, over a white shirt and a thin dark "
            "green-black ribbon tie."},
@@ -575,12 +572,12 @@ const Outfit kOutfits[] = {
   {109, 1, "A slender teenage girl with fair skin and very long, straight brown hair parted in the middle and "
            "swept back off a high forehead, falling down her back with long strands framing her face. Brown eyes "
            "behind black rectangular glasses and soft pink lips give her a shy, studious, terribly proper air, "
-           "the timid treasurer of the student council. She wears the school summer uniform: a white collared "
-           "blouse with small white buttons and a large, full red bow spreading over her chest."},
+           "the timid treasurer of the student council. She wears the school uniform: a white collared blouse "
+           "with small white buttons and a large, full red bow spreading over her chest."},
   {109, 2, "A slender teenage girl with fair skin and very long, straight brown hair parted in the middle and "
            "swept back off a high forehead, long strands framing her face. Brown eyes behind black rectangular "
-           "glasses and soft pink lips give her a shy, prim, studious air. She wears the school winter uniform "
-           "very properly: a charcoal-black jacket with thin silver-white piping and the red school crest just "
+           "glasses and soft pink lips give her a shy, prim, studious air. She wears the school uniform very "
+           "properly: a charcoal-black jacket with thin silver-white piping and the red school crest just "
            "visible, over a white collared blouse with white cuffs and a large, full red bow at the collar."},
   {109, 6, "A slender teenage girl with fair skin and very long, straight brown hair parted in the middle and "
            "swept back off a high forehead, long strands framing her face, with brown eyes behind black "
@@ -601,14 +598,13 @@ const Outfit kOutfits[] = {
            "his eyebrows, and pale turquoise-blue eyes. He's a sunny, starry-eyed exchange student utterly in "
            "love with all things Japanese, and it shows: he carries an open folding fan of black paper on black "
            "ribs, painted with two gold butterflies above sweeping gold arcs and scattered gold dots. He wears "
-           "the school summer uniform: a short-sleeved white shirt with a breast pocket and a thin black ribbon "
-           "tie."},
+           "the school uniform: a short-sleeved white shirt with a breast pocket and a thin black ribbon tie."},
   {112, 2, "A slim teenage boy with light skin, a neat, rounded blond bowl cut with thick straight bangs, and "
            "pale turquoise-blue eyes, a cheerful exchange student wild about Japanese culture. He carries an "
            "open black folding fan painted with two gold butterflies above sweeping gold arcs and gold dots. He "
-           "wears the school winter uniform: a charcoal-black blazer with silver-white piping, a green-and-cream "
-           "lapel pin and the red-ringed Gekkoukan Private High School crest, over a white shirt and thin black "
-           "ribbon tie."},
+           "wears the school uniform: a charcoal-black blazer with silver-white piping, a green-and-cream lapel "
+           "pin and the red-ringed Gekkoukan Private High School crest, over a white shirt and thin black ribbon "
+           "tie."},
   {112, 6, "A slim teenage boy with light skin, a neat, rounded blond bowl cut with thick straight bangs down to "
            "his eyebrows, and pale turquoise-blue eyes. Even off duty his love of Japan shows, in a low-key, "
            "cool way: a plain dark charcoal-grey long-sleeved crew-neck T-shirt printed on the chest with a "
@@ -637,13 +633,13 @@ const Outfit kOutfits[] = {
   {116, 1, "A heavyset teenage boy with fair skin, a big round face with full, chubby cheeks and a double chin, "
            "short neat black hair with one curl springing up on top and another on his forehead, droopy grey "
            "eyes and large ears. He has a lazy, sulky, self-styled-gourmet air that's oddly endearing. He wears "
-           "the school summer uniform: a white collared shirt stretched over his broad frame, with small white "
-           "buttons, a breast pocket and a thin dark green-black ribbon tie."},
+           "the school uniform: a white collared shirt stretched over his broad frame, with small white buttons, "
+           "a breast pocket and a thin dark green-black ribbon tie."},
   {116, 2, "A heavyset teenage boy with fair skin, a big round face with full, chubby cheeks and a double chin, "
            "short neat black hair with one curl springing up on top and another on his forehead, droopy grey "
-           "eyes and large ears, a sulky, self-styled gourmet. He wears the school winter uniform: a "
-           "charcoal-black blazer with silver-white piping, a green-and-cream lapel pin and the red-ringed "
-           "school crest, over a white collared shirt and a thin dark green-black ribbon tie."},
+           "eyes and large ears, a sulky, self-styled gourmet. He wears the school uniform: a charcoal-black "
+           "blazer with silver-white piping, a green-and-cream lapel pin and the red-ringed school crest, over a "
+           "white collared shirt and a thin dark green-black ribbon tie."},
   {117, 6, "A thin, pale young man with a narrow face, straight chin-length silver-grey hair with a side parting "
            "and bangs sweeping across his forehead, and grey eyes. He has a fragile, wistful, poetic air, a "
            "sickly dreamer with a quietly haunting good look about him. He wears a loose, long-sleeved button-up "
@@ -720,8 +716,8 @@ const Outfit kOutfits[] = {
            "knows exactly how to win a room. His dark grey-black hair is swept back from his forehead, a few "
            "strands sticking up on top and the ends flicking out at his nape. He has blue eyes and a small black "
            "beauty mark under his left eye. He wears a white button-front shirt with small dark square buttons, "
-           "the dark edges of his open school winter jacket running down either side, and his signature long, "
-           "soft pale-yellow scarf, edged in a darker outline, wrapped high around his neck and hanging down the "
+           "the dark edges of his open school jacket running down either side, and his signature long, soft "
+           "pale-yellow scarf, edged in a darker outline, wrapped high around his neck and hanging down the "
            "front. The portrait ends at his chest."},
   {221, 154, "A slender teenage boy with fair skin, dark grey-black hair swept back from his forehead, a few "
              "strands sticking up on top and the ends flicking out at his nape, blue eyes and a small black beauty "
@@ -743,16 +739,15 @@ const Outfit kOutfits[] = {
   {223, 1, "A teenage girl with tanned skin and the trendy, sharp-edged look of a stylish queen bee with "
            "attitude to spare. Her long, wavy ginger-brown hair has straight, blunt bangs, part of it gathered "
            "into a short, spiky ponytail tied high at the back of her head and the rest falling past her "
-           "shoulders. She has brown eyes with thick lashes and glossy lips. She wears the school summer "
-           "uniform: a white short-sleeved blouse with a wide, pointed collar, a dark grey knitted V-neck "
-           "sweater vest with ribbed edges, and a large red bow tied at the collar. The portrait ends at her "
-           "chest."},
+           "shoulders. She has brown eyes with thick lashes and glossy lips. She wears the school uniform: a "
+           "white short-sleeved blouse with a wide, pointed collar, a dark grey knitted V-neck sweater vest with "
+           "ribbed edges, and a large red bow tied at the collar. The portrait ends at her chest."},
   {223, 2, "A teenage girl with tanned skin and the trendy, sharp-edged look of a stylish queen bee with "
            "attitude to spare. Her long, wavy ginger-brown hair has straight, blunt bangs, part of it gathered "
            "into a short, spiky ponytail tied high at the back of her head and the rest falling past her "
-           "shoulders. She has brown eyes with thick lashes and glossy lips. She wears the school winter "
-           "uniform: a dark grey knitted V-neck cardigan with long sleeves and ribbed edges over a white blouse "
-           "with a wide, pointed collar, and a large red bow tied at the collar. The portrait ends at her chest."},
+           "shoulders. She has brown eyes with thick lashes and glossy lips. She wears the school uniform: a "
+           "dark grey knitted V-neck cardigan with long sleeves and ribbed edges over a white blouse with a "
+           "wide, pointed collar, and a large red bow tied at the collar. The portrait ends at her chest."},
   {223, 6, "A teenage girl with tanned skin, dressed down into something cosy and casual that softens her usual "
            "sharp edge. Her ginger-brown hair has straight, blunt bangs and a short, spiky ponytail tied high at "
            "the back, the rest hanging just to her shoulders. She has brown eyes with thick lashes and glossy "
