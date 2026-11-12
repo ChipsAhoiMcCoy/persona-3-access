@@ -1,5 +1,6 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks; zlib, see LICENSES/. This is not the original software.
 #include <windows.h>
+#include "paths.h"
 #include <cmath>
 #include <format>
 #include "ad.h"
@@ -25,11 +26,7 @@ int env_int(const wchar_t* name, int def) {
   return GetEnvironmentVariableW(name, v, 16) > 0 ? _wtoi(v) : def;
 }
 // The loaded copy's path and link time: the dev client checks them to confirm a hot reload took.
-static HMODULE self_module() {
-  HMODULE self = nullptr;
-  GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&self_module, &self);
-  return self;
-}
+static HMODULE self_module() { return paths::self(); }
 static std::string module_path() {
   wchar_t p[MAX_PATH]; DWORD n = GetModuleFileNameW(self_module(), p, MAX_PATH);
   return log::utf8(std::u16string_view((const char16_t*)p, n));

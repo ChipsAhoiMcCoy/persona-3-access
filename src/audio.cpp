@@ -1,5 +1,6 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks, itself ported from Dark Vision (WrathAccess) by Bradley Renshaw; both zlib, see LICENSES/. This is not the original software.
 #include "audio.h"
+#include "paths.h"
 #define MINIAUDIO_IMPLEMENTATION
 #define MA_NO_ENCODING
 #define MA_NO_FLAC
@@ -353,15 +354,7 @@ void set_loop_gain(int id, float gain) {
   std::lock_guard lk(g_mu);
   for (Loop& l : g_loops) if (l.id == id) l.gain = gain < 0 ? 0 : gain;
 }
-std::string module_dir() {
-  HMODULE m = nullptr;
-  GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&module_dir, &m);
-  char path[MAX_PATH] = {};
-  GetModuleFileNameA(m, path, MAX_PATH);
-  std::string s = path;
-  size_t slash = s.find_last_of('\\');
-  return slash == std::string::npos ? std::string() : s.substr(0, slash + 1);
-}
+std::string module_dir() { return paths::dir(); }
 void set_master_volume(float v) { std::lock_guard lk(g_mu); g_master = v < 0 ? 0 : v > 1 ? 1 : v; }
 void set_bus_volume(Bus b, float v) {
   if ((int)b < 0 || b >= Bus::Count) return;

@@ -1,5 +1,6 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks; zlib, see LICENSES/. This is not the original software.
 #include "speech.h"
+#include "paths.h"
 #include <atomic>
 #include "log.h"
 #include "core/text_clean.h"
@@ -24,10 +25,7 @@ static void prism_log(void*, PrismLogLevel level, const char* source, const char
 bool init() {
   // prism.dll sits next to p3access.dll, which is NOT on the game's DLL search path; load it by
   // full path first so the delay-load resolver finds the already-loaded module by name.
-  HMODULE self = nullptr;
-  GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&init, &self);
-  wchar_t dir[MAX_PATH]; GetModuleFileNameW(self, dir, MAX_PATH);
-  std::wstring p(dir); p = p.substr(0, p.find_last_of(L'\\') + 1) + L"prism.dll";
+  std::wstring p = paths::dir_w() + L"prism.dll";
   if (!LoadLibraryW(p.c_str())) { log::writef("speech: failed to load {} (err {})", log::utf8((const char16_t*)p.c_str()), GetLastError()); return false; }
 
   prism_set_log_handler(PrismLogHandler{prism_log, nullptr});

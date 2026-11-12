@@ -1,4 +1,5 @@
 #include "hrtf.h"
+#include "paths.h"
 #include <phonon.h>
 #include <windows.h>
 #include <atomic>
@@ -82,10 +83,7 @@ bool init(int rate, int frame) {
   if (g_ok) return true;
   // phonon.dll sits next to p3access.dll, which is NOT on the game's DLL search path: load it by full path first so
   // the delay-load resolver finds it by name (as speech::init does for prism.dll). No ipl* call before this succeeds.
-  HMODULE self = nullptr;
-  GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&init, &self);
-  wchar_t dir[MAX_PATH]; GetModuleFileNameW(self, dir, MAX_PATH);
-  std::wstring p(dir); p = p.substr(0, p.find_last_of(L'\\') + 1) + L"phonon.dll";
+  std::wstring p = paths::dir_w() + L"phonon.dll";
   if (!LoadLibraryW(p.c_str())) { log::writef("hrtf: no phonon.dll (err {}); positional cues pan in stereo", GetLastError()); return false; }
   IPLContextSettings cs{};
   cs.version = STEAMAUDIO_VERSION;
