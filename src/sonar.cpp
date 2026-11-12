@@ -2,7 +2,6 @@
 #include "audio.h"
 #include "core/sonar_cues.h"
 #include "core/sonar_field.h"
-#include "core/sonar_sweep.h"
 #include "core/strings.h"
 #include "devserver.h"
 #include "log.h"
@@ -36,7 +35,6 @@ static_assert((int)SonarCue::Exit == 0 && (int)SonarCue::Door == 1 && (int)Sonar
               (int)SonarCue::Thing == 4 && (int)SonarCue::Event == 5 && (int)SonarCue::Fragment == 6, "kKind is in SonarCue's order");
 constexpr size_t kMaxSources = 6;      // pulse: the nearest things that sound at once
 constexpr int kMaxPerKind = 3;         // of one kind: a corridor of students must not drown the door beside you
-constexpr size_t kSweepMax = 24;       // sweep: Dark Vision drops nothing; this only stops a runaway list
 constexpr float kNearM = 1.5f;         // at and under this: full volume (the rhythm has its own scale: core/sonar_field)
 // How much quieter a thing is at the range's edge (and beyond, when selected). 14 at first: with the far-off sound's
 // duller treble on top, a thing was not noticed until the player was nearly on it (the user, 2026-11-10).
@@ -52,8 +50,6 @@ float g_trim_db[kKinds] = {0, 0, 0, 0, 0, 0, 0};
 struct Source { ue::WeakObj obj; int kind; FVector loc; bool selected; };
 std::vector<Source> g_sources;
 core::SonarField g_field;
-core::SonarSweep g_sweep;
-bool sweeping() { return settings::get(settings::SonarMode) == settings::SonarSweep; }
 ULONGLONG g_scan_at = 0;
 long long g_fired = 0;
 
@@ -84,7 +80,7 @@ Voice voice(int kind, const audio::Spot& at, bool whole = false) {
     v.len_s = v.pcm ? (float)v.pcm->size() / (float)audio::sample_rate() / v.rate : 0.2f;
   };
   pick(false);
-  if (!whole && !sweeping() && v.len_s + g_field.params().gap_s > g_field.params().period_for(at.dist_m)) pick(true);
+  if (!whole && v.len_s + g_field.params().gap_s > g_field.params().period_for(at.dist_m)) pick(true);
   return v;
 }
 
@@ -101,8 +97,7 @@ void emit(int kind, const FVector& me, const FVector& at, bool whole = false) {
   audio::Spot s = world::spot(me, at);
   Voice v = voice(kind, s, whole);
   if (!v.pcm) return;
-  // The sweep's level is Dark Vision's (ref / (ref + d), floored), the pulse's our log curve.
-  float vol = (sweeping() ? core::sweep_gain(s.dist_m) : gain_at(s.dist_m)) * std::pow(10.0f, g_trim_db[kind] / 20.0f);
+  float vol = gain_at(s.dist_m) * std::pow(10.0f, g_trim_db[kind] / 20.0f);
   audio::play(std::move(v.pcm), vol, s, audio::Bus::Sonar, v.rate);
   ++g_fired;
 }
@@ -131,14 +126,14 @@ void rescan() {
     bool is_sel = has_sel && p.obj == sel.obj;
     if (!is_sel) {
       if (!kind_on(kind) || (scope == settings::ScopeCategory && !poi::in_selected_category(p))) continue;
-      if (sweeping() ? g_sources.size() >= kSweepMax : per_kind[kind] >= kMaxPerKind || g_sources.size() >= kMaxSources) continue;
+      if (per_kind[kind] >= kMaxPerKind || g_sources.size() >= kMaxSources) continue;
     }
     ++per_kind[kind];
     sel_listed |= is_sel;
     g_sources.push_back({p.obj, kind, p.loc, is_sel});
   }
   // The selected point took a place past the limit: the farthest other one gives its place up.
-  if (sel_listed && g_sources.size() > (sweeping() ? kSweepMax : kMaxSources))
+  if (sel_listed && g_sources.size() > kMaxSources)
     for (size_t i = g_sources.size(); i-- > 0;)
       if (!g_sources[i].selected) { g_sources.erase(g_sources.begin() + (ptrdiff_t)i); break; }
 }
@@ -150,7 +145,7 @@ double now_s() {
 float dist_m(const FVector& a, const FVector& b) {
   return std::sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z)) / 100.0f;
 }
-void silence() { g_field.reset(); g_sweep.reset(); g_sources.clear(); g_scan_at = 0; }
+void silence() { g_field.reset(); g_sources.clear(); g_scan_at = 0; }
 }  // namespace
 
 void tick() {
@@ -162,21 +157,6 @@ void tick() {
   std::vector<core::SonarField::Item> items;
   items.reserve(g_sources.size());
   const bool any_distance = settings::get(settings::SonarScope) == settings::ScopeSelected;
-  if (sweeping()) {
-    // West to east as heard: the listener's own right (east while top-down).
-    g_field.reset();
-    std::vector<core::SonarSweep::Item> sw;
-    for (const Source& s : g_sources) {
-      if (!any_distance && dist_m(me, s.loc) > range_m()) continue;
-      audio::Spot at = world::spot(me, s.loc);
-      sw.push_back({(unsigned)s.obj.index, at.right * at.dist_m, s.kind});
-    }
-    for (const core::SonarSweep::Ping& p : g_sweep.update(sw, now_s()))
-      for (const Source& s : g_sources)
-        if ((unsigned)s.obj.index == p.id) { emit(s.kind, me, s.loc); break; }
-    return;
-  }
-  g_sweep.reset();
   for (const Source& s : g_sources) {
     if (!any_distance && dist_m(me, s.loc) > range_m()) continue;   // read ahead of the range: not in it yet
     // How long its sound will last as played now: the line is held that long.

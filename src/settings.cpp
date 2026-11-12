@@ -80,8 +80,6 @@ static const Def kDefs[Count] = {
   {"description_volume", strings::kSetDescriptionVolume, CatDialogue, strings::kHelpDescriptionVolume, Unit::Percent, kPercents, 100},
   // the camera fixed north and every sound heard from above while walking freely (topdown.cpp)
   {"top_down", strings::kSetTopDown, CatExploring, strings::kHelpTopDown, Unit::Toggle, {0, 1}, 1},
-  {"sonar_mode", strings::kSetSonarMode, CatSonar, strings::kHelpSonarMode, Unit::Choice, {SonarSweep, SonarPulse}, SonarSweep,
-   {strings::kSonarSweep, strings::kSonarPulse}},
 };
 static int g_value[Count] = {};   // load() fills it from kDefs, then the file
 

@@ -144,7 +144,6 @@ strike-reach rings, the four wall tones and the controller layer's tick. They pl
 - When a line ends: say Next, page turn sound, message chime sound, cursor tick sound, off: once a line of dialogue or a thought waits for you to continue, the screen reader says "Next" or a sound from the game's own menus plays (changing it plays the sound). On a voiced line this comes when the voice finishes; on an unvoiced one "Next" follows the reading. A sound waits for the reading too when your speech can report its end; on those that cannot, such as NVDA, it plays as the reading begins
 - Read cutscene subtitles: off, on: the screen reader reads the subtitles of movies and cutscenes as they appear. They are in the log (B) either way
 - Top-down exploration: on, off: while you walk freely, the camera stays facing north and everything is heard as if from above (see Top-down exploration below)
-- Sonar rhythm: sweep, pulse: sweep plays everything in range once, from west to east, then pauses and starts again; pulse is the rhythm described under Sounds, each thing repeating faster the closer it is
 - Audio description in movies: on, off: a narrator describes what is on screen in the animated story movies, between the lines of dialogue (the movie's sound dips while she speaks)
 - Audio description volume: 100 percent; 0 to 100 in steps of 10: the movie narrator
 - Mod keys: Space reads the list of the mod's keys
@@ -444,7 +443,6 @@ game's own camera.
   left out unless you can walk there, and so are things past a closed door (the corridor's from the gym hallway), until you go through it. The point selected in the points of interest list always has a place among
   them. The sounds take turns: only one plays at a time, each after the one before it has finished, so they never play over one another. Whichever is most overdue for its own rhythm goes next, and a near thing's lateness counts for more than a far one's: with many things around, the near ones keep most of their speed and the far ones wait longer (seconds, in a full room), none is left out, and a thing that has just come into range goes first. The sonar is silent in menus, conversations, story scenes and
   battles. Shadows are not part of it: they keep their own pulse.
-  That is the pulse rhythm. The sweep rhythm (Sonar rhythm, the default) is Dark Vision's: every thing in range sounds once, one after another from west to east, so two of a kind are heard left then right, then a short pause, then again. The pause between two sounds shrinks as the crowd grows (a fifth of a second for a few things, a tenth for many); nothing is left out. Its volume falls with distance (half as loud at 3 m) but never below a quiet floor.
 - Shadow pulse: a low, rattling snarl from the nearest Shadow within 30 m, whatever its height, faster and louder as it closes in
   (from every 0.8 seconds at 30 m to one unbroken snarl beside you), lower when it is behind you. When a Shadow notices you, a harsh two-note alarm sounds from where it is, and its growl turns higher,
   louder and nearly twice as fast for as long as it hunts you; two soft falling notes mean it has lost you.
