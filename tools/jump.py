@@ -76,7 +76,7 @@ def set_date(month, day, t):
     p3.cheat("AtlSetDayTime", Month=month, Day=day, Time=t)
     m, d, tt = now()
     ok = (m, d, tt) == (month, day, t)
-    print(f"  date {m}/{d} {TIME_NAMES[tt] if 0 <= (tt or 0) < 8 else tt}" + ("" if ok else f"  (wanted {month}/{day} {TIME_NAMES[t]})"))
+    print(f"  date {m}/{d} {TIME_NAMES[tt] if tt is not None and 0 <= tt < 8 else tt}" + ("" if ok else f"  (wanted {month}/{day} {TIME_NAMES[t]})"))
     return ok
 
 
@@ -818,11 +818,16 @@ def main(argv, p3mod):
     if "--noplay" in argv:
         play_secs = 0
     argv = [a for a in argv if a not in ("--bare", "--dry", "--noplay")]
+    if not argv:   # `jump --play N` alone: play what is on screen now
+        print(f"[{0:6.1f}s] played: " + play([], play_secs))
+        return
     if argv[0] == "--list":
         list_rows(" ".join(argv[1:]))
         return
     sets, rest = [], argv
     if argv[0] == "--set":
+        # persona:ID and party:ID alone mean =1
+        argv = [argv[0]] + [a + "=1" if "=" not in a and a.split(":")[0] in ("persona", "party") and ":" in a else a for a in argv[1:]]
         sets = [a for a in argv[1:] if "=" in a]
         rest = [a for a in argv[1:] if "=" not in a]
     t0 = time.time()
