@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Fusion
+- A skill change offered after a level up ("a skill seems to be on the verge of changing") is followed by what the skill would become. Not yet seen in the game: see the known issues.
 - Choosing skills to inherit now says how many you may take ("Choose skills to inherit, up to 2.") and counts as you choose ("chosen, 1 of 2 picks"). Taking the last one brings Igor's question at once, as before.
 
 ### The end of the game

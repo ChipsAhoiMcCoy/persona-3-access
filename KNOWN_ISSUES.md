@@ -44,7 +44,7 @@ These reached the code but have not been seen working in the game, because no te
 ## Behaviours to expect
 
 - While the mod settings are open, the game keeps running. In Tartarus, open them from the camp menu's Config to be safe.
-- The mod does not say which skill a Persona's "skill change" after a level up will become.
+- When a Persona's skill is "on the verge of changing" after a level up, the mod should now say what it would become ("Agi would become Agilao"). This comes from the game's code and has not come up in a test: no change was offered, even with the game's chance raised.
 - A voiced line is not read by default, even if its voice cannot be heard, such as when voice volume is at zero. Set "Voiced dialogue" to "read aloud" in the mod settings in that case.
 
 ## Game updates

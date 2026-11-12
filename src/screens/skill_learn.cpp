@@ -9,6 +9,8 @@
 #include "screens/persona_status.h"
 #include "core/strings.h"
 #include "persona.h"
+#include "seh.h"
+#include "speech.h"
 #include <format>
 
 namespace p3a::screens {
@@ -103,6 +105,32 @@ class SkillLearnScreen : public MenuScreen {
     shown_ = *(uint16_t*)(e + 2);
     if (!(WeakObj::of(p) == page_)) skill_ = 0;
     if (int sid = new_skill(p)) { skill_ = sid; page_ = WeakObj::of(p); screens::set_keys(strings::kLearnSkillKeys); }
+  }
+  // A skill change offered after a level up ("a skill seems to be on the verge of changing"): the level-up sequence
+  // (Sequence_, a PersonaStatusLvUpSeq) makes a PersonaStatusChangeSkillSeq (its +0x170) holding the pairs it drew,
+  // old skill in the low half and new in the high half of each (+0x38 the array, +0x40 its count). What each would
+  // become is said once per offer, after the game's own line. UNTESTED: from the game's code; no change was offered
+  // in a test.
+  WeakObj change_said_;
+  void background() override {
+    UObject* p = ps_.get();
+    UObject* seq = p ? get<UObject*>(p, "Sequence_") : nullptr;
+    if (!seq || !ue::known_build() || name_of(class_of(seq)) != "PersonaStatusLvUpSeq") return;
+    UObject* change = nullptr;
+    guarded([&] { change = *(UObject**)((uint8_t*)seq + 0x170); });
+    if (!change || !is_live(change) || WeakObj::of(change) == change_said_) return;
+    std::string line;
+    guarded([&] {
+      auto* pairs = (TArray<uint32_t>*)((uint8_t*)change + 0x38);
+      for (int i = 0; pairs->data && i < pairs->num && i < 8; ++i) {
+        int from = pairs->data[i] & 0xFFFF, to = pairs->data[i] >> 16;
+        std::string a = persona::skill_name(from), b = persona::skill_name(to);
+        if (!a.empty() && !b.empty()) line += (line.empty() ? "" : ". ") + std::format("{} {} {}", a, strings::kWouldBecome, b);
+      }
+    });
+    if (line.empty()) return;   // not filled yet: asked again next tick
+    change_said_ = WeakObj::of(change);
+    speech::speak(line, false);
   }
   void on_tick() override {
     UObject* p = ps_.get();

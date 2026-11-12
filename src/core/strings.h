@@ -148,6 +148,7 @@ inline constexpr const char* kLearnSkill = "Learn";
 inline constexpr const char* kNewSkill = "New skill";
 inline constexpr const char* kNextSkill = "Next skill";
 inline constexpr const char* kLearned = "Learned";
+inline constexpr const char* kWouldBecome = "would become";   // a skill change offered after a level up: "Agi would become Agilao"
 inline constexpr Hint kCBack{"C goes back", "B goes back"};
 inline constexpr const char* kEmptySlot = "Empty slot";
 inline constexpr Hint kLearnSkillKeys{"Q and E switch Persona, Space learns. When asked to forget one, the arrows move over the slots, two columns of four; Escape goes back", "LB and RB switch Persona, A learns. When asked to forget one, the D-pad moves over the slots, two columns of four; B goes back"};
