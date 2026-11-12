@@ -45,6 +45,7 @@ inline constexpr const char* kSaved = "Saved";
 inline constexpr const char* kEmpty = "empty";
 inline constexpr const char* kLevel = "level";
 inline constexpr const char* kPlayTime = "play time";
+inline constexpr const char* kClearData = "Clear data, start a new game";   // a slot holding a finished game, as its row says
 inline constexpr const char* kHoursAnd = "hours";
 inline constexpr const char* kMinutes = "minutes";
 inline constexpr const char* kHour = "hour";

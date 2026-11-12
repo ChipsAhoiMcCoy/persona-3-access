@@ -86,6 +86,13 @@ class SaveLoadScreen : public MenuScreen {
     if (!tz.empty()) when += ", " + tz;
     // Rewind's points are all this game's: the day leads, without the player's name.
     std::string who = head.empty() ? std::string() : head + ": " + str("PlayerName") + ", ";
+    // A finished game's save (bIsGoodEnd / bIsBadEnd, Episode Aigis' two): its row shows "CLEAR DATA, START A NEW
+    // GAME" and the play time, no date, level or place (seen on the save made after the credits, 2026-11-11).
+    auto flag = [&](const char* n) { int o = offset_of(st, n); return o >= 0 && *(bool*)(it + o); };
+    if (flag("bIsGoodEnd") || flag("bIsBadEnd") || flag("bIsAstreaClear") || flag("bIsAstreaManiacsClear"))
+      return std::format("{}{}, {} {} {} {}", who, strings::kClearData, strings::kPlayTime, i32("PTimeHour"),
+                         i32("PTimeHour") == 1 ? strings::kHour : strings::kHoursAnd,
+                         std::format("{} {}", i32("PTimeMin"), i32("PTimeMin") == 1 ? strings::kMinute : strings::kMinutes));
     return std::format("{}{}, {} {}, {}, {} {} {} {}", who, when, strings::kLevel, i32("PLV"),
                        str("LocationName"), strings::kPlayTime, i32("PTimeHour"), i32("PTimeHour") == 1 ? strings::kHour : strings::kHoursAnd,
                        std::format("{} {}", i32("PTimeMin"), i32("PTimeMin") == 1 ? strings::kMinute : strings::kMinutes));
