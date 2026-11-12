@@ -14,7 +14,6 @@ These reached the code but have not been seen working in the game, because no te
 
 - Signing the contract with Done on a controller. The keyboard path has been tested.
 - Cooking, which runs through invitation events.
-- The TV shopping show.
 - Linked Episodes.
 - Exam results.
 
@@ -38,7 +37,6 @@ These reached the code but have not been seen working in the game, because no te
 
 ## Known bugs
 
-- The ending's very last choice ("Close your eyes") opens with neither answer picked. If Enter does nothing there, press Left or Right once, then Enter. A fix is in but could not be tried again without replaying the ending.
 - The BGM playlist in Config: the game opens it with D, but the mod's menu keeps W, A, S and D from the game. It may not be reachable from the keyboard. This comes from reading the code and has not been tried in the game.
 
 ## Behaviours to expect

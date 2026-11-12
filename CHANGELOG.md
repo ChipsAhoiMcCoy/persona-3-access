@@ -9,7 +9,11 @@
 ### The end of the game
 - A save made after the credits was read like any other ("March 5, level 96"). The list now says what its row shows: "Slot 9: Makoto Yuki, Clear data, start a new game, play time 46 hours 16 minutes".
 - The credits: the review key now reads the names rolling past at that moment ("Credits. Chief Designer, Yuichiro Takada, Art Director, Tomohiro Kumagai, ..."). The roll is not read by itself.
-- The last choice of the ending opened with no answer picked and Enter did nothing until Left or Right was pressed. The mod now picks the focused answer for you (not yet tried again in the game; see the known issues).
+- The last choice of the ending opened with no answer picked and Enter did nothing until Left or Right was pressed. The first answer is now picked as it opens, and Enter takes it.
+- On that same choice, Left or Right changed the game's answer while the mod kept reading the first one, so Enter could take an answer you never heard. The mod now follows the game's answer (not yet heard in the game).
+
+### Shopping
+- The TV shopping show (Sunday afternoons, the TV in your room) has now been played through with the mod: the show, the Buy / Don't buy choice and the purchase are all read.
 
 ### Calendar
 - When the story moved to another day with only the time-of-day screen (the epilogue's jump to March), just "After School" was said. The new date is now read with it.

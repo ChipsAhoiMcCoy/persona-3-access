@@ -7,7 +7,7 @@ server on P3A_PORT (default 8793). Claude drives and observes it from here witho
   python tools/p3.py play [--nobuild]          for the player: build, then start the game normally with the server on
   python tools/p3.py up [--slot N] [--build] [--speak] [--sound]   whatever it takes to reach a working game (relaunch if dead or hung)
   python tools/p3.py status | kill
-  (kill, up, reload, keys, advance, goto and flow refuse a player's session, mode=play, without --force)
+  (kill, up, reload, keys, advance, goto, flow and scenario refuse a player's session, mode=play, without --force)
   python tools/p3.py reload [--nobuild]        hot reload: build, then swap the loaded mod for a fresh copy
   python tools/p3.py crash                     the last session's crash lines, symbolized
   python tools/p3.py sym 0x14d57b [...] [--map F]   mod offsets (p3access.dll+0x..) to functions via the linker map
@@ -19,6 +19,7 @@ server on P3A_PORT (default 8793). Claude drives and observes it from here witho
   python tools/p3.py keys enter wait:2 down    game keys in order, waits in seconds; prints /screen
   python tools/p3.py advance [secs] [key]      play dialogue, pressing the key on each page; stops at a choice
   python tools/p3.py goto "name" [--noact]     auto-walk to a point of interest (or "#id"), then press Space
+  python tools/p3.py scenario list | <name>   jump straight to a test situation (tools/scenarios.py), no playing
   python tools/p3.py flow load [slot] | newgame [--sign] | sleep   title -> save slot | fresh game | home to bed
   python tools/p3.py shot [name.png]           PrintWindow capture of the game window (bare names go to build/shots)
 
@@ -80,6 +81,22 @@ def unminimize():
         u32.ShowWindow(wt.HWND(h), 4)   # SW_SHOWNOACTIVATE
         u32.SetWindowPos(wt.HWND(h), wt.HWND(1), 0, 0, 0, 0, 0x13)   # HWND_BOTTOM; NOSIZE, NOMOVE, NOACTIVATE
         time.sleep(0.3)
+
+
+def focus():
+    """Bring the dev game to the foreground (the user allows it for the dev game). Unfocused, the game's input object
+    never sees the decide action, so a choice list (SEL) ignores posted Enter / Space while message pages still take
+    them (2026-11-11). An Alt tap first lets SetForegroundWindow work from a background process."""
+    m = re.search(r"window=0x([0-9a-f]+)", http("/health", retry=0, check=False) or "")
+    if not m:
+        return False
+    h = wt.HWND(int(m.group(1), 16))
+    u32.keybd_event(0x12, 0, 0, 0)
+    u32.SetForegroundWindow(h)
+    u32.keybd_event(0x12, 0, 2, 0)
+    time.sleep(0.5)
+    u32.GetForegroundWindow.restype = ctypes.c_void_p
+    return u32.GetForegroundWindow() == h.value
 
 
 def http(route, timeout=15.0, body=None, retry=8.0, check=True):
@@ -547,6 +564,121 @@ def shot(out):
     print(out, w, hgt)
 
 
+def goto(want, act=True):
+    """Auto-walk to the nearest point of interest whose line contains `want` ("#id" for an id), then press Space
+    unless act is False. False when there is no such point."""
+    want = want.lower()
+    target = None
+    for l in http("/poi?r=20000").splitlines():
+        if l.startswith("#") and want in l.lower():
+            target = l.split()[0][1:]
+            print("target:", l)
+            break
+    if not target:
+        return False
+    http(f"/nav?walk={target}")
+    for _ in range(60):
+        time.sleep(1)
+        if "walking=false" in http("/nav"):
+            break
+    print(http("/speech?since=0").splitlines()[-1])
+    if act:
+        time.sleep(0.8)
+        http("/key?k=space&ms=120")
+        time.sleep(2)
+    return True
+
+
+def advance(secs=60, key="enter", choose=False, stop_at=None):
+    """Play through dialogue, pressing `key` whenever a message is open; prints what the mod speaks. Stops at a
+    choice list (unless choose), at a modelled screen, or once a spoken line contains `stop_at`. Returns the reason."""
+    cur = int(http("/speech?since=999999999").split()[1])
+    t0 = time.time()
+    while time.time() - t0 < secs:
+        time.sleep(1.5)
+        out = http(f"/speech?since={cur}")
+        lines = out.splitlines()
+        cur = int(lines[0].split()[1])
+        for l in lines[1:]:
+            said = l.split(": ", 1)[1] if ": " in l else l
+            print(said)
+            if stop_at and stop_at.lower() in said.lower():
+                return "spoken"
+        m = http("/msg")
+        if "sel index" in m:
+            if choose:
+                time.sleep(1.0)
+                http(f"/key?k={key}&ms=120")
+                time.sleep(1.0)
+                continue
+            print("-- choice open, stopping")
+            return "choice"
+        scr = http("/screen").splitlines()[0]
+        if "screen=movie" in scr:
+            continue   # subtitles are message items too, but Enter would pause the movie
+        if any(s in scr for s in ("screen=get_item", "screen=stats_up", "screen=rank_up", "screen=battle_result")):
+            http("/key?k=space&ms=120")   # notices that only need OK
+            continue
+        if "screen=none" not in scr and "item=Msg" not in m:
+            print("-- " + scr + ", stopping")
+            return "screen"
+        if "item=Msg" in m and "item=MsgSubtitles" not in m:   # subtitles advance on their own
+            http(f"/key?k={key}&ms=120")
+    return "time"
+
+
+def cheat(fn, **args):
+    """A UAppCheatManager command (Atlus's own debug code, live in this build) with int arguments."""
+    a = ",".join(f"{k}:int:{v}" for k, v in args.items())
+    return http(f"/ue/call?cdo=AppCheatManager&fn={fn}" + (f"&args={a}" if a else ""))
+
+
+def gwork(fn, **args):
+    """A GlobalWorkBpLib call (flags by index section<<28|bit, counters, money) with int arguments."""
+    a = ",".join(f"{k}:int:{v}" for k, v in args.items())
+    return http(f"/ue/call?cdo=GlobalWorkBpLib&fn={fn}" + (f"&args={a}" if a else ""))
+
+
+def field(major, minor, entry=1, secs=40):
+    """Load a field area (CALL_FIELD) and wait until /area names it."""
+    http(f"/area/goto?major={major}&minor={minor}&entry={entry}")
+    t0 = time.time()
+    while time.time() - t0 < secs:
+        time.sleep(1.5)
+        a = http("/area", check=False)
+        if a.startswith(f"ids {major} {minor} ") and "HTTP" not in a:
+            time.sleep(2)   # the hero is placed and the points of interest scanned a moment after the level is up
+            return True
+    return False
+
+
+def scenario(name):
+    """Run a named scenario from tools/scenarios.py: each step is a call above. Prints each step and the outcome."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import scenarios
+    if name == "list":
+        for k, s in scenarios.SCENARIOS.items():
+            print(f"{k:16} {s['about']}")
+        return
+    s = scenarios.SCENARIOS.get(name)
+    if not s:
+        sys.exit(f"no scenario {name!r}; `p3.py scenario list`")
+    t0 = time.time()
+    ctx = {"http": http, "cheat": cheat, "gwork": gwork, "field": field, "goto": goto, "advance": advance, "focus": focus,
+           "keys": lambda *ks: [time.sleep(float(k[5:])) if k.startswith("wait:") else http(f"/key?k={k}&ms=120")
+                                for k in ks]}
+    for step in s["steps"]:
+        fn, *a = step
+        kw = a.pop() if a and isinstance(a[-1], dict) else {}
+        print(f"[{time.time() - t0:5.1f}s] {fn} {' '.join(map(str, a))} {kw if kw else ''}".rstrip())
+        r = ctx[fn](*a, **kw)
+        if r is False:
+            sys.exit(f"step {fn} failed")
+        if isinstance(r, str) and r.strip():
+            print("  " + r.strip().splitlines()[0])
+    print(f"[{time.time() - t0:5.1f}s] done: {s['check']}")
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     a = sys.argv[1:]
@@ -557,7 +689,7 @@ def main():
     # Commands that kill, reload or press keys never touch the player's session unless asked (--force).
     force = "--force" in rest
     rest = [x for x in rest if x != "--force"]
-    if cmd in ("kill", "up", "reload", "keys", "advance", "goto", "flow") and not force and player_game():
+    if cmd in ("kill", "up", "reload", "keys", "advance", "goto", "flow", "scenario") and not force and player_game():
         sys.exit(f"the running game is the player's (mode=play): `{cmd}` would act on it; pass --force if they asked")
     if cmd == "launch":
         launch(rest)
@@ -672,60 +804,16 @@ def main():
     elif cmd == "goto":
         # p3.py goto "Head to the Dorm" [--noact]: auto-walk to the nearest point of interest whose name contains the
         # text, then press the action key (Space) unless --noact.
-        want = rest[0].lower()
-        target = None
-        for l in http("/poi?r=20000").splitlines():
-            if l.startswith("#") and want in l.lower():
-                target = l.split()[0][1:]
-                print("target:", l)
-                break
-        if not target:
+        if not goto(rest[0], "--noact" not in rest):
             sys.exit("no such point of interest")
-        http(f"/nav?walk={target}")
-        for _ in range(60):
-            time.sleep(1)
-            if "walking=false" in http("/nav"):
-                break
-        print(http("/speech?since=0").splitlines()[-1])
-        if "--noact" not in rest:
-            time.sleep(0.8)
-            http("/key?k=space&ms=120")
-            time.sleep(2)
     elif cmd == "advance":
         # p3.py advance [seconds=60] [key=enter]: play through dialogue, pressing the key whenever a message is open;
         # prints what the mod speaks. Stops early when a choice list appears (sel != null) or a modelled screen opens.
         args = [a for a in rest if not a.startswith("--")]
-        secs = float(args[0]) if args else 60
-        key = args[1] if len(args) > 1 else "enter"
-        cur = int(http("/speech?since=999999999").split()[1])
-        t0 = time.time()
-        while time.time() - t0 < secs:
-            time.sleep(1.5)
-            out = http(f"/speech?since={cur}")
-            lines = out.splitlines()
-            cur = int(lines[0].split()[1])
-            for l in lines[1:]:
-                print(l.split(": ", 1)[1] if ": " in l else l)
-            m = http("/msg")
-            if "sel index" in m:
-                if "--choose" in rest:
-                    time.sleep(1.0)
-                    http(f"/key?k={key}&ms=120")
-                    time.sleep(1.0)
-                    continue
-                print("-- choice open, stopping")
-                break
-            scr = http("/screen").splitlines()[0]
-            if "screen=movie" in scr:
-                continue   # subtitles are message items too, but Enter would pause the movie
-            if any(s in scr for s in ("screen=get_item", "screen=stats_up", "screen=rank_up", "screen=battle_result")):
-                http("/key?k=space&ms=120")   # notices that only need OK
-                continue
-            if "screen=none" not in scr and "item=Msg" not in m:
-                print("-- " + scr + ", stopping")
-                break
-            if "item=Msg" in m and "item=MsgSubtitles" not in m:   # subtitles advance on their own
-                http(f"/key?k={key}&ms=120")
+        advance(float(args[0]) if args else 60, args[1] if len(args) > 1 else "enter", "--choose" in rest)
+    elif cmd == "scenario":
+        # p3.py scenario list | <name>: put the game straight into a test situation (tools/scenarios.py).
+        scenario(rest[0] if rest else "list")
     elif cmd == "flow" and rest and rest[0] == "sleep":
         # p3.py flow sleep: from free time anywhere in town, travel home (town map -> Student Dormitory), go in,
         # up to your room and to bed, choosing the first option of every choice. Prints what the mod speaks.

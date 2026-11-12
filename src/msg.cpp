@@ -380,6 +380,11 @@ static bool read_window(Tick& tk, Seen& s, UObject* item, UObject* sel) {
   return true;
 }
 
+// The event choice with its two answers side by side (USelAEventTypeB: the ending's "Close your eyes"): Left and
+// Right set +0x40, which is the answer Enter takes (seen 2026-11-11: +0x40 = 1 took the second answer, the
+// ListCursor still on 0).
+bool side_by_side(UObject* sel) { return sel && ue::is_a(sel, "SelAEventTypeB"); }
+
 // A window's choice list: its answers and cursor go into the tick's state, a new list's focused answer is said once,
 // and the answer under the cursor when the list closes goes in the log.
 static void read_choices(Tick& tk, Seen& s, UObject* sel) {
@@ -387,8 +392,12 @@ static void read_choices(Tick& tk, Seen& s, UObject* sel) {
   if (sel && is_live(sel)) {
     tk.choosing = true;
     tk.sel_now = sel;
-    // The answer under the cursor: the ListCursor at +0x60 (7 rows shown; +0x40 is only its row on screen).
-    uint32_t idx = (uint32_t)screens::ListCursor((uint8_t*)sel + 0x60).index();
+    // The answer under the cursor: the ListCursor at +0x60 (7 rows shown; +0x40 is only its row on screen). Two answers
+    // side by side (side_by_side) are the exception: +0x40 is the answer and the ListCursor stays on 0; it opens at -1,
+    // nothing picked, which the choice screen settles on the first answer as soon as the list takes input.
+    int32_t row = *(int32_t*)((uint8_t*)sel + 0x40);
+    uint32_t idx = side_by_side(sel) ? (uint32_t)(row < 0 ? 0 : row)
+                                     : (uint32_t)screens::ListCursor((uint8_t*)sel + 0x60).index();
     auto ch = choices_of(sel);
     cur.open = true; cur.blocking = true; cur.choices = ch; cur.choice = (int)idx;
     WeakObj list = WeakObj::of(sel);
