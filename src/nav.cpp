@@ -362,14 +362,17 @@ void tick() {
     // there (otherwise it re-paths from the new floor and runs on through the next staircase).
     static FVector last{};
     bool jumped = g_w.last_valid && std::fabs(me.x - last.x) + std::fabs(me.y - last.y) + std::fabs(me.z - last.z) > 400.0f;
+    FVector before = last;
     last = me; g_w.last_valid = true;
     ue::UObject* t = g_w.target.resolve();
     if (!t) { log::write("nav: stopped, the target is gone"); stop(true); return; }
     FVector goal = world::actor_location(t);
-    // A teleport next to the target was the target (stairs); one on the way (the path crossed another exit, the
-    // back alley's, 2026-10-27) only moved the hero: plan again from there.
+    // A teleport taken next to the target was the target (stairs); one taken on the way (the path crossed another
+    // exit, the back alley's, 2026-10-27) only moved the hero: plan again from there. Where the hero stood before the
+    // jump decides, not where he landed: the alley's exit drops him 7 m from the Velvet Room's door, which ended the
+    // walk short of it (2026-11-12).
     if (jumped) {
-      if (flat(goal, me) < 800.0f || std::fabs(goal.z - me.z) > 300.0f) { stop(false); arrived_at(); return; }
+      if (flat(goal, before) < 800.0f) { stop(false); arrived_at(); return; }
       g_w.side_on = false;
       refresh_path(me);
       restart_progress(me, now);

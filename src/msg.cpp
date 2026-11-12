@@ -346,8 +346,13 @@ static bool read_window(Tick& tk, Seen& s, UObject* item, UObject* sel) {
         s.said.insert(no_digits(t));
       }
     }
+    // The game builds every page of a dialog at once, and often the next dialog's pages while this one still shows
+    // (the club door's two thoughts were both read over the first, then the second again when it showed; the fridge's
+    // notice too, 2026-11-12): only a later page of the dialog shown is this window's.
+    int shown_dialog = dialog_of(page);
     for (auto& c : created_since(s.seq)) {
       s.seq = c.seq;
+      if (shown_dialog >= 0 && c.dialog >= 0 && c.dialog != shown_dialog) continue;
       // A page laid out again (BmdSetTextSize runs on re-layout too) must not be spoken twice in one window.
       bool title = c.text == last_who;   // the window's own title
       if (buf && c.buf == buf && c.text != s.spoken && !s.said.count(no_digits(c.text)) && !title) {

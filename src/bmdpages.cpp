@@ -115,6 +115,13 @@ std::vector<Created> pages_of(const void* buf) {
     if (k.first == buf && !v.text.empty()) out.push_back(Created{v.seq, v.first_ms, v.wrapper, v.dialog, v.page, v.text, k.first, k.second});
   return out;
 }
+int dialog_of(const void* page) {
+  void* buf = nullptr; void* data = nullptr;
+  if (!page || !guarded([&] { buf = *(void**)((uint8_t*)page + 0x18); data = *(void**)((uint8_t*)page + 0x20); })) return -1;
+  std::lock_guard lk(g_bmd_mu);
+  auto it = g_live.find({buf, data});
+  return it != g_live.end() ? it->second.dialog : -1;
+}
 std::vector<Created> created_since(uint64_t seq) {
   std::lock_guard lk(g_bmd_mu);
   std::vector<Created> out;
