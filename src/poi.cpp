@@ -3,7 +3,8 @@
 //  - AFldHitCore (every hit actor on a visible level): mCheckIcon_, mType_ (Normal / AreaChange), mNameIndex_,
 //    mKeyPushBluePrint_ / mOverlapBluePrint_ (an unnamed box with only an overlap blueprint is a trigger), and the
 //    flags that retire it: mExecutedFlagName_, mOffFlagName_, mIgnoreFlagName_.
-//  - AFldNpcActor: bHidden, Children, mNpcBaseClass_ / mCharaBaseClass_ (a placeholder has none of them).
+//  - AFldNpcActor: bHidden, Children, mNpcBaseClass_ / mCharaBaseClass_ (a placeholder has none of them),
+//    mCharaModelList_ (empty: no character stands there).
 //  - AFldDungeonObjectActor: ObjType and m_pHitActorList (a chest's kind for its hit), Box (a breakable's body).
 //  - UFldDungeonMissingController.m_pMissingPerson; AEnemySymbolBaseCore (the roaming Shadows) with the enemy
 //    manager's holders (shadow::enemy_holders).
@@ -205,6 +206,11 @@ std::vector<Poi> scan(float radius) {
     // A placeholder with nobody spawned in it (no child actor, no class): not a person (the dorm lounge, 2026-10-27).
     auto* kids = field<TArray<UObject*>>(a, "Children");
     if (kids && kids->num == 0 && !get<UObject*>(a, "mNpcBaseClass_") && !get<UObject*>(a, "mCharaBaseClass_")) continue;
+    // Nobody standing in it: no character model loaded (mCharaModelList_, a TMap: its element array's count is 0).
+    // Three such spots on the dorm's third floor (FldNpcActor_298_*, a base class but no model and no icon, 5/4
+    // evening, 2026-11-12) were listed as "Person" 2 m away, and the auto-walk stalled against their collision.
+    auto* models = field<TArray<uint8_t>>(a, "mCharaModelList_");
+    if (models && models->num == 0) continue;
     add(a, Kind::Person, npc_name(a));
   }
   // Tartarus' breakable Shadow remains (BP_DOBJ_Broken*_C; strike them, Ctrl, for items). A broken one stays visible

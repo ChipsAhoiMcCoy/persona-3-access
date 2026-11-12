@@ -10,6 +10,9 @@
 - New sound placement, from Dark Vision: left and right by level and by the moment each ear hears a sound, sounds behind darker. The Sound placement setting (Sound) chooses it, Steam Audio's 3D (as before) or a plain pan. It replaces the 3D sound setting.
 - New sonar rhythm, from Dark Vision: everything in range sounds once from west to east, then a pause (Sonar rhythm: sweep). Pulse is the rhythm as it was.
 
+### Points of interest
+- Empty spots where the game can place a character were listed as "Person" when nobody stood there (three on the dorm's third floor, a step from the hallway), and walking to one stalled. They are no longer listed.
+
 ### Character descriptions
 - The area key (Semicolon, or both triggers and B) now describes the character talking to you while their portrait is up beside the line: how they look, the outfit the portrait shows (summer or winter uniform, casual clothes, swimsuit, yukata, combat gear and the rest) and how they stand. It follows their outfit as it changes through the year. All 155 outfits of the 53 characters with a portrait are described. Outside a conversation the key describes the place, as before.
 
