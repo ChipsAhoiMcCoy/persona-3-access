@@ -409,8 +409,9 @@ Persona 3 Reload's camera sits behind the hero and turns, so a sound "ahead" kep
 top-down mode (the Top-down exploration setting, on by default) the field is heard the way Dark Vision presents
 Wrath of the Righteous:
 
-- While you walk freely, the camera is fixed facing north and cannot be turned. The game moves you relative to its
-  camera, so up (W, or the left stick up) always walks north, right walks east, and so on.
+- While you walk freely, the camera is fixed facing north and cannot be turned. Up (W, or the left stick up) always
+  walks north, right walks east, and so on, even where the game shows a place from a fixed scene camera of its own
+  (Fountain Square, the station, many rooms).
 - The game's own sounds (footsteps, voices, doors, Shadows) are heard from where you stand, with north ahead, as if
   from above; so are the mod's sonar, Shadow cues and wall tones. A Shadow's growl comes from where the Shadow is.
 - The wall tones are the compass: north, east, south and west of you. As in Dark Vision, they play only while you
@@ -418,7 +419,8 @@ Wrath of the Righteous:
   (walking north you hear north, east and west; walking north-east, north and east).
 - The points of interest list gives directions by the compass ("Iwatodai Station, 8 meters, north-east").
 - The right stick scans a direction (see On a controller).
-- North is the map's up (the map screen and the corner map draw it that way).
+- North is the up of the corner map, place by place: where the game draws a place's map turned (Port Island
+  Station, your room, the Command Room), north turns with it.
 
 Conversations, story scenes, menus and battles are untouched: the camera and the sound go back to the game's own the
 moment one starts, and come back to north when you walk freely again. Turn the setting off to play with the
