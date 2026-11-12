@@ -260,6 +260,17 @@ bool get_bool(UObject* o, std::string_view prop) {
   return p && prop_bool(p, o);
 }
 int32_t struct_size(UStruct* s) { return s ? rd<int32_t>(s, off::kStructSize) : 0; }
+TableRows table_rows(UObject* table, std::string_view prop) {
+  TableRows t;
+  FField* dp = table ? find_prop(class_of(table), prop) : nullptr;
+  auto* rows = table ? field<TArray<uint8_t>>(table, prop) : nullptr;
+  if (!dp || !rows) return t;
+  t.row = (UStruct*)prop_inner_object(prop_inner_prop(dp));
+  t.stride = struct_size(t.row);
+  t.data = rows->data;
+  t.num = rows->num;
+  return t;
+}
 // Lookups by name walk every field of a struct and its supers, building a string per field (a Blueprint widget has
 // hundreds): screens doing a few per tick cost the frame. Answers are cached by (struct, name) with the struct's weak
 // handle, so a class that unloads and whose memory is reused is never answered from the old entry.

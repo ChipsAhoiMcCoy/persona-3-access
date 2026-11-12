@@ -111,6 +111,16 @@ T* field(UObject* o, std::string_view prop) {
   return off < 0 ? nullptr : (T*)((uint8_t*)o + off);
 }
 bool get_bool(UObject* o, std::string_view prop);   // bitfield-aware
+// The rows of a data asset's array of structs (the "Data" of the game's Dat tables): where they start, how many,
+// how far apart, and the row struct for offset_of. False when the object has no such array.
+struct TableRows {
+  uint8_t* data = nullptr;
+  int32_t num = 0, stride = 0;
+  UStruct* row = nullptr;
+  explicit operator bool() const { return data && row && stride > 0; }
+  uint8_t* at(int32_t i) const { return i >= 0 && i < num ? data + (size_t)i * stride : nullptr; }
+};
+TableRows table_rows(UObject* table, std::string_view prop = "Data");
 template <typename T>
 T get(UObject* o, std::string_view prop, T def = T{}) { T* p = field<T>(o, prop); return p ? *p : def; }
 

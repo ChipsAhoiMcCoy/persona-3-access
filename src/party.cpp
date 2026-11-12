@@ -65,13 +65,11 @@ std::string name(int id) {
   }
   static const int table_id = watch::want("DatPlayerFirstNameTable");
   UObject* t = watch::get(table_id);
-  auto* data = t ? field<TArray<uint8_t>>(t, "Data") : nullptr;
-  FField* dp = t ? find_prop(class_of(t), "Data") : nullptr;
-  if (!data || !dp) return {};
-  UStruct* st = (UStruct*)prop_inner_object(prop_inner_prop(dp));
-  int sz = struct_size(st), id_off = offset_of(st, "mPlayerID"), name_off = offset_of(st, "mName");
-  for (int i = 0; i < data->num; ++i) {
-    uint8_t* r = data->data + i * sz;
+  TableRows rows = table_rows(t);
+  if (!rows) return {};
+  int id_off = offset_of(rows.row, "mPlayerID"), name_off = offset_of(rows.row, "mName");
+  for (int i = 0; i < rows.num; ++i) {
+    uint8_t* r = rows.at(i);
     if (*(int32_t*)(r + id_off) == id) return text(*(FText*)(r + name_off));   // FDatPlayerNameOne.mName is an FText
   }
   return {};

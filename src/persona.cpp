@@ -166,15 +166,13 @@ std::string skill_cost(int id) {
   static const int table_id = watch::want("DatSkillNormalTable");
   UObject* t = watch::get(table_id);
   if (!t) return {};
-  FField* dp = find_prop(class_of(t), "Data");
-  auto* rows = field<TArray<uint8_t>>(t, "Data");
-  UStruct* st = dp ? (UStruct*)prop_inner_object(prop_inner_prop(dp)) : nullptr;
-  if (!rows || !st || id <= 0 || id >= rows->num) return {};
-  int sz = struct_size(st), oType = offset_of(st, "costtype"), oCost = offset_of(st, "cost");
+  TableRows rows = table_rows(t);
+  if (!rows || id <= 0 || id >= rows.num) return {};
+  int oType = offset_of(rows.row, "costtype"), oCost = offset_of(rows.row, "cost");
   if (oType < 0 || oCost < 0) return {};
   std::string s;
   guarded([&] {
-    const uint8_t* r = rows->data + (size_t)id * sz;
+    const uint8_t* r = rows.at(id);
     int type = r[oType], cost = *(uint16_t*)(r + oCost);
     if (type == 1 && cost) s = std::format("{}% {}", cost, strings::kHP);
     else if (type == 2 && cost) s = std::format("{} {}", cost, strings::kSP);
@@ -242,14 +240,12 @@ std::vector<Learn> learnset(int id) {
   std::vector<Learn> out;
   UObject* d = dat();
   UObject* t = d ? get<UObject*>(d, "TableGrowth") : nullptr;
-  FField* dp = t ? find_prop(class_of(t), "Data") : nullptr;
-  auto* rows = t ? field<TArray<uint8_t>>(t, "Data") : nullptr;
-  UStruct* st = dp ? (UStruct*)prop_inner_object(prop_inner_prop(dp)) : nullptr;
-  if (!rows || !st || id <= 0 || id >= rows->num) return out;
-  int sz = struct_size(st), ev = offset_of(st, "skillEvent"), base = base_level(id);
+  TableRows rows = table_rows(t);
+  if (!rows || id <= 0 || id >= rows.num) return out;
+  int ev = offset_of(rows.row, "skillEvent"), base = base_level(id);
   if (ev < 0) return out;
   guarded([&] {
-    const uint8_t* r = rows->data + (size_t)id * sz + ev;
+    const uint8_t* r = rows.at(id) + ev;
     for (int i = 0; i < 16; ++i, r += 6)
       if (int sk = *(const uint16_t*)(r + 4)) out.push_back({base + r[0], sk});
   });
