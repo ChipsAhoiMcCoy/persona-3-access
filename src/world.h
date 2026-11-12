@@ -23,7 +23,8 @@ bool scene_fast();
 // Shadow cues) plays only while this holds.
 bool exploring();
 bool player_location(FVector& out);
-// Unit vectors on the ground plane for a camera-relative direction: 0 ahead, 1 right, 2 behind, 3 left.
+// Unit vectors on the ground plane for a listener-relative direction: 0 ahead, 1 right, 2 behind, 3 left (north,
+// east, south, west in the top-down mode).
 FVector dir_vector(int dir);
 // What blocks a body going `from` -> `to`: sweep moves a capsule (radius, half height) with the Pawn profile, line
 // traces a line with the given profile. The player is never hit.
@@ -47,7 +48,14 @@ uint64_t levels_stamp();   // goes up whenever the set of visible levels is foun
 bool project_to_nav(const ue::FVector& p, float extent, ue::FVector& out);   // nearest navmesh point within extent cm
 // The navmesh path's points, empty when there is none; `partial`: it stops short of `to`.
 std::vector<ue::FVector> find_path(const ue::FVector& from, const ue::FVector& to, bool* partial = nullptr);
-float bearing(const ue::FVector& from, const ue::FVector& to);   // camera-relative degrees, 0 ahead, 90 right
+// Degrees from the listener's facing (north in the top-down mode, else the camera's), 0 ahead, 90 right.
+float bearing(const ue::FVector& from, const ue::FVector& to);
+// Degrees from the camera's facing whatever the mode: where the game's own movement keys go (the auto-walk).
+float camera_bearing(const ue::FVector& from, const ue::FVector& to);
+float camera_yaw();
+// The top-down mode (topdown.cpp): while on, sounds, bearings and dir_vector face `yaw` (north), not the camera.
+void set_north(bool on, float yaw);
+bool north_up();
 // Where `to` is heard from `from` (the hero): camera-relative direction with its height, and the distance.
 audio::Spot spot(const ue::FVector& from, const ue::FVector& to);
 void register_routes();

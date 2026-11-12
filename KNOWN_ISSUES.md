@@ -19,6 +19,7 @@ These reached the code but have not been seen working in the game, because no te
 
 ## Tested less than the rest
 
+- The top-down mode (new): tried in Tartarus and the dorm lounge by the developer, not yet played. Some indoor spots (parts of the dorm, the school, the mall) switch to a camera of their own on a rail; there, up may walk along that camera instead of north, which has not been checked. Town districts whose corner map is drawn turned may have their north elsewhere than the map's up. The right stick's scan has no keyboard key yet.
 - Episode Aigis has not been played through with the mod. Its movies and area descriptions are in place, and its Theurgy list has been checked, but the episode as a whole is untested.
 - The end of the game was played through once with test shortcuts (Jin, Takaya, Nyx, the epilogue, the credits): each part read, but not at a player's pace. The clear save and New Game Plus have not been tried.
 - A late game playthrough has not been completed. Each menu was tested on saves from various points, not by finishing the game with the mod. Monad and the Abyss of Time were visited to check area descriptions, not played through.

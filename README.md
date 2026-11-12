@@ -71,6 +71,11 @@ nearest point of interest of the current category. While you hold them the game 
 - RB: Social Links
 - L3 (press the left stick): Party
 - R3 (press the right stick): Sonar on or off
+
+Without the triggers, while you walk the field in the top-down mode (on by default), the right stick no longer turns
+the camera: push it toward a direction (up is north) to hear the nearest point of interest that way, with its
+distance, and how far the wall is ("north-east: Iwatodai Station, 8 meters. wall 3 meters"). That point's sound plays
+from where it is. Each new direction is read at once.
 - Menu button: The keys of what is in front of you (like F1)
 - View button: Mod settings (like F2); its last row reads the mod's keys
 
@@ -109,8 +114,8 @@ Backspace or F2 (B or View) closes. Changes are saved at
 once, to `%LOCALAPPDATA%\P3RAccess\settings.ini`. The menu plays the game's own menu sounds: opening and closing
 (the camp menu's), the cursor on each move, and a sound on each value change.
 
-Exploring holds Wall tones, Shadow alerts, Points of interest range and Wall tone volume.
-Sonar holds everything named Sonar. Sound holds 3D sound for headphones, Lower pitch behind you, Mod master volume
+Exploring holds Wall tones, Shadow alerts, Points of interest range, Wall tone volume and Top-down exploration.
+Sonar holds everything named Sonar and Sonar rhythm. Sound holds Sound placement, Lower pitch behind you, Mod master volume
 and Shadow sounds volume. Dialogue and movies holds Voiced dialogue, When a line ends, Read cutscene subtitles and
 the two Audio description settings. Controls and help holds Controller trigger delay, Menu key hints on entry and
 Mod keys.
@@ -126,8 +131,8 @@ strike-reach rings, the four wall tones and the controller layer's tick. They pl
 - Sonar range: 10 meters; 5, 15, 20, 30 or 40
 - Sonar: exits, Sonar: doors, Sonar: people, Sonar: shops, Sonar: objects, Sonar: events, Sonar: Twilight Fragments: on, off: each kind of thing on its own. Changing one plays its sound, so this is also where to learn them
 - Shadow alerts: on, off: in Tartarus, the Shadow pulse, the alarm when one notices you, the strike-reach ring (for Shadows and breakable objects) and the back-turned / facing-you cues
-- 3D sound for headphones: on, off: the sonar and the Shadow cues come from where their source is, ahead, behind, above or below (Steam Audio's HRTF; far sounds are also a little duller). Off pans them left and right only, as before
-- Lower pitch behind you: on, off: the sonar's sounds and the Shadow pulse play lower when their source is behind you
+- Sound placement: stereo, 3D for headphones, plain left and right: how the sonar and the Shadow cues are placed. Stereo (Dark Vision's model) places them left and right by level and by the moment each ear hears them, and makes a sound behind you darker. 3D goes through Steam Audio's HRTF, which also gives above and below (far sounds are also a little duller). Plain pans them only
+- Lower pitch behind you: on, off: the sonar's sounds and the Shadow pulse play lower when their source is behind you. Not in the top-down mode, where behind is south and sounds darker instead
 - Points of interest range: 60 meters; 20, 40, 100 or 150
 - Mod master volume: 100 percent; 0 to 100 in steps of 10, like the game's volume sliders: every sound the mod plays (not the game's own sounds, which follow the game's settings)
 - Sonar volume: 80 percent; 0 to 100 in steps of 10: the sonar's sounds (changing it plays one)
@@ -138,6 +143,8 @@ strike-reach rings, the four wall tones and the controller layer's tick. They pl
 - Voiced dialogue: not read (the voice plays alone), speaker's name only, read aloud: a line the game voices; unvoiced lines are read at once. A voiced line is not read even when its voice does not play (voice volume at zero): choose read aloud then (backslash repeats any line, B's log has them all). A speaker is named only on their first line in a row: Junpei, then Junpei again, is "Junpei: ..." and then the line alone; Yukari after him is named again
 - When a line ends: say Next, page turn sound, message chime sound, cursor tick sound, off: once a line of dialogue or a thought waits for you to continue, the screen reader says "Next" or a sound from the game's own menus plays (changing it plays the sound). On a voiced line this comes when the voice finishes; on an unvoiced one "Next" follows the reading. A sound waits for the reading too when your speech can report its end; on those that cannot, such as NVDA, it plays as the reading begins
 - Read cutscene subtitles: off, on: the screen reader reads the subtitles of movies and cutscenes as they appear. They are in the log (B) either way
+- Top-down exploration: on, off: while you walk freely, the camera stays facing north and everything is heard as if from above (see Top-down exploration below)
+- Sonar rhythm: sweep, pulse: sweep plays everything in range once, from west to east, then pauses and starts again; pulse is the rhythm described under Sounds, each thing repeating faster the closer it is
 - Audio description in movies: on, off: a narrator describes what is on screen in the animated story movies, between the lines of dialogue (the movie's sound dips while she speaks)
 - Audio description volume: 100 percent; 0 to 100 in steps of 10: the movie narrator
 - Mod keys: Space reads the list of the mod's keys
@@ -397,6 +404,25 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   Registration lists your Personas, then their status page before you confirm; Right walks a Persona's details on
   both lists too.
 
+## Top-down exploration
+
+Persona 3 Reload's camera sits behind the hero and turns, so a sound "ahead" kept changing direction. In the
+top-down mode (the Top-down exploration setting, on by default) the field is heard the way Dark Vision presents
+Wrath of the Righteous:
+
+- While you walk freely, the camera is fixed facing north and cannot be turned. The game moves you relative to its
+  camera, so up (W, or the left stick up) always walks north, right walks east, and so on.
+- The game's own sounds (footsteps, voices, doors, Shadows) are heard from where you stand, with north ahead, as if
+  from above; so are the mod's sonar, Shadow cues and wall tones. A Shadow's growl comes from where the Shadow is.
+- The wall tones are the compass: north, east, south and west of you.
+- The points of interest list gives directions by the compass ("Iwatodai Station, 8 meters, north-east").
+- The right stick scans a direction (see On a controller).
+- North is the map's up (the map screen and the corner map draw it that way).
+
+Conversations, story scenes, menus and battles are untouched: the camera and the sound go back to the game's own the
+moment one starts, and come back to north when you walk freely again. Turn the setting off to play with the
+game's own camera.
+
 ## Sounds
 
 - Wall tones: four looping tones tell you how close walls are: ahead and behind (centered, different pitches),
@@ -416,6 +442,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   left out unless you can walk there, and so are things past a closed door (the corridor's from the gym hallway), until you go through it. The point selected in the points of interest list always has a place among
   them. The sounds take turns: only one plays at a time, each after the one before it has finished, so they never play over one another. Whichever is most overdue for its own rhythm goes next, and a near thing's lateness counts for more than a far one's: with many things around, the near ones keep most of their speed and the far ones wait longer (seconds, in a full room), none is left out, and a thing that has just come into range goes first. The sonar is silent in menus, conversations, story scenes and
   battles. Shadows are not part of it: they keep their own pulse.
+  That is the pulse rhythm. The sweep rhythm (Sonar rhythm, the default) is Dark Vision's: every thing in range sounds once, one after another from west to east, so two of a kind are heard left then right, then a short pause, then again. The pause between two sounds shrinks as the crowd grows (a fifth of a second for a few things, a tenth for many); nothing is left out. Its volume falls with distance (half as loud at 3 m) but never below a quiet floor.
 - Shadow pulse: a low, rattling snarl from the nearest Shadow within 30 m, whatever its height, faster and louder as it closes in
   (from every 0.8 seconds at 30 m to one unbroken snarl beside you), lower when it is behind you. When a Shadow notices you, a harsh two-note alarm sounds from where it is, and its growl turns higher,
   louder and nearly twice as fast for as long as it hunts you; two soft falling notes mean it has lost you.

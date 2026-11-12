@@ -20,6 +20,7 @@
 #include <mutex>
 #include <vector>
 #include "core/sonar_cues.h"
+#include "core/spatializer.h"
 #include "hrtf.h"
 #include "log.h"
 
@@ -72,6 +73,7 @@ struct Shot {
   bool spatial = true;    // false once no HRTF slot was free: panned to its end
   int slot = -1;          // the HRTF slot, held one block past the end for the filter's tail
   bool dead = false;
+  std::shared_ptr<core::SpatialVoice> stereo;   // Dark Vision's stereo model: its filters' and delay's state
 };
 constexpr size_t kMaxShots = 32;   // more at once is a runaway caller: further ones are dropped
 
@@ -94,7 +96,9 @@ float g_limit = 1.0f;
 uint32_t g_limited_blocks = 0;   // dev: blocks in which the limiter worked
 // 3D sound: positional sounds go through an HRTF slot. Fallbacks (no free slot, or a block of an unexpected size)
 // pan instead and are counted for /audio.
-bool g_hrtf_on = true;
+bool g_hrtf_on = false;
+int g_spatial = 0;   // settings::SpatialModel
+constexpr float kPanWidthM = 3.0f;   // Dark Vision's 10 ft: inside it the pan follows the sideways offset
 uint32_t g_hrtf_fallbacks = 0;
 bool g_odd_block_logged = false;
 constexpr int kMaxBlock = 4096;
@@ -151,7 +155,9 @@ void data_callback(ma_device*, void* out, const void*, ma_uint32 frames) {
       if (sh.slot < 0) { ++g_hrtf_fallbacks; sh.spatial = false; }   // all slots busy: this one pans
     }
     if (sh.slot >= 0 && !hrtf_block) { hrtf::release(sh.slot); sh.slot = -1; }   // 3D sound switched off mid-shot
-    const bool ears = sh.slot >= 0;
+    // Dark Vision's stereo: the model when chosen, and the HRTF's own fallback (no slot, odd block, no phonon).
+    const bool stereo = sh.spatial && sh.stereo && sh.slot < 0 && g_spatial != 2 && frames <= (ma_uint32)kMaxBlock;
+    const bool ears = sh.slot >= 0 || stereo;
     if (ears) std::fill(g_mono, g_mono + frames, 0.0f);
     float l, r; pan_gains(sh.spot.pan, l, r);
     const std::vector<float>& v = *sh.pcm;
@@ -164,8 +170,19 @@ void data_callback(ma_device*, void* out, const void*, ma_uint32 frames) {
       if (ears) g_mono[i] = s;
       else { o[i * 2] += s * l; o[i * 2 + 1] += s * r; }
     }
-    if (ears) {
+    if (sh.slot >= 0) {
       hrtf::process(sh.slot, g_mono, dir_of(sh.spot), g_ear_l, g_ear_r);
+      add_ears(o, frames);
+    } else if (stereo) {
+      // The listener's own frame: right is east and ahead north in the top-down mode, the camera's otherwise.
+      float flat = sh.spot.dist_m * std::sqrt(std::max(0.0f, 1.0f - sh.spot.up * sh.spot.up));
+      float horiz = std::hypot(sh.spot.right, sh.spot.ahead);
+      float east = horiz > 1e-4f ? sh.spot.right / horiz * flat : 0.0f, north = horiz > 1e-4f ? sh.spot.ahead / horiz * flat : 1.0f;
+      if (sh.spot.dist_m <= 0.0f) { east = sh.spot.pan * kPanWidthM; north = sh.spot.ahead; }   // a Spot with no distance: by direction alone
+      core::SpatialCue cue = core::spatial_cue(east, north, kPanWidthM, kRate);
+      std::fill(g_ear_l, g_ear_l + frames, 0.0f);
+      std::fill(g_ear_r, g_ear_r + frames, 0.0f);
+      sh.stereo->process(g_mono, (int)frames, cue, kRate, g_ear_l, g_ear_r);
       add_ears(o, frames);
     }
   }
@@ -247,6 +264,7 @@ static void push_shot(Pcm pcm, float volume, const Spot& at, Bus bus, float rate
   s.bus = bus;
   s.spot = at;
   s.spatial = spatial;
+  if (spatial) s.stereo = std::make_shared<core::SpatialVoice>();   // made here: the audio thread allocates nothing
   g_shots.push_back(std::move(s));
 }
 void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate) { push_shot(std::move(pcm), volume, at, bus, rate, true); }
@@ -270,7 +288,7 @@ static Pcm signal_pcm(int signal) {
 }
 void signal(int signal, float volume, const Spot& at, float rate) { push_shot(signal_pcm(signal), volume, at, Bus::Cues, rate, true); }
 void signal_here(int signal, float volume) { push_shot(signal_pcm(signal), volume, Spot{}, Bus::Cues, 1.0f, false); }
-void set_hrtf(bool on) { std::lock_guard lk(g_mu); g_hrtf_on = on; }
+void set_spatial(int model) { std::lock_guard lk(g_mu); g_spatial = model; g_hrtf_on = model == 1; }
 
 bool render_beep_wav(float freq, int ms, const Spot& at, const std::string& path) {
   // A test beep: sine, ~10 ms smoothing in, 5 ms fade out.
@@ -370,7 +388,7 @@ std::string status() {
                      "hrtf {} slots {}/{} fallbacks={} air={:.1f} callback_max_us={} followed={}\n",
                      g_ready, g_master, g_bus[(int)Bus::Cues].target, g_bus[(int)Bus::Walls].target, g_bus[(int)Bus::Narration].target,
                      g_bus[(int)Bus::Sonar].target, g_shots.size(), g_loops.size(), loud, g_limit, g_limited_blocks,
-                     !hrtf::available() ? "unavailable" : g_hrtf_on ? "on" : "off", hrtf::slots_used(), hrtf::slot_count(), g_hrtf_fallbacks,
+                     !hrtf::available() ? "unavailable" : g_hrtf_on ? "on" : g_spatial == 0 ? "off (stereo model)" : "off (pan)", hrtf::slots_used(), hrtf::slot_count(), g_hrtf_fallbacks,
                      hrtf::air(), g_cb_max_us, g_followed.load());
 }
 }  // namespace p3a::audio

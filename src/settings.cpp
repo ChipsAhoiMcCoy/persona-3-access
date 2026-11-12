@@ -57,8 +57,10 @@ static const Def kDefs[Count] = {
   {"sonar_events", strings::kSetSonarEvents, CatSonar, strings::kHelpSonarKind, Unit::Toggle, {0, 1}, 1},
   {"sonar_fragments", strings::kSetSonarFragments, CatSonar, strings::kHelpSonarKind, Unit::Toggle, {0, 1}, 1},
   {"shadow_alerts", strings::kSetShadowAlerts, CatExploring, strings::kHelpShadowAlerts, Unit::Toggle, {0, 1}, 1},
-  // the positional cues through Steam Audio
-  {"hrtf", strings::kSetHrtf, CatSound, strings::kHelpHrtf, Unit::Toggle, {0, 1}, 1},
+  // how positional cues are placed: Dark Vision's stereo model, Steam Audio's HRTF, or a plain pan (a new key: the
+  // old "hrtf" toggle's saved 1 would have kept the HRTF)
+  {"spatial", strings::kSetSpatial, CatSound, strings::kHelpSpatial, Unit::Choice, {SpatialStereo, SpatialHrtf, SpatialPan}, SpatialStereo,
+   {strings::kSpatialStereo, strings::kSpatialHrtf, strings::kSpatialPan}},
   {"behind_pitch", strings::kSetBehindPitch, CatSound, strings::kHelpBehindPitch, Unit::Toggle, {0, 1}, 1},
   {"poi_range", strings::kSetPoiRange, CatExploring, strings::kHelpPoiRange, Unit::Meters, {20, 40, 60, 100, 150}, 60},
   {"master_volume", strings::kSetMasterVolume, CatSound, strings::kHelpMasterVolume, Unit::Percent, kPercents, 100},
@@ -76,6 +78,10 @@ static const Def kDefs[Count] = {
   // the narrator in story movies (ad.cpp)
   {"audio_description", strings::kSetAudioDescription, CatDialogue, strings::kHelpAudioDescription, Unit::Toggle, {0, 1}, 1},
   {"description_volume", strings::kSetDescriptionVolume, CatDialogue, strings::kHelpDescriptionVolume, Unit::Percent, kPercents, 100},
+  // the camera fixed north and every sound heard from above while walking freely (topdown.cpp)
+  {"top_down", strings::kSetTopDown, CatExploring, strings::kHelpTopDown, Unit::Toggle, {0, 1}, 1},
+  {"sonar_mode", strings::kSetSonarMode, CatSonar, strings::kHelpSonarMode, Unit::Choice, {SonarSweep, SonarPulse}, SonarSweep,
+   {strings::kSonarSweep, strings::kSonarPulse}},
 };
 static int g_value[Count] = {};   // load() fills it from kDefs, then the file
 
@@ -102,7 +108,7 @@ static void apply(Id id) {
   if (id == SonarVolume) audio::set_bus_volume(audio::Bus::Sonar, g_value[id] / 100.0f);
   if (id == WallVolume) audio::set_bus_volume(audio::Bus::Walls, g_value[id] / 100.0f);
   if (id == DescriptionVolume) audio::set_bus_volume(audio::Bus::Narration, g_value[id] / 100.0f);
-  if (id == Hrtf) audio::set_hrtf(g_value[id] != 0);
+  if (id == Spatial) audio::set_spatial(g_value[id]);
 }
 
 void set(Id id, int value) {

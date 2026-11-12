@@ -14,6 +14,10 @@ int clock_hour(float b) {
   return h;
 }
 
+int compass_point(float b) {
+  return ((int)std::lround(b / 45.0f) % 8 + 8) % 8;
+}
+
 std::vector<std::string> name_parts(const std::string& n) {
   std::vector<std::string> tok;
   for (size_t s = 0; s <= n.size();) { size_t e = n.find('_', s); if (e == std::string::npos) e = n.size(); tok.push_back(n.substr(s, e - s)); s = e + 1; }

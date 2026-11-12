@@ -435,7 +435,7 @@ void tick() {
     }
     if (g_w.side_on) wp = g_w.side;
     // 8-way chord toward the waypoint, camera-relative (the game's own movement is camera-relative too).
-    float b = world::bearing(me, wp);
+    float b = world::camera_bearing(me, wp);
     int sector = ((int)std::lround(b / 45.0f) % 8 + 8) % 8;
     static const uint32_t chords[8][2] = {{'W', 0}, {'W', 'D'}, {'D', 0}, {'S', 'D'}, {'S', 0}, {'S', 'A'}, {'A', 0}, {'W', 'A'}};
     hold(chords[sector][0], chords[sector][1]);

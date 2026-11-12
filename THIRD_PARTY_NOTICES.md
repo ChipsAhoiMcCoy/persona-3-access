@@ -25,6 +25,7 @@ Dark Vision, also called WrathAccess or wotr-access in comments, is a screen-rea
 - Copyright (c) 2026 Bradley Renshaw. zlib license. The full text is unchanged in `LICENSES/dark-vision-zlib.txt`.
 - Ships in the player zip: yes, through the code ported to Grim Dark and from there to this project, and the wall tones below.
 - Our versions are altered, and the marks at the top of the files say so.
+- Ported directly from Dark Vision: the stereo placement model (`src/core/spatializer`, from `Spatializer.cs`) and the sonar sweep (`src/core/sonar_sweep`, from `SonarSystem.cs`).
 
 ## Type-ahead search from OniAccess
 

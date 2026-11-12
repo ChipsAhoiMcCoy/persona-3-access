@@ -17,7 +17,11 @@
 namespace p3a::poi {
 using namespace ue;
 
-std::string clock(float b) { return std::format("{} {}", core::clock_hour(b), strings::kOClock); }
+// Top-down, the bearing is from north and said by the compass; else by the clock face, from the camera.
+std::string clock(float b) {
+  if (world::north_up()) return strings::kCompass[core::compass_point(b)];
+  return std::format("{} {}", core::clock_hour(b), strings::kOClock);
+}
 
 std::string describe(const Poi& p) {
   // The name stands alone, a way into another area's too: it is where it leads, and its category says what it is

@@ -20,6 +20,7 @@ namespace p3a::sonar {
 void tick();                       // game thread
 void toggle();                     // the key: on or off, said
 void selected(const poi::Poi& p);  // the list chose this point: its sound once, from its place
+void sound(const poi::Poi& p);     // its kind's sound once from its place, whatever the settings (the right stick's scan)
 // The settings menu changed `id`: the sound that shows the change (a kind's own, or one at the new volume), played
 // straight ahead. False when the option has no sound to show.
 bool preview(settings::Id id);

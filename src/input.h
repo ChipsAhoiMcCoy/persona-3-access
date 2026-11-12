@@ -48,5 +48,7 @@ int take_trigger_tap();
 // the stick's dead zone is taken once (+1 up, -1 down) until it is let back toward the middle.
 void claim_right_stick(bool on);
 int take_right_flick();
+// The claimed right stick where the player holds it now, each axis -1..1 (up and right positive); 0, 0 unclaimed.
+void right_stick(float& x, float& y);
 std::string status();
 }  // namespace p3a::input

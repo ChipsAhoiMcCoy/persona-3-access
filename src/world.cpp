@@ -19,6 +19,14 @@ static WeakObj g_player;
 static uint64_t g_frame = 0;   // world::tick's count: what is worked out once per frame is keyed by it
 static float g_cam_yaw = 0;
 static WeakObj g_cam_mgr;
+// The top-down mode (topdown.cpp) sets north: while it holds, every sound and bearing is heard facing it instead of
+// the camera's way.
+static bool g_north_on = false;
+static float g_north_yaw = -90.0f;
+static float listener_yaw() { return g_north_on ? g_north_yaw : g_cam_yaw; }
+void set_north(bool on, float yaw) { g_north_on = on; g_north_yaw = yaw; }
+bool north_up() { return g_north_on; }
+float camera_yaw() { return g_cam_yaw; }
 
 // The field player: one BP_FldPlayer_C per mode (DAILY, DUNGEON, ENCOUNT) exists at once; the inactive ones are
 // parked far below the map (z = -3200 measured at Iwatodai Station, 2026-10-27).
@@ -97,7 +105,7 @@ void tick() {
 
 
 FVector dir_vector(int dir) {
-  float yaw = (g_cam_yaw + 90.0f * dir) * 3.14159265f / 180.0f;
+  float yaw = (listener_yaw() + 90.0f * dir) * 3.14159265f / 180.0f;
   return FVector{std::cos(yaw), std::sin(yaw), 0.0f};
 }
 
@@ -194,7 +202,7 @@ Hit line(const FVector& from, const FVector& to, const char* profile, std::vecto
 std::string status() {
   FVector p{};
   bool have = player_location(p);
-  return std::format("player={} at ({:.0f}, {:.0f}, {:.0f}) camera yaw {:.1f}", have ? name_of(player()) : "none", p.x, p.y, p.z, g_cam_yaw);
+  return std::format("player={} at ({:.0f}, {:.0f}, {:.0f}) camera yaw {:.1f}", have ? name_of(player()) : "none", p.x, p.y, p.z, g_cam_yaw) + (g_north_on ? std::format(" north {:.0f}", g_north_yaw) : std::string());
 }
 
 // The field streams whole districts at once: an actor counts only if its level is the persistent level or a streamed
@@ -277,13 +285,15 @@ bool capsule_of(UObject* actor, float& radius, float& half_height) {
   return true;
 }
 
-// Camera-relative bearing of `to` from `from` in degrees: 0 ahead, 90 right, 180 behind, -90 left.
-float bearing(const FVector& from, const FVector& to) { return core::bearing(vec3(from), vec3(to), g_cam_yaw); }
+// Bearing of `to` from `from` in degrees, from the listener's facing (north in the top-down mode, else the camera's):
+// 0 ahead, 90 right, 180 behind, -90 left.
+float bearing(const FVector& from, const FVector& to) { return core::bearing(vec3(from), vec3(to), listener_yaw()); }
+float camera_bearing(const FVector& from, const FVector& to) { return core::bearing(vec3(from), vec3(to), g_cam_yaw); }
 
 // The hero's location is the capsule's middle and most targets (navmesh points, hit boxes) sit near the floor: see
 // core::listener_spot for how height is counted.
 audio::Spot spot(const FVector& from, const FVector& to) {
-  core::ListenerSpot l = core::listener_spot(vec3(from), vec3(to), g_cam_yaw);
+  core::ListenerSpot l = core::listener_spot(vec3(from), vec3(to), listener_yaw());
   audio::Spot s;
   s.right = l.right;
   s.ahead = l.ahead;

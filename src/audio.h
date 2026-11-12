@@ -18,9 +18,10 @@ struct Spot { float right = 0, up = 0, ahead = 1, dist_m = 0, pan = 0; bool plac
 // Once a frame (game thread): every playing sound with a place is heard from where the listener is now. `where`
 // turns a place into a Spot (world::spot from the hero).
 void follow(const std::function<Spot(float x, float y, float z)>& where);
-// A sound from a place goes through Steam Audio's HRTF (src/hrtf.cpp) while 3D sound is on and available, else it
-// is panned.
-void set_hrtf(bool on);   // the 3D sound setting
+// How a sound from a place is heard (the Sound placement setting, settings::SpatialModel): 0 Dark Vision's stereo
+// model (core/spatializer: capped level and time differences, darker behind), 1 Steam Audio's HRTF (src/hrtf.cpp;
+// stereo when it is unavailable), 2 a plain equal-power pan.
+void set_spatial(int model);
 // Dev: a beep rendered offline through the HRTF from `at` into a stereo 16-bit WAV (false = HRTF unavailable).
 bool render_beep_wav(float freq, int ms, const Spot& at, const std::string& path);
 // Looping sample channels (the wotr wall tones): a WAV decoded to mono at the mixer rate, looped

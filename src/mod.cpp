@@ -30,6 +30,7 @@
 #include "screens/screen.h"
 #include "speech.h"
 #include "textcap.h"
+#include "topdown.h"
 #include "voice.h"
 #include "watch.h"
 #include "ue/routes.h"
@@ -51,6 +52,7 @@ struct Section { const char* name; void (*fn)(); bool layouts = false; uint64_t 
 static Section g_sections[] = {
   {"watch", watch::tick}, {"probe", ue::probe_tick}, {"input", input::tick}, {"world", world::tick}, {"doors", doors::tick},
   {"voice", voice::tick}, {"msg", msg::tick}, {"screens", screens::tick},
+  {"topdown", topdown::tick},
   {"walltones", walltones::tick}, {"nav", nav::tick}, {"poi", poi::tick}, {"sonar", sonar::tick}, {"calendar", calendar::tick},
   {"stats", stats::tick, true}, {"social", social::tick, true}, {"party", party::tick, true},
   {"ad", ad::tick}, {"cutin", cutin::tick}, {"picture", picture::tick},
@@ -119,6 +121,7 @@ void init(bool speech_ok) {
   voice::install();
   poi::install();
   sonar::install();
+  topdown::install();
   shadow::install();
   area::install();
   portrait::install();
@@ -148,6 +151,7 @@ void init(bool speech_ok) {
 void shutdown() {
   if (!g_ue_up) return;
   hooks::set_tick_callback(nullptr);
+  topdown::shutdown();
   audio::shutdown();
   watch::remove();
   textcap::remove();

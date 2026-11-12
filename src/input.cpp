@@ -83,11 +83,17 @@ void claim_trigger_taps(bool on) { g_claim_taps = on; if (!on) g_tap = 0; }
 int take_trigger_tap() { return g_tap.exchange(0); }
 static std::atomic<bool> g_claim_rstick{false};
 static std::atomic<int> g_rflick{0};
+static std::atomic<int> g_rstick_xy{0};   // the claimed stick as the player holds it: x in the low 16 bits, y high
 static std::atomic<uint16_t> g_end_buttons{0};
 static std::atomic<int> g_end_sticks{0};
 void block_ends(uint16_t buttons, int stick_sides) { g_end_buttons = buttons; g_end_sticks = stick_sides; }
 void claim_right_stick(bool on) { g_claim_rstick = on; if (!on) g_rflick = 0; }
 int take_right_flick() { return g_rflick.exchange(0); }
+void right_stick(float& x, float& y) {
+  int v = g_rstick_xy;
+  x = (float)(int16_t)(v & 0xFFFF) / 32767.0f;
+  y = (float)(int16_t)((uint32_t)v >> 16) / 32767.0f;
+}
 void set_modal(bool on) { g_modal = on; }
 bool modal() { return g_modal; }
 static void layer_event(uint16_t button, bool repeat) { std::lock_guard lk(g_layer_mu); g_layer_events.push_back({button, repeat}); }
@@ -158,7 +164,10 @@ static DWORD WINAPI get_state_hook(DWORD user, XINPUT_STATE* st) {
         flicked = true;
         if (!g_layer_open) g_rflick = y > 0 ? 1 : -1;
       }
+      g_rstick_xy = (int)(((uint32_t)(uint16_t)y << 16) | (uint16_t)x);
       st->Gamepad.sThumbRX = st->Gamepad.sThumbRY = 0;
+    } else {
+      g_rstick_xy = 0;
     }
   }
   layer_filter(g_layer[user], st->Gamepad);

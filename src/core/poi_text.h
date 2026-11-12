@@ -11,6 +11,9 @@ namespace p3a::core {
 
 // A camera-relative bearing in degrees (0 ahead, 90 right) as a clock hour, 1 to 12 (12 = ahead).
 int clock_hour(float bearing_deg);
+// A bearing clockwise from north in degrees as one of the compass' eight points, 0 north to 7 north-west
+// (strings::kCompass).
+int compass_point(float bearing_deg);
 
 // An object's name split at its underscores ("FldNpcActor_105_102_Yukari_6" -> 5 parts; empty parts are kept).
 std::vector<std::string> name_parts(const std::string& name);

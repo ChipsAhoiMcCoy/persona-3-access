@@ -191,3 +191,13 @@ TEST_CASE("icon_state: what the icon over a person says") {
   CHECK(std::string(icon_state("MaleQuest_Field")) == "Linked Episode");
   CHECK(std::string(icon_state("Something_New")).empty());
 }
+
+TEST_CASE("compass_point: eight points from north, clockwise, wrapping") {
+  CHECK(p3a::core::compass_point(0) == 0);
+  CHECK(p3a::core::compass_point(44) == 1);
+  CHECK(p3a::core::compass_point(90) == 2);
+  CHECK(p3a::core::compass_point(-90) == 6);
+  CHECK(p3a::core::compass_point(-170) == 4);
+  CHECK(p3a::core::compass_point(338) == 0);
+  CHECK(p3a::core::compass_point(-23) == 7);
+}
