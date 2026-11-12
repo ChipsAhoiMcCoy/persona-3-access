@@ -159,8 +159,7 @@ void tick() {
   const bool any_distance = settings::get(settings::SonarScope) == settings::ScopeSelected;
   for (const Source& s : g_sources) {
     if (!any_distance && dist_m(me, s.loc) > range_m()) continue;   // read ahead of the range: not in it yet
-    // How long its sound will last as played now: the line is held that long.
-    items.push_back({(unsigned)s.obj.index, dist_m(me, s.loc), s.kind, voice(s.kind, world::spot(me, s.loc)).len_s, s.selected});
+    items.push_back({(unsigned)s.obj.index, dist_m(me, s.loc), s.kind});
   }
   // What sounded last tick and no longer does is forgotten; a thing's first sound is logged with its distance (how
   // early the player could have heard it).

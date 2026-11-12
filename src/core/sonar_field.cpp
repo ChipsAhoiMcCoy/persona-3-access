@@ -27,52 +27,51 @@ std::vector<SonarField::Ping> SonarField::update(const std::vector<Item>& items,
   started_ = true;
   std::unordered_map<unsigned, Slot> keep;
   keep.reserve(items.size() + slots_.size());
-  // Whose turn: an arrival before anything else, then the most overdue against its own period, a short (near)
-  // period counting for more (turn_power); among equals the host's `first`, then the nearer.
-  const Item* turn = nullptr;
-  bool turn_arrived = false;
-  double turn_overdue = 0;
-  const bool line_free = now >= free_at_;
+  struct Due { const Item* it; double overdue; };
+  std::vector<Due> due;
   for (const Item& it : items) {
-    double T = params_.period_for(it.dist);
-    if (T < 0.01) T = 0.01;
+    double T = std::max(params_.period_for(it.dist), 0.01);
     auto found = slots_.find(it.id);
     Slot s;
     if (found == slots_.end()) {
       // A thing that comes into a running field is due at once: waiting out a fraction of its slow far-off period,
       // the player was nearly on it before its first sound. A field starting up (after a reset: a menu closed, a
       // floor loaded) staggers what is already there instead.
-      s = Slot{running ? now : now + hash01(it.id) * T, 0, now, false, running};
+      s = Slot{running ? now : now + hash01(it.id) * T, -1e9, now, it.kind, false};
     } else {
       s = found->second;
       s.last_seen = now;
+      s.kind = it.kind;
       // Its period follows its distance from one frame to the next: a thing that came closer is not left waiting on
       // the far-off period it last sounded by.
       if (s.played) s.want = s.last_start + T;
     }
-    if (line_free && now >= s.want) {
-      double overdue = (now - s.want) / std::pow(T, params_.turn_power);
-      bool better = !turn || (s.arrived != turn_arrived ? s.arrived
-                              : overdue != turn_overdue ? overdue > turn_overdue
-                              : it.first != turn->first ? it.first : it.dist < turn->dist);
-      if (better) { turn = &it; turn_arrived = s.arrived; turn_overdue = overdue; }
-    }
+    if (now >= s.want) due.push_back({&it, (now - s.want) / T});
     keep.emplace(it.id, s);
   }
-  if (turn) {
-    Slot& s = keep[turn->id];
-    s.played = true; s.arrived = false; s.last_start = now;
-    s.want = now + std::max(params_.period_for(turn->dist), 0.01);
-    free_at_ = now + std::max(turn->len_s, 0.0f) + params_.gap_s;
-    out.push_back({turn->id, turn->kind});
-  }
-  // Grace: an id not listed this frame keeps its place until it has been unseen for grace_s.
+  // Grace: an id not listed this frame keeps its place until it has been unseen for grace_s. Kept before the turns
+  // are taken: its last start still keeps one of its kind from starting on top of it.
   for (const auto& [id, slot] : slots_)
     if (!keep.count(id) && now - slot.last_seen <= params_.grace_s) keep.emplace(id, slot);
+  // Of those due, the most overdue against its own period first (among equals the nearer); each starts unless one of
+  // its kind started within collide_s, and then waits for the next frame.
+  std::sort(due.begin(), due.end(), [](const Due& a, const Due& b) {
+    return a.overdue != b.overdue ? a.overdue > b.overdue : a.it->dist < b.it->dist;
+  });
+  for (const Due& d : due) {
+    bool clear = true;
+    for (const auto& [id, slot] : keep)
+      if (id != d.it->id && slot.kind == d.it->kind && now - slot.last_start < params_.collide_s) { clear = false; break; }
+    if (!clear) continue;
+    Slot& s = keep[d.it->id];
+    s.played = true; s.last_start = now;
+    s.want = now + std::max(params_.period_for(d.it->dist), 0.01);
+    out.push_back({d.it->id, d.it->kind});
+  }
   slots_.swap(keep);
   return out;
 }
 
-void SonarField::reset() { slots_.clear(); started_ = false; free_at_ = 0; }
+void SonarField::reset() { slots_.clear(); started_ = false; }
 
 }  // namespace p3a::core

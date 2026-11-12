@@ -441,7 +441,7 @@ game's own camera.
   camera turns the whole field around you. A sound played lower is behind you (Lower pitch behind you). To keep
   crowded places readable only the six nearest things sound, at most three of one kind; things on another floor are
   left out unless you can walk there, and so are things past a closed door (the corridor's from the gym hallway), until you go through it. The point selected in the points of interest list always has a place among
-  them. The sounds take turns: only one plays at a time, each after the one before it has finished, so they never play over one another. Whichever is most overdue for its own rhythm goes next, and a near thing's lateness counts for more than a far one's: with many things around, the near ones keep most of their speed and the far ones wait longer (seconds, in a full room), none is left out, and a thing that has just come into range goes first. The sonar is silent in menus, conversations, story scenes and
+  them. Each thing keeps its own rhythm, however many others are near: things of different kinds sound independently, over one another when their moments meet, and two of one kind are always kept a moment apart, so they never start as one sound. A thing that has just come into range sounds at once. The sonar is silent in menus, conversations, story scenes and
   battles. Shadows are not part of it: they keep their own pulse.
 - Shadow pulse: a low, rattling snarl from the nearest Shadow within 30 m, whatever its height, faster and louder as it closes in
   (from every 0.8 seconds at 30 m to one unbroken snarl beside you), lower when it is behind you. When a Shadow notices you, a harsh two-note alarm sounds from where it is, and its growl turns higher,

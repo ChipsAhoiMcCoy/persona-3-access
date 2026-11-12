@@ -9,6 +9,10 @@
 - The wall tones in this mode play only while you move, reach 3 m and leave out the direction behind your walk: fixed to the compass, they had found a wall in three or four directions all the time.
 - New sound placement, from Dark Vision: left and right by level and by the moment each ear hears a sound, sounds behind darker. The Sound placement setting (Sound) chooses it, Steam Audio's 3D (as before) or a plain pan. It replaces the 3D sound setting.
 
+### Sonar
+- Each thing keeps its own rhythm again, as in Grim Dark: things of different kinds sound independently, and only two of one kind are kept a moment apart. In 0.1.0-alpha.3 only one sound played at a time, so in a crowd every thing waited its turn and the rhythms fell into a slow queue.
+- The Sonar rhythm setting is gone with the sweep rhythm; pulse is the only one.
+
 ### Points of interest
 - Empty spots where the game can place a character were listed as "Person" when nobody stood there (three on the dorm's third floor, a step from the hallway), and walking to one stalled. They are no longer listed.
 
