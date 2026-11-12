@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Fusion
+- Choosing skills to inherit now says how many you may take ("Choose skills to inherit, up to 2.") and counts as you choose ("chosen, 1 of 2 picks"). Taking the last one brings Igor's question at once, as before.
+
 ### The end of the game
 - A save made after the credits was read like any other ("March 5, level 96"). The list now says what its row shows: "Slot 9: Makoto Yuki, Clear data, start a new game, play time 46 hours 16 minutes".
 - The credits: the review key now reads the names rolling past at that moment ("Credits. Chief Designer, Yuichiro Takada, Art Director, Tomohiro Kumagai, ..."). The roll is not read by itself.

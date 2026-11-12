@@ -19,6 +19,7 @@
 #include "screens/menu.h"
 #include "screens/util.h"
 #include "screens/persona_status.h"
+#include "seh.h"
 #include "core/strings.h"
 #include "msg.h"
 #include "persona.h"
@@ -400,7 +401,18 @@ void VelvetScreen::build_inherit(ui::GraphBuilder& b) {
   auto* e = (TArray<uint8_t>*)(p + 0x470);
   b.begin_stop("velvet.inherit");
   screens::set_keys(strings::kInheritSkill);
-  b.push_context(strings::kInheritTitle);
+  // How many may be inherited: the inheritance sequence (APersonaStatus.Sequence_, +0x520) holds its limit at +0x38
+  // (the game's table by the materials' skill count, cut to the candidates and the result's free slots) and the
+  // count chosen so far at +0x34; choosing the last one asks Igor's question at once.
+  auto picks = [this](int off) {
+    uint8_t* pp = (uint8_t*)ps_.get();
+    uint8_t* seq = pp && ue::known_build() ? *(uint8_t**)(pp + 0x520) : nullptr;
+    int v = -1;
+    if (seq) guarded([&] { v = *(int32_t*)(seq + off); });
+    return v >= 0 && v <= 8 ? v : -1;
+  };
+  int most = picks(0x38);
+  b.push_context(most > 0 ? std::format("{} {}.", strings::kInheritUpTo, most) : std::string(strings::kInheritTitle));
   for (int i = 0; e->data && i < e->num && i < 64; ++i) {
     uint8_t* x = e->data + i * 8;
     int id = *(uint16_t*)x;
@@ -408,11 +420,13 @@ void VelvetScreen::build_inherit(ui::GraphBuilder& b) {
     if (!cost.empty()) l += ", " + cost;
     auto v = game_item(inherit_, i, [l] { return l; });
     // "chosen", said as it changes (Enter toggles it a frame after the press).
-    v->announcements.push_back(ui::NodeAnnouncement([this, i] {
+    v->announcements.push_back(ui::NodeAnnouncement([this, i, picks] {
       uint8_t* pp = (uint8_t*)ps_.get();
       auto* ee = pp ? (TArray<uint8_t>*)(pp + 0x470) : nullptr;
       bool on = ee && ee->data && i < ee->num && *(uint16_t*)(ee->data + i * 8 + 6) == 1;
-      return on ? std::string(strings::kChosen) : std::string();
+      if (!on) return std::string();
+      int most = picks(0x38), now = picks(0x34);
+      return most > 0 && now > 0 ? std::format("{}, {} {} {} {}", strings::kChosen, now, strings::kOf, most, strings::kPicks) : std::string(strings::kChosen);
     }, true, ui::announcement_kinds::kSelected));
     buffer_with(v, [id] { return persona::skill_help(id); });
     b.add_item(slot("velvet.inherit", i), v);

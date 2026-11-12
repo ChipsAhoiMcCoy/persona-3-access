@@ -44,7 +44,6 @@ These reached the code but have not been seen working in the game, because no te
 ## Behaviours to expect
 
 - While the mod settings are open, the game keeps running. In Tartarus, open them from the camp menu's Config to be safe.
-- How many skills a fusion lets you inherit is not announced in advance. The mod says what was inherited at Igor's confirmation.
 - The mod does not say which skill a Persona's "skill change" after a level up will become.
 - A voiced line is not read by default, even if its voice cannot be heard, such as when voice volume is at zero. Set "Voiced dialogue" to "read aloud" in the mod settings in that case.
 
