@@ -37,7 +37,8 @@ TEST_CASE("every portrait the game has is described") {
 TEST_CASE("a portrait's description: the outfit, then the pose") {
   Shown s{2, 1, 'A'};
   std::string d = describe(s);
-  CHECK(d.starts_with("Yukari"));
+  CHECK_FALSE(d.empty());
+  CHECK(d.find("Yukari") == std::string::npos);   // no names: a name can spoil who someone is
   Shown b{2, 1, 'B'};
   CHECK(describe(b) != d);
   Shown unknown_pose{2, 1, 'Z'};
