@@ -19,7 +19,10 @@ void init() {
   DWORD n = GetEnvironmentVariableW(L"LOCALAPPDATA", base, MAX_PATH);
   std::wstring dir = n ? std::wstring(base, n) + L"\\P3RAccess" : L"C:\\P3RAccess";
   CreateDirectoryW(dir.c_str(), nullptr);
-  g_path = dir + L"\\p3access.log";
+  // A second dev game beside the first (its own P3A_PORT) names its own log, so neither takes the other's.
+  wchar_t name[64];
+  DWORD nn = GetEnvironmentVariableW(L"P3A_LOG", name, 64);
+  g_path = dir + L"\\" + (nn > 0 && nn < 64 ? std::wstring(name, nn) : std::wstring(L"p3access.log"));
   // The log's first line names the process that wrote it. A new process keeps the old log: a player's session as
   // p3access.last-play.log, a dev session as p3access.prev.log (a dev launch wrote over the player's cafe visit,
   // 2026-10-31). A hot reload in the same process starts a dev log again but carries on a player's: the session before

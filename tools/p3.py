@@ -40,12 +40,15 @@ import urllib.error
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(ROOT, "build", "ninja")
-LOG = os.path.join(os.environ.get("LOCALAPPDATA", ""), "P3RAccess", "p3access.log")
+# A second dev game (its own P3A_PORT) keeps its own log.
+LOG_NAME = "p3access.log" if os.environ.get("P3A_PORT", "8793") == "8793" else f"p3access.{os.environ['P3A_PORT']}.log"
+LOG = os.path.join(os.environ.get("LOCALAPPDATA", ""), "P3RAccess", LOG_NAME)
 GAME_DIR = r"C:\Program Files (x86)\Steam\steamapps\common\P3R\P3R\Binaries\Win64"
 GAME_EXE = os.path.join(GAME_DIR, "P3R.exe")
 EXE_NAME = "P3R.exe"
 APPID = "2161700"
-PORT = int(os.environ.get("P3A_PORT", "8793"))
+DEFAULT_PORT = 8793
+PORT = int(os.environ.get("P3A_PORT", str(DEFAULT_PORT)))
 
 k32 = ctypes.WinDLL("kernel32", use_last_error=True)
 u32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -108,7 +111,36 @@ def q(s):
     return urllib.request.quote(s, safe="")
 
 
+def pid_file(port):
+    return os.path.join(ROOT, "build", f"instance-{port}.pid")
+
+
 def pids(exe=EXE_NAME):
+    """This instance's game process. P3A_PORT picks the instance: several dev games can run side by side, each
+    started by a launch / up with its own port and recorded in build/instance-<port>.pid. The default port owns
+    every game process no other instance has claimed (the player's own included)."""
+    res = all_pids(exe)
+    if exe != EXE_NAME:
+        return res
+    claimed = {}
+    for f in glob.glob(os.path.join(ROOT, "build", "instance-*.pid")):
+        try:
+            port, pid = int(os.path.basename(f)[len("instance-"):-len(".pid")]), int(open(f).read().strip())
+        except (OSError, ValueError):
+            continue
+        if pid in res:
+            claimed[port] = pid
+        else:
+            try:
+                os.remove(f)
+            except OSError:
+                pass
+    if PORT in claimed:
+        return [claimed[PORT]]
+    return [p for p in res if p not in claimed.values()] if PORT == DEFAULT_PORT else []
+
+
+def all_pids(exe=EXE_NAME):
     out = subprocess.run(["tasklist", "/FI", f"IMAGENAME eq {exe}", "/FO", "CSV", "/NH"], capture_output=True, text=True).stdout
     res = []
     for line in out.splitlines():
@@ -212,7 +244,7 @@ def deploy():
     src = os.path.join(BUILD, "dsound.dll")
     dst = os.path.join(GAME_DIR, "dsound.dll")
     if not os.path.exists(dst) or open(src, "rb").read() != open(dst, "rb").read():
-        if pids():
+        if all_pids():
             sys.exit("the game is running; cannot replace the proxy")
         shutil.copyfile(src, dst)
         print("deployed proxy", dst)
@@ -312,6 +344,8 @@ def start_game(env, show):
     if not ok:
         sys.exit(f"CreateProcess failed: {ctypes.get_last_error()}")
     print("started pid", pi.dwProcessId)
+    with open(pid_file(PORT), "w") as f:
+        f.write(str(pi.dwProcessId))
 
 
 def play(args):
@@ -348,6 +382,7 @@ def launch(args):
     env.update({
         "P3A_DLL": shadow(),
         "P3A_PORT": str(PORT),
+        "P3A_LOG": LOG_NAME,
         "P3A_NOFOCUS": "1",
         "P3A_NOWALLTONES": "1",
         "SteamAppId": APPID, "SteamGameId": APPID, "SteamOverlayGameId": APPID,
