@@ -23,6 +23,7 @@
 - The point of interest list keys (the bracket keys) say "Not in the field" in a menu, a conversation or a battle, where the list is not about what is on screen.
 
 ### Battle
+- Shuffle Time's Persona Overstock list (a Persona card with a full stock): the game's cursor is now put on the row you focus, also after Home, End or a jump, instead of being stepped there one press at a time.
 - When the game greys out commands on the battle wheel, the turn's line now says so ("Attack, Items, Guard unavailable"). It happens in a tutorial's battle and on the very last turn of the final battle, where only the Persona's skills are left and a press of Space did nothing without a word.
 - Analyze now gives everything its screen shows. Besides the name, level, health and affinities, the detail buffer (Ctrl+Up and Ctrl+Down, or the right stick) reads the enemy's maximum HP and SP, its arcana, its attack type, its skills and what it drops, each only once the game itself shows it (a Shadow not yet analyzed keeps its skills unknown).
 - A battle now opens with who has the advantage, as the splash on screen shows it: "S.E.E.S. advantage" when you struck first, "Shadow advantage" when the Shadow caught you. Nothing is said for an even start.
