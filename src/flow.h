@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <string>
 
 namespace p3a::flow {
 // The game's flowscript commands (the script functions events call: CMM_RANKUP, ADD_GET_ITEM_LIST_MONEY, ...).
@@ -11,6 +12,9 @@ void* command(const char* name);
 // with; 0 when there is none or it is a script variable.
 int int_arg(uint8_t* ctx);
 // Dev: `/flow/run` (any command by name, from a script context of the mod's own) and its per-frame driver.
+// Starts a command as a script would (args "1,2,3"; a value with a '.' is a float), on the game thread; it is called
+// again each frame until it finishes. Returns its status line.
+std::string run(const std::string& name, const std::string& args);
 void install();
 void tick();
 }  // namespace p3a::flow

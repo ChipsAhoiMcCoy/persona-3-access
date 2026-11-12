@@ -88,7 +88,8 @@ void retire() {
   }
 }
 
-// "1,2,3" (ints; a value with a '.' is a float).
+}  // namespace
+
 std::string run(const std::string& name, const std::string& args) {
   Entry e = entry(name);
   if (!e.fn) return std::format("no command {}\n", name);
@@ -114,13 +115,15 @@ std::string run(const std::string& name, const std::string& args) {
   for (int i = 0; i < n; ++i) {
     int slot = n - i;   // argument i, as the script pushed them (last argument first)
     const std::string& v = vals[i];
-    if (v.find('.') != std::string::npos) {
-      c[0x37 + slot] = 1;
-      *(float*)(c + 0x60 + slot * 8) = std::stof(v);
-    } else {
-      c[0x37 + slot] = 0;
-      *(int64_t*)(c + 0x60 + slot * 8) = (int64_t)std::stoll(v, nullptr, 0);
-    }
+    try {
+      if (v.find('.') != std::string::npos) {
+        c[0x37 + slot] = 1;
+        *(float*)(c + 0x60 + slot * 8) = std::stof(v);
+      } else {
+        c[0x37 + slot] = 0;
+        *(int64_t*)(c + 0x60 + slot * 8) = (int64_t)std::stoll(v, nullptr, 0);
+      }
+    } catch (...) { return std::format("{}: not a number: {}\n", name, v); }
     j->text += (i ? ", " : "") + v;
   }
   j->text += ")";
@@ -130,7 +133,6 @@ std::string run(const std::string& name, const std::string& args) {
   retire();
   return out;
 }
-}  // namespace
 
 void* command(const char* name) { return entry(name).fn; }
 

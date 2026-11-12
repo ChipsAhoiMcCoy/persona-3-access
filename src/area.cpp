@@ -7,6 +7,7 @@
 // - the season, Christmas and January's decline: the calendar, on the dates DT_FldVariationSubLevelTable streams
 //   their sets; the dorm's Christmas tree is its own object (BP_F102_102_Christmas, shown or hidden by the game).
 #include "area.h"
+#include "flow.h"
 #include "core/area_text.h"
 #include "core/strings.h"
 #include "devserver.h"
@@ -111,32 +112,25 @@ void install() {
       return out + ca::describe(s) + "\n";
     });
   }, "the area key's scene (ids, light, storey, visible levels) and its description");
-  // Dev: load any field area, as the field scripts' CALL_FIELD(major, minor, entry) does (its flowscript command,
-  // FUN_1412904e0, reads the three arguments and calls this function). Used to check descriptions in places the dev
-  // saves cannot reach by playing (the trips, the later Tartarus blocks).
+  // Dev: load any field area: the field scripts' CALL_FIELD(major, minor, entry) command, run as a script runs it
+  // (flow::run). Used to check descriptions in places the dev saves cannot reach by playing (the trips, the later
+  // Tartarus blocks).
   dev::route("/area/goto", [](const dev::Request& r, int&) {
     int major = (int)dev::arg_int(r, "major"), minor = (int)dev::arg_int(r, "minor"), entry = (int)dev::arg_int(r, "entry");
     if (!entry) entry = 1;
     return dev::on_game([=] {
-      if (!ue::known_build()) return std::string("another build of the game\n");   // the address is this build's
-      bool ok = guarded([&] { ((void (*)(int, int, int))(scan::exe_base() + 0xa69c740))(major, minor, entry); });
-      return std::format("CALL_FIELD({}, {}, {}) {}\n", major, minor, entry, ok ? "called" : "faulted");
+      if (!ue::known_build()) return std::string("another build of the game\n");   // the script context is this build's
+      return flow::run("CALL_FIELD", std::format("{},{},{}", major, minor, entry));
     });
   }, "?major=&minor=[&entry=1] load a field area as the field scripts' CALL_FIELD does (dev)");
-  // Dev: DUNGEON_MOVE_FDOOR + DUNGEON_MOVE_FREEID(id), as the Monad door does (BF_FldShortCut: ids 10-13): flag the
-  // dungeon controller (global at rva 0x5687c10, +0x498 = 1) and move the party to that spot of the floor's layout.
+  // Dev: DUNGEON_MOVE_FDOOR + DUNGEON_MOVE_FREEID(id), as the Monad door does (BF_FldShortCut: ids 10-13): move the
+  // party to that spot of the floor's layout.
   dev::route("/area/freeid", [](const dev::Request& r, int&) {
     int id = (int)dev::arg_int(r, "id");
     bool door = dev::arg_int(r, "fdoor") != 0;
     return dev::on_game([=] {
-      if (!ue::known_build()) return std::string("another build of the game\n");   // the addresses are this build's
-      void* ctrl = *(void**)(scan::exe_base() + 0x5687c10);
-      if (!ctrl) return std::string("no dungeon controller\n");
-      bool ok = guarded([&] {
-        if (door) *(int32_t*)((uint8_t*)ctrl + 0x498) = 1;
-        ((void (*)(void*, int))(scan::exe_base() + 0x11b16f0))(ctrl, id);
-      });
-      return std::format("DUNGEON_MOVE_FREEID({}) {}\n", id, ok ? "called" : "faulted");
+      if (!ue::known_build()) return std::string("another build of the game\n");
+      return (door ? flow::run("DUNGEON_MOVE_FDOOR", "") : std::string()) + flow::run("DUNGEON_MOVE_FREEID", std::to_string(id));
     });
   }, "?id=[&fdoor=1] move within the dungeon floor as the Monad door does (dev)");
 }
