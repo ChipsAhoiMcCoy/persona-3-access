@@ -153,7 +153,10 @@ struct TraceFn {
 
 static bool is_person(UObject* a) {
   if (!a) return false;
-  return is_a(a, find_class("FldHitCharacter")) || is_a(a, find_class("Pawn"));
+  // FldCrowdNpcBase: the background students and passers-by (BP_MCIdle*), plain actors with a capsule. One standing
+  // by classroom 2-F's front door stopped the sightline over the desks, so a student in the room was taken for one
+  // behind a closed door (2026-11-12).
+  return is_a(a, find_class("FldHitCharacter")) || is_a(a, find_class("Pawn")) || is_a(a, find_class("FldCrowdNpcBase"));
 }
 
 static Hit run_trace(TraceFn& t, const FVector& from, const FVector& to, const char* profile, float radius, float half,

@@ -15,9 +15,13 @@ void tick();   // follows the hero: every time he may have changed sides of a do
 // A thing the hero sees over the furniture is in his room all the same (classroom 2-F's desks split its navmesh, so
 // the path to a front desk goes out of one door and in at the other).
 bool behind(ue::UObject* a, const ue::FVector& me, const ue::FVector& at);
-// The walking path itself goes through a closed door (behind one, or in this room with no path inside it): the
-// auto-walk would end against the door.
-bool walk_shut(ue::UObject* a, const ue::FVector& me, const ue::FVector& at);
+// The walking path from `me` and a closed door, for the auto-walk: none on it; one on it, but the thing is in this
+// room (classroom 2-F's desks split the navmesh); or the thing is behind it. Worked out afresh, not kept: the walk
+// starts from where the hero stands now, and in a room the navmesh splits the answer changes with that (from the back
+// of 2-F the path to the front bookshelf goes through the doors, from the front it does not; a kept answer sent the
+// walk into the back door, 2026-11-12).
+enum class Way { open, in_room, behind };
+Way walk_way(ue::UObject* a, const ue::FVector& me, const ue::FVector& at);
 void install();   // dev route
 // Counts the hero changing sides: a door passed, a jump (stairs, an exit), a level coming or going. What was worked
 // out about reaching a thing holds while it stands.

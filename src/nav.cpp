@@ -1,5 +1,6 @@
 #include "nav.h"
 #include "core/approach.h"
+#include "core/body_path.h"
 #include "core/boxes.h"
 #include "core/strings.h"
 #include "devserver.h"
@@ -46,6 +47,11 @@ struct Walk {
   bool side_on = false;
   int side_tries = 0;         // steps tried after getting stuck, with the target no nearer since
   float side_best = 1e9f;     // the nearest to the target the walk was when it got stuck
+  // Inside a room the navmesh splits (classroom 2-F's desks): the path is the body's own way between the furniture,
+  // planned once (again when blocked), and path[0] is the start of the leg being walked.
+  bool body = false;
+  int body_replans = 0;
+  bool body_tried = false;    // a navmesh walk blocked on the way asked the body for a way once
 };
 static Walk g_w;
 static bool g_walking = false;
@@ -91,6 +97,7 @@ static void arrived_at() { log::writef("nav: arrived, {}", g_w.name); }
 static bool refresh_path(const FVector& me) {
   ue::UObject* t = g_w.target.resolve();
   if (!t) return false;
+  if (g_w.body) { g_w.path_at = GetTickCount64(); return true; }   // planned with the body, not the navmesh
   // On the way round to another side of the target, the path leads to that side's standing point.
   bool round = g_walking && g_w.detour_on;
   FVector to = round ? g_w.detour : world::actor_location(t);
@@ -105,26 +112,6 @@ static bool refresh_path(const FVector& me) {
   if (g_w.path.empty()) g_w.path.push_back(to);   // no navmesh here: head straight for it (the stuck check still guards)
   g_w.path_at = GetTickCount64();
   return true;
-}
-
-void walk_to(const WeakObj& target, const std::string& name) {
-  FVector me;
-  static const int battle = watch::want("BtlCoreComponent");
-  if (!world::player_location(me) || watch::get(battle)) { speech::speak(strings::kNotInField, true); return; }
-  // Past a closed door: the navmesh runs on under it, so there is a path, and it ends against the door ("Stuck",
-  // the gym hallway, 2026-11-11).
-  // In this room with no path inside it (classroom 2-F's desks): said so, the player walks the last of it.
-  if (ue::UObject* t = target.resolve(); t && doors::walk_shut(t, me, world::actor_location(t))) {
-    speech::speak(doors::behind(t, me, world::actor_location(t)) ? strings::kNoPath : strings::kNoPathInRoom, true);
-    return;
-  }
-  g_w = Walk{};   // a new walk's plan starts empty; the keys held and g_walking are not part of it
-  g_w.target = target;
-  g_w.name = name;
-  if (!refresh_path(me)) { speech::speak(strings::kNoPath, true); return; }
-  g_walking = true;
-  restart_progress(me, GetTickCount64());
-  // Nothing said on starting (the player's call, 2026-10-29): only arriving, stopping or getting stuck is spoken.
 }
 
 // A hit actor's trigger box (HitComp_: BoxComponent world centre, scaled extent, yaw), or false if it has none.
@@ -237,6 +224,92 @@ static std::vector<FVector> find_entries(const Goal& g, const FVector& me, std::
   std::vector<FVector> out;
   for (const Entry& e : found) out.push_back(e.at);
   return out;
+}
+
+// ---- inside a room the navmesh splits ----
+// Classroom 2-F's desks cut its navmesh into islands: from the back door the navmesh path to most desks leads out
+// through one door and in at the other, though the hero fits between the desks (2026-11-12). Where the walking path
+// meets a closed door but the thing is in sight over the furniture (doors.cpp), the way is planned with the hero's own
+// body: a grid of floor points turned to the camera, so every leg is one of the eight walking directions, and the
+// capsule swept from each point to the next at the height he walks at. People block here (the seated students sit at
+// the aisles' ends); the target is reached from inside its trigger, so its own body is no matter.
+constexpr float kBodyReach = 2500.0f;   // the furthest a walk plans with the body alone (a room, not a district)
+static bool body_plan(const Goal& g, const FVector& me, std::vector<FVector>& out, std::string* report = nullptr, bool past_people = false) {
+  float radius, half;
+  hero_body(radius, half);
+  float yaw = world::camera_yaw() * 3.14159265f / 180.0f;
+  FVector c = centre(g);
+  float reach = flat(me, c) + 800.0f;
+  float z = me.z + 10.0f, h = std::max(radius + 1.0f, half - 30.0f);
+  // A trigger can sit inside the thing (a bookshelf's is in the shelf): the plan ends where the body touches its
+  // side, and the walk presses on into it (its prompt coming up is arriving).
+  auto arrived = [&](core::Vec2 p) { FVector at{p.x, p.y, me.z}; return reaches(g, at) || (g.has_box && inside(g.box, at, radius + 10.0f)); };
+  // First with room to spare, so the walk's eight directions have some slack; then as close as the body fits: the
+  // aisles between 2-F's desks leave his middle a band about 10 cm wide (measured with /nav?map, 2026-11-12), which a
+  // coarser grid steps over.
+  for (float spare : {6.0f, 0.0f}) {
+    std::vector<ue::UObject*> people;
+    auto clear = [&](core::Vec2 a, core::Vec2 b) { return !world::sweep(FVector{a.x, a.y, z}, FVector{b.x, b.y, z}, radius + spare, h, past_people ? &people : nullptr).hit; };
+    LARGE_INTEGER t0, t1, f;
+    QueryPerformanceCounter(&t0);
+    core::BodyPlan plan = core::body_path(core::Vec2{me.x, me.y}, core::Vec2{c.x, c.y}, 10.0f, yaw, 12000, reach, clear, arrived);
+    QueryPerformanceCounter(&t1);
+    QueryPerformanceFrequency(&f);
+    long long us = (t1.QuadPart - t0.QuadPart) * 1000000 / f.QuadPart;
+    log::writef("nav: body plan, spare {:.0f} cm: {}, {} points expanded, {} sweeps, {} us", spare, plan.found ? std::format("{} legs", plan.points.size() - 1) : std::string("none"),
+                plan.expanded, plan.tested, us);
+    if (report) {
+      *report += std::format("spare {:.0f} cm: {}, {} expanded, {} sweeps, {} us\n", spare, plan.found ? "found" : "none", plan.expanded, plan.tested, us);
+      for (core::Vec2 p : plan.points) *report += std::format("  ({:.0f}, {:.0f})\n", p.x, p.y);
+    }
+    if (!plan.found) continue;
+    out.clear();
+    for (core::Vec2 p : plan.points) out.push_back(FVector{p.x, p.y, me.z});
+    return true;
+  }
+  return false;
+}
+static Goal goal_of(ue::UObject* t) {
+  Goal g;
+  g.has_box = trigger_box(t, g.box);
+  g.at = world::actor_location(t);
+  return g;
+}
+
+void walk_to(const WeakObj& target, const std::string& name) {
+  FVector me;
+  static const int battle = watch::want("BtlCoreComponent");
+  if (!world::player_location(me) || watch::get(battle)) { speech::speak(strings::kNotInField, true); return; }
+  ue::UObject* t = target.resolve();
+  // Past a closed door: the navmesh runs on under it, so there is a path, and it ends against the door ("Stuck",
+  // the gym hallway, 2026-11-11).
+  // In this room with no path inside it (classroom 2-F's desks): the hero's own body finds the way between the
+  // furniture; with none, said so and the player walks the last of it.
+  bool body = false;
+  std::vector<FVector> body_path;
+  doors::Way way = t ? doors::walk_way(t, me, world::actor_location(t)) : doors::Way::open;
+  if (way == doors::Way::behind) { speech::speak(strings::kNoPath, true); return; }
+  if (way == doors::Way::in_room) {
+    if (!body_plan(goal_of(t), me, body_path)) { speech::speak(strings::kNoPathInRoom, true); return; }
+    body = true;
+  } else if (t && flat(me, world::actor_location(t)) < kBodyReach) {
+    // No navmesh path, or one that stops short, to something close by: the hero stands in an aisle the navmesh left
+    // out (between 2-F's desks), or the thing does. The body's own way, if it has one; else the walk as before.
+    FVector at = world::actor_location(t), beside{};
+    bool partial = false;
+    auto path = world::find_path(me, at, &partial);
+    if (path.empty() && world::project_to_nav(at, 300.0f, beside)) path = world::find_path(me, beside, &partial);
+    if ((path.empty() || partial) && body_plan(goal_of(t), me, body_path)) body = true;
+  }
+  g_w = Walk{};   // a new walk's plan starts empty; the keys held and g_walking are not part of it
+  g_w.target = target;
+  g_w.name = name;
+  g_w.body = body;
+  g_w.path = std::move(body_path);
+  if (!refresh_path(me)) { speech::speak(strings::kNoPath, true); return; }
+  g_walking = true;
+  restart_progress(me, GetTickCount64());
+  // Nothing said on starting (the player's call, 2026-10-29): only arriving, stopping or getting stuck is spoken.
 }
 
 // ---- round what the path runs into ----
@@ -378,6 +451,7 @@ void tick() {
     if (jumped) {
       if (flat(goal, before) < 800.0f) { stop(false); arrived_at(); return; }
       g_w.side_on = false;
+      g_w.body = false;   // a plan between the furniture was for the room he left: the navmesh's from here
       refresh_path(me);
       restart_progress(me, now);
     }
@@ -386,6 +460,9 @@ void tick() {
     Box box;
     bool has_box = trigger_box(t, box);
     bool arrived = has_box ? inside(box, me, -5.0f) : flat(goal, me) < kArrive;
+    // A body plan ends beside a trigger inside the thing (the bookshelf's): its prompt coming up there is arriving, not
+    // something to push on against.
+    if (!arrived && g_w.body && g_w.path.size() <= 1 && poi::prompt() == g_w.name) { stop(false); arrived_at(); return; }
     if (arrived) { stop(false); face(t, me); arrived_at(); return; }
     Goal target{has_box, box, goal};
     // The next way in: walk round to its standing point (the path leads there while g_w.detour_on), then straight in.
@@ -397,6 +474,19 @@ void tick() {
       refresh_path(me);
       restart_progress(me, now);
       log::writef("nav: way in {} of {} via ({:.0f}, {:.0f})", g_w.entry_next, g_w.entries.size(), g_w.detour.x, g_w.detour.y);
+      return true;
+    };
+    // A navmesh walk blocked on the way goes on by the body's own way, if it has one (asked once a walk).
+    auto to_body = [&] {
+      if (g_w.body || g_w.body_tried || flat(goal, me) > kBodyReach) return false;
+      g_w.body_tried = true;
+      std::vector<FVector> pts;
+      if (!body_plan(target, me, pts)) return false;
+      g_w.body = true;
+      g_w.path = std::move(pts);
+      g_w.detour_on = g_w.direct = g_w.side_on = false;
+      restart_progress(me, now);
+      log::writef("nav: blocked at ({:.0f}, {:.0f}), on by the body's own way", me.x, me.y);
       return true;
     };
     auto plan = [&] {
@@ -418,8 +508,24 @@ void tick() {
     if (g_w.side_on && flat(g_w.side, me) < 45.0f) { g_w.side_on = false; refresh_path(me); }
     if (now - g_w.path_at > 700) refresh_path(me);
     FVector wp;
-    if (!next_waypoint(me, wp)) { log::write("nav: stopped, no path"); stop(true); return; }
-    if (g_w.detour_on) {
+    if (g_w.body) {
+      // Leg by leg, held to its line (core::follow): a leg is done at its end or once past it.
+      while (g_w.path.size() > 1) {
+        const FVector &a = g_w.path[0], &b = g_w.path[1];
+        float len = flat(a, b), along = len < 1.0f ? 0.0f : ((me.x - a.x) * (b.x - a.x) + (me.y - a.y) * (b.y - a.y)) / len;
+        if (flat(b, me) < 20.0f || along > len - 5.0f) g_w.path.erase(g_w.path.begin());
+        else break;
+      }
+      if (g_w.path.size() > 1) {
+        core::Vec2 w = core::follow(core::Vec2{g_w.path[0].x, g_w.path[0].y}, core::Vec2{g_w.path[1].x, g_w.path[1].y}, core::Vec2{me.x, me.y}, 35.0f);
+        wp = FVector{w.x, w.y, me.z};
+      } else {
+        wp = has_box ? world::fvec(box.center) : goal;   // the plan's end is in the trigger: on into it
+      }
+    } else if (!next_waypoint(me, wp)) { log::write("nav: stopped, no path"); stop(true); return; }
+    if (g_w.body) {
+      // Steered above: no detours or ways in on a plan the body made.
+    } else if (g_w.detour_on) {
       // Round to another side of the target: at its standing point, turn in.
       if (flat(g_w.detour, me) < 80.0f) { g_w.detour_on = false; g_w.direct = true; refresh_path(me); }
     } else if (g_w.direct) {
@@ -433,7 +539,7 @@ void tick() {
     }
     // Somebody in the way is stepped round before the hero walks into them.
     FVector on_path = wp;
-    if (!g_w.side_on && !g_w.direct && person_ahead(me, wp, goal) && find_sidestep(me, wp, 0, g_w.side)) {
+    if (!g_w.body && !g_w.side_on && !g_w.direct && person_ahead(me, wp, goal) && find_sidestep(me, wp, 0, g_w.side)) {
       g_w.side_on = true;
       log::writef("nav: someone in the way at ({:.0f}, {:.0f}), round via ({:.0f}, {:.0f})", me.x, me.y, g_w.side.x, g_w.side.y);
     }
@@ -447,12 +553,29 @@ void tick() {
       if (flat(me, g_w.progress_pos) < 40.0f) {
         // Blocked by the thing itself (a chest's collision) while its prompt is already up: that is arriving.
         bool there = poi::prompt() == g_w.name;
+        // A walk between the furniture plans its way again from where it stopped, twice.
+        if (!there && g_w.body) {
+          std::vector<FVector> again;
+          if (g_w.body_replans < 2 && body_plan(target, me, again)) {
+            ++g_w.body_replans;
+            g_w.path = std::move(again);
+            restart_progress(me, now);
+            log::writef("nav: blocked at ({:.0f}, {:.0f}), planned again", me.x, me.y);
+            return;
+          }
+          stop(false);
+          speech::speak(strings::kStuck, true);
+          return;
+        }
         // Blocked close to it (the teleporter pad's pylons, 2026-10-27; the entrance terminal opens only to one
         // side, 2026-10-28): come in through the next way in the engine's sweeps found.
         if (!there && flat(goal, me) < 600.0f) {
           log::writef("nav: blocked at ({:.0f}, {:.0f})", me.x, me.y);
           if (!g_w.planned) plan();
           if (next_entry()) return;
+          // No way in the sweeps found from round about: the body's own way from here (Junpei's desk in 2-F, where
+          // the navmesh path ends in the aisle beside the next desk, 2026-11-12).
+          if (to_body()) return;
           // No side the sweeps call open (the target's box may be reached some other way): circle round and come
           // in from another side, six tries a sixth of a turn apart.
           if (g_w.entries.empty() && g_w.detours < 6) {
@@ -482,6 +605,9 @@ void tick() {
             return;
           }
         }
+        // Stuck on the navmesh's way (it can lead out of a room the desks split and into its closed door): the body's
+        // own way, once, before giving up.
+        if (!there && to_body()) return;
         stop(false);
         if (there) arrived_at(); else speech::speak(strings::kStuck, true);
         return;
@@ -559,6 +685,51 @@ void install() {
         walk_to(WeakObj::of(o), n.empty() ? ue::name_of(o) : n); });
     }
     if (dev::has(r, "stop")) hooks::run_on_game_thread([] { stop(true); });
+    if (dev::has(r, "map")) {
+      // Where the hero's body fits, as a character map round him (`map` = half width in cm, `cell` cm): . fits,
+      // # blocked, p a person, @ the hero. North (+x) is up, +y to the right.
+      float span = (float)dev::arg_num(r, "map", 700), cell = (float)dev::arg_num(r, "cell", 20), spare = (float)dev::arg_num(r, "spare", 3);
+      auto out = std::make_shared<std::string>("timeout\n");
+      hooks::run_on_game_thread([out, span, cell, spare] {
+        FVector me;
+        if (!world::player_location(me)) { *out = "no player\n"; return; }
+        float radius, half;
+        hero_body(radius, half);
+        float z = me.z + 10.0f, h = std::max(radius + 1.0f, half - 30.0f);
+        std::string s = std::format("hero ({:.0f}, {:.0f}, {:.0f}) body {:.1f} + {:.0f} cm, cell {:.0f}\n", me.x, me.y, me.z, radius, spare, cell);
+        int n = (int)(span / cell);
+        for (int i = n; i >= -n; --i) {
+          for (int j = -n; j <= n; ++j) {
+            if (i == 0 && j == 0) { s += '@'; continue; }
+            FVector p{me.x + i * cell, me.y + j * cell, z};
+            world::Hit hh = world::sweep(p, FVector{p.x + 0.5f, p.y, z}, radius + spare, h);
+            if (!hh.hit) { s += '.'; continue; }
+            std::vector<ue::UObject*> people;
+            world::Hit hp = world::sweep(p, FVector{p.x + 0.5f, p.y, z}, radius + spare, h, &people);
+            s += hp.hit ? '#' : 'p';
+          }
+          s += '\n';
+        }
+        *out = s;
+      });
+      return *out;
+    }
+    if (dev::has(r, "body")) {
+      // The way between the furniture to a target as a walk in a split room would plan it (reads only).
+      int obj = (int)dev::arg_int(r, "body", -1);
+      bool past = dev::arg(r, "people") == "0";
+      auto out = std::make_shared<std::string>("timeout\n");
+      hooks::run_on_game_thread([out, obj, past] {
+        ue::UObject* o = ue::object_at(obj);
+        FVector me;
+        if (!o || !world::player_location(me)) { *out = "no player or target\n"; return; }
+        std::string s;
+        std::vector<FVector> pts;
+        body_plan(goal_of(o), me, pts, &s, past);
+        *out = s;
+      });
+      return *out;
+    }
     if (dev::has(r, "plan")) {
       // The ways in to a target as the walk would find them from here (reads only: sweeps and paths).
       int obj = (int)dev::arg_int(r, "plan", -1);
@@ -586,6 +757,6 @@ void install() {
       return *out;
     }
     return status();
-  }, "?walk=objindex | ?stop=1 the auto-walk | ?plan=objindex the ways in to a target");
+  }, "?walk=objindex | ?stop=1 the auto-walk | ?plan=objindex the ways in to a target | ?body=objindex the way between the furniture");
 }
 }  // namespace p3a::nav

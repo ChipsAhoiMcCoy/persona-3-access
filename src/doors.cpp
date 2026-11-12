@@ -162,7 +162,15 @@ static Verdict verdict(UObject* a, const FVector& me, const FVector& at) {
 }
 
 bool behind(UObject* a, const FVector& me, const FVector& at) { Verdict v = verdict(a, me, at); return v.shut && !v.same_room; }
-bool walk_shut(UObject* a, const FVector& me, const FVector& at) { return verdict(a, me, at).shut; }
+// Asked afresh: the walk starts from where the hero stands now, and in a room the navmesh splits the answer changes
+// with that (from the back of classroom 2-F the path to the front bookshelf goes through the doors, from the front it
+// does not; the kept answer sent the walk into the back door, 2026-11-12).
+Way walk_way(UObject* a, const FVector& me, const FVector& at) {
+  if (g_doors.empty() || !a) return Way::open;
+  Verdict v;
+  guarded([&] { v = work_out(a, me, at); });
+  return !v.shut ? Way::open : v.same_room ? Way::in_room : Way::behind;
+}
 
 void install() {
   dev::route("/doors", [](const dev::Request& r, int&) {
