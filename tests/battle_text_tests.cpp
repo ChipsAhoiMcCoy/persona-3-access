@@ -22,6 +22,29 @@ TEST_CASE("battle_text: turns in the singular and the plural") {
   CHECK(turns_text(0) == "0 turns");
 }
 
+TEST_CASE("battle_text: a countdown's time in words") {
+  CHECK(countdown_text(1800.0f, true) == "30 minutes");
+  CHECK(countdown_text(1752.7f, true) == "29 minutes 12 seconds");
+  CHECK(countdown_text(1752.7f, false) == "29 minutes");
+  CHECK(countdown_text(61.0f, true) == "1 minute 1 second");
+  CHECK(countdown_text(59.9f, false) == "59 seconds");
+  CHECK(countdown_text(0.4f, true) == "0 seconds");
+  CHECK(countdown_text(-3.0f, true) == "0 seconds");
+}
+
+TEST_CASE("battle_text: the marks a countdown passes") {
+  CHECK(countdown_mark(1800.0f, 1799.9f) == -1);   // the start is not a mark passed
+  CHECK(countdown_mark(1500.1f, 1499.9f) == 1500);
+  CHECK(countdown_mark(1500.0f, 1499.9f) == -1);   // said when it reached 1500
+  CHECK(countdown_mark(300.05f, 300.0f) == 300);
+  CHECK(countdown_mark(60.01f, 59.99f) == 60);
+  CHECK(countdown_mark(30.01f, 29.99f) == 30);
+  CHECK(countdown_mark(10.01f, 9.99f) == 10);
+  CHECK(countdown_mark(45.0f, 44.0f) == -1);
+  CHECK(countdown_mark(700.0f, 50.0f) == 60);      // several at once (600, 300, 60): the lowest
+  CHECK(countdown_mark(40.0f, 41.0f) == -1);       // going up is no mark
+}
+
 TEST_CASE("battle_text: an attack's name loses its last word") {
   CHECK(short_attack("Fire Attack") == "Fire");
   CHECK(short_attack("Almighty Attack") == "Almighty");

@@ -15,6 +15,7 @@
 #include "devserver.h"
 #include "hooks.h"
 #include "screens/util.h"
+#include "stats.h"
 #include "input.h"
 #include "log.h"
 #include "seh.h"
@@ -413,7 +414,11 @@ static void read_choices(Tick& tk, Seen& s, UObject* sel) {
       // A new choice list: the focused entry with its position, once (after the page it answers), when every entry
       // has its text -- the entries are empty for a frame or two after the list appears, like pages.
       if (core::all_filled(ch)) {
-        if (idx < ch.size()) say_after(choice_line(ch, idx));
+        // Under the money panel with a price planned (the TV shop): the price and the wallet first.
+        if (idx < ch.size()) {
+          std::string price = stats::price_line();
+          say_after(price.empty() ? choice_line(ch, idx) : price + ". " + choice_line(ch, idx));
+        }
         s.sel_obj = list;
       }
     }

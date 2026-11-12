@@ -29,7 +29,7 @@ These reached the code but have not been seen working in the game, because no te
 - The compendium's Persona status page (Summon from the Compendium, then a Persona) was not tried in the game after its fix. Registration's page, which had the same fault, was.
 - The auto-walk's search for the way in to a walled-in target was tried on one Tartarus teleporter, from one side.
 - The Missing Persons board in the field. The camp's Missing Persons list has been tested.
-- A missing person waiting on a Tartarus floor, the "Rare Shadow" and "The Reaper" names in the points of interest list, and the sound for a Shadow that loses track of you have not been met in a test.
+- The "Rare Shadow" and "The Reaper" names in the points of interest list, and the sound for a Shadow that loses track of you have not been met in a test.
 - Shuffle Time's reading of a card whose text is the same as the card before it was changed and has not come up in a test since.
 - The audio description text was checked by automated timing and transcript checks, not by a person watching every movie.
 - This Release build. Development used a slightly different build type, so the packaged zip is its own test.
@@ -43,7 +43,6 @@ These reached the code but have not been seen working in the game, because no te
 ## Behaviours to expect
 
 - While the mod settings are open, the game keeps running. In Tartarus, open them from the camp menu's Config to be safe.
-- When a Persona's skill is "on the verge of changing" after a level up, the mod should now say what it would become ("Agi would become Agilao"). This comes from the game's code and has not come up in a test: no change was offered, even with the game's chance raised.
 - A voiced line is not read by default, even if its voice cannot be heard, such as when voice volume is at zero. Set "Voiced dialogue" to "read aloud" in the mod settings in that case.
 
 ## Game updates

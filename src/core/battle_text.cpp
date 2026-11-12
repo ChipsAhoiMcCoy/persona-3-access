@@ -7,6 +7,25 @@
 namespace p3a::core {
 std::string turns_text(int n) { return std::format("{} {}", n, n == 1 ? strings::kTurn : strings::kTurns); }
 
+std::string countdown_text(float seconds, bool exact) {
+  int s = seconds > 0 ? (int)seconds : 0, m = s / 60;
+  s %= 60;
+  auto unit = [](int n, const char* one, const char* many) { return std::format("{} {}", n, n == 1 ? one : many); };
+  if (m == 0) return unit(s, strings::kSecond, strings::kSeconds);
+  std::string t = unit(m, strings::kMinute, strings::kMinutes);
+  if (exact && s > 0) t += " " + unit(s, strings::kSecond, strings::kSeconds);
+  return t;
+}
+
+int countdown_mark(float was, float now) {
+  if (!(now < was)) return -1;
+  int mark = -1;
+  auto passed = [&](int t) { if (was > t && now <= t) mark = t; };
+  for (int t = ((int)was / 300) * 300; t >= 300; t -= 300) passed(t);
+  for (int t : {60, 30, 10}) passed(t);
+  return mark;
+}
+
 std::string short_attack(std::string name) {
   static constexpr std::string_view tail = " Attack";
   if (name.size() > tail.size() && name.ends_with(tail)) name.resize(name.size() - tail.size());

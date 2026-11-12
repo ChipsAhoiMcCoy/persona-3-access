@@ -6,11 +6,14 @@
 //  - AFldNpcActor: bHidden, Children, mNpcBaseClass_ / mCharaBaseClass_ (a placeholder has none of them),
 //    mCharaModelList_ (empty: no character stands there).
 //  - AFldDungeonObjectActor: ObjType and m_pHitActorList (a chest's kind for its hit), Box (a breakable's body).
-//  - UFldDungeonMissingController.m_pMissingPerson; AEnemySymbolBaseCore (the roaming Shadows) with the enemy
-//    manager's holders (shadow::enemy_holders).
+//  - UFldDungeonMissingController.m_pMissingPerson, +0x108 / +0x168 (its case: missing_name); AEnemySymbolBaseCore
+//    (the roaming Shadows) with the enemy manager's holders (shadow::enemy_holders).
 #include "poi_internal.h"
+#include "bmdfile.h"
 #include "core/poi_text.h"
 #include "core/strings.h"
+#include "core/text_clean.h"
+#include "party.h"
 #include "devserver.h"
 #include "doors.h"
 #include "hooks.h"
@@ -54,6 +57,34 @@ static bool flag_prop_on(UObject* a, const char* prop) {
   if (!f || f->index <= 0) return false;
   std::string flag = fname(*f);
   return !flag.empty() && flag != "None" && flag_on(flag);
+}
+
+// The name of the missing person on this floor, as the police board's notice gives it, or "" while the board does
+// not show it yet. UFldDungeonMissingController: +0x168 a case is placed, +0x108 its data, whose +0x68 is the case
+// number (what DUNGEON_GET_MISSING_ID returns, FUN_14117e120). The name is the speaker of that dialog of
+// BMD_DisappearHelp, shown once the case's InfoOn flag is set (DisappearDataAsset +0x30: a TMap, elements of 0x30,
+// key at +0, the case's flags Active, Success, Failed, Npc, InfoOn, Award at +8), as the Missing Persons list does.
+static std::string missing_name(UObject* controller) {
+  if (!controller || !ue::known_build()) return {};
+  int no = 0;
+  if (!guarded([&] {
+        uint8_t* c = (uint8_t*)controller;
+        uint8_t* data = c[0x168] ? *(uint8_t**)(c + 0x108) : nullptr;
+        no = data ? *(int32_t*)(data + 0x68) : 0;
+      }) || no <= 0)
+    return {};
+  static const int asset_id = watch::want("DisappearDataAsset");
+  UObject* d = watch::get(asset_id);
+  if (!d) return {};
+  auto* map = (TArray<uint8_t>*)((uint8_t*)d + 0x30);
+  const int32_t* fl = nullptr;
+  for (int i = 0; map->data && i < map->num && i < 200; ++i)
+    if (*(uint16_t*)(map->data + i * 0x30) == no) fl = (const int32_t*)(map->data + i * 0x30 + 8);
+  if (!fl || !party::flag(fl[4])) return {};
+  auto f = bmdfile::load("BMD_DisappearHelp");
+  if (!f || !f->ok || no >= (int)f->dialogs.size()) return {};
+  int sp = f->dialogs[no].speaker;
+  return sp >= 0 && sp < (int)f->speakers.size() ? core::clean_text(f->speakers[sp]) : std::string();
 }
 
 bool breakable(UObject* a) {
@@ -154,11 +185,17 @@ std::vector<Poi> scan(float radius) {
     // The missing person's only hit has no icon: a sphere that starts the rescue when walked into
     // (BP_DHIT_MISNPC_C, overlap BP_FldHit_MISNPC_01_HERO_C). Named by the game's hit-name table: "Stray Cat",
     // "Old Man in Pain", else "Missing Person" (row 10009013).
-    // UNTESTED: written from the game's data; no missing person was met in a dev game.
+    // Seen on floor 50 (2026-11-12): listed under People, the walk into it started the rescue.
     if (icon == "None" && missing && name_of(get<UObject*>(a, "mOverlapBluePrint_")) == "BP_FldHit_MISNPC_01_HERO_C") {
       std::string nm = hit_name(a);
-      if (nm.empty()) nm = kin_name({"DT_FldDungeonHitName"}, 10009013);
-      add(a, Kind::Person, nm.empty() ? strings::kPoiMissingPerson : nm);
+      if (nm.empty()) {
+        nm = kin_name({"DT_FldDungeonHitName"}, 10009013);
+        if (nm.empty()) nm = strings::kPoiMissingPerson;
+        // The person's name from the police board's notice, as the Missing Persons list says it (seen on floor 50,
+        // 2026-11-12: "Missing Person, Ayako Yoshimoto"); the hit's own name stays first.
+        if (std::string who = missing_name(watch::get(missing_id)); !who.empty()) nm += ", " + who;
+      }
+      add(a, Kind::Person, nm);
       continue;
     }
     if (icon == "None") continue;

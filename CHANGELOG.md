@@ -18,12 +18,20 @@
 
 ### Points of interest
 - Empty spots where the game can place a character were listed as "Person" when nobody stood there (three on the dorm's third floor, a step from the hallway), and walking to one stalled. They are no longer listed.
+- People in your own room were left out of the list when the desks split the floor, as in Classroom 2-F: walking from the back door to Junpei's desk, the way around led out through one door and back in through the other, so he seemed to be behind a closed door. Anyone you could see over the furniture is listed now. Walking there says "No path, though it is in this room" instead of running into the door.
+- A missing person in Tartarus is listed with their name from the police notice once the notice shows it: "Missing Person, Ayako Yoshimoto".
+
+### Battle
+- The countdown in the battle against the Priestess on the monorail is spoken: "Time left: 29 minutes 59 seconds" when it starts, the minutes left with each of your turns ("29 minutes left"), every 5 minutes, then at 1 minute, 30 and 10 seconds, and the new time whenever the story cuts it short.
+
+### Shops
+- When a script asks you to pay with your money shown (the late-night TV shopping's "Buy / Don't buy"), the price and what you have are said before the answers: "Price 2980 yen, you have 4800 yen".
 
 ### Character descriptions
 - The area key (Semicolon, or both triggers and B) now describes the character talking to you while their portrait is up beside the line: how they look, the outfit the portrait shows (summer or winter uniform, casual clothes, swimsuit, yukata, combat gear and the rest) and how they stand. It follows their outfit as it changes through the year. All 155 outfits of the 53 characters with a portrait are described. Outside a conversation the key describes the place, as before.
 
 ### Fusion
-- A skill change offered after a level up ("a skill seems to be on the verge of changing") is followed by what the skill would become. Not yet seen in the game: see the known issues.
+- A skill change offered after a fusion (Igor: "A skill seems to be on the verge of changing...") is followed by what each skill would become: "Bufu would become Spirit Drain. Agi would become Dodge Ice". Tried in the game, with the new Persona levelling up first and without.
 - Choosing skills to inherit now says how many you may take ("Choose skills to inherit, up to 2.") and counts as you choose ("chosen, 1 of 2 picks"). Taking the last one brings Igor's question at once, as before.
 
 ### The end of the game

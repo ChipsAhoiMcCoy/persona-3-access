@@ -309,7 +309,38 @@ class BattleScreen : public Screen {
     for (int i = 0; i < 4; ++i)
       if (!open(kCmds[i])) locked += (locked.empty() ? "" : ", ") + std::string(strings::kWheelCommands[i]);
     if (!locked.empty()) s += std::format(". {} {}", locked, strings::kUnavailable);
+    if (countdown_on_) s += std::format(". {} {}", core::countdown_text(countdown_was_, false), strings::kTimeLeft);
     speech::speak(s, false);   // queued after what just happened
+  }
+
+  // A battle's countdown (BP_BtlCountdown_C, the core's Countdown once a script ran BTL_COUNTDOWN_START; the
+  // Priestess's monorail, encounter 701, is the only one): Timer falls in real time while IsPlay is set, through
+  // every turn and menu; BTL_COUNTDOWN_REDUCE slides it down with IsAnimation set, to AnimationEndTime. IsVisible
+  // also drops for cut-ins, so it is not read. Said when it starts, when it is cut, at its marks, and with each turn.
+  bool countdown_on_ = false, countdown_cut_ = false;
+  float countdown_was_ = 0;
+  void countdown_tick(UObject* battle) {
+    UObject* c = battle ? get<UObject*>(battle, "Countdown") : nullptr;
+    float t = c ? get<float>(c, "Timer") : 0.0f;
+    bool cut = c && get_bool(c, "IsAnimation");
+    if (!c || (!cut && !(get_bool(c, "IsPlay") && t > 0))) { countdown_on_ = countdown_cut_ = false; return; }
+    if (!countdown_on_) {
+      countdown_on_ = true;
+      countdown_was_ = t;
+      speech::speak(std::format("{} {}", strings::kTimeLeftStart, core::countdown_text(t, true)), false);
+      return;
+    }
+    if (cut) {
+      if (countdown_cut_) return;
+      countdown_cut_ = true;
+      countdown_was_ = get<float>(c, "AnimationEndTime");
+      speech::speak(std::format("{} {}", core::countdown_text(countdown_was_, true), strings::kTimeLeft), false);
+      return;
+    }
+    countdown_cut_ = false;
+    if (int mark = core::countdown_mark(countdown_was_, t); mark >= 0)
+      speech::speak(std::format("{} {}", core::countdown_text((float)mark, true), strings::kTimeLeft), false);
+    countdown_was_ = t;
   }
 
   // TOP: whose turn it is and the target, said from background() (top_tick).
@@ -434,8 +465,9 @@ class BattleScreen : public Screen {
     bool target_pressed = target_press();
     UObject* core = battle_core();
     end_pad(core ? gui_state() : 0);
-    if (!core) { units_.clear(); won_enemies_.clear(); forget_battle_start(); downed_since_turn_ = false; last_actor_ = {}; rush_ = false; popups_seen_.clear(); return; }
+    if (!core) { units_.clear(); won_enemies_.clear(); forget_battle_start(); downed_since_turn_ = false; last_actor_ = {}; rush_ = false; popups_seen_.clear(); countdown_on_ = false; return; }
     watch();
+    countdown_tick(core);
     int st = gui_state();
     // Assist (13, BTL_STATE_NAVIGATION) only plays the navigator's advice over the wheel: back from it is the same
     // turn, not the wheel opening again (each press re-read the turn line, 2026-11-01).

@@ -113,7 +113,11 @@ void walk_to(const WeakObj& target, const std::string& name) {
   if (!world::player_location(me) || watch::get(battle)) { speech::speak(strings::kNotInField, true); return; }
   // Past a closed door: the navmesh runs on under it, so there is a path, and it ends against the door ("Stuck",
   // the gym hallway, 2026-11-11).
-  if (ue::UObject* t = target.resolve(); t && doors::behind(t, me, world::actor_location(t))) { speech::speak(strings::kNoPath, true); return; }
+  // In this room with no path inside it (classroom 2-F's desks): said so, the player walks the last of it.
+  if (ue::UObject* t = target.resolve(); t && doors::walk_shut(t, me, world::actor_location(t))) {
+    speech::speak(doors::behind(t, me, world::actor_location(t)) ? strings::kNoPath : strings::kNoPathInRoom, true);
+    return;
+  }
   g_w = Walk{};   // a new walk's plan starts empty; the keys held and g_walking are not part of it
   g_w.target = target;
   g_w.name = name;

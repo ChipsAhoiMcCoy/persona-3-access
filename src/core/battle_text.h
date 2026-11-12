@@ -15,6 +15,13 @@ std::string short_attack(std::string name);
 // Enemies that fell together, in one line: "2 Cowardly Maya, Muttering Tiara defeated". The names in the order they
 // first fell; one that fell several times has its count before it.
 std::string defeated_line(const std::vector<std::string>& names);
+// A countdown's time in words, from its seconds (whole seconds, rounded down as its digits show them): "29 minutes 12
+// seconds", "1 minute", "45 seconds". `exact` false says minutes alone from a minute up ("29 minutes"), for a line
+// heard every turn.
+std::string countdown_text(float seconds, bool exact);
+// The mark a countdown passed going from `was` to `now` seconds: every 5 minutes, then 1 minute, 30 and 10 seconds
+// (the lowest one passed when it passed several), or -1 for none.
+int countdown_mark(float was, float now);
 // A target key in a battle GUI state (1 the command wheel, 8 Analyze): -1 the press lowers the game's target index,
 // +1 raises it, 0 not a target key there. The wheel: Left / A lower, Right / D raise. Analyze: E / D lower (its next
 // target), Q / A raise.

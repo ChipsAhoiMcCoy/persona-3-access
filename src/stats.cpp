@@ -44,6 +44,28 @@ static int64_t money_cmd_hook(uint8_t* ctx) {
   return g_money_cmd(ctx);
 }
 
+// The money panel: CALL_MONEY_PANEL draws the wallet while a script asks the player to pay, SET_ADD_MONEY_PLANS(n)
+// draws a planned change under it (minus the price at the TV shop's "Buy / Don't buy", BF_OBJ_MAIL_ORDER, and the
+// other scripts that ask a price), CLOSE_MONEY_PANEL takes it away. The panel itself (AUIMiscMoneyDraw) is native and
+// unreflected: what the script asked is noted here, and the choice that follows says it (msg.cpp read_choices).
+static flow::Command g_panel_open_cmd, g_panel_close_cmd, g_plan_cmd;
+static bool g_panel = false;
+static int g_plan = 0;
+static int64_t panel_open_hook(uint8_t* ctx) { g_panel = true; g_plan = 0; return g_panel_open_cmd(ctx); }
+static int64_t panel_close_hook(uint8_t* ctx) { g_panel = false; g_plan = 0; return g_panel_close_cmd(ctx); }
+static int64_t plan_hook(uint8_t* ctx) {
+  g_plan = flow::int_arg(ctx);
+  return g_plan_cmd(ctx);
+}
+
+std::string price_line() {
+  if (!g_panel || g_plan >= 0) return {};
+  int m = money();
+  std::string s = std::format("{} {} {}", strings::kPrice, -g_plan, strings::kYen);
+  if (m >= 0) s += std::format(", {} {} {}", strings::kYouHave, m, strings::kYen);
+  return s;
+}
+
 static uint8_t* handle() {
   uint8_t* h = nullptr;
   if (g_get_handle) guarded([&] { h = g_get_handle(); });
@@ -95,7 +117,7 @@ void tick() {
   static int prev_money = -1;
   int m = money();
   bool load = screens::loading();   // a save loading: take the new values silently
-  if (load) { have = false; prev_money = -1; }
+  if (load) { have = false; prev_money = -1; g_panel = false; }
   // A money notice says its own gain (screens/get_item.cpp); the game pays on its confirm.
   bool told = g_told_money > 0 && m - prev_money == g_told_money;
   if (m >= 0 && prev_money >= 0 && m != prev_money) g_told_money = 0;
@@ -140,6 +162,12 @@ void install() {
   g_money_cmd = (flow::Command)flow::command("ADD_GET_ITEM_LIST_MONEY");
   log::writef("stats: ADD_GET_ITEM_LIST_MONEY={:#x}", g_money_cmd ? (uintptr_t)g_money_cmd - scan::exe_base() : 0);
   if (g_money_cmd) hooks::attach((void**)&g_money_cmd, (void*)&money_cmd_hook, "ADD_GET_ITEM_LIST_MONEY");
+  struct { flow::Command* fn; void* hook; const char* name; } panel[] = {
+      {&g_panel_open_cmd, (void*)&panel_open_hook, "CALL_MONEY_PANEL"},
+      {&g_panel_close_cmd, (void*)&panel_close_hook, "CLOSE_MONEY_PANEL"},
+      {&g_plan_cmd, (void*)&plan_hook, "SET_ADD_MONEY_PLANS"}};
+  for (auto& p : panel)
+    if ((*p.fn = (flow::Command)flow::command(p.name))) hooks::attach((void**)p.fn, p.hook, p.name);
   dev::route("/stats", [](const dev::Request&, int&) {
     return dev::on_game([] {
       Stats s;

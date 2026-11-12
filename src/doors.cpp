@@ -105,7 +105,24 @@ static bool shuts(const Door& d, const FVector& a, const FVector& b, std::vector
   return hit.hit;
 }
 
-static bool work_out(const FVector& me, const FVector& at, std::string* report = nullptr) {
+// The hero sees the thing over the furniture: a line above head height meets no wall on the way (people are looked
+// past, the thing itself and what stands at it end the line). A room whose desks split its navmesh (classroom 2-F:
+// the path from the back door to a front desk goes out through one door and in through the other) is still one room.
+static bool same_room(UObject* thing, const FVector& me, const FVector& at, std::string* report) {
+  float z = std::max(me.z, at.z) + 90.0f;
+  FVector a{me.x, me.y, z}, b{at.x, at.y, z};
+  float len = std::hypot(b.x - a.x, b.y - a.y);
+  std::vector<UObject*> people;
+  world::Hit hit = world::line(a, b, "Pawn", &people);
+  bool clear = !hit.hit || hit.actor == thing || hit.distance > len - 100.0f;
+  if (report) *report += std::format("sightline at z {:.0f}: {}\n", z, clear ? "clear" : std::format("stopped by {} at {:.0f} of {:.0f} cm", hit.actor ? ue::name_of(hit.actor) : "?", hit.distance, len));
+  return clear;
+}
+
+// What the walking path to a thing meets: a closed door on the way, and whether the thing is in the hero's room all
+// the same (in another part of the map only when both).
+struct Verdict { bool shut = false, same_room = false; };
+static Verdict work_out(UObject* thing, const FVector& me, const FVector& at, std::string* report = nullptr) {
   bool partial = false;
   auto path = world::find_path(me, at, &partial);
   // A thing standing off the navmesh: the path to the navmesh beside it, as the auto-walk takes it.
@@ -122,14 +139,14 @@ static bool work_out(const FVector& me, const FVector& at, std::string* report =
     for (const Door& d : g_doors)
       if (!at_door(d) && shuts(d, path[i - 1], path[i], people)) {
         if (report) *report += std::format("shut by {} on the leg ({:.0f}, {:.0f}) -> ({:.0f}, {:.0f})\n", ue::name_of(d.obj.resolve()), path[i - 1].x, path[i - 1].y, path[i].x, path[i].y);
-        return true;
+        return Verdict{true, same_room(thing, me, at, report)};
       }
-  return false;
+  return {};
 }
 
-bool behind(UObject* a, const FVector& me, const FVector& at) {
-  if (g_doors.empty() || !a) return false;
-  struct Answer { FVector at; bool behind; };
+static Verdict verdict(UObject* a, const FVector& me, const FVector& at) {
+  if (g_doors.empty() || !a) return {};
+  struct Answer { FVector at; Verdict v; };
   static std::map<WeakObj::Key, Answer> answers;
   static uint64_t side = 0;
   if (side != g_side) { side = g_side; answers.clear(); }
@@ -137,12 +154,15 @@ bool behind(UObject* a, const FVector& me, const FVector& at) {
   auto it = answers.find(key);
   // Somebody who has walked on is asked about again.
   if (it != answers.end() && std::fabs(it->second.at.x - at.x) + std::fabs(it->second.at.y - at.y) + std::fabs(it->second.at.z - at.z) < 100.0f)
-    return it->second.behind;
-  bool b = false;
-  guarded([&] { b = work_out(me, at); });
-  answers[key] = Answer{at, b};
-  return b;
+    return it->second.v;
+  Verdict v;
+  guarded([&] { v = work_out(a, me, at); });
+  answers[key] = Answer{at, v};
+  return v;
 }
+
+bool behind(UObject* a, const FVector& me, const FVector& at) { Verdict v = verdict(a, me, at); return v.shut && !v.same_room; }
+bool walk_shut(UObject* a, const FVector& me, const FVector& at) { return verdict(a, me, at).shut; }
 
 void install() {
   dev::route("/doors", [](const dev::Request& r, int&) {
@@ -158,8 +178,8 @@ void install() {
       FVector me;
       if (UObject* t = obj >= 0 ? ue::object_at(obj) : nullptr; t && world::player_location(me)) {
         std::string why;
-        bool b = work_out(me, world::actor_location(t), &why);
-        s += std::format("{}: {}\n{}", ue::name_of(t), b ? "behind a closed door" : "not behind a door", why);
+        Verdict v = work_out(t, me, world::actor_location(t), &why);
+        s += std::format("{}: {}\n{}", ue::name_of(t), !v.shut ? "not behind a door" : v.same_room ? "in this room; the walking path goes through a closed door" : "behind a closed door", why);
       }
       *out = s;
     });

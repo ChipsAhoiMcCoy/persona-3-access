@@ -122,6 +122,8 @@ inline constexpr const char* kKnockedOut = "knocked out";
 inline constexpr const char* kVictory = "Victory";
 inline constexpr const char* kExp = "EXP";
 inline constexpr const char* kYen = "yen";
+// Before a script's price question ("Buy / Don't buy"): "Price 2980 yen, you have 4800 yen".
+inline constexpr const char* kPrice = "Price";
 inline constexpr const char* kLevelUp = "Level up!";
 // EBtlDataBadStatus 0..13
 inline constexpr const char* kBadStatus[] = {"is dizzy", "is charmed", "is distressed", "panics", "is afraid", "is enraged", "is frozen", "is shocked",
@@ -135,6 +137,11 @@ inline constexpr const char* kGuarding = "Guarding";
 inline constexpr const char* kUpTo = "up to";
 inline constexpr const char* kTurn = "turn";
 inline constexpr const char* kTurns = "turns";
+// A battle's countdown (the monorail's, BTL_COUNTDOWN_START): "Time left: 30 minutes", "29 minutes 12 seconds left".
+inline constexpr const char* kTimeLeftStart = "Time left:";
+inline constexpr const char* kTimeLeft = "left";
+inline constexpr const char* kSecond = "second";
+inline constexpr const char* kSeconds = "seconds";
 inline constexpr const char* kPersonaWord = "Persona";
 inline constexpr const char* kTheurgyCharge = "Theurgy gauge";
 inline constexpr Hint kDetailKeys{"Control and the up and down arrows read the details of what is in focus.", "The right stick, up and down, reads the details of what is in focus."};
@@ -460,6 +467,7 @@ inline constexpr const char* kIconStudy = "study group";
 inline constexpr const char* kIconWalk = "walk";
 // Navigation
 inline constexpr const char* kNoPath = "No path";
+inline constexpr const char* kNoPathInRoom = "No path, though it is in this room";
 inline constexpr const char* kStuck = "Stuck, stopping";
 inline constexpr const char* kStopped = "Stopped";
 inline constexpr const char* kNotInField = "Not in the field";
