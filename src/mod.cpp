@@ -18,6 +18,7 @@
 #include "gametext.h"
 #include "stats.h"
 #include "party.h"
+#include "flow.h"
 #include "items.h"
 #include "persona.h"
 #include "social.h"
@@ -55,7 +56,7 @@ static Section g_sections[] = {
   {"topdown", topdown::tick},
   {"walltones", walltones::tick}, {"nav", nav::tick}, {"poi", poi::tick}, {"sonar", sonar::tick}, {"calendar", calendar::tick},
   {"stats", stats::tick, true}, {"social", social::tick, true}, {"party", party::tick, true},
-  {"ad", ad::tick}, {"cutin", cutin::tick}, {"picture", picture::tick},
+  {"ad", ad::tick}, {"cutin", cutin::tick}, {"picture", picture::tick}, {"flow", flow::tick, true},
 };
 static uint64_t g_perf_ticks = 0;
 static void tick() {
@@ -136,6 +137,7 @@ void init(bool speech_ok) {
   persona::install();
   party::install();
   items::install();
+  flow::install();
   dev::route("/screen", [](const dev::Request&, int&) {
     return dev::on_game([] { auto* s = screens::current(); return screens::status() + "\n" + (s ? s->describe() : std::string()) + "\n"; });
   }, "current modelled screen and its description");

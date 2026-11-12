@@ -10,4 +10,7 @@ void* command(const char* name);
 // A command's first argument as an int (a float is truncated), read from the script context the command was called
 // with; 0 when there is none or it is a script variable.
 int int_arg(uint8_t* ctx);
+// Dev: `/flow/run` (any command by name, from a script context of the mod's own) and its per-frame driver.
+void install();
+void tick();
 }  // namespace p3a::flow
