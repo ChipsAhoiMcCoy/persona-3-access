@@ -1,4 +1,4 @@
-# Menu coverage (bespoke menus, branch ui-revamp, 2026-10-30)
+# Menu coverage
 
 Every interactive menu of the base game, the mod screen that models it (src/screens/), and how it was verified in the
 dev game. "Live" = navigated in the running game with the game's own highlight following the mod's focus.
