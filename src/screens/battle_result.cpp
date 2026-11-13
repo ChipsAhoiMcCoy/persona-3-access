@@ -255,7 +255,9 @@ class BattleResultScreen : public MenuScreen {
   // opening: the title would be said again over the page.
   std::string title() override { return result_state(result_ui()) == 7 ? std::string() : std::string(strings::kVictory); }
   bool opening_interrupts() override { return false; }
-  bool announce_entry() override { return state_ == 7; }   // a status page, back from a window: the line in focus
+  // A status page said already, back from a window over it: the line in focus. One not said yet (back from the
+  // skill-learning list, the skill now in) is said by on_tick, level first ("Level up! Satan" came twice, 2026-11-12).
+  bool announce_entry() override { return state_ == 7 && persona_ != 0; }
   // The hero's stock-up notices ("Update Stockup": two windows, then ResultStockType back to 0 and the key help).
   bool window_coming() override { UObject* ui = result_ui(); return ui && get<uint8_t>(ui, "ResultStockType") != 0; }
   void on_enter() override {
