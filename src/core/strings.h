@@ -449,9 +449,7 @@ inline constexpr const char* kNothingSelected = "Nothing selected";
 inline constexpr const char* kOClock = "o'clock";                 // after the hour, a direction by the clock face: "2 o'clock"
 // The compass in the top-down mode (north fixed): a bearing's eight points, from north clockwise.
 inline constexpr const char* kCompass[8] = {"north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"};
-inline constexpr const char* kScanNothing = "nothing";            // the right-stick scan found no point that way
-inline constexpr const char* kScanWall = "wall";                  // "north: wall, 3 meters"
-inline constexpr const char* kScanOpen = "open";                  // no wall within the scan's reach
+inline constexpr const char* kScanNothing = "nothing";            // the right-stick scan: no point anywhere in range
 inline constexpr const char* kMonad = "Monad";                    // the area key's name for the section behind a Monad door
 inline constexpr const char* kMonadChambers = "Monad Chambers";   // the same in Episode Aigis' Abyss of Time
 // What the icon over a person says, after their name in the list ("Akihiko Sanada, talked to"). A plain talk or

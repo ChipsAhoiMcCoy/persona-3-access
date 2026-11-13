@@ -28,8 +28,8 @@ struct FieldParams {
                                // little more for our longer sounds)
   double grace_s = 1.5;        // an id missing from the items keeps its place this long (the range's edge, a list
                                // rebuilt without it for a moment) before it is forgotten and counts as new again
-  double gap_s = 0.04;         // the breath a sound needs after it before it repeats: the host picks a brief form of
-                               // the sound when the whole one and this do not fit its period
+  double gap_s = 0.04;         // the breath a sound needs after it before it repeats (what core/sonar_cues' brief
+                               // forms were made to fit; the sonar plays whole sounds, over each other up close)
   double period_for(float dist) const;   // a power law through the two endpoints
 };
 

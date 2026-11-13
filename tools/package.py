@@ -15,6 +15,7 @@ Zip layout (the player copies dsound.dll and P3RAccess into P3R\\Binaries\\Win64
       p3access.dll, prism.dll, phonon.dll
       assets/ad/                     audio description cue lists and clips (src/ad.cpp)
       assets/audio/walltones/2/      the wall tones (src/walltones.cpp)
+      assets/audio/sonar/, signals/  the sonar's and the Shadow's sound files (src/sonar.cpp, src/audio.cpp)
       docs/                          the same readme and install steps, known issues, changelog, credits
       licenses/                      every license and notice
 
@@ -36,6 +37,8 @@ PRISM = "third_party/prism-bin/prism-sdk-v0.18.1"
 STEAMAUDIO = "third_party/steamaudio/steamaudio-4.8.1"
 STAMP = (2026, 1, 1, 0, 0, 0)   # every entry's date, so two builds of one tree give one zip
 TONES = ("north.wav", "east.wav", "south.wav", "west.wav")
+# Grim Dark's sonar sounds (src/sonar.cpp, src/audio.cpp: a missing one falls back to a made sound, so check() insists).
+CUE_FILES = ("sonar/exit.wav", "sonar/object.wav", "sonar/event.wav", "sonar/fragment.wav", "signals/shadow.wav")
 FORBIDDEN = re.compile(r"\.(map|pdb|lib|exp|ilk|log|ini|obj|sav|pak|uasset|usm)$|live\d+\.dll$", re.I)
 
 
@@ -74,6 +77,8 @@ def collect(allow_no_license):
             out["P3RAccess/" + rel] = open(full, "rb").read()
     for t in TONES:
         out[f"P3RAccess/assets/audio/walltones/2/{t}"] = repo(f"assets/audio/walltones/2/{t}")
+    for f in CUE_FILES:
+        out[f"P3RAccess/assets/audio/{f}"] = repo(f"assets/audio/{f}")
 
     readme, install = as_text(os.path.join(ROOT, "README.md")), as_text(os.path.join(ROOT, "INSTALL.md"))
     out["README.txt"], out["INSTALL.txt"] = readme, install
@@ -105,7 +110,7 @@ def check(files):
     """What the code loads must be there (src/proxy, src/speech.cpp, src/hrtf.cpp, src/walltones.cpp, src/ad.cpp)."""
     problems = [n for n in files if FORBIDDEN.search(n)]
     for need in ["dsound.dll", "P3RAccess/p3access.dll", "P3RAccess/prism.dll", "P3RAccess/phonon.dll"] + \
-            [f"P3RAccess/assets/audio/walltones/2/{t}" for t in TONES]:
+            [f"P3RAccess/assets/audio/walltones/2/{t}" for t in TONES] + [f"P3RAccess/assets/audio/{f}" for f in CUE_FILES]:
         if need not in files:
             problems.append("missing " + need)
     movies = clips = 0

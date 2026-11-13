@@ -13,6 +13,8 @@
 - New sound placement, from Dark Vision: left and right by level and by the moment each ear hears a sound, sounds behind darker. The Sound placement setting (Sound) chooses it, Steam Audio's 3D (as before) or a plain pan. It replaces the 3D sound setting.
 
 ### Sonar
+- Sounds always play in full. Up close, where a thing repeats fastest, a shortened form of its sound played instead, so a door's knock and the exit's and event's sounds were cut off. Now the whole sound plays every time at its own pitch, as in Grim Dark, and a long one starts again over its own tail when its rhythm is faster than it is long.
+- Grim Dark's sonar sounds: exits use its dungeon entrance sound, objects its interactable sound, events its ruined shrine, Twilight Fragments its loot, and a near Shadow its enemy ping. Doors, people and shops keep their own sounds, as Grim Dark has none like them.
 - Each thing keeps its own rhythm again, as in Grim Dark: things of different kinds sound independently, and only two of one kind are kept a moment apart. In 0.1.0-alpha.3 only one sound played at a time, so in a crowd every thing waited its turn and the rhythms fell into a slow queue.
 - The Sonar rhythm setting is gone with the sweep rhythm; pulse is the only one.
 - Every thing repeats a quarter more slowly than before at each distance: almost seven times a second at 1 m, about once a second at 10 m.

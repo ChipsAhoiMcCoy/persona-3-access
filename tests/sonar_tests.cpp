@@ -135,18 +135,17 @@ TEST_CASE("sonar cues: short, clean at both ends, one loudness") {
   for (int k = 0; k < (int)SonarCue::Count; ++k) {
     CAPTURE(k);
     std::vector<float> v = sonar_cue((SonarCue)k, rate);
-    REQUIRE(v.size() > (size_t)rate / 20);    // over 50 ms
-    CHECK(v.size() < (size_t)rate * 2 / 10);  // under 0.2 s
-    double sum = 0, peak = 0;
+    REQUIRE(v.size() > (size_t)rate * 11 / 100);  // over 0.11 s: a 45 to 100 ms set was too clipped (2026-11-13)
+    CHECK(v.size() < (size_t)rate * 2 / 10);      // under 0.2 s
+    double peak = 0;
     bool finite = true;
-    for (float s : v) { finite = finite && std::isfinite(s); sum += (double)s * s; peak = std::max(peak, (double)std::fabs(s)); }
+    for (float s : v) { finite = finite && std::isfinite(s); peak = std::max(peak, (double)std::fabs(s)); }
     CHECK(finite);
-    CHECK(peak <= 0.9001);
+    CHECK(peak <= kCuePeak + 1e-4);
     CHECK(std::fabs(v.front()) < 0.01);
     CHECK(std::fabs(v.back()) < 0.01);
-    double rms = std::sqrt(sum / (double)v.size());
-    CHECK(rms > kSonarCueRms * 0.99);  // none is held under the common loudness by its peak
-    CHECK(rms < kSonarCueRms * 1.01);
+    // As loud as each other to the ear; none is held under it by its peak.
+    CHECK(cue_loudness(v, rate) == doctest::Approx(kCueLoudness).epsilon(0.01));
     // The same sound every time.
     CHECK(sonar_cue((SonarCue)k, rate) == v);
   }
@@ -162,14 +161,12 @@ TEST_CASE("sonar cues: the brief forms fit the fastest rhythm") {
     CHECK(len > 0.04);
     CHECK(len / 0.84 + p.gap_s <= p.period_near);   // played lower from behind too
     CHECK(v != sonar_cue((SonarCue)k, rate));
-    double sum = 0, peak = 0;
-    for (float s : v) { sum += (double)s * s; peak = std::max(peak, (double)std::fabs(s)); }
-    CHECK(peak <= 0.9001);
+    double peak = 0;
+    for (float s : v) peak = std::max(peak, (double)std::fabs(s));
+    CHECK(peak <= kCuePeak + 1e-4);
     CHECK(std::fabs(v.front()) < 0.01);
     CHECK(std::fabs(v.back()) < 0.01);
-    double rms = std::sqrt(sum / (double)v.size());
-    CHECK(rms > kSonarCueRms * 0.99);
-    CHECK(rms < kSonarCueRms * 1.01);
+    CHECK(cue_loudness(v, rate) == doctest::Approx(kCueLoudness).epsilon(0.01));
     for (int b = k + 1; b < (int)SonarCue::Count; ++b) CHECK(sonar_cue((SonarCue)b, rate, true) != v);
   }
 }
@@ -179,20 +176,35 @@ TEST_CASE("signal cues: short, clean at both ends, the sonar's loudness") {
   for (int k = 0; k < (int)SignalCue::Count; ++k) {
     CAPTURE(k);
     std::vector<float> v = signal_cue((SignalCue)k, rate);
-    REQUIRE(v.size() > (size_t)rate / 50);    // over 20 ms
-    CHECK(v.size() < (size_t)rate * 3 / 10);  // under 0.3 s
-    double sum = 0, peak = 0;
+    REQUIRE(v.size() > (size_t)rate * 7 / 100);  // over 70 ms
+    CHECK(v.size() < (size_t)rate * 3 / 10);     // under 0.3 s
+    double peak = 0;
     bool finite = true;
-    for (float s : v) { finite = finite && std::isfinite(s); sum += (double)s * s; peak = std::max(peak, (double)std::fabs(s)); }
+    for (float s : v) { finite = finite && std::isfinite(s); peak = std::max(peak, (double)std::fabs(s)); }
     CHECK(finite);
-    CHECK(peak <= 0.9001);
+    CHECK(peak <= kCuePeak + 1e-4);
     CHECK(std::fabs(v.front()) < 0.01);
     CHECK(std::fabs(v.back()) < 0.01);
-    double rms = std::sqrt(sum / (double)v.size());
-    CHECK(rms > kSonarCueRms * 0.8);   // the blade's ring is all attack: its peak holds it a little under
-    CHECK(rms < kSonarCueRms * 1.01);
+    CHECK(cue_loudness(v, rate) == doctest::Approx(kCueLoudness).epsilon(0.01));
     CHECK(signal_cue((SignalCue)k, rate) == v);
   }
+}
+
+TEST_CASE("cue loudness: weighted as the ear hears, and a short sound counts as quieter") {
+  const int rate = 48000;
+  auto tone = [&](double hz, double seconds) {
+    std::vector<float> v((size_t)(rate * seconds));
+    for (size_t i = 0; i < v.size(); ++i) v[i] = (float)(0.5 * std::sin(2.0 * 3.14159265358979 * hz * i / rate));
+    return v;
+  };
+  // A 1 kHz tone reads near its own RMS (BS.1770 is set to about +0.7 dB there).
+  CHECK(cue_loudness(tone(1000.0, 0.2), rate) == doctest::Approx(0.5 / std::sqrt(2.0)).epsilon(0.1));
+  // The same level at 3 kHz, where the ear is keen, reads louder; at 60 Hz, where it is dull, quieter.
+  CHECK(cue_loudness(tone(3000.0, 0.2), rate) > cue_loudness(tone(1000.0, 0.2), rate) * 1.2);
+  CHECK(cue_loudness(tone(60.0, 0.2), rate) < cue_loudness(tone(1000.0, 0.2), rate) * 0.9);
+  // Half the ear's window long, it reads quieter than the same tone held.
+  CHECK(cue_loudness(tone(1000.0, 0.05), rate) < cue_loudness(tone(1000.0, 0.2), rate) * 0.75);
+  CHECK(cue_loudness({}, rate) == 0.0);
 }
 
 // The share of a sound's energy above `hz` (a two-pole high-pass, then the energies compared).
@@ -218,4 +230,32 @@ TEST_CASE("sonar cues: each kind is a different sound") {
   for (int a = 0; a < (int)SonarCue::Count; ++a)
     for (int b = a + 1; b < (int)SonarCue::Count; ++b)
       CHECK(sonar_cue((SonarCue)a, rate) != sonar_cue((SonarCue)b, rate));
+}
+
+TEST_CASE("file cues: the file's silence cut, clean ends, the common loudness; the brief form fits the fastest rhythm") {
+  const int rate = 48000;
+  // A file as Grim Dark's entrance cue is: silence before it, a decaying tone, a long silence after.
+  std::vector<float> file(rate * 6 / 10, 0.0f);
+  const size_t start = rate * 34 / 1000, len = rate * 3 / 10;
+  for (size_t i = 0; i < len; ++i)
+    file[start + i] = 0.6f * std::exp(-(float)i / (rate * 0.08f)) * std::sin(2.0f * 3.14159265f * 700.0f * (float)i / rate);
+  std::vector<float> v = file_cue(file, rate);
+  REQUIRE(!v.empty());
+  CHECK(v.size() < file.size() - start);            // the silence after is gone
+  CHECK(v.size() <= len + (size_t)rate / 50);       // and the one before
+  CHECK(std::fabs(v.front()) < 0.01);
+  CHECK(std::fabs(v.back()) < 0.01);
+  double peak = 0;
+  for (float s : v) peak = std::max(peak, (double)std::fabs(s));
+  CHECK(peak <= kCuePeak + 1e-4);
+  CHECK(cue_loudness(v, rate) == doctest::Approx(kCueLoudness).epsilon(0.01));
+
+  std::vector<float> b = file_cue(file, rate, true);
+  FieldParams p;
+  CHECK((double)b.size() / rate / 0.84 + p.gap_s <= p.period_near);   // played lower from behind too
+  CHECK(std::fabs(b.back()) < 0.01);
+  CHECK(cue_loudness(b, rate) == doctest::Approx(kCueLoudness).epsilon(0.01));
+
+  CHECK(file_cue(std::vector<float>(1000, 0.0f), rate).empty());   // a silent file: the made sound stands in
+  CHECK(file_cue({}, rate).empty());
 }

@@ -19,8 +19,13 @@ namespace p3a::sonar {
 // (heard at any distance: a homing sound). Shadows have their own sounds (shadow.cpp).
 void tick();                       // game thread
 void toggle();                     // the key: on or off, said
-void selected(const poi::Poi& p);  // the list chose this point: its sound once, from its place
-void sound(const poi::Poi& p);     // its kind's sound once from its place, whatever the settings (the right stick's scan)
+// The focus: one thing heard alone. Its sound repeats from where it is, at its distance's rhythm, while every other
+// placed sound of the mod (the field, the wall tones, a Shadow's growl) is silenced (audio::solo).
+void selected(const poi::Poi& p);  // the list chose this point: the focus until the layer closes, a few seconds after a
+                                   // key, or the hero walks off
+void stick(const poi::Poi* p);     // the right stick's scan points at p (null: at nothing): the focus while it is held,
+                                   // whatever the settings
+void stick_off();                  // the stick let go
 // The settings menu changed `id`: the sound that shows the change (a kind's own, or one at the new volume), played
 // straight ahead. False when the option has no sound to show.
 bool preview(settings::Id id);

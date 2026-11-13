@@ -43,11 +43,16 @@ void set_bus_volume(Bus b, float v);
 // A one-shot sample from a place: mono at the mixer rate (sample_rate), starting and ending on silence. Through the
 // HRTF (panned without it). rate != 1 plays it faster or slower, pitch and length together.
 using Pcm = std::shared_ptr<const std::vector<float>>;
-void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate = 1.0f);
+// focus: the thing the player is listening for (sonar::focus): it plays through a solo.
+void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate = 1.0f, bool focus = false);
+// The solo: while on, only focus sounds play from places; every other placed sound (the sonar's field, a Shadow's
+// growl) fades out at once and new ones are dropped, and the wall tones go quiet. Sounds about the player (no place:
+// the layer's tick, the strike's ring) and the narrator still play. Game thread, every frame is fine.
+void solo(bool on);
 int sample_rate();
 // One of the mod's signals (core/sonar_cues.h: the Shadow's growl, the ambush ticks, the layer's
 // tick) from a place, on the Cues bus. `signal` is the SignalCue's number.
-void signal(int signal, float volume, const Spot& at, float rate = 1.0f);
+void signal(int signal, float volume, const Spot& at, float rate = 1.0f, bool focus = false);
 // The same from no place at all: in the middle of the head, both ears alike (a cue about the player, not a thing).
 void signal_here(int signal, float volume);
 // The narrator (audio description): a mono clip decoded at the mixer rate (decode_mono: WAV or MP3, any thread),

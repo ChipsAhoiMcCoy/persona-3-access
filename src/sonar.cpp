@@ -4,6 +4,7 @@
 #include "core/sonar_field.h"
 #include "core/strings.h"
 #include "devserver.h"
+#include "input.h"
 #include "log.h"
 #include "speech.h"
 #include "world.h"
@@ -32,8 +33,14 @@ constexpr KindInfo kKind[kKinds] = {
 };
 static_assert((int)SonarCue::Exit == 0 && (int)SonarCue::Door == 1 && (int)SonarCue::Person == 2 && (int)SonarCue::Shop == 3 &&
               (int)SonarCue::Thing == 4 && (int)SonarCue::Event == 5 && (int)SonarCue::Fragment == 6, "kKind is in SonarCue's order");
-constexpr size_t kMaxSources = 6;      // pulse: the nearest things that sound at once
-constexpr int kMaxPerKind = 3;         // of one kind: a corridor of students must not drown the door beside you
+// The nearest things that sound at once, and of one kind. 6 and 3 at first: too much at once, and the thing beside
+// the hero was lost in it (the user, 2026-11-13).
+constexpr size_t kMaxSources = 4;
+constexpr int kMaxPerKind = 2;         // a corridor of students must not drown the door beside you
+// A thing this close takes the stage: everything else in the field drops kCloseDuckDb, so being beside it is heard
+// (the user, 2026-11-13: beside a thing it was hard to tell among the others).
+constexpr float kCloseM = 2.5f;
+constexpr float kCloseDuckDb = 10.0f;
 constexpr float kNearM = 1.5f;         // at and under this: full volume (the rhythm has its own scale: core/sonar_field)
 // How much quieter a thing is at the range's edge (and beyond, when selected). 14 at first: with the far-off sound's
 // duller treble on top, a thing was not noticed until the player was nearly on it (the user, 2026-11-10).
@@ -47,6 +54,21 @@ constexpr float kLookAheadCm = 300.0f; // how far past the range that reading lo
 float g_trim_db[kKinds] = {0, 0, 0, 0, 0, 0, 0};
 
 struct Source { ue::WeakObj obj; int kind; FVector loc; bool selected; };
+
+// The focus: one thing heard alone, its sound repeating at its distance's rhythm while the rest of the mod's placed
+// sounds (the field, the wall tones, a Shadow's growl) are silenced (audio::solo), so what it is and where can be
+// heard (the user, 2026-11-13). Held while a point is chosen in the list (until the controller's layer closes, or
+// kFocusMs after a key, or once the hero walks off) and while the right stick points somewhere.
+struct Focus { ue::WeakObj obj; int kind = -1; bool shadow = false; FVector loc{}; bool has = false; };
+Focus g_focus;
+ULONGLONG g_focus_until = 0;     // the list's choice, by key: held this long
+bool g_focus_layer = false;      // the list's choice with the controller's layer open: held until it closes
+bool g_focus_stick = false;      // the right stick is on a direction
+FVector g_focus_from{};          // where the hero was at the list's choice
+double g_focus_next = 0;         // the focus's next sound
+constexpr ULONGLONG kFocusMs = 3000;
+constexpr float kFocusWalkM = 1.0f;          // the hero walked this far from the choice: the field comes back
+constexpr double kFocusMinPeriod = 0.25;     // its rhythm, however near
 std::vector<Source> g_sources;
 core::SonarField g_field;
 ULONGLONG g_scan_at = 0;
@@ -58,29 +80,41 @@ int cue_of(poi::Kind k) {
 }
 bool kind_on(int kind) { return kind >= 0 && kind < kKinds && settings::on(kKind[kind].setting); }
 
-// The sounds, made once at the mixer's rate.
-audio::Pcm cue(int kind, bool brief = false) {
-  static audio::Pcm made[kKinds][2];
+// The sounds, made once at the mixer's rate. A kind with a file in assets/audio/sonar (<its name>.wav) plays the
+// file: Grim Dark's sonar sounds for their nearest kin here (the user, 2026-11-13) -- its dungeon entrance for the
+// exits, its interactable (chests, levers, notes) for the objects, its ruined shrine (used, it starts a fight) for the
+// events, its loot for the fragments. The rest (doors, people, shops) have no counterpart there and keep the sounds
+// made in core/sonar_cues. Always the whole sound at its own pitch, as Grim Dark plays it: up close a sound longer
+// than its rhythm starts again over its own tail, and the rhythm keeps following the distance. Tried and dropped
+// (the user, 2026-11-13): the brief forms (cut to under 0.09 s for a thing too near for the whole one to fit its
+// rhythm) cut a door's knock and the files short; holding the rhythm back for the whole sound kept the exit's 0.4 s
+// sound from getting faster inside about 3.5 m; playing it faster to fit raised its pitch.
+audio::Pcm cue(int kind) {
+  static audio::Pcm made[kKinds];
   if (kind < 0 || kind >= kKinds) return nullptr;
-  audio::Pcm& p = made[kind][brief ? 1 : 0];
-  if (!p) p = std::make_shared<const std::vector<float>>(core::sonar_cue((SonarCue)kind, audio::sample_rate(), brief));
+  audio::Pcm& p = made[kind];
+  if (p) return p;
+  const int rate = audio::sample_rate();
+  std::vector<float> file;
+  const std::string path = audio::module_dir() + "assets\\audio\\sonar\\" + kKind[kind].name + ".wav";
+  if (GetFileAttributesA(path.c_str()) != INVALID_FILE_ATTRIBUTES && audio::decode_mono(path, file)) file = core::file_cue(std::move(file), rate);
+  if (!file.empty()) {
+    log::writef("sonar: {} plays {} ({:.0f} ms)", kKind[kind].name, path, 1000.0 * file.size() / rate);
+    p = std::make_shared<const std::vector<float>>(std::move(file));
+  } else {
+    p = std::make_shared<const std::vector<float>>(core::sonar_cue((SonarCue)kind, rate));
+  }
   return p;
 }
 
-// A thing's sound as it plays from `at`: lower, so longer, from behind; and its brief form once the whole sound,
-// with the breath after it, no longer fits the rhythm of its distance (inside 2 to 3 m).
-struct Voice { audio::Pcm pcm; float rate = 1.0f; float len_s = 0.2f; };
-Voice voice(int kind, const audio::Spot& at, bool whole = false) {
+// A thing's sound as it plays from `at`: lower, so longer, from behind.
+struct Voice { audio::Pcm pcm; float rate = 1.0f; };
+Voice voice(int kind, const audio::Spot& at) {
   Voice v;
   // Lower behind: in the top-down mode too (behind is the south there). The stereo model's darkening behind barely reaches
   // the exit's thump or the door's knocks, so without it they sounded the same north and south.
   v.rate = at.ahead < -0.2f && settings::on(settings::BehindPitch) ? kBehindRate : 1.0f;
-  auto pick = [&](bool brief) {
-    v.pcm = cue(kind, brief);
-    v.len_s = v.pcm ? (float)v.pcm->size() / (float)audio::sample_rate() / v.rate : 0.2f;
-  };
-  pick(false);
-  if (!whole && v.len_s + g_field.params().gap_s > g_field.params().period_for(at.dist_m)) pick(true);
+  v.pcm = cue(kind);
   return v;
 }
 
@@ -92,13 +126,13 @@ float gain_at(float dist_m) {
   return std::pow(10.0f, -kEdgeDb * u / 20.0f);
 }
 
-// whole: the whole sound however near (a point landed on in the list).
-void emit(int kind, const FVector& me, const FVector& at, bool whole = false) {
+// focus: it plays through the solo. db: added to its level.
+void emit(int kind, const FVector& me, const FVector& at, bool focus = false, float db = 0.0f) {
   audio::Spot s = world::spot(me, at);
-  Voice v = voice(kind, s, whole);
+  Voice v = voice(kind, s);
   if (!v.pcm) return;
-  float vol = gain_at(s.dist_m) * std::pow(10.0f, g_trim_db[kind] / 20.0f);
-  audio::play(std::move(v.pcm), vol, s, audio::Bus::Sonar, v.rate);
+  float vol = gain_at(s.dist_m) * std::pow(10.0f, (g_trim_db[kind] + db) / 20.0f);
+  audio::play(std::move(v.pcm), vol, s, audio::Bus::Sonar, v.rate, focus);
   ++g_fired;
 }
 
@@ -146,9 +180,64 @@ float dist_m(const FVector& a, const FVector& b) {
   return std::sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z)) / 100.0f;
 }
 void silence() { g_field.reset(); g_sources.clear(); g_scan_at = 0; }
+
+// The focused thing's sound once, from where it is now.
+void sound_focus(const FVector& me) {
+  if (!g_focus.has) return;
+  if (g_focus.shadow) audio::signal((int)core::SignalCue::Shadow, 1.0f, world::spot(me, g_focus.loc), 1.0f, true);
+  else emit(g_focus.kind, me, g_focus.loc, true);
+  g_focus_next = now_s() + std::max(g_field.params().period_for(dist_m(me, g_focus.loc)), kFocusMinPeriod);
+}
+
+// `p` takes the stage (null: nothing does, but the stage is still cleared): its sound now, and the solo on.
+void focus_on(const poi::Poi* p) {
+  g_focus = {};
+  if (p) {
+    g_focus = {p->obj, cue_of(p->kind), p->kind == poi::Kind::Enemy, p->loc, false};
+    g_focus.has = g_focus.kind >= 0 || g_focus.shadow;
+  }
+  audio::solo(true);
+  silence();
+  FVector me;
+  if (world::player_location(me)) sound_focus(me);
+}
+
+bool focus_any() { return g_focus.has || g_focus_stick || g_focus_layer || g_focus_until; }
+
+// Whether the focus holds this frame. The list's hold ends when the layer closes, its time is up, or the hero walks
+// off; the stick's when it is let go.
+bool focus_held() {
+  if (g_focus_layer && !input::layer_open()) g_focus_layer = false;
+  if (g_focus_layer || GetTickCount64() < g_focus_until) {
+    FVector me;
+    if (world::player_location(me) && dist_m(me, g_focus_from) > kFocusWalkM) { g_focus_layer = false; g_focus_until = 0; }
+  }
+  return g_focus_stick || g_focus_layer || GetTickCount64() < g_focus_until;
+}
+
+void focus_off() {
+  if (focus_any()) silence();   // the field starts again, staggered
+  g_focus = {};
+  g_focus_stick = g_focus_layer = false;
+  g_focus_until = 0;
+  audio::solo(false);
+}
+
+// The focus's frame: true while it holds (the field is silent then).
+bool focus_tick() {
+  if (!in_field() || !focus_held()) { focus_off(); return false; }
+  audio::solo(true);
+  FVector me;
+  if (!g_focus.has || !world::player_location(me)) return true;
+  poi::Poi sel;   // the list's choice is followed where it goes (a person walking)
+  if (poi::selected(sel) && sel.obj == g_focus.obj) g_focus.loc = sel.loc;
+  if (now_s() >= g_focus_next) sound_focus(me);
+  return true;
+}
 }  // namespace
 
 void tick() {
+  if (focus_tick()) return;
   if (!settings::on(settings::Sonar) || !in_field()) { silence(); return; }
   FVector me;
   if (!world::player_location(me)) { silence(); return; }
@@ -157,9 +246,11 @@ void tick() {
   std::vector<core::SonarField::Item> items;
   items.reserve(g_sources.size());
   const bool any_distance = settings::get(settings::SonarScope) == settings::ScopeSelected;
+  float nearest = 1e9f;
   for (const Source& s : g_sources) {
     if (!any_distance && dist_m(me, s.loc) > range_m()) continue;   // read ahead of the range: not in it yet
     items.push_back({(unsigned)s.obj.index, dist_m(me, s.loc), s.kind});
+    nearest = std::min(nearest, items.back().dist);
   }
   // What sounded last tick and no longer does is forgotten; a thing's first sound is logged with its distance (how
   // early the player could have heard it).
@@ -168,7 +259,9 @@ void tick() {
   for (const core::SonarField::Ping& p : g_field.update(items, now_s()))
     for (const Source& s : g_sources)
       if ((unsigned)s.obj.index == p.id) {
-        emit(s.kind, me, s.loc);
+        // Something is beside the hero and this is not it (a metre's leeway: two things side by side both stay).
+        bool upstaged = nearest <= kCloseM && dist_m(me, s.loc) > nearest + 1.0f;
+        emit(s.kind, me, s.loc, false, upstaged ? -kCloseDuckDb : 0.0f);
         if (std::find(heard.begin(), heard.end(), p.id) == heard.end()) {
           heard.push_back(p.id);
           log::writef("sonar: {} #{} first sounds at {:.1f} m", kKind[s.kind].name, s.obj.index, dist_m(me, s.loc));
@@ -185,17 +278,23 @@ void toggle() {
 void selected(const poi::Poi& p) {
   if (!settings::on(settings::Sonar) || !world::exploring()) return;
   FVector me;
-  int kind = cue_of(p.kind);
-  if (kind < 0 || !world::player_location(me)) return;
-  emit(kind, me, p.loc, true);
+  if (!world::player_location(me)) return;
+  g_focus_from = me;
+  g_focus_layer = input::layer_open();
+  g_focus_until = GetTickCount64() + kFocusMs;
+  focus_on(&p);
 }
 
-void sound(const poi::Poi& p) {
-  FVector me;
-  if (!world::player_location(me)) return;
-  int kind = cue_of(p.kind);
-  if (kind >= 0) { emit(kind, me, p.loc, true); return; }
-  if (p.kind == poi::Kind::Enemy) audio::signal((int)core::SignalCue::Shadow, 1.0f, world::spot(me, p.loc));
+void stick(const poi::Poi* p) {
+  if (!world::exploring()) return;
+  g_focus_stick = true;
+  focus_on(p);
+}
+
+void stick_off() {
+  if (!g_focus_stick) return;
+  g_focus_stick = false;
+  if (!focus_held()) focus_off();
 }
 
 bool preview(settings::Id id) {

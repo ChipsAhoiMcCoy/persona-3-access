@@ -5,3 +5,6 @@ __pycache__/
 
 # Never commit game files or anything extracted from them.
 research/
+
+# Kenney audio packs, downloaded by tools/kenney.py to audition (CC0; the ones we ship are copied into assets/).
+third_party/kenney/

@@ -74,10 +74,15 @@ struct Shot {
   bool spatial = true;    // false once no HRTF slot was free: panned to its end
   int slot = -1;          // the HRTF slot, held one block past the end for the filter's tail
   bool dead = false;
+  bool focus = false;     // plays through the solo
+  float duck = 1.0f;      // glides to 0 when the solo silences it (it is then cut)
   core::SpatialVoice stereo;   // Dark Vision's stereo model: its filters' and delay's state (held by value: the audio
                                // thread neither allocates nor frees)
 };
 constexpr size_t kMaxShots = 32;   // more at once is a runaway caller: further ones are dropped
+std::atomic<bool> g_solo{false};   // audio::solo
+// What the solo silences: every sound from a place except the focus. A Cues sound with no place is about the player.
+bool soloed_out(const Shot& s) { return !s.focus && (s.bus != Bus::Cues || s.spot.placed); }
 
 std::mutex g_mu;
 std::vector<Shot> g_shots;
@@ -149,6 +154,7 @@ void data_callback(ma_device*, void* out, const void*, ma_uint32 frames) {
     g_bus[b].cur = target;
   }
   auto bus_gain = [&](Bus b, ma_uint32 i) { return b_from[(int)b] + b_step[(int)b] * (float)(i + 1); };
+  const bool soloing = g_solo;
   for (Shot& sh : g_shots) {
     if (sh.dead) {
       // The block after a shot ends: its slot plays the filters' tail, then is free again.
@@ -174,11 +180,14 @@ void data_callback(ma_device*, void* out, const void*, ma_uint32 frames) {
     if (ears) std::fill(g_mono, g_mono + frames, 0.0f);
     float l, r; pan_gains(sh.spot.pan, l, r);
     const std::vector<float>& v = *sh.pcm;
+    const float duck_to = soloing && soloed_out(sh) ? 0.0f : 1.0f;
     for (ma_uint32 i = 0; i < frames; ++i) {
       size_t k = (size_t)sh.pos;
       if (k + 1 >= v.size()) { sh.dead = true; break; }
+      sh.duck += (duck_to - sh.duck) * kGlide;
+      if (duck_to == 0.0f && sh.duck < 1e-3f) { sh.dead = true; break; }   // faded out under the solo: cut
       float frac = (float)(sh.pos - (double)k);
-      float s = (v[k] + (v[k + 1] - v[k]) * frac) * sh.vol * bus_gain(sh.bus, i);
+      float s = (v[k] + (v[k + 1] - v[k]) * frac) * sh.vol * sh.duck * bus_gain(sh.bus, i);
       sh.pos += sh.rate;
       if (ears) g_mono[i] = s;
       else { o[i * 2] += s * l; o[i * 2 + 1] += s * r; }
@@ -202,7 +211,8 @@ void data_callback(ma_device*, void* out, const void*, ma_uint32 frames) {
   const ULONGLONG now = GetTickCount64();
   for (Loop& lp : g_loops) {
     if (lp.samples.empty()) continue;
-    float target = now - lp.refreshed > kLoopStaleMs ? 0.0f : lp.volume * lp.gain;  // watchdog: silent unless driven
+    // Watchdog: silent unless driven. The solo silences the wall tones too.
+    float target = soloing || now - lp.refreshed > kLoopStaleMs ? 0.0f : lp.volume * lp.gain;
     if (target <= 0.0f && lp.cur < kSilent) { lp.cur = 0; lp.pos = (lp.pos + frames) % lp.samples.size(); continue; }
     for (ma_uint32 i = 0; i < frames; ++i) {
       lp.cur += (target - lp.cur) * kGlide;
@@ -318,20 +328,25 @@ void shutdown() {
 
 // One shot into the mixer, whole, under the lock. `spatial`: heard from `at` (through the HRTF, panned without it);
 // false: from no place, both ears alike.
-static void push_shot(Pcm pcm, float volume, const Spot& at, Bus bus, float rate, bool spatial) {
+static void push_shot(Pcm pcm, float volume, const Spot& at, Bus bus, float rate, bool spatial, bool focus = false) {
   if (!g_ready || !pcm || pcm->size() < 2 || (int)bus < 0 || bus >= Bus::Count) return;   // only the device callback drains g_shots
   std::lock_guard lk(g_mu);
   if (g_shots.size() >= kMaxShots) return;
   Shot s;
+  s.focus = focus;
   s.pcm = std::move(pcm);
   s.vol = volume < 0 ? 0 : volume;
   s.rate = std::clamp(rate, 0.25f, 4.0f);
   s.bus = bus;
   s.spot = at;
   s.spatial = spatial;
+  if (g_solo && soloed_out(s)) return;   // the solo holds: only the focus starts
   g_shots.push_back(std::move(s));
 }
-void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate) { push_shot(std::move(pcm), volume, at, bus, rate, true); }
+void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate, bool focus) { push_shot(std::move(pcm), volume, at, bus, rate, true, focus); }
+void solo(bool on) {
+  if (g_solo.exchange(on) != on) log::writef("audio: solo {}", on ? "on" : "off");
+}
 int sample_rate() { return kRate; }
 // A sound's volume and pitch stay as they started (the sonar's level for its distance, the lower pitch from behind):
 // only where it is heard from moves. The HRTF takes a new direction per 10 ms block and blends from the last one.
@@ -343,14 +358,24 @@ void follow(const std::function<Spot(float, float, float)>& where) {
   for (Shot& s : g_shots) if (!s.dead && s.spot.placed) { s.spot = where(s.spot.wx, s.spot.wy, s.spot.wz); s.spot.placed = true; ++n; }
   g_followed += n;
 }
-// A signal's samples, made on first use (game thread only). Null for a number that is no signal.
+// A signal's samples, made on first use (game thread only). Null for a number that is no signal. A signal with a file
+// in assets/audio/signals plays the file (the Shadow: Grim Dark's enemy ping, the user 2026-11-13); the rest, or a
+// missing file, the sound made in core/sonar_cues.
 static Pcm signal_pcm(int signal) {
   static Pcm made[(int)core::SignalCue::Count];
+  static constexpr const char* kFile[] = {"shadow", "ambush", "layer", "reach", "spotted", "lost"};
+  static_assert(std::size(kFile) == (size_t)core::SignalCue::Count, "one file name per SignalCue, in its order");
   if (signal < 0 || signal >= (int)core::SignalCue::Count) return nullptr;
-  if (!made[signal]) made[signal] = std::make_shared<const std::vector<float>>(core::signal_cue((core::SignalCue)signal, kRate));
+  if (made[signal]) return made[signal];
+  std::vector<float> file;
+  const std::string path = module_dir() + "assets\\audio\\signals\\" + kFile[signal] + ".wav";
+  if (GetFileAttributesA(path.c_str()) != INVALID_FILE_ATTRIBUTES && decode_mono(path, file)) file = core::file_cue(std::move(file), kRate);
+  if (!file.empty()) log::writef("audio: signal {} plays {} ({:.0f} ms)", kFile[signal], path, 1000.0 * file.size() / kRate);
+  else file = core::signal_cue((core::SignalCue)signal, kRate);
+  made[signal] = std::make_shared<const std::vector<float>>(std::move(file));
   return made[signal];
 }
-void signal(int signal, float volume, const Spot& at, float rate) { push_shot(signal_pcm(signal), volume, at, Bus::Cues, rate, true); }
+void signal(int signal, float volume, const Spot& at, float rate, bool focus) { push_shot(signal_pcm(signal), volume, at, Bus::Cues, rate, true, focus); }
 void signal_here(int signal, float volume) { push_shot(signal_pcm(signal), volume, Spot{}, Bus::Cues, 1.0f, false); }
 void set_spatial(int model) { std::lock_guard lk(g_mu); g_spatial = model; g_hrtf_on = model == 1; }
 

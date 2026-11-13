@@ -4,7 +4,7 @@ Persona 3 Access is made by ChipsAhoiMcCoy, with Claude Code (Anthropic) writing
 
 ## Built on
 
-- Austin Hicks, for Grim Dark (GD Access), the mod whose tools and approach this project grew from: https://github.com/ahicks92/grimdark
+- Austin Hicks, for Grim Dark (GD Access), the mod whose tools and approach this project grew from, and whose sonar sounds the exits, objects, events, Twilight Fragments and Shadows use: https://github.com/ahicks92/grimdark
 - Bradley Renshaw, for Dark Vision, the Wrath of the Righteous mod where the navigator and the wall tones began: https://github.com/bradjrenshaw/darkvision-wotr
 - Rashad Naqeeb, for OniAccess, where the type-ahead search began: https://github.com/rashadnaqeeb/VisionNotIncluded
 - Ethin Probst and contributors, for Prism, which speaks through your screen reader.

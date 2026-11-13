@@ -26,6 +26,7 @@
 #include "speech.h"
 #include "watch.h"
 #include "world.h"
+#include <windows.h>
 #include <cmath>
 #include <format>
 #include <vector>
@@ -40,8 +41,10 @@ constexpr int kStateFree = 1, kKeyEnable = 3;
 constexpr int32_t kBehaviorFree = 1, kBehaviorMoveToDefault = 3;   // EFldCameraBehaviorFreeState
 constexpr float kStopSpeed = 0.0f, kStopMargin = 180.0f;
 constexpr float kScanDeadzone = 0.55f;   // of the stick's travel: a direction is chosen past it
-constexpr float kScanHalfCone = 22.5f;   // degrees either side of the direction
-constexpr float kScanWallCm = 2000.0f;
+// The stick snaps to the point nearest its direction; another takes over only once it is this many degrees nearer,
+// so two points side by side do not flicker between them.
+constexpr float kScanSwitchDeg = 4.0f;
+constexpr ULONGLONG kScanRefreshMs = 250;   // how often the points are read again while the stick is held
 
 bool g_active = false;
 float g_north = kBaseNorthYaw;   // this field's north (map_turn)
@@ -55,7 +58,11 @@ bool g_listener_set = false;
 WeakObj g_behavior;
 float g_saved_speed = 125.0f, g_saved_margin = 16.0f;
 bool g_saved = false;
-int g_scan_dir = -1;   // the compass point the stick is on, -1 at rest
+bool g_scan_held = false;            // the stick is past its deadzone
+WeakObj g_scan_on;                   // the point it is on
+std::string g_scan_name;             // dev: its name
+std::vector<poi::Poi> g_scan_list;   // the points around, read every kScanRefreshMs while held
+ULONGLONG g_scan_at = 0;
 bool g_dev_stick = false;
 float g_dev_x = 0, g_dev_y = 0;
 uint64_t g_relocks = 0;
@@ -218,37 +225,46 @@ void release_walk() {
 }
 
 // ---- the right stick's scan ----
-void scan_say(int dir) {
-  FVector me;
-  if (!world::player_location(me)) return;
-  const float want = dir * 45.0f;
-  const poi::Poi* best = nullptr;
-  std::vector<poi::Poi> all = poi::scan();   // nearest first; bearings from north while the mode holds
-  for (const poi::Poi& p : all)
-    if (std::fabs(std::remainder(p.bearing - want, 360.0f)) <= kScanHalfCone) { best = &p; break; }
-  // The wall that way: a line at the body's height, people looked past.
-  float rad = (g_north + want) * 3.14159265f / 180.0f;
-  FVector to{me.x + std::cos(rad) * kScanWallCm, me.y + std::sin(rad) * kScanWallCm, me.z};
-  std::vector<UObject*> people;
-  world::Hit wall = world::line(me, to, "Pawn", &people);
-  std::string line = std::format("{}: {}", strings::kCompass[dir],
-                                 best ? std::format("{}, {}", best->name, core::meters(best->dist / 100.0f)) : std::string(strings::kScanNothing));
-  line += std::format(". {}", wall.hit ? std::format("{} {}", strings::kScanWall, core::meters(wall.distance / 100.0f)) : std::string(strings::kScanOpen));
-  speech::speak(line, true);
-  if (best) sonar::sound(*best);
+// The stick points; it snaps to whichever point of interest is nearest that way, all round and at any distance in the
+// range, and says what it is. Empty space and walls are never said: turning the stick on moves from one point to the
+// next (the user, 2026-11-13: "never reading empty spaces"). The point alone is heard while it is held (sonar::stick).
+void scan_release() {
+  if (g_scan_held) sonar::stick_off();
+  g_scan_held = false;
+  g_scan_on = {};
+  g_scan_name.clear();
+  g_scan_list.clear();
 }
 
 void scan_tick() {
   float x = 0, y = 0;
   if (g_dev_stick) { x = g_dev_x; y = g_dev_y; }
   else input::right_stick(x, y);
-  if (std::hypot(x, y) < kScanDeadzone) { g_scan_dir = -1; return; }
-  // Up is north, right is east: the bearing clockwise from north.
-  float b = std::atan2(x, y) * 180.0f / 3.14159265f;
-  int dir = ((int)std::lround(b / 45.0f) % 8 + 8) % 8;
-  if (dir == g_scan_dir) return;
-  g_scan_dir = dir;
-  scan_say(dir);
+  if (std::hypot(x, y) < kScanDeadzone) { scan_release(); return; }
+  // Up is north, right is east: the bearing clockwise from north, as the points' bearings are while the mode holds.
+  const float want = std::atan2(x, y) * 180.0f / 3.14159265f;
+  const bool first = !g_scan_held;
+  g_scan_held = true;
+  const ULONGLONG now = GetTickCount64();
+  if (first || now - g_scan_at >= kScanRefreshMs) { g_scan_at = now; g_scan_list = poi::scan(); }   // nearest first
+  if (g_scan_list.empty()) {
+    if (first) { speech::speak(strings::kScanNothing, true); sonar::stick(nullptr); }
+    return;
+  }
+  const poi::Poi* best = nullptr;
+  const poi::Poi* cur = nullptr;
+  float best_off = 1e9f, cur_off = 1e9f;
+  for (const poi::Poi& p : g_scan_list) {
+    float off = std::fabs(std::remainder(p.bearing - want, 360.0f));
+    if (off < best_off) { best = &p; best_off = off; }   // strictly less: of two the same way, the nearer (listed first)
+    if (p.obj == g_scan_on) { cur = &p; cur_off = off; }
+  }
+  if (cur && cur_off <= best_off + kScanSwitchDeg) return;   // still on it
+  g_scan_on = best->obj;
+  g_scan_name = best->name;
+  // What is there, not which way: the stick says that (the user, 2026-11-13).
+  speech::speak(std::format("{}, {}", best->name, core::meters(best->dist / 100.0f)), true);
+  sonar::stick(best);   // it alone is heard while the stick stays
 }
 
 void enter() {
@@ -265,7 +281,7 @@ void leave() {
   release_camera();
   release_listener();
   release_walk();
-  g_scan_dir = -1;
+  scan_release();
   log::write("topdown: off (camera and listener back to the game)");
 }
 }  // namespace
@@ -315,10 +331,10 @@ void install() {
       walk += std::format("field {} {} map turned {:.0f} north yaw {:.0f}{}\n", g_field_major, g_field_minor, g_field_turn, g_north,
                           g_north_due ? " (looking)" : "");
       return walk + std::format("topdown setting={} active={} exploring={} operator state={} keys={} listener_set={} h={:.0f}\n"
-                         "camera speed={:.1f} margin={:.1f} saved={} ({:.1f}, {:.1f}) relocks={} camera_yaw={:.1f} scan_dir={}\n",
+                         "camera speed={:.1f} margin={:.1f} saved={} ({:.1f}, {:.1f}) relocks={} camera_yaw={:.1f} scan held={} on={}\n",
                          settings::on(settings::TopDown), g_active, world::exploring(), o ? get<int32_t>(o, "State", -1) : -1,
                          o ? get<int32_t>(o, "KeyState", -1) : -1, g_listener_set, g_listener_h, sp ? *sp : -1.0f, mg ? *mg : -1.0f,
-                         g_saved, g_saved_speed, g_saved_margin, g_relocks, world::camera_yaw(), g_scan_dir);
+                         g_saved, g_saved_speed, g_saved_margin, g_relocks, world::camera_yaw(), g_scan_held, g_scan_name);
     });
   }, "?h=cm ?stick=x,y|off the top-down mode: camera lock, listener override, the right stick's scan");
 }
