@@ -4,6 +4,7 @@
 // the last index at UTitleStateSelect +0xa0 (3 with the Episode Aigis DLC installed).
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "bmdfile.h"
 #include "core/strings.h"
 #include "core/text_clean.h"
 #include "log.h"
@@ -161,17 +162,19 @@ class TitleMenuScreen : public MenuScreen {
 };
 
 // New Game -> difficulty. ADifficultySelectionActor: cursor +0x424 (0 Peaceful .. 4 Merciless), previous +0x43c
-// (measured 2026-10-27). The descriptions are BMD pages dialog 40..44 of the actor's message file, all built when
-// the screen opens; the labels are sprites (strings::kDifficulties).
+// (measured 2026-10-27). The descriptions are BMD_CampSystem's dialogs 40..44 (SYS_DIFFICULTY_INFO_SAFE .. _LUNA),
+// all laid out when the screen opens; the labels are sprites (strings::kDifficulties).
 class DifficultyScreen : public MenuScreen {
   Finder actor_{"DifficultySelectionActor"};
   Mirror& list_ = mirror("difficulty", [this] { UObject* a = actor_.get(); return a ? *(int*)((uint8_t*)a + 0x424) : -1; });
   uint8_t* sel() { UObject* a = actor_.get(); return a ? (uint8_t*)a + 0x3D0 : nullptr; }
+  // The page the game laid out, else the file's text.
   std::string description(int c) {
-    for (auto& p : msg::visible(18)) if (p.dialog == 40 + c) return p.text;
-    std::string best;
-    for (auto& p : msg::created_since(0)) if (p.dialog == 40 + c) best = p.text;   // newest wins
-    return best;
+    if (const void* buf = bmdfile::buffer("BMD_CampSystem"))
+      for (auto& p : msg::pages_of(buf)) if (p.dialog == 40 + c && p.page == 0) return p.text;
+    auto f = bmdfile::load("BMD_CampSystem");
+    if (!f || !f->ok || 40 + c >= (int)f->dialogs.size() || f->dialogs[40 + c].pages.empty()) return {};
+    return bmdfile::text(f->dialogs[40 + c].pages[0]);
   }
  public:
   DifficultyScreen() {
