@@ -98,8 +98,9 @@ static DWORD WINAPI init_thread(LPVOID) {
   g_up = true;
   mod::init(sp);
   // Windows keeps an app's mixer mute per executable across launches, so a dev launch's mute (P3A_MUTE) muted the
-  // player's later launches of P3R.exe, game and mod sounds alike (2026-10-29). Every other launch clears it.
-  if (WaitForSingleObject(g_quit, 4000) == WAIT_TIMEOUT) audio::mute_process(mute);
+  // player's later launches of P3R.exe, game and mod sounds alike (2026-10-29). Every other launch clears that mute,
+  // and only that one: clearing any mute un-muted a player who had muted the game in Windows themselves.
+  if (WaitForSingleObject(g_quit, 4000) == WAIT_TIMEOUT) { if (mute) audio::mute_process(true); else audio::release_dev_mute(); }
   return 0;
 }
 

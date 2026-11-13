@@ -74,16 +74,27 @@ struct Shot {
   bool spatial = true;    // false once no HRTF slot was free: panned to its end
   int slot = -1;          // the HRTF slot, held one block past the end for the filter's tail
   bool dead = false;
-  std::shared_ptr<core::SpatialVoice> stereo;   // Dark Vision's stereo model: its filters' and delay's state
+  core::SpatialVoice stereo;   // Dark Vision's stereo model: its filters' and delay's state (held by value: the audio
+                               // thread neither allocates nor frees)
 };
 constexpr size_t kMaxShots = 32;   // more at once is a runaway caller: further ones are dropped
 
 std::mutex g_mu;
 std::vector<Shot> g_shots;
 Narr g_narr;
+Narr g_narr_out;   // the clip a new one replaced, fading out under it (a cut mid-word clicked)
 std::vector<Loop> g_loops;
 ma_device g_device;
-bool g_ready = false;
+std::atomic<bool> g_ready{false};   // the device is open and playing
+// The output device can go (a headset unplugged with nothing to fall back to) or be missing at launch: tick() opens it
+// again, every kRetryMs, without touching what is loaded or playing.
+bool g_inited = false;                // init ran (game thread)
+std::atomic<bool> g_lost{false};      // the device stopped on its own
+std::atomic<bool> g_rerouted{false};  // miniaudio moved the stream to the new default device
+std::atomic<bool> g_closing{false};   // our own uninit: its stop is not a loss
+ULONGLONG g_retry_at = 0;
+bool g_retry_logged = false;
+constexpr ULONGLONG kRetryMs = 3000;
 float g_master = 1.0f;   // the player's Master volume: scales every bus
 // Buses: one volume per kind of sound, so each can be set apart (and later exposed as a setting). target is
 // requested; cur is where the last block ended, and each block ramps linearly from cur to target.
@@ -157,7 +168,7 @@ void data_callback(ma_device*, void* out, const void*, ma_uint32 frames) {
     }
     if (sh.slot >= 0 && !hrtf_block) { hrtf::release(sh.slot); sh.slot = -1; }   // 3D sound switched off mid-shot
     // Dark Vision's stereo: the model when chosen, and the HRTF's own fallback (no slot, odd block, no phonon).
-    const bool stereo = sh.spatial && sh.stereo && sh.slot < 0 && g_spatial != 2 && frames <= (ma_uint32)kMaxBlock;
+    const bool stereo = sh.spatial && sh.slot < 0 && g_spatial != 2 && frames <= (ma_uint32)kMaxBlock;
     const bool ears = sh.slot >= 0 || stereo;
     if (ears) std::fill(g_mono, g_mono + frames, 0.0f);
     float l, r; pan_gains(sh.spot.pan, l, r);
@@ -183,7 +194,7 @@ void data_callback(ma_device*, void* out, const void*, ma_uint32 frames) {
       core::SpatialCue cue = core::spatial_cue(east, north, kPanWidthM, kRate);
       std::fill(g_ear_l, g_ear_l + frames, 0.0f);
       std::fill(g_ear_r, g_ear_r + frames, 0.0f);
-      sh.stereo->process(g_mono, (int)frames, cue, kRate, g_ear_l, g_ear_r);
+      sh.stereo.process(g_mono, (int)frames, cue, kRate, g_ear_l, g_ear_r);
       add_ears(o, frames);
     }
   }
@@ -199,19 +210,19 @@ void data_callback(ma_device*, void* out, const void*, ma_uint32 frames) {
       o[i * 2] += s * lp.gl; o[i * 2 + 1] += s * lp.gr;
     }
   }
-  if (g_narr.active && g_narr.pcm) {
-    const auto& v = *g_narr.pcm;
+  for (Narr* n : {&g_narr_out, &g_narr}) {
+    if (!n->active || !n->pcm) continue;
+    const auto& v = *n->pcm;
     for (ma_uint32 i = 0; i < frames; ++i) {
-      float target = g_narr.stopping || g_narr.paused ? 0.0f : 1.0f;
-      g_narr.cur += (target - g_narr.cur) * kNarrFade;
-      if (g_narr.paused && g_narr.cur < kSilent) { g_narr.cur = 0; break; }   // hold the position
-      if (g_narr.stopping && g_narr.cur < kSilent) { g_narr.active = false; break; }
-      if (g_narr.pos >= v.size()) { g_narr.ended = true; g_narr.active = false; break; }
-      float s = v[g_narr.pos++] * g_narr.cur * bus_gain(Bus::Narration, i) * 0.70710677f;
+      float target = n->stopping || n->paused ? 0.0f : 1.0f;
+      n->cur += (target - n->cur) * kNarrFade;
+      if (n->paused && n->cur < kSilent) { n->cur = 0; break; }   // hold the position
+      if (n->stopping && n->cur < kSilent) { n->active = false; break; }
+      if (n->pos >= v.size()) { n->ended = true; n->active = false; break; }
+      float s = v[n->pos++] * n->cur * bus_gain(Bus::Narration, i) * 0.70710677f;
       o[i * 2] += s; o[i * 2 + 1] += s;
     }
-  }
-  bool limited = false;
+  }  bool limited = false;
   for (ma_uint32 i = 0; i < frames; ++i) {
     float peak = std::max(std::abs(o[i * 2]), std::abs(o[i * 2 + 1]));
     if (peak * g_limit > kCeiling) { g_limit = kCeiling / peak; limited = true; }
@@ -226,30 +237,82 @@ void data_callback(ma_device*, void* out, const void*, ma_uint32 frames) {
 }
 }  // namespace
 
-bool init() {
-  if (g_ready) return true;
+// Never under g_mu: uninit waits for the callback, which takes it.
+static void close_device() {
+  g_closing = true;
+  ma_device_uninit(&g_device);
+  g_closing = false;
+}
+// miniaudio's own thread. A stop we did not ask for is a lost device; tick() reopens it on the game thread.
+static void on_notification(const ma_device_notification* n) {
+  if (n->type == ma_device_notification_type_stopped && !g_closing) g_lost = true;
+  if (n->type == ma_device_notification_type_rerouted) g_rerouted = true;
+}
+
+// The default output, opened and started. False (and closed again) when there is none to open.
+static bool open_device() {
   ma_device_config cfg = ma_device_config_init(ma_device_type_playback);
   cfg.playback.format = ma_format_f32;
   cfg.playback.channels = 2;
   cfg.sampleRate = kRate;
   cfg.dataCallback = data_callback;
+  cfg.notificationCallback = on_notification;
   cfg.periodSizeInFrames = kPeriod;   // noFixedSizedCallback stays false: every callback is exactly this long
-  hrtf::init(kRate, kPeriod);         // before the device starts: the callback reads hrtf::available()
-  if (ma_device_init(nullptr, &cfg, &g_device) != MA_SUCCESS) { log::write("audio: device init failed"); hrtf::shutdown(); return false; }
-  if (ma_device_start(&g_device) != MA_SUCCESS) { log::write("audio: device start failed"); ma_device_uninit(&g_device); hrtf::shutdown(); return false; }
-  g_ready = true;
-  log::writef("audio: output ready ({} Hz, {}-frame periods)", kRate, cfg.periodSizeInFrames);
+  if (ma_device_init(nullptr, &cfg, &g_device) != MA_SUCCESS) return false;
+  if (ma_device_start(&g_device) != MA_SUCCESS) { close_device(); return false; }
   return true;
 }
+
+bool init() {
+  if (g_inited) return g_ready;
+  g_inited = true;
+  { std::lock_guard lk(g_mu); g_shots.reserve(kMaxShots); }   // push_shot never reallocates under the callback's lock
+  hrtf::init(kRate, kPeriod);         // before the device starts: the callback reads hrtf::available()
+  if (!open_device()) {
+    log::writef("audio: no output device to open; trying again every {} s", kRetryMs / 1000);
+    g_retry_logged = true;
+    g_retry_at = GetTickCount64() + kRetryMs;
+    return false;
+  }
+  g_ready = true;
+  log::writef("audio: output ready ({} Hz, {}-frame periods)", kRate, kPeriod);
+  return true;
+}
+void tick() {
+  if (!g_inited) return;
+  if (g_rerouted.exchange(false)) log::write("audio: the output moved to the new default device");
+  const ULONGLONG now = GetTickCount64();
+  if (g_ready && g_lost.exchange(false)) {
+    log::write("audio: the output device stopped; reopening");
+    g_ready = false;
+    close_device();
+    std::lock_guard lk(g_mu);   // what was playing then is not played late: the shots go, their HRTF slots with them
+    for (Shot& sh : g_shots) if (sh.slot >= 0) hrtf::release(sh.slot);
+    g_shots.clear();
+    g_narr.active = false;   // the narrator stopped: the description is cut, not left waiting on a silent device
+    g_narr_out = Narr{};
+    g_retry_at = now;
+  }
+  if (g_ready || now < g_retry_at) return;
+  g_retry_at = now + kRetryMs;
+  if (!open_device()) {
+    if (!std::exchange(g_retry_logged, true)) log::writef("audio: no output device; trying again every {} s", kRetryMs / 1000);
+    return;
+  }
+  g_ready = true;
+  g_retry_logged = false;
+  log::write("audio: output open again");
+}
 void shutdown() {
-  if (!g_ready) return;
-  g_ready = false;
-  ma_device_uninit(&g_device);   // no callback after this: the HRTF slots can go
+  if (!g_inited) return;
+  g_inited = false;
+  if (g_ready) { g_ready = false; close_device(); }   // no callback after this: the HRTF slots can go
   hrtf::shutdown();
   std::lock_guard lk(g_mu);
   g_shots.clear();
   g_loops.clear();
   g_narr = Narr{};
+  g_narr_out = Narr{};
 }
 
 // One shot into the mixer, whole, under the lock. `spatial`: heard from `at` (through the HRTF, panned without it);
@@ -265,7 +328,6 @@ static void push_shot(Pcm pcm, float volume, const Spot& at, Bus bus, float rate
   s.bus = bus;
   s.spot = at;
   s.spatial = spatial;
-  if (spatial) s.stereo = std::make_shared<core::SpatialVoice>();   // made here: the audio thread allocates nothing
   g_shots.push_back(std::move(s));
 }
 void play(Pcm pcm, float volume, const Spot& at, Bus bus, float rate) { push_shot(std::move(pcm), volume, at, bus, rate, true); }
@@ -338,6 +400,8 @@ bool decode_mono(const std::string& path, std::vector<float>& out) {
 int narrate(std::shared_ptr<const std::vector<float>> pcm) {
   static int next_id = 0;
   std::lock_guard lk(g_mu);
+  // The clip still sounding (a seek cuts one and starts the next in the same tick) fades out under the new one.
+  if (g_narr.active && !g_narr.paused) { g_narr_out = g_narr; g_narr_out.stopping = true; }
   g_narr = Narr{};
   g_narr.id = ++next_id;
   g_narr.pcm = std::move(pcm);
@@ -387,7 +451,7 @@ std::string status() {
   for (const Loop& l : g_loops) if (l.cur >= kSilent) ++loud;
   return std::format("audio ready={} master={:.2f} buses cues={:.2f} walls={:.2f} narration={:.2f} sonar={:.2f} shots={} loops={} ({} audible) limiter={:.2f} limited_blocks={}\n"
                      "hrtf {} slots {}/{} fallbacks={} air={:.1f} callback_max_us={} followed={}\n",
-                     g_ready, g_master, g_bus[(int)Bus::Cues].target, g_bus[(int)Bus::Walls].target, g_bus[(int)Bus::Narration].target,
+                     g_ready.load(), g_master, g_bus[(int)Bus::Cues].target, g_bus[(int)Bus::Walls].target, g_bus[(int)Bus::Narration].target,
                      g_bus[(int)Bus::Sonar].target, g_shots.size(), g_loops.size(), loud, g_limit, g_limited_blocks,
                      !hrtf::available() ? "unavailable" : g_hrtf_on ? "on" : g_spatial == 0 ? "off (stereo model)" : "off (pan)", hrtf::slots_used(), hrtf::slot_count(), g_hrtf_fallbacks,
                      hrtf::air(), g_cb_max_us, g_followed.load());

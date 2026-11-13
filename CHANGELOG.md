@@ -16,6 +16,11 @@
 - The Sonar rhythm setting is gone with the sweep rhythm; pulse is the only one.
 - Every thing repeats a quarter more slowly than before at each distance: almost seven times a second at 1 m, about once a second at 10 m.
 
+### Sound
+- If you muted the game in Windows' volume mixer, starting it un-muted it a few seconds in. Your mute now stays; only a mute the mod itself left behind is lifted.
+- The mod's sounds (wall tones, sonar, cues, audio description) came back only after a restart when the output device went away, or when there was none at launch, such as a Bluetooth headset that connected late. They now come back on their own within a few seconds of the device returning.
+- When a movie was skipped back or forward during a description, the description stopped with a click. It now fades out under the next one.
+
 ### Points of interest
 - Empty spots where the game can place a character were listed as "Person" when nobody stood there (three on the dorm's third floor, a step from the hallway), and walking to one stalled. They are no longer listed.
 - People in your own room were left out of the list when the desks split the floor, as in Classroom 2-F: walking from the back door to Junpei's desk, the way around led out through one door and back in through the other, so he seemed to be behind a closed door. Anyone you could see over the furniture is listed now, and walking there finds its own way between the desks: from the back door to every desk, both bookshelves and the front door's students. Only where your body truly does not fit does it say "No path, though it is in this room". A student standing by the front door no longer hides the rest of the room.

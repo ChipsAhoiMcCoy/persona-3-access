@@ -10,6 +10,7 @@
 namespace p3a::audio {
 bool init();
 void shutdown();
+void tick();             // game thread: reopens the output after the device was lost or missing at launch
 void install_routes();   // the dev server's /audio, /audiomute and /audio/render
 // Where a sound is, from the listener (the hero, facing the camera's yaw; world::spot makes one): a unit direction
 // and the distance in metres. pan is the stereo fallback (the sine of the bearing).
@@ -61,4 +62,5 @@ Narration narration();
 std::string status();   // dev: buses, voice counts, the limiter, the HRTF slots
 void reset_stats();     // dev: the callback's max time and the HRTF fallback count start over
 bool mute_process(bool mute);  // WASAPI session mute for this process (Windows keeps it for the next launch)
+void release_dev_mute();       // unmute only if the mod's own mute (a dev launch's) is still set
 }  // namespace p3a::audio
