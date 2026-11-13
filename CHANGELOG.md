@@ -26,6 +26,7 @@
 - Things behind you are easier to tell from things ahead. In the stereo placement the darkening behind now reaches the sonar's sounds; before, most of them sounded almost the same ahead and behind. In top-down mode, sounds to the south now play lower too, with "Lower pitch behind you" on, as in the camera mode.
 
 ### Points of interest
+- Moving to the Events category said a story event's name twice over ("Events: Event: Jin"). It is now "Events: Jin".
 - Empty spots where the game can place a character were listed as "Person" when nobody stood there (three on the dorm's third floor, a step from the hallway), and walking to one stalled. They are no longer listed.
 - People in your own room were left out of the list when the desks split the floor, as in Classroom 2-F: walking from the back door to Junpei's desk, the way around led out through one door and back in through the other, so he seemed to be behind a closed door. Anyone you could see over the furniture is listed now, and walking there finds its own way between the desks: from the back door to every desk, both bookshelves and the front door's students. Only where your body truly does not fit does it say "No path, though it is in this room". A student standing by the front door no longer hides the rest of the room.
 - A missing person in Tartarus is listed with their name from the police notice once the notice shows it: "Missing Person, Ayako Yoshimoto".

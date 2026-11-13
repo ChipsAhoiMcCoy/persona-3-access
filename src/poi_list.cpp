@@ -82,7 +82,10 @@ static void announce_nearest(const std::vector<Poi>& list) {
   if (list.empty()) { speech::speak(strings::kNothingNearbyFull, true); g_sel = {}; return; }
   g_sel = list[0].obj;
   g_sel_poi = list[0];
-  speech::speak(std::format("{}: {}, 1 {} {}", cat_name(g_cat), describe(list[0]), strings::kOf, list.size()), true);
+  // A story beat is named "Event: Jin"; after the category's own name it said "Events: Event: Jin" (Adamah, 2026-11-13).
+  Poi said = list[0];
+  if (std::string head = std::string(strings::kPoiEvent) + ": "; g_cat == Cat::Events && said.name.starts_with(head)) said.name.erase(0, head.size());
+  speech::speak(std::format("{}: {}, 1 {} {}", cat_name(g_cat), describe(said), strings::kOf, list.size()), true);
   sonar::selected(list[0]);   // its sound, from where it is
 }
 
