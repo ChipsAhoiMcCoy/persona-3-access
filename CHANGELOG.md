@@ -38,7 +38,7 @@
 - A save made after the credits was read like any other ("March 5, level 96"). The list now says what its row shows: "Slot 9: Makoto Yuki, Clear data, start a new game, play time 46 hours 16 minutes".
 - The credits: the review key now reads the names rolling past at that moment ("Credits. Chief Designer, Yuichiro Takada, Art Director, Tomohiro Kumagai, ..."). The roll is not read by itself.
 - The last choice of the ending opened with no answer picked and Enter did nothing until Left or Right was pressed. The first answer is now picked as it opens, and Enter takes it.
-- On that same choice, Left or Right changed the game's answer while the mod kept reading the first one, so Enter could take an answer you never heard. The mod now follows the game's answer (not yet heard in the game).
+- On that same choice, Left or Right changed the game's answer while the mod kept reading the first one, so Enter could take an answer you never heard. The mod now follows the game's answer.
 
 ### Lists
 - A "LIST" choice longer than its window (the Velvet Room's Talk, 16 topics) listed only the rows on screen as it opened: the topics further down could not be reached. The whole list is read now.
