@@ -65,6 +65,7 @@
 - The victory page, a saved-game line, an opened mail and a few other lines of a menu's own can no longer be read twice in a row when nothing was pressed in between.
 - A thought or notice of two pages that followed another one (Club Escapade's closed door, the dorm fridge's notice) was read whole while its first page still showed, and its second page again, as a new line, once it came up. Each page is now read when the game shows it.
 - Walking to the Velvet Room from Paulownia Mall stopped in the back alley, short of the door, and needed a second press. A walk now goes on to its target after crossing into another part of the map on the way.
+- An item added to a "Got ..." notice that is already up is said alone ("Got 1 Up"), not with the whole list again.
 - The point of interest list keys (the bracket keys) say "Not in the field" in a menu, a conversation or a battle, where the list is not about what is on screen.
 
 ### Battle

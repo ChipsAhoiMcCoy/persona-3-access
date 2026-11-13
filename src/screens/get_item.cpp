@@ -56,11 +56,15 @@ class GetItemScreen : public Screen {
     return true;
   }
   void enter() override { screens::set_keys(strings::kGetItemClose); said_ = line_; speech::speak(line_, true); }
-  // The next notice while this one is up: queued after it.
+  // The next notice while this one is up: queued after it. An item added to the notice up now (ADD_GET_ITEM_LIST
+  // while it is open appends to its list) is said alone: "Got BauerBar", not the whole list again.
   void tick() override {
     if (line_ == said_) return;
+    std::string added = line_;
+    if (!said_.empty() && line_.size() > said_.size() + 2 && line_.starts_with(said_ + ", "))
+      added = std::string(strings::kGot) + " " + line_.substr(said_.size() + 2);
     said_ = line_;
-    speech::speak(line_, false);
+    speech::speak(added, false);
   }
   std::string describe() override { return std::format("{}. {}", line_, strings::kGetItemClose()); }
 };
