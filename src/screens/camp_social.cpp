@@ -81,21 +81,26 @@ class CampSocialDetails : public MenuScreen, private CampSocialUi {
     uint8_t* d = details();
     return link_of(social::read(), d ? i32(d, 0x58) : 0);
   }
-  // Drawn pages are told apart by their file's buffer: dialog numbers repeat across files (the Magician's memo,
-  // dialog 4, is also Yukari's name in the profile file). What a page showed is kept: the game builds it once, so a
-  // later read (Backslash, coming back to the line) found nothing on screen.
+  // The pages the game laid out are told apart by their file's buffer: dialog numbers repeat across files (the
+  // Magician's memo, dialog 4, is also Yukari's name in the profile file). What a page showed is kept, so a link or
+  // person read once keeps the game's variant.
   std::map<std::tuple<int, int, bool>, std::string> memos_;   // (arcana, rank, reversed) -> the memo drawn
   std::map<std::pair<int, std::string>, std::string> profiles_;   // (arcana, name) -> the profile drawn
-  // The memo: BMD_CmmOutlineHelp dialog arcana * 4 (+1 lover, +2 reversed), page rank - 1. The drawn one when seen
-  // (only the game knows the lover variant), else the file's.
+  // The memo: BMD_CmmOutlineHelp dialog arcana * 4 (+1 lover, +2 reversed), page rank - 1. The page the game laid
+  // out for it, the newest of the two variants (only the game knows the lover variant), else the file's.
   std::string memo() {
     social::Link l = link();
     bool rev = social::reversed(l.arcana);
     int dialog = l.arcana * 4 + (rev ? 2 : 0);
     auto key = std::make_tuple(l.arcana, l.rank, rev);
-    if (const void* buf = bmdfile::buffer("BMD_CmmOutlineHelp"))
-      for (auto& p : msg::visible(60))
-        if (p.buf == buf && (p.dialog == dialog || p.dialog == dialog + 1)) memos_[key] = core::clean_text(p.text);
+    if (const void* buf = bmdfile::buffer("BMD_CmmOutlineHelp")) {
+      uint64_t seq = 0;
+      for (auto& p : msg::pages_of(buf))
+        if ((p.dialog == dialog || p.dialog == dialog + 1) && p.page == l.rank - 1 && p.seq >= seq) {
+          seq = p.seq;
+          memos_[key] = core::clean_text(p.text);
+        }
+    }
     if (auto it = memos_.find(key); it != memos_.end()) return it->second;
     auto f = bmdfile::load("BMD_CmmOutlineHelp");
     int pg = l.rank - 1;
@@ -103,8 +108,8 @@ class CampSocialDetails : public MenuScreen, private CampSocialUi {
     return bmdfile::text(f->dialogs[dialog].pages[pg]);
   }
   // A person's profile: BMD_CmmProfileHelp's dialogs from their MSG_PRF_<NAME>_NAME (the name as listed) up to the
-  // next person's (the profile, then _REVERSE, _MISSING, _LOST variants). The drawn one of those once the game's
-  // cursor is on them (only the game knows which variant), else the file's plain or reversed one.
+  // next person's (the profile, then _REVERSE, _MISSING, _LOST variants). The one of those the game laid out last
+  // (only the game knows which variant), else the file's plain or reversed one.
   std::string profile(int i, const std::string& name) {
     social::Link l = link();
     auto key = std::make_pair(l.arcana, name);
@@ -117,15 +122,18 @@ class CampSocialDetails : public MenuScreen, private CampSocialUi {
       if (first >= 0) { end = d; break; }
       if (!dl.pages.empty() && bmdfile::text(dl.pages[0]) == name) first = d;
     }
-    // A name the file does not list as drawn: any page of the profile file built with the cursor on them.
+    // A name the file does not list: the profile file's newest page, while the game's cursor rests on them.
     if (first < 0) { first = 0; end = INT_MAX; }
     else if (end < 0) end = (int)f->dialogs.size();
-    if (people_.settled_on(i))
-      if (const void* buf = bmdfile::buffer("BMD_CmmProfileHelp"))
-        for (auto& p : msg::visible(60))
-          if (p.buf == buf && p.dialog > first && p.dialog < end && p.dialog < (int)f->dialogs.size() &&
-              !f->dialogs[p.dialog].name.ends_with("_NAME"))
-            profiles_[key] = core::clean_text(p.text);
+    if (const void* buf = bmdfile::buffer("BMD_CmmProfileHelp"); buf && (end != INT_MAX || people_.settled_on(i))) {
+      uint64_t seq = 0;
+      for (auto& p : msg::pages_of(buf))
+        if (p.dialog > first && p.dialog < end && p.dialog < (int)f->dialogs.size() &&
+            !f->dialogs[p.dialog].name.ends_with("_NAME") && p.seq >= seq) {
+          seq = p.seq;
+          profiles_[key] = core::clean_text(p.text);
+        }
+    }
     if (auto it = profiles_.find(key); it != profiles_.end()) return it->second;
     if (end == INT_MAX) return {};
     int pick = first + 1;
