@@ -639,6 +639,7 @@ inline constexpr const char* kNoTutorials = "There are no tutorials to display."
 // The camp's tactics as the game draws them (Stats, E), by the unit's tactic index (unit +0x296; read 2026-10-30)
 inline constexpr const char* kTacticNames[] = {"Direct Commands", "Act Freely", "Full Assault", "Conserve SP", "Heal/Support"};
 inline constexpr const char* kRequestStatus[] = {"not accepted", "accepted", "completed", "expired", "ready to report"};
+inline constexpr const char* kRequestLocked = "???";   // a request not yet open (status 5), as the game lists it
 // Story cut-ins (cutin.cpp): the close-up a scene flashes before a line it stresses, by the game's character id and
 // picture (T_UI_CI_<PC|SC><char>_<pic>, each picture looked at; 2026-11-02).
 struct Cutin { int chara, pic; const char* text; };

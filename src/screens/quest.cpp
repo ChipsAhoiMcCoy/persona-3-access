@@ -121,23 +121,27 @@ class CampQuest : public MenuScreen {
       for (int i = 0; list && i < list->num; ++i) {
         uint8_t* e = list->data + i * 0xC;
         int id = *(uint16_t*)e, status = e[2];
-        std::string label = status == 5 ? std::string("???") : quest_title(id);
+        std::string label = status == 5 ? std::string(strings::kRequestLocked) : quest_title(id);
         if (status >= 0 && status < 5) label += std::string(", ") + strings::kRequestStatus[status];
         auto v = game_item(reqs_, i, [label] { return label; }, [this, id, status] {
           return status == 5 ? std::string() : quest_page(id, 1);
         });
         // The task after the title, as the game shows it beside the list. The message file's text leaves out what the
-        // game fills in (an item's name: "Show Elizabeth a ."); the page the game built for the highlighted request
-        // has it, so that one is read once the game's cursor is there.
+        // game fills in (an item's name: "Show Elizabeth a ."); the page the game laid out from BMD_Quest for the
+        // request (dialog = its id, page 1) has it once the game's cursor has been there. Its text starts as the
+        // file's: a page of another file once at that buffer's address does not.
         if (status != 5) {
           bool gap = false;
           std::string task = quest_page(id, 1, &gap);
-          describe_with(v, [this, i, task, gap] {
-            std::string fallback = gap ? std::string() : task;
-            if (!reqs_.settled_on(i)) return fallback;
+          describe_with(v, [id, task, gap] {
             std::string head = task.substr(0, std::min<size_t>(task.size(), 8));
-            for (auto& pg : msg::visible(30)) { std::string t = core::clean_text(pg.text); if (!head.empty() && t.rfind(head, 0) == 0) return t; }
-            return fallback;
+            if (const void* buf = bmdfile::buffer("BMD_Quest"))
+              for (auto& pg : msg::pages_of(buf))
+                if (pg.dialog == id && pg.page == 1) {
+                  std::string t = core::clean_text(pg.text);
+                  if (!head.empty() && t.starts_with(head)) return t;
+                }
+            return gap ? std::string() : task;
           });
         }
         b.add_item(slot("requests", i), v);
