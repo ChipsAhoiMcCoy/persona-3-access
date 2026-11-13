@@ -24,7 +24,6 @@
 #include "party.h"
 #include "persona.h"
 #include "speech.h"
-#include "textcap.h"
 #include "core/battle_text.h"
 #include "core/text_clean.h"
 #include <windows.h>
@@ -100,7 +99,7 @@ class BattleScreen : public Screen {
   }
 
   // ---- what happened: every unit's HP is watched, and the action banner (the skill name the game shows at the
-  // top while someone acts, FontDrawEx around y 105) is spoken with the actor's name. Damage numbers are sprites.
+  // top while someone acts, BP_BtlSkillNamePanel_C) is spoken with the actor's name. Damage numbers are sprites.
   struct Unit { std::string name; int hp; bool enemy; uint32_t status = 0; };
   bool downed_since_turn_ = false;
   // EBtlDataBadStatus bits the game tracks per unit: 0 dizzy, 1 charm .. 8 poison, 13 down (GetBadStatus).
@@ -113,9 +112,12 @@ class BattleScreen : public Screen {
   std::map<WeakObj::Key, Unit> units_;
   std::set<WeakObj::Key> won_enemies_;   // the enemies left when the battle was won (watch())
   WeakObj advantage_of_;                 // the battle whose advantage line was said
-  std::string banner_;
-  WeakObj banner_action_;     // whose action it was up under
-  bool banner_gone_ = true;   // none drawn since banner_: the same words now are a new banner
+  // The action banner is the game's skill-name panel (BP_BtlSkillNamePanel_C): BP_BtlGuiIconComponent's
+  // CreateSkillNamePanelForBP(cmd, id, isEnemy, time) makes a new one for every banner (any panel still up is removed
+  // first) and fills it through SetSkillID / SetItemName / SetCommonText: `Text` the words drawn, `Skill ID` the skill
+  // (set by SetSkillID only). Each panel is said once.
+  int panels_ = watch::want("BP_BtlSkillNamePanel_C");
+  WeakObj banner_panel_;   // the panel last said
   // Who the player just picked a skill, item or Guard for: that member's next banner is what the player chose, and is
   // not said (the user's call, 2026-11-05: any member the player commands). Whatever a member does of their own accord
   // is said: nothing is picked on the wheel (Rush), for a member on orders or an ailment (no wheel), or once anyone else acts.
@@ -175,7 +177,7 @@ class BattleScreen : public Screen {
     watch_rush(core);
     UObject* action_now = get<UObject*>(core, "CurrentAction");
     watch_commands(st, action_now);
-    watch_banner(st, action_now);
+    watch_banner(action_now);
     hit_words(action_now, st);
     watch_units(core, st, action_now);
   }
@@ -196,25 +198,21 @@ class BattleScreen : public Screen {
     if (st != 0) commanded_ = WeakObj::of(acting_member());
     else if (action_now && !(WeakObj::of(action_now) == commanded_)) commanded_ = {};
   }
-  // The action banner (only while no battle menu is up: menus draw names in the same band).
-  void watch_banner(int st, UObject* action_now) {
-    std::string b;
-    if (st == 0 && !result_phase())   // results draw names in that band too
-    for (auto& t : textcap::snapshot(12))
-      if (t.source == 2 && t.y > 95 && t.y < 115 && t.x > 300 && t.x < 700 && (t.color & 0xff) == 0xff && core::has_words(t.text)) { b = t.text; break; }
-    if (b.empty()) { banner_gone_ = true; return; }
-    // GetActionType (EBtlCommandType): 0 nothing chosen yet, so the same words are the last action's, still up as the
-    // next unit's turn begins ("Merciless Maya: Guard", 2026-11-06).
+  // The action banner: a panel not said yet (above), with its words.
+  void watch_banner(UObject* action_now) {
+    UObject* p = watch::get(panels_);
+    if (!p || WeakObj::of(p) == banner_panel_) return;
+    auto* text = field<FString>(p, "Text");
+    std::string b = text ? core::clean_text(to_utf8(*text)) : std::string();
+    if (!core::has_words(b)) return;   // made, not filled yet
+    banner_panel_ = WeakObj::of(p);
+    // GetActionType (EBtlCommandType): 1 a plain attack has no banner, and a skill's banner is its own skill: any
+    // other skill is a passive of the one attacked (a counter: "High Counter" came under the attacker's name,
+    // 2026-11-06).
     int type = action_now ? call_ret<uint8_t>(action_now, "GetActionType") : 0;
-    if (b != banner_ || banner_gone_ || (!(WeakObj::of(action_now) == banner_action_) && type != 0)) {
-      banner_ = b;
-      banner_action_ = WeakObj::of(action_now);
-      // 1 a plain attack has no banner, and a skill's is its own name: anything else is a passive of the one attacked
-      // (a counter: "High Counter" came under the attacker's name, 2026-11-06).
-      bool theirs = type != 1 && (type != 2 || w_.skill_name(call_ret<int32_t>(action_now, "GetSkillID")) == b);
-      say_banner(theirs ? action_now : attacked(action_now), b);
-    }
-    banner_gone_ = false;
+    auto* skill = field<int32_t>(p, "Skill ID");
+    bool theirs = type != 1 && (type != 2 || !skill || *skill == call_ret<int32_t>(action_now, "GetSkillID"));
+    say_banner(theirs ? action_now : attacked(action_now), b);
   }
   // HP changes, ailments and defeats. The enemies an All-Out Attack finishes keep their HP until the results take them
   // away, after Shuffle Time ("2 Muttering Tiara defeated" came after the cards, 2026-11-09): a deal with a card still
