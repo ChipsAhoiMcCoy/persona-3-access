@@ -28,20 +28,17 @@ class CreditsScreen : public Screen {
     UObject* draw = r ? get<UObject*>(r, "pStaffRollDraw") : nullptr;
     UObject* list = r ? get<UObject*>(r, "pStaffRollDataList") : nullptr;
     if (!draw || !list || !ue::known_build()) return out;
-    FField* dp = find_prop(class_of(list), "Data");
-    auto* rows = field<TArray<uint8_t>>(list, "Data");
-    UStruct* st = dp ? (UStruct*)prop_inner_object(prop_inner_prop(dp)) : nullptr;
-    int size = st ? struct_size(st) : 0;
+    TableRows rows = table_rows(list);
     static const char* const kColumns[] = {"FirstColumnName", "SecondColumnName", "ThirdColumnName", "ForthColumnName"};
     guarded([&] {
       int at = *(int32_t*)((uint8_t*)draw + 0x3A730);
-      if (!rows || !rows->data || size <= 0 || at < 0) return;
+      if (!rows || at < 0) return;
       // A screenful from the first row still rolling.
-      for (int i = at; i < rows->num && i < at + 8; ++i)
+      for (int i = at; i < rows.num && i < at + 8; ++i)
         for (const char* col : kColumns) {
-          int off = offset_of(st, col);
+          int off = offset_of(rows.row, col);
           if (off < 0) continue;
-          std::string t = to_utf8(*(FString*)(rows->data + (size_t)i * size + off));
+          std::string t = to_utf8(*(FString*)(rows.at(i) + off));
           if (!t.empty()) out += (out == strings::kCredits ? ". " : ", ") + t;
         }
     });

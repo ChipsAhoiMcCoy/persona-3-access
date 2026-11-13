@@ -83,6 +83,7 @@ class TitleScreen : public Screen {
 
  public:
   const char* id() const override { return "title"; }
+  bool holds_loading() const override { return true; }
   bool active() override { return title_state_obj() != nullptr; }
   // Entering again reads the state again (after a message window).
   void enter() override { state_.clear(); cursor_ = -1; }
@@ -140,6 +141,7 @@ class TitleMenuScreen : public MenuScreen {
     list_.set = [](int i) { return select_set(sel(), i); };
   }
   const char* id() const override { return "title_menu"; }
+  bool holds_loading() const override { return true; }
   int priority() const override { return 1; }
   bool active() override {
     uint8_t* s = sel();

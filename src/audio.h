@@ -10,6 +10,7 @@
 namespace p3a::audio {
 bool init();
 void shutdown();
+void install_routes();   // the dev server's /audio, /audiomute and /audio/render
 // Where a sound is, from the listener (the hero, facing the camera's yaw; world::spot makes one): a unit direction
 // and the distance in metres. pan is the stereo fallback (the sine of the bearing).
 // `placed`: the sound has a place in the world (wx, wy, wz, the game's units); while it plays, `follow` moves it in

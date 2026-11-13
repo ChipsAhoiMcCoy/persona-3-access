@@ -250,7 +250,10 @@ class BattleResultScreen : public MenuScreen {
     if (s == 7) return persona_page(ui) != nullptr;
     return s >= 1 && s <= 4 && view_.get();
   }
-  std::string title() override { return strings::kVictory; }
+  // "Victory" heads the summary pages (states 1-4). A Persona's status page (7) is entered again when the skill-learning
+  // list over it closes, and that list's closing can leave the screen inactive for a frame, which starts a new
+  // opening: the title would be said again over the page.
+  std::string title() override { return result_state(result_ui()) == 7 ? std::string() : std::string(strings::kVictory); }
   bool opening_interrupts() override { return false; }
   bool announce_entry() override { return state_ == 7; }   // a status page, back from a window: the line in focus
   // The hero's stock-up notices ("Update Stockup": two windows, then ResultStockType back to 0 and the key help).

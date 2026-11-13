@@ -37,12 +37,9 @@ class CampStats : public MenuScreen, private CampStatsUi {
     static const int table = watch::want("DatBtlCommonNameTable");
     std::string s;
     if (UObject* dat = watch::get(table)) {
-      FField* dp = find_prop(class_of(dat), "Data");
-      auto* rows = field<TArray<uint8_t>>(dat, "Data");
-      UStruct* st = dp ? (UStruct*)prop_inner_object(prop_inner_prop(dp)) : nullptr;
-      int size = st ? struct_size(st) : 0, name = st ? offset_of(st, "Name") : -1;
-      if (rows && rows->data && size > 0 && name >= 0 && 3 + t < rows->num)
-        guarded([&] { s = text(*(FText*)(rows->data + (size_t)(3 + t) * size + name)); });
+      TableRows rows = table_rows(dat);
+      int name = rows ? offset_of(rows.row, "Name") : -1;
+      if (uint8_t* r = name >= 0 ? rows.at(3 + t) : nullptr) guarded([&] { s = text(*(FText*)(r + name)); });
     }
     return s.empty() ? std::string(strings::kTacticNames[t]) : s;
   }
@@ -190,13 +187,14 @@ class CampStatsPage : public MenuScreen, private CampStatsUi {
     b.set_region(k + ".member");
     b.add_item(ui::ControlId::structural(k + ".line"), item([who] { return member_line(who); }));
     if (who == 1) b.add_item(ui::ControlId::structural(k + ".social"), item([] { return stats::describe(); }));
-    // A Persona: its name with the member's lines, then its sections: Stats (one per line), Skills, Affinities.
-    auto persona_sections = [&](int pid, int lv, const uint8_t* st, auto skill_at) {
+    // A Persona: its name with the member's lines, then its sections: Stats (one per line, as the status page totals
+    // them: base, incense and fusion bonus), Skills, Affinities. `entry` is its FDatUnitPersonaEntry.
+    auto persona_sections = [&](int pid, int lv, const uint8_t* entry, auto skill_at) {
       b.add_item(ui::ControlId::structural(k + ".persona"), item([pid, lv] { return persona::describe(pid, lv); }));
       b.set_region(k + ".stats");
       b.push_context(strings::kStatsTitle);
       for (int i = 0; i < 5; ++i) {
-        std::string l = std::format("{} {}", strings::kStatNames[i], st[i]);
+        std::string l = std::format("{} {}", strings::kStatNames[i], persona::stat_total(entry, i));
         b.add_item(ui::ControlId::structural(std::format("{}.stat{}", k, i)), item([l] { return l; }));
       }
       b.pop_context();
@@ -224,9 +222,9 @@ class CampStatsPage : public MenuScreen, private CampStatsUi {
     const uint8_t* e = party::persona_entry(who);
     if (who == 1) {   // the hero's equipped Persona from the stock
       int eq = persona::equipped();
-      for (auto& o : persona::stock()) if (o.slot == eq) persona_sections(o.id, o.level, o.stats, [&o](int i) { return (int)o.skills[i]; });
+      for (auto& o : persona::stock()) if (o.slot == eq) persona_sections(o.id, o.level, persona::stock_entry(o.slot), [&o](int i) { return (int)o.skills[i]; });
     } else if (e && *(uint16_t*)(e + 2)) {
-      persona_sections(*(uint16_t*)(e + 2), *(uint16_t*)(e + 4), e + 0x1C, [e](int i) { return (int)*(uint16_t*)(e + 0xC + i * 2); });
+      persona_sections(*(uint16_t*)(e + 2), *(uint16_t*)(e + 4), e, [e](int i) { return (int)*(uint16_t*)(e + 0xC + i * 2); });
     }
   }
 };

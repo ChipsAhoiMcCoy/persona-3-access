@@ -31,6 +31,9 @@ class Screen {
   // Whether Escape is Back / Cancel here (the game's C, pressed for it; menu.cpp): every bespoke menu, and a battle
   // prompt. False where C is a command (the battle wheel's Guard) or Escape is the game's own.
   virtual bool escape_is_back() { return false; }
+  // A save is (about to be) loaded while this screen is up (the title, the save list): the game's money, stats and
+  // links change under it, so their change lines wait until the hero is in the field again (screens::loading()).
+  virtual bool holds_loading() const { return false; }
 };
 
 void add(std::unique_ptr<Screen> s);
@@ -53,6 +56,7 @@ bool loading();
 bool title_opening();
 bool opening_line_due();
 std::string status();
+void install_routes();   // the dev server's /screen
 std::string perf(bool reset);   // each screen's active() and tick() cost (/perf)
 void register_all();       // every screen the mod models (register.cpp)
 }  // namespace p3a::screens

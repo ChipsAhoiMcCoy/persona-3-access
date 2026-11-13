@@ -1,14 +1,12 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks; zlib, see LICENSES/. This is not the original software.
 #include <windows.h>
 #include "paths.h"
-#include <cmath>
 #include <format>
 #include "ad.h"
 #include "audio.h"
 #include "crash.h"
 #include "devserver.h"
 #include "hooks.h"
-#include "hrtf.h"
 #include "input.h"
 #include "log.h"
 #include "mod.h"
@@ -73,26 +71,7 @@ static void base_routes() {
     SetEnvironmentVariableW((LPCWSTR)wn.c_str(), v.empty() ? nullptr : (LPCWSTR)wv.c_str());
     return std::format("{}={}\n", n, v);
   }, "?name=&value= process environment for the next reload (dev)");
-  dev::route("/audiomute", [](const dev::Request& r, int&) {
-    bool on = dev::arg(r, "on", "1") == "1";
-    return std::format("audio_muted={} ok={}\n", on, audio::mute_process(on));
-  }, "?on=1|0 the process's audio session");
-  dev::route("/audio", [](const dev::Request& r, int&) {
-    const char* names[(int)audio::Bus::Count] = {"cues", "walls", "narration", "sonar"};   // one per bus
-    for (int b = 0; b < (int)audio::Bus::Count; ++b)
-      if (dev::has(r, names[b])) audio::set_bus_volume((audio::Bus)b, (float)dev::arg_num(r, names[b], 1.0));
-    if (dev::has(r, "air")) hrtf::set_air((float)dev::arg_num(r, "air", 10.0));
-    if (dev::has(r, "reset")) audio::reset_stats();
-    return audio::status();
-  }, "?cues=&walls=0..1 &air=N (HRTF air absorption multiplier) &reset=1 the mod's mixer: bus volumes, voices, limiter, HRTF");
-  dev::route("/audio/render", [](const dev::Request& r, int&) {
-    // A beep through the HRTF, offline, from azimuth az (degrees, 90 = right), elevation elev, dist metres.
-    float az = (float)dev::arg_num(r, "az", 0) * 3.14159265f / 180.0f, el = (float)dev::arg_num(r, "elev", 0) * 3.14159265f / 180.0f;
-    audio::Spot s{std::sin(az) * std::cos(el), std::sin(el), std::cos(az) * std::cos(el), (float)dev::arg_num(r, "dist", 1), std::sin(az)};
-    std::string out = dev::has(r, "out") ? dev::arg(r, "out") : audio::module_dir() + "hrtf_test.wav";
-    bool ok = audio::render_beep_wav((float)dev::arg_num(r, "freq", 880), (int)dev::arg_int(r, "ms", 200), s, out);
-    return ok ? std::format("wrote {}\n", out) : std::string("HRTF unavailable or the file could not be written\n");
-  }, "?az=&elev=&dist=m&freq=&ms=&out=path a beep rendered offline through the HRTF into a stereo WAV (dev check)");
+  audio::install_routes();
   dev::route("/loadlib", [](const dev::Request& r, int&) {
     std::string p = dev::arg(r, "path");
     std::u16string w = ue::to_u16(p);

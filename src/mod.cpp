@@ -138,9 +138,7 @@ void init(bool speech_ok) {
   party::install();
   items::install();
   flow::install();
-  dev::route("/screen", [](const dev::Request&, int&) {
-    return dev::on_game([] { auto* s = screens::current(); return screens::status() + "\n" + (s ? s->describe() : std::string()) + "\n"; });
-  }, "current modelled screen and its description");
+  screens::install_routes();
   dev::route("/perf", [](const dev::Request& r, int&) {
     bool reset = dev::has(r, "reset");
     return dev::on_game([reset] { return perf(reset); });

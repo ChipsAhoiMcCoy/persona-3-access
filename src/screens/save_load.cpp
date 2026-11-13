@@ -99,6 +99,7 @@ class SaveLoadScreen : public MenuScreen {
   }
  public:
   const char* id() const override { return "save_load"; }
+  bool holds_loading() const override { return true; }
   int priority() const override { return 30; }
   bool active() override { UObject* d = draw_.get(); return d && count() > 0; }
   void on_enter() override { screens::set_keys(strings::kListKeys); slot_seen_ = -1; }

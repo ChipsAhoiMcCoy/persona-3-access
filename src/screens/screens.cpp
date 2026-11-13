@@ -6,6 +6,7 @@
 #include "seh.h"
 #include "msg.h"
 #include "settings.h"
+#include "devserver.h"
 #include "speech.h"
 #include "world.h"
 #include "core/strings.h"
@@ -52,9 +53,7 @@ bool title_due(const char* step) {
 static bool g_loading = true;
 bool loading() { return g_loading; }
 static void track_loading() {
-  bool listing = g_current && (!strcmp(g_current->id(), "title") || !strcmp(g_current->id(), "title_menu") ||
-                               !strcmp(g_current->id(), "save_load"));
-  if (listing) g_loading = true;
+  if (g_current && g_current->holds_loading()) g_loading = true;
   else if (g_loading && world::player()) g_loading = false;
 }
 
@@ -173,4 +172,10 @@ void tick() {
 }
 
 std::string status() { return std::format("screen={} ({} modelled)", g_current ? g_current->id() : "none", g_screens.size()); }
+
+void install_routes() {
+  dev::route("/screen", [](const dev::Request&, int&) {
+    return dev::on_game([] { auto* s = current(); return status() + "\n" + (s ? s->describe() : std::string()) + "\n"; });
+  }, "current modelled screen and its description");
+}
 }  // namespace p3a::screens

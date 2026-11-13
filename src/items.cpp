@@ -52,20 +52,17 @@ static void load() {
     UObject* names = get<UObject*>(dat, std::string("Table") + c + "Name");
     if (!table || !names) continue;
     guarded([&] {
-      auto* rows = field<TArray<uint8_t>>(table, "Data");
+      TableRows rows = table_rows(table);
       auto* ns = field<TArray<FString>>(names, "Data");
-      FField* dp = find_prop(class_of(table), "Data");
-      if (!rows || !ns || !dp) return;
-      UStruct* st = prop_inner_object(prop_inner_prop(dp));
-      int sz = struct_size(st);
-      auto off = [&](const char* f) { return offset_of(st, f); };
+      if (!rows || !ns) return;
+      auto off = [&](const char* f) { return offset_of(rows.row, f); };
       int oPrice = off("Price"), oSell = off("SellPrice"), oAtk = off("attack"), oAcc = off("Accuracy"), oDef = off("Defence"), oEva = off("Evasion");
-      for (int i = 0; i < rows->num && i < ns->num; ++i) {
+      for (int i = 0; i < rows.num && i < ns->num; ++i) {
         std::string n = to_utf8(ns->data[i]);
         if (n.empty() || n == "Unused") continue;
         if (!g_names.count(code << 12 | i)) g_names[code << 12 | i] = n;
         if (g_cache.count(n)) continue;
-        uint8_t* r = rows->data + i * sz;
+        uint8_t* r = rows.at(i);
         Info in;
         in.category = c;
         in.bag = bag + i;
