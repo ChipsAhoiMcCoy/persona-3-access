@@ -33,4 +33,14 @@ bool boxes_meet(const Box& a, const Box& b) {
   return true;
 }
 
+Vec3 box_nearest(const Box& b, const Vec3& p) {
+  // Into the box's own frame (as box_holds), clamped to its sides, and turned back out.
+  float a = -b.yaw * kPi / 180.0f, dx = p.x - b.center.x, dy = p.y - b.center.y;
+  float lx = dx * std::cos(a) - dy * std::sin(a), ly = dx * std::sin(a) + dy * std::cos(a);
+  lx = std::fmax(-b.extent.x, std::fmin(lx, b.extent.x));
+  ly = std::fmax(-b.extent.y, std::fmin(ly, b.extent.y));
+  float lz = std::fmax(-b.extent.z, std::fmin(p.z - b.center.z, b.extent.z));
+  return Vec3{b.center.x + lx * std::cos(-a) - ly * std::sin(-a), b.center.y + lx * std::sin(-a) + ly * std::cos(-a), b.center.z + lz};
+}
+
 }  // namespace p3a::core

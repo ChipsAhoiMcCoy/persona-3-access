@@ -94,3 +94,21 @@ TEST_CASE("boxes_meet: the strike's reach against a breakable") {
   CHECK(boxes_meet(strike, Box{Vec3{-84, 95, 0}, Vec3{40, 40, 75}, 0}));        // beside the reach, overlapping its side
   CHECK_FALSE(boxes_meet(strike, Box{Vec3{-84, 105, 0}, Vec3{40, 40, 75}, 0}));
 }
+
+TEST_CASE("box_nearest: the side, the corner, and inside") {
+  Box b{Vec3{0, 0, 0}, Vec3{400, 50, 100}, 0};   // a long counter, 8 m by 1 m
+  Vec3 n = box_nearest(b, Vec3{300, 200, 0});   // beside its far end: straight across, not to the middle
+  CHECK(n.x == doctest::Approx(300.0f)); CHECK(n.y == doctest::Approx(50.0f)); CHECK(n.z == doctest::Approx(0.0f));
+  n = box_nearest(b, Vec3{600, -200, 300});     // off a corner, above it
+  CHECK(n.x == doctest::Approx(400.0f)); CHECK(n.y == doctest::Approx(-50.0f)); CHECK(n.z == doctest::Approx(100.0f));
+  n = box_nearest(b, Vec3{10, 20, 30});         // inside: the point itself
+  CHECK(n.x == doctest::Approx(10.0f)); CHECK(n.y == doctest::Approx(20.0f)); CHECK(n.z == doctest::Approx(30.0f));
+}
+
+TEST_CASE("box_nearest: a turned box") {
+  Box b{Vec3{100, 100, 0}, Vec3{400, 50, 100}, 90};   // the counter turned to run along y
+  Vec3 n = box_nearest(b, Vec3{300, 400, 0});        // to its right, near its far end
+  CHECK(n.x == doctest::Approx(150.0f)); CHECK(n.y == doctest::Approx(400.0f));
+  n = box_nearest(b, Vec3{100, 900, 0});             // past its end
+  CHECK(n.x == doctest::Approx(100.0f)); CHECK(n.y == doctest::Approx(500.0f));
+}

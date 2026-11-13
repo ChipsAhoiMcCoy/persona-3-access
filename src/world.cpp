@@ -297,6 +297,23 @@ bool read_box(UObject* box, core::Box& b) {
   return b.extent.x > 1.0f && b.extent.y > 1.0f;
 }
 
+bool trigger_box(UObject* t, core::Box& b) {
+  UObject* hc = t ? get<UObject*>(t, "HitComp_") : nullptr;
+  if (!hc) return false;
+  bool box = is_a(hc, "BoxComponent"), sphere = is_a(hc, "SphereComponent");   // Tartarus devices use spheres
+  if (!box && !sphere) return false;
+  if (box) {
+    read_box(hc, b);   // a trigger counts however thin it is
+  } else {
+    auto vcall = [&](const char* fn) { Params p(find_function(class_of(hc), fn)); call(hc, p); return p; };
+    b.center = vec3(vcall("K2_GetComponentLocation").ret<FVector>());
+    float r = vcall("GetScaledSphereRadius").ret<float>() * 0.7f;   // the square inside the circle
+    b.extent = core::Vec3{r, r, r};
+    b.yaw = 0;
+  }
+  return true;
+}
+
 bool capsule_of(UObject* actor, float& radius, float& half_height) {
   UObject* cap = actor ? get<UObject*>(actor, "CapsuleComponent") : nullptr;
   if (!cap) return false;

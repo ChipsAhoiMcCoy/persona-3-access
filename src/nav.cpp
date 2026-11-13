@@ -114,28 +114,8 @@ static bool refresh_path(const FVector& me) {
   return true;
 }
 
-// A hit actor's trigger box (HitComp_: BoxComponent world centre, scaled extent, yaw), or false if it has none.
 using core::Box;
-static bool trigger_box(ue::UObject* t, Box& b) {
-  ue::UObject* hc = ue::get<ue::UObject*>(t, "HitComp_");
-  if (!hc) return false;
-  bool box = ue::is_a(hc, "BoxComponent"), sphere = ue::is_a(hc, "SphereComponent");   // Tartarus devices use spheres
-  if (!box && !sphere) return false;
-  if (box) {
-    world::read_box(hc, b);   // a trigger counts however thin it is
-  } else {
-    auto vcall = [&](const char* fn) {
-      ue::Params p(ue::find_function(ue::class_of(hc), fn));
-      ue::call(hc, p);
-      return p;
-    };
-    b.center = world::vec3(vcall("K2_GetComponentLocation").ret<FVector>());
-    float r = vcall("GetScaledSphereRadius").ret<float>() * 0.7f;   // the square inside the circle
-    b.extent = core::Vec3{r, r, r};
-    b.yaw = 0;
-  }
-  return true;
-}
+using world::trigger_box;
 // The point is inside the trigger, `margin` cm in from (negative) or out past its sides.
 // Height too: a door upstairs is right above a spot downstairs (the dorm's "Your Room", 2026-10-27). The hero's
 // location is about 90 cm above the floor; allow a step's worth more.

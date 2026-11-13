@@ -22,5 +22,7 @@ bool box_holds(const Box& b, const Vec3& p, float grow_xy, float grow_z);
 // Two boxes share space (touching counts): the separating-axis test on the ground plane over both boxes' sides, and
 // their heights overlapping.
 bool boxes_meet(const Box& a, const Box& b);
+// The point of the box nearest `p` (p itself when the box holds it): where a sound from a large thing comes from.
+Vec3 box_nearest(const Box& b, const Vec3& p);
 
 }  // namespace p3a::core

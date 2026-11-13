@@ -1,5 +1,6 @@
 #include "sonar.h"
 #include "audio.h"
+#include "core/boxes.h"
 #include "core/sonar_cues.h"
 #include "core/sonar_field.h"
 #include "core/strings.h"
@@ -53,13 +54,43 @@ constexpr float kLookAheadCm = 300.0f; // how far past the range that reading lo
 // /sonar?trim=kind,dB).
 float g_trim_db[kKinds] = {0, 0, 0, 0, 0, 0, 0};
 
-struct Source { ue::WeakObj obj; int kind; FVector loc; bool selected; };
+// A thing's body: its trigger box (the game's HitComp_, where the hero stands to use it), read at each rescan. Its sound
+// comes from the box's point nearest the hero, so a long counter or a wide exit is heard from the part beside him, not
+// from its middle (Dark Vision's way, 2026-11-13). People and Shadows have none here: their trigger is a ring round
+// someone who moves. A box wider than kBodyMaxM to a side is not trusted (a trigger can cover a whole room): its
+// middle it is.
+struct Body { core::Box box; bool has = false; };
+constexpr float kBodyMaxM = 6.0f;
+Body body_of(const poi::Poi& p) {
+  Body b;
+  if (p.kind == poi::Kind::Person || p.kind == poi::Kind::Enemy) return b;
+  ue::UObject* a = p.obj.resolve();
+  if (!a || !world::trigger_box(a, b.box)) return b;
+  b.has = std::max(b.box.extent.x, b.box.extent.y) <= kBodyMaxM * 100.0f;
+  return b;
+}
+// Where a thing's sound comes from, heard from `me`, and how far it counts as (its rhythm and level): the nearest point
+// of its body, else its place. Standing inside the body (Paulownia Mall's exits are strips 9 m long the hero walks
+// through, 2026-11-13) the nearest point is the hero himself, with no direction: the sound comes from its middle then,
+// at the rhythm of being at it.
+struct Place { FVector at; float dist_m; };
+float dist_m(const FVector& a, const FVector& b) {
+  return std::sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z)) / 100.0f;
+}
+Place place_of(const FVector& loc, const Body& b, const FVector& me) {
+  if (!b.has) return {loc, dist_m(me, loc)};
+  if (core::box_holds(b.box, world::vec3(me), 0.0f, 200.0f)) return {loc, 0.0f};   // the hero is 90 cm up: a step's leeway
+  FVector p = world::fvec(core::box_nearest(b.box, world::vec3(me)));
+  return {p, dist_m(me, p)};
+}
+
+struct Source { ue::WeakObj obj; int kind; FVector loc; bool selected; Body body; };
 
 // The focus: one thing heard alone, its sound repeating at its distance's rhythm while the rest of the mod's placed
 // sounds (the field, the wall tones, a Shadow's growl) are silenced (audio::solo), so what it is and where can be
 // heard (the user, 2026-11-13). Held while a point is chosen in the list (until the controller's layer closes, or
 // kFocusMs after a key, or once the hero walks off) and while the right stick points somewhere.
-struct Focus { ue::WeakObj obj; int kind = -1; bool shadow = false; FVector loc{}; bool has = false; };
+struct Focus { ue::WeakObj obj; int kind = -1; bool shadow = false; FVector loc{}; bool has = false; Body body; };
 Focus g_focus;
 ULONGLONG g_focus_until = 0;     // the list's choice, by key: held this long
 bool g_focus_layer = false;      // the list's choice with the controller's layer open: held until it closes
@@ -126,12 +157,12 @@ float gain_at(float dist_m) {
   return std::pow(10.0f, -kEdgeDb * u / 20.0f);
 }
 
-// focus: it plays through the solo. db: added to its level.
-void emit(int kind, const FVector& me, const FVector& at, bool focus = false, float db = 0.0f) {
+// focus: it plays through the solo. db: added to its level. dist: how far it counts as for its level (-1: from `at`).
+void emit(int kind, const FVector& me, const FVector& at, bool focus = false, float db = 0.0f, float dist = -1.0f) {
   audio::Spot s = world::spot(me, at);
   Voice v = voice(kind, s);
   if (!v.pcm) return;
-  float vol = gain_at(s.dist_m) * std::pow(10.0f, (g_trim_db[kind] + db) / 20.0f);
+  float vol = gain_at(dist >= 0.0f ? dist : s.dist_m) * std::pow(10.0f, (g_trim_db[kind] + db) / 20.0f);
   audio::play(std::move(v.pcm), vol, s, audio::Bus::Sonar, v.rate, focus);
   ++g_fired;
 }
@@ -147,16 +178,29 @@ void rescan() {
   bool has_sel = poi::selected(sel) && cue_of(sel.kind) >= 0;
   const int scope = settings::get(settings::SonarScope);
   if (scope == settings::ScopeSelected) {
-    if (has_sel) g_sources.push_back({sel.obj, cue_of(sel.kind), sel.loc, false});
+    if (has_sel) g_sources.push_back({sel.obj, cue_of(sel.kind), sel.loc, false, body_of(sel)});
     return;
   }
+  FVector me{};
+  world::player_location(me);
   int per_kind[kKinds] = {};
   bool sel_listed = false;
   // Read a little past the range: the list is read four times a second, and at a run (7 m/s in Tartarus) a thing
   // found only at the next reading first sounded a metre or two inside the range. tick() holds it until it is in.
-  for (const poi::Poi& p : poi::scan(range_m() * 100.0f + kLookAheadCm)) {   // nearest first
+  // Nearest first by the nearest point of each, not by its middle: the counter beside the hero comes before the sign
+  // whose middle is nearer.
+  struct Seen { const poi::Poi* p; Body body; float d; };
+  std::vector<Seen> seen;
+  const std::vector<poi::Poi> scanned = poi::scan(range_m() * 100.0f + kLookAheadCm);
+  for (const poi::Poi& p : scanned) {
+    if (cue_of(p.kind) < 0) continue;
+    Body b = body_of(p);
+    seen.push_back({&p, b, place_of(p.loc, b, me).dist_m});
+  }
+  std::stable_sort(seen.begin(), seen.end(), [](const Seen& a, const Seen& b) { return a.d < b.d; });
+  for (const Seen& s : seen) {
+    const poi::Poi& p = *s.p;
     int kind = cue_of(p.kind);
-    if (kind < 0) continue;
     bool is_sel = has_sel && p.obj == sel.obj;
     if (!is_sel) {
       if (!kind_on(kind) || (scope == settings::ScopeCategory && !poi::in_selected_category(p))) continue;
@@ -164,7 +208,7 @@ void rescan() {
     }
     ++per_kind[kind];
     sel_listed |= is_sel;
-    g_sources.push_back({p.obj, kind, p.loc, is_sel});
+    g_sources.push_back({p.obj, kind, p.loc, is_sel, s.body});
   }
   // The selected point took a place past the limit: the farthest other one gives its place up.
   if (sel_listed && g_sources.size() > kMaxSources)
@@ -176,24 +220,22 @@ double now_s() {
   using namespace std::chrono;
   return duration<double>(steady_clock::now().time_since_epoch()).count();
 }
-float dist_m(const FVector& a, const FVector& b) {
-  return std::sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z)) / 100.0f;
-}
 void silence() { g_field.reset(); g_sources.clear(); g_scan_at = 0; }
 
 // The focused thing's sound once, from where it is now.
 void sound_focus(const FVector& me) {
   if (!g_focus.has) return;
-  if (g_focus.shadow) audio::signal((int)core::SignalCue::Shadow, 1.0f, world::spot(me, g_focus.loc), 1.0f, true);
-  else emit(g_focus.kind, me, g_focus.loc, true);
-  g_focus_next = now_s() + std::max(g_field.params().period_for(dist_m(me, g_focus.loc)), kFocusMinPeriod);
+  const Place pl = place_of(g_focus.loc, g_focus.body, me);
+  if (g_focus.shadow) audio::signal((int)core::SignalCue::Shadow, 1.0f, world::spot(me, pl.at), 1.0f, true);
+  else emit(g_focus.kind, me, pl.at, true, 0.0f, pl.dist_m);
+  g_focus_next = now_s() + std::max(g_field.params().period_for(pl.dist_m), kFocusMinPeriod);
 }
 
 // `p` takes the stage (null: nothing does, but the stage is still cleared): its sound now, and the solo on.
 void focus_on(const poi::Poi* p) {
   g_focus = {};
   if (p) {
-    g_focus = {p->obj, cue_of(p->kind), p->kind == poi::Kind::Enemy, p->loc, false};
+    g_focus = {p->obj, cue_of(p->kind), p->kind == poi::Kind::Enemy, p->loc, false, body_of(*p)};
     g_focus.has = g_focus.kind >= 0 || g_focus.shadow;
   }
   audio::solo(true);
@@ -248,8 +290,9 @@ void tick() {
   const bool any_distance = settings::get(settings::SonarScope) == settings::ScopeSelected;
   float nearest = 1e9f;
   for (const Source& s : g_sources) {
-    if (!any_distance && dist_m(me, s.loc) > range_m()) continue;   // read ahead of the range: not in it yet
-    items.push_back({(unsigned)s.obj.index, dist_m(me, s.loc), s.kind});
+    const float d = place_of(s.loc, s.body, me).dist_m;
+    if (!any_distance && d > range_m()) continue;   // read ahead of the range: not in it yet
+    items.push_back({(unsigned)s.obj.index, d, s.kind});
     nearest = std::min(nearest, items.back().dist);
   }
   // What sounded last tick and no longer does is forgotten; a thing's first sound is logged with its distance (how
@@ -260,11 +303,13 @@ void tick() {
     for (const Source& s : g_sources)
       if ((unsigned)s.obj.index == p.id) {
         // Something is beside the hero and this is not it (a metre's leeway: two things side by side both stay).
-        bool upstaged = nearest <= kCloseM && dist_m(me, s.loc) > nearest + 1.0f;
-        emit(s.kind, me, s.loc, false, upstaged ? -kCloseDuckDb : 0.0f);
+        const Place pl = place_of(s.loc, s.body, me);
+        bool upstaged = nearest <= kCloseM && pl.dist_m > nearest + 1.0f;
+        emit(s.kind, me, pl.at, false, upstaged ? -kCloseDuckDb : 0.0f, pl.dist_m);
         if (std::find(heard.begin(), heard.end(), p.id) == heard.end()) {
           heard.push_back(p.id);
-          log::writef("sonar: {} #{} first sounds at {:.1f} m", kKind[s.kind].name, s.obj.index, dist_m(me, s.loc));
+          log::writef("sonar: {} #{} first sounds at {:.1f} m{}", kKind[s.kind].name, s.obj.index, pl.dist_m,
+                      s.body.has ? std::format(" (its middle {:.1f} m)", dist_m(me, s.loc)) : std::string());
         }
         break;
       }
@@ -329,10 +374,14 @@ void install() {
       FVector me;
       if (world::player_location(me))
         for (const Source& src : g_sources) {
-          float d = dist_m(me, src.loc);
-          audio::Spot at = world::spot(me, src.loc);
-          s += std::format("  {:<7} {:5.1f} m  every {:.2f} s  gain {:.2f}  right {:+.2f} ahead {:+.2f} up {:+.2f}{}  #{}\n", kKind[src.kind].name, d,
-                           g_field.params().period_for(d), gain_at(d), at.right, at.ahead, at.up, src.selected ? "  selected" : "", src.obj.index);
+          const Place pl = place_of(src.loc, src.body, me);
+          float d = pl.dist_m;
+          audio::Spot at = world::spot(me, pl.at);
+          std::string body = src.body.has ? std::format("  body {:.1f} x {:.1f} m, middle {:.1f} m{}", src.body.box.extent.x / 50.0f,
+                                                        src.body.box.extent.y / 50.0f, dist_m(me, src.loc), d == 0.0f ? ", inside" : "")
+                                          : std::string("  no body");
+          s += std::format("  {:<7} {:5.1f} m  every {:.2f} s  gain {:.2f}  right {:+.2f} ahead {:+.2f} up {:+.2f}{}{}  #{}\n", kKind[src.kind].name, d,
+                           g_field.params().period_for(d), gain_at(d), at.right, at.ahead, at.up, body, src.selected ? "  selected" : "", src.obj.index);
         }
       return s;
     });
