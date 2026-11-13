@@ -1,6 +1,6 @@
 """Build the player zip from this checkout, reproducibly: a Release build, then a zip with sorted names and fixed dates.
 
-    python tools/package.py [--version 0.1.0-alpha.3] [--nobuild] [--allow-no-license]
+    python tools/package.py [--version 0.2.0] [--nobuild] [--allow-no-license]
 
 Output: dist/persona-3-access-<version>.zip and a .sha256 file beside it. The script never touches a game folder.
 
@@ -133,7 +133,7 @@ def check(files):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--version", default="0.1.0-alpha.3")
+    ap.add_argument("--version", default="0.2.0")
     ap.add_argument("--nobuild", action="store_true", help="use the existing build/release")
     ap.add_argument("--allow-no-license", action="store_true")
     a = ap.parse_args()

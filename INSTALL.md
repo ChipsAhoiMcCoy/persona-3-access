@@ -6,7 +6,7 @@ You need the Steam version of Persona 3 Reload on Windows, already installed. St
 
 ## Install
 
-1. Download `persona-3-access-0.1.0-alpha.3.zip` from the Releases page: https://github.com/ChipsAhoiMcCoy/persona-3-access/releases
+1. Download `persona-3-access-0.2.0.zip` from the Releases page: https://github.com/ChipsAhoiMcCoy/persona-3-access/releases
 2. Extract the zip anywhere. You will get `dsound.dll`, a folder called `P3RAccess`, and two text files, `README.txt` and `INSTALL.txt`.
 3. Find the game's folder. In a default Steam install it is:
 

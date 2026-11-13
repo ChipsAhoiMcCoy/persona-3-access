@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.0
+
 ### Top-down exploration (new; to be tried)
 - While you walk freely, the camera stays facing north and cannot be turned: up always walks north. The game's own sounds and the mod's are heard from where you stand with north ahead, as if from above, so a Shadow's growl comes from the Shadow. Conversations, story scenes, menus and battles keep the game's camera and sound. The Top-down exploration setting (Exploring) switches it off.
 - Up walks north everywhere. Where the game shows a place from a fixed scene camera of its own (Fountain Square, the station, many rooms), up walked toward that camera's view instead, so sounds slid past sideways while you walked straight.
