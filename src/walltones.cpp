@@ -8,7 +8,8 @@
 // g_deg per side). The walk is simulated the way UE's character movement resolves it: the body (a Pawn-profile
 // capsule) is swept in steps; on a hit it slides along the wall (the move minus its part into the wall's normal);
 // each step follows the floor down a line trace, and a low line catches knee-high blockers (benches, planters) the
-// capsule rides over. So a wall you would slide along, or a corridor that bends a little, reads open; a wall across
+// capsule rides over, unless it is a stair's riser (the floor past it no more than g_rise higher). So a wall you would
+// slide along, a staircase, or a corridor that bends a little, reads open; a wall across
 // the key reads at its distance. The old probe (one straight sweep per direction) read any wall that crossed the
 // line, even one you would glide past.
 // In the top-down mode (topdown.cpp) the four directions are the compass, fixed, so a room had a wall within reach in
@@ -65,10 +66,28 @@ static void ensure_loaded() {
 }
 static void silence() { if (g_loaded) for (int i = 0; i < 4; ++i) audio::set_loop_volume(kToneId + i, 0.0f); }
 
-constexpr float kStep = 100.0f;      // cm per simulated step
+// cm per simulated step. 100 at first: a staircase rises ~55 cm in a metre (Tartarus' exit stairs: 25 cm risers every
+// ~45 cm), more than the floor below the step reaches down for coming down, and nearly the swept body's 60 cm going up.
+static float g_step = 50.0f;      // dev: /walltones?step=
+// The tallest riser the walk goes up: a stair's (15-25 cm), not a bench's or a planter's (40 cm and more).
+static float g_rise = 30.0f;      // dev: /walltones?rise= (0: no riser is a step)
 constexpr float kFeetBelow = 90.0f;  // actor location is the capsule centre, ~90 cm above the feet
 
 static float hdot(const FVector& a, const FVector& b) { return a.x * b.x + a.y * b.y; }
+
+// The floor's height a little before and a little past `at` (a face the low line met) along `v`, read down from
+// above anything the walk could step onto. A step: the floor past it is no more than g_rise higher.
+static bool step_up(const FVector& at, const FVector& v, float feet_z) {
+  auto floor_z = [&](float d, float& z) {
+    FVector q{at.x + v.x * d, at.y + v.y * d, feet_z + kLowAboveFeet + g_rise + 10};
+    world::Hit h = world::line(q, FVector{q.x, q.y, feet_z - 60}, "Pawn", &g_people);
+    if (!h.hit || h.start_inside || h.normal.z < 0.7f) return false;
+    z = h.point.z;
+    return true;
+  };
+  float before = 0, after = 0;
+  return floor_z(-5, before) && floor_z(5, after) && after > before && after - before <= g_rise;
+}
 
 // Moves the body from `pos` by `move` (horizontal), sliding once along whatever it meets. Returns false when the body
 // starts inside geometry (nowhere to go).
@@ -96,19 +115,19 @@ static bool slide_move(FVector& pos, FVector move) {
 
 // How far along camera-relative direction `d` (0 ahead, 1 right, 2 behind, 3 left) holding that key carries the body,
 // capped at the range.
-static float probe(const FVector& p, int d, float range) {
-  FVector v = world::dir_vector(d);
+static float probe_along(const FVector& p, const FVector& v, float range) {
   float tan_deg = std::tan(g_deg * 3.14159265f / 180.0f);
   FVector pos = p;
   float along = 0;
-  for (int step = 0; step < 16 && along < range; ++step) {
-    float len = std::min(kStep, range - along);
+  for (int step = 0; step < 32 && along < range; ++step) {
+    float len = std::min(g_step, range - along);
     FVector from = pos;
     if (!slide_move(pos, FVector{v.x * len, v.y * len, 0})) break;
-    // Knee-high blockers the capsule rides over; a rising floor (a ramp, a low step) is not one.
+    // Knee-high blockers the capsule rides over; a rising floor (a ramp) is not one, nor a stair's riser: the stairs
+    // up out of a Tartarus floor read as a wall at their foot (2026-11-13).
     float low_z = from.z - kFeetBelow + kLowAboveFeet;
     world::Hit low = world::line(FVector{from.x, from.y, low_z}, FVector{pos.x, pos.y, low_z}, "Pawn", &g_people);
-    if (low.hit && !low.start_inside && low.normal.z < 0.6f) {
+    if (low.hit && !low.start_inside && low.normal.z < 0.6f && !step_up(low.point, v, from.z - kFeetBelow)) {
       float moved = std::sqrt(hdot(FVector{pos.x - from.x, pos.y - from.y, 0}, FVector{pos.x - from.x, pos.y - from.y, 0}));
       float t = moved > 0 ? std::clamp((low.distance - kRadius) / moved, 0.0f, 1.0f) : 0.0f;
       pos = FVector{from.x + (pos.x - from.x) * t, from.y + (pos.y - from.y) * t, pos.z};
@@ -128,6 +147,7 @@ static float probe(const FVector& p, int d, float range) {
   }
   return std::min(std::max(along, 0.0f), range);
 }
+static float probe(const FVector& p, int d, float range) { return probe_along(p, world::dir_vector(d), range); }
 
 // The tones play while the player walks the field with nothing over it (not in a menu, a conversation, a battle or
 // a story scene).
@@ -194,7 +214,30 @@ void install() {
     if (dev::has(r, "range")) g_range = (float)dev::arg_num(r, "range", g_range);
     if (dev::has(r, "vol")) g_gain = (float)dev::arg_num(r, "vol", g_gain);
     if (dev::has(r, "h0")) g_h0 = (float)dev::arg_num(r, "h0", g_h0);
+    if (dev::has(r, "step")) g_step = std::clamp((float)dev::arg_num(r, "step", g_step), 20.0f, 200.0f);
+    if (dev::has(r, "rise")) g_rise = std::clamp((float)dev::arg_num(r, "rise", g_rise), 0.0f, 60.0f);
     if (dev::has(r, "deg")) g_deg = std::clamp((float)dev::arg_num(r, "deg", g_deg), 0.0f, 80.0f);
+    // dev: the probe from a place along a world bearing (?from=x,y,z,yaw: z the hero's centre, ~90 cm above the feet)
+    if (dev::has(r, "from")) return dev::on_game([s = dev::arg(r, "from")] {
+      float a[4] = {};
+      if (sscanf(s.c_str(), "%f,%f,%f,%f", &a[0], &a[1], &a[2], &a[3]) != 4) return std::string("bad\n");
+      float yaw = a[3] * 3.14159265f / 180.0f;
+      g_people.clear();
+      return std::format("{:.0f}\n", probe_along(FVector{a[0], a[1], a[2]}, FVector{std::cos(yaw), std::sin(yaw), 0}, g_range));
+    });
+    // dev: the floor's height along a line, every 10 cm, read down from ztop (?prof=x0,y0,x1,y1,ztop)
+    if (dev::has(r, "prof")) return dev::on_game([s = dev::arg(r, "prof")] {
+      float a[5] = {};
+      if (sscanf(s.c_str(), "%f,%f,%f,%f,%f", &a[0], &a[1], &a[2], &a[3], &a[4]) != 5) return std::string("bad\n");
+      float len = std::hypot(a[2] - a[0], a[3] - a[1]);
+      std::string o;
+      for (float t = 0; t <= len; t += 10) {
+        float x = a[0] + (a[2] - a[0]) * t / len, y = a[1] + (a[3] - a[1]) * t / len;
+        world::Hit h = world::line(FVector{x, y, a[4]}, FVector{x, y, a[4] - 1500}, "Pawn");
+        o += std::format("{:.0f} {:.1f} {} n.z={:.2f}\n", t, h.hit ? h.point.z : -99999.0f, h.actor ? ue::name_of(h.actor) : "-", h.normal.z);
+      }
+      return o;
+    });
     // dev: the probing part of one tick, averaged (on the game thread: probe() shares g_people with tick)
     if (dev::has(r, "time")) return dev::on_game([n = std::clamp((int)dev::arg_num(r, "time", 100), 1, 2000)] {
       FVector p;
@@ -207,6 +250,6 @@ void install() {
       return std::format("{:.1f} us per tick ({} ticks): ahead={:.0f} right={:.0f} behind={:.0f} left={:.0f}\n",(double)(t1.QuadPart - t0.QuadPart) * 1e6 / (double)f.QuadPart / n, n, d[0], d[1], d[2], d[3]);
     });
     return status();
-  }, "?on=1|0&range=cm&vol=0..1&h0=cm&deg=&time=N wall tones state, tuning, probe cost");
+  }, "?on=1|0&range=cm&vol=0..1&h0=cm&deg=&step=cm&rise=cm&time=N&from=x,y,z,yaw&prof=x0,y0,x1,y1,ztop wall tones state, tuning, probe cost");
 }
 }  // namespace p3a::walltones

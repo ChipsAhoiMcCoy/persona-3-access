@@ -18,6 +18,7 @@
 - Every thing repeats a quarter more slowly than before at each distance: almost seven times a second at 1 m, about once a second at 10 m.
 
 ### Sound
+- Stairs no longer sound like a wall. The wall tones read the bottom of a staircase as a wall right there, in either mode: the stairs up out of a Tartarus floor, and low steps such as the ones your party stands on near the top of Tartarus. They now follow the steps up.
 - If you muted the game in Windows' volume mixer, starting it un-muted it a few seconds in. Your mute now stays; only a mute the mod itself left behind is lifted.
 - The mod's sounds (wall tones, sonar, cues, audio description) came back only after a restart when the output device went away, or when there was none at launch, such as a Bluetooth headset that connected late. They now come back on their own within a few seconds of the device returning.
 - When a movie was skipped back or forward during a description, the description stopped with a click. It now fades out under the next one.
