@@ -13,7 +13,7 @@ constexpr float kMaxIldDb = 12.0f;                  // finite: the far ear keeps
 constexpr float kPanExponent = 0.82f;               // steepens the pan near the centre
 constexpr float kShadowCornerHz = 1500.0f;
 constexpr float kShadowMaxDb = 8.0f;
-constexpr float kRearCornerHz = 3000.0f;
+constexpr float kRearCornerHz = 1200.0f;   // 3000 at first: most sonar sounds have little up there, so behind was under 1 dB darker
 constexpr float kRearMaxCutDb = 10.0f;
 }  // namespace
 

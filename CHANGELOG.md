@@ -20,6 +20,8 @@
 - If you muted the game in Windows' volume mixer, starting it un-muted it a few seconds in. Your mute now stays; only a mute the mod itself left behind is lifted.
 - The mod's sounds (wall tones, sonar, cues, audio description) came back only after a restart when the output device went away, or when there was none at launch, such as a Bluetooth headset that connected late. They now come back on their own within a few seconds of the device returning.
 - When a movie was skipped back or forward during a description, the description stopped with a click. It now fades out under the next one.
+- In stereo sound placement, something close beside you now sounds from that side: a door 1 m to your right was placed less than halfway right, less than one 10 m away.
+- Things behind you are easier to tell from things ahead. In the stereo placement the darkening behind now reaches the sonar's sounds; before, most of them sounded almost the same ahead and behind. In top-down mode, sounds to the south now play lower too, with "Lower pitch behind you" on, as in the camera mode.
 
 ### Points of interest
 - Empty spots where the game can place a character were listed as "Person" when nobody stood there (three on the dorm's third floor, a step from the hallway), and walking to one stalled. They are no longer listed.

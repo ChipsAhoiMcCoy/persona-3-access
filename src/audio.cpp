@@ -110,7 +110,8 @@ uint32_t g_limited_blocks = 0;   // dev: blocks in which the limiter worked
 // pan instead and are counted for /audio.
 bool g_hrtf_on = false;
 int g_spatial = 0;   // settings::SpatialModel
-constexpr float kPanWidthM = 3.0f;   // Dark Vision's 10 ft: inside it the pan follows the sideways offset
+constexpr float kPanWidthM = 1.0f;   // inside it the pan follows the sideways offset. Dark Vision's 10 ft (3 m) panned a door 1 m to
+                                     // the right only 40% right, less than one 10 m away; 1 m still keeps a thing walked past from jumping ear to ear
 uint32_t g_hrtf_fallbacks = 0;
 bool g_odd_block_logged = false;
 constexpr int kMaxBlock = 4096;

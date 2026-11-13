@@ -6,7 +6,6 @@
 #include "devserver.h"
 #include "log.h"
 #include "speech.h"
-#include "topdown.h"
 #include "world.h"
 #include <windows.h>
 #include <algorithm>
@@ -73,8 +72,9 @@ audio::Pcm cue(int kind, bool brief = false) {
 struct Voice { audio::Pcm pcm; float rate = 1.0f; float len_s = 0.2f; };
 Voice voice(int kind, const audio::Spot& at, bool whole = false) {
   Voice v;
-  // Lower behind, in the camera's frame only: top-down, behind is the south, darkened by the stereo model instead.
-  v.rate = at.ahead < -0.2f && settings::on(settings::BehindPitch) && !topdown::active() ? kBehindRate : 1.0f;
+  // Lower behind: in the top-down mode too (behind is the south there). The stereo model's darkening behind barely reaches
+  // the exit's thump or the door's knocks, so without it they sounded the same north and south.
+  v.rate = at.ahead < -0.2f && settings::on(settings::BehindPitch) ? kBehindRate : 1.0f;
   auto pick = [&](bool brief) {
     v.pcm = cue(kind, brief);
     v.len_s = v.pcm ? (float)v.pcm->size() / (float)audio::sample_rate() / v.rate : 0.2f;

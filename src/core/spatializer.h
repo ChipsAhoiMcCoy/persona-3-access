@@ -6,7 +6,7 @@
 // (the camera mode); `east` is to its right, `north` ahead. Independent cues:
 //  - east/west: a constant-power pan whose level difference is capped (12 dB, the far ear keeps signal), the
 //    interaural time difference (Woodworth head, up to 0.66 ms) and a far-ear high-shelf cut (head shadow);
-//  - north/south: things behind get a high-shelf cut at 3 kHz, down to -10 dB due south. Ahead is untouched; a
+//  - north/south: things behind get a high-shelf cut at 1.2 kHz, down to -10 dB due south. Ahead is untouched; a
 //    shelf, not a lowpass, so a bright cue is quieter behind but never gone;
 //  - distance: the caller's own gain curve (nothing here).
 // Engine-free.

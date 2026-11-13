@@ -23,7 +23,6 @@
 #include "settings.h"
 #include "speech.h"
 #include "watch.h"
-#include "topdown.h"
 #include "world.h"
 #include <windows.h>
 #include <cmath>
@@ -264,7 +263,7 @@ void tick() {
   if (now < next) return;
   float closeness = 1.0f - nearest->dist / kPulseRange;
   bool hunted = hunting(nearest->actor);
-  bool behind = std::cos(world::bearing(me, nearest->at) * kPi / 180.0f) < -0.2f && settings::on(settings::BehindPitch) && !topdown::active();
+  bool behind = std::cos(world::bearing(me, nearest->at) * kPi / 180.0f) < -0.2f && settings::on(settings::BehindPitch);
   // Hunting the hero: higher, louder and nearly twice as fast.
   audio::signal((int)SignalCue::Shadow, 1.0f + 0.8f * closeness + (hunted ? 0.3f : 0.0f), world::spot(me, nearest->at),
                 (behind ? 0.7f : 1.0f) * (hunted ? 1.3f : 1.0f));

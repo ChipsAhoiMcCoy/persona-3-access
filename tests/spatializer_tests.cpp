@@ -1,4 +1,5 @@
 #include "doctest.h"
+#include "core/sonar_cues.h"
 #include "core/spatializer.h"
 #include <cmath>
 #include <vector>
@@ -73,4 +74,27 @@ TEST_CASE("Shelf: zero gain passes through, a cut lowers highs but not lows") {
   Shelf ny; ny.set(3000, -10, 48000);
   for (int i = 0; i < 2000; ++i) y = ny.run(i % 2 ? 1.0f : -1.0f);
   CHECK(std::fabs(y) == doctest::Approx(std::pow(10.0f, -0.5f)).epsilon(0.05));
+}
+
+// Each sonar sound behind is quieter than ahead by enough to hear (the stereo model's only front/back cue in the
+// top-down mode once the pitch is the same): rendered through a SpatialVoice due north and due south, 2 m away.
+static float ear_energy(const std::vector<float>& pcm, float north) {
+  SpatialVoice v;
+  SpatialCue c = spatial_cue(0, north, 1, 48000);
+  std::vector<float> l(pcm.size() + 64, 0.0f), r(pcm.size() + 64, 0.0f), in(pcm);
+  in.resize(l.size(), 0.0f);
+  v.process(in.data(), (int)in.size(), c, 48000, l.data(), r.data());
+  float e = 0;
+  for (size_t i = 0; i < l.size(); ++i) e += l[i] * l[i] + r[i] * r[i];
+  return e;
+}
+TEST_CASE("SpatialVoice: the sonar's bright sounds are darker behind by at least 2 dB") {
+  // At a 3 kHz corner the person, event and exit sounds were under 1 dB apart. The exit's thump and the door's knocks
+  // are mostly lows that no shelf reaches: behind, those two are told by the lower pitch (sonar.cpp) alone.
+  for (int k = 0; k < (int)SonarCue::Count; ++k) {
+    std::vector<float> pcm = sonar_cue((SonarCue)k, 48000);
+    float db = 10.0f * std::log10(ear_energy(pcm, 2) / ear_energy(pcm, -2));
+    CHECK(db > 0.0f);
+    if ((SonarCue)k != SonarCue::Exit && (SonarCue)k != SonarCue::Door) CHECK(db >= 2.0f);
+  }
 }
