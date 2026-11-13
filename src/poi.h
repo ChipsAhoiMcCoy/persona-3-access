@@ -21,7 +21,7 @@ std::string describe(const Poi& p);                     // "Iwatodai Station, 6 
 // Exits -> Doors -> People -> Shops -> Objects -> Events -> Shadows, skipping empty ones. selected() re-resolves the object every call.
 void next(int delta);
 void next_category(int delta);   // selects and speaks the new category's nearest
-void announce_list();            // the current category (or the next with something) and its nearest, selected
+void announce_list();            // the current category (or the next with something): the selection still in it, else its nearest
 bool selected(Poi& out);
 bool in_selected_category(const Poi& p);   // p belongs to the category the review keys are on
 std::string hit_name(ue::UObject* hit);   // a hit actor's display name ("Bed"), or ""

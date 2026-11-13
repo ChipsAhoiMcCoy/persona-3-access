@@ -59,7 +59,7 @@ The game's own controls work as usual (keyboard or controller). The mod adds the
 ### On a controller
 
 Hold both triggers (LT and RT) for the mod's keys. The moment both are down you hear a tick and, in the field, the
-nearest point of interest of the current category. While you hold them the game ignores the buttons you press:
+point of interest you have selected, or the nearest of the current category when you have none. While you hold them the game ignores the buttons you press:
 
 - D-pad left / right: Previous / next category of points of interest, read from its nearest
 - D-pad up / down: Previous (nearer) / next (farther) point of interest in the category
@@ -199,7 +199,7 @@ one, "Twilight Fragment crystal"; one that is picked up or broken leaves the lis
 to press: a Tartarus Gatekeeper's floor lists "Gatekeeper" until it is beaten) and, in Tartarus, Shadows. Each
 category lists its points nearest first, and a category with nothing in it is skipped. The sonar has one sound for
 each of the first six, and one more for Twilight Fragments
-(see Sounds). Points are spoken with their name, distance, clock direction and position: "Iwatodai Station, 6 meters, 2 o'clock, 1 of 3". The category is said first when you change category or open the controller layer.
+(see Sounds). Points are spoken with their name, distance, clock direction and position: "Iwatodai Station, 6 meters, 2 o'clock, 1 of 3". The category is said first when you change category or open the controller layer. Opening the layer keeps your selection, so A walks to the point you chose.
 12 o'clock is straight ahead (where pushing forward walks), 3 o'clock is to your right.
 With the sonar on, each point you land on in the list also plays its kind's sound once from where it is, however far.
 

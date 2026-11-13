@@ -1,6 +1,7 @@
 // The points-of-interest list the review keys walk: its categories, the selection, and what each key says.
-// Categories (left and right) each hold their points of interest nearest first (up and down). Changing category, or
-// opening the controller's mod layer, selects the nearest; an empty category is skipped.
+// Categories (left and right) each hold their points of interest nearest first (up and down). Changing category
+// selects the nearest; opening the controller's mod layer says the selection, or selects the nearest when there is
+// none; an empty category is skipped.
 // Read here: the selected actor's own place (K2_GetActorLocation) and bHidden; everything else comes from poi::scan.
 #include "poi_internal.h"
 #include "core/poi_text.h"
@@ -77,16 +78,20 @@ static std::vector<Poi> settle(const std::vector<Poi>& all, int delta, bool move
   return in_category(all, g_cat);
 }
 
-// "Exits: Iwatodai Station, 6 meters, 2 o'clock, 1 of 3", the nearest selected.
+// "Exits: Iwatodai Station, 6 meters, 2 o'clock, 1 of 3": list[i] selected, said after its category.
+static void announce_at(const std::vector<Poi>& list, size_t i) {
+  g_sel = list[i].obj;
+  g_sel_poi = list[i];
+  // A story beat is named "Event: Jin"; after the category's own name it said "Events: Event: Jin" (Adamah, 2026-11-13).
+  Poi said = list[i];
+  if (std::string head = std::string(strings::kPoiEvent) + ": "; g_cat == Cat::Events && said.name.starts_with(head)) said.name.erase(0, head.size());
+  speech::speak(std::format("{}: {}, {} {} {}", cat_name(g_cat), describe(said), i + 1, strings::kOf, list.size()), true);
+  sonar::selected(list[i]);   // its sound, from where it is
+}
+
 static void announce_nearest(const std::vector<Poi>& list) {
   if (list.empty()) { speech::speak(strings::kNothingNearbyFull, true); g_sel = {}; return; }
-  g_sel = list[0].obj;
-  g_sel_poi = list[0];
-  // A story beat is named "Event: Jin"; after the category's own name it said "Events: Event: Jin" (Adamah, 2026-11-13).
-  Poi said = list[0];
-  if (std::string head = std::string(strings::kPoiEvent) + ": "; g_cat == Cat::Events && said.name.starts_with(head)) said.name.erase(0, head.size());
-  speech::speak(std::format("{}: {}, 1 {} {}", cat_name(g_cat), describe(said), strings::kOf, list.size()), true);
-  sonar::selected(list[0]);   // its sound, from where it is
+  announce_at(list, 0);
 }
 
 // The list is of the field the player is walking: in a menu, a conversation, a battle or a scene its keys say so.
@@ -117,7 +122,14 @@ void next_category(int delta) {
   announce_nearest(settle(scan(), delta, true));
 }
 
-void announce_list() { announce_nearest(settle(scan(), 1, false)); }
+// The controller's layer opening: the selection, where it still is in the list. It selected the nearest every time, so
+// a point chosen, the triggers let go, then A (walk) walked to the nearest instead (Adamah, 2026-11-13).
+void announce_list() {
+  auto list = settle(scan(), 1, false);
+  for (size_t i = 0; i < list.size(); ++i)
+    if (list[i].obj == g_sel) { announce_at(list, i); return; }
+  announce_nearest(list);
+}
 
 // The selection as it is now, from its own actor: a rescan could miss it (an Event trigger is only listed when nothing
 // else is near) and paid a navmesh query per far-off hit actor on every read.
