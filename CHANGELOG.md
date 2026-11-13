@@ -50,6 +50,7 @@
 - Letter keys no longer jump to a setting by name in the mod settings menu; they do nothing there. The arrows, Home and End, Tab and the rest are unchanged.
 
 ### Calendar
+- F on a day (the part-time jobs) read only the highlighted job's description, sometimes with the day's "Nothing in particular" still fading behind it. Each job is now read by name with its place in the list and "unavailable" when that day does not take it: "Chagall Café (unavailable), 1 of 2. Serve coffee that boosts a person's charm! Time: Night ...".
 - When the story moved to another day with only the time-of-day screen (the epilogue's jump to March), just "After School" was said. The new date is now read with it.
 
 ### Less said twice, fewer keys read out

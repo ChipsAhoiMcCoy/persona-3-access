@@ -24,12 +24,13 @@
 #include "core/strings.h"
 #include "core/text_clean.h"
 #include "calendar.h"
-#include "textcap.h"
+#include "core/speech_text.h"
 #include <algorithm>
 #include <chrono>
 #include <format>
 #include <iterator>
 #include <unordered_map>
+#include <vector>
 
 namespace p3a::screens {
 using namespace ue;
@@ -118,14 +119,37 @@ class CampCalendar : public MenuScreen {
     }
     return out;
   }
-  // The day's plans list (mode 1) is read as drawn.
-  std::string plans(unsigned frames = 12) {
-    std::vector<textcap::Item> cols;
-    for (auto& t : textcap::snapshot(frames)) if (t.source == 2 && t.x > 1000 && t.y > 550 && (t.color & 0xff) && core::has_words(t.text)) cols.push_back(t);
-    std::sort(cols.begin(), cols.end(), [](auto& a, auto& b) { return a.y < b.y; });
-    std::string out;
-    for (auto& t : cols) if (out.find(core::clean_text(t.text)) == std::string::npos) out += (out.empty() ? "" : ", ") + core::clean_text(t.text);
-    return out;
+  // F on a day opens the part-time jobs (mode 1, "Which plans do you want to view?"): cards drawn as pictures, the
+  // highlighted one's Info under them. The cards are the draw's unlocked jobs (+0x1E0, rows as jobs() reads them)
+  // in the order its draw (FUN_1412be010) gives them: a copy sorted by FUN_1412addc0(rows, n, 0, &pred), the game's
+  // own sort, run here on a copy as well. The draw's +0x1A8 is the highlighted card (the actor's ListCursor written
+  // there on each move); its Info is BMD_ArbeitHelp's dialog HelpMSGLabel (the job's time, pay and place). A job the
+  // cursor's day does not take is drawn grey (the light check as jobs()).
+  std::string job_card() {
+    uint8_t* d = (uint8_t*)draw_.get();
+    uint8_t* c = cursor_obj();
+    uint8_t* cal = fn<uint8_t* (*)(char)>(0x10511c0)(1);
+    if (!d || !c || !cal) return {};
+    uint8_t* src = *(uint8_t**)(d + 0x1E0);
+    int n = i32(d, 0x1E8), sel = i32(d, 0x1A8);
+    if (!src || n <= 0 || n > 8 || sel < 0 || sel >= n) return {};
+    std::vector<uint8_t> rows(src, src + n * 0x18);
+    uint8_t pred = 0;
+    fn<void (*)(void*, int, char, void*)>(0x12addc0)(rows.data(), n, 0, &pred);
+    uint8_t* row = rows.data() + sel * 0x18;
+    int flag = i32(row, 8), label = i32(row, 0);
+    uint32_t job = flag == 0x15 ? 0 : flag == 0x1B ? 2 : 1;
+    int held = i32(cal, 0xC0);
+    *(int32_t*)(cal + 0xC0) = i32(c, 0xDC);
+    bool lit = fn<bool (*)(void*, uint32_t, char)>(0x104bf20)(nullptr, job, 1);
+    *(int32_t*)(cal + 0xC0) = held;
+    std::string name = label >= 0 && label < (int)std::size(strings::kJobs) ? strings::kJobs[label] : "";
+    if (!lit) name += std::format(" ({})", strings::kUnavailable);
+    auto f = bmdfile::load("BMD_ArbeitHelp");
+    std::string info = f && f->ok && label >= 0 && label < (int)f->dialogs.size() && !f->dialogs[label].pages.empty()
+                           ? bmdfile::text(f->dialogs[label].pages[0]) : std::string();
+    std::string out = core::position(name, sel + 1, n);
+    return info.empty() ? out : out + ". " + info;
   }
  public:
   CampCalendar() {
@@ -157,14 +181,14 @@ class CampCalendar : public MenuScreen {
   }
   const char* id() const override { return "camp_calendar"; }
   int priority() const override { return 17; }
-  // F on a day with plans opens them as a list on the right (mode 1): the game's keys; the plans are read as they change.
+  // The jobs list (mode 1, job_card) keeps the game's keys; the highlighted card is read as it changes.
   bool active() override { uint8_t* a = actor(); return a && cursor_obj(); }
   bool holds_keys() override { uint8_t* a = actor(); return a && i32(a, 0x2A8) == 0; }
   std::string plans_said_;
   void on_tick() override {
     uint8_t* a = actor();
     if (!a || i32(a, 0x2A8) != 1) { plans_said_.clear(); return; }
-    std::string p = plans();
+    std::string p = job_card();
     if (!p.empty() && p != plans_said_) { plans_said_ = p; say(p, true); }
   }
   // Today's absolute day (GetNowTotalDay counts as the cursor does), read on entry: the date holds while it is open.

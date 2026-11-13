@@ -374,7 +374,7 @@ F1 always gives the current screen's keys. These are in its hints but not descri
   orders (Direct Commands, Act Freely, Full Assault, Conserve SP, Heal/Support). Rush (Tab) lets the party fight on
   its own.
 - The camp Calendar: the month as the game lays it out: left and right move a day, up and down a week, each day
-  read with its weekday, then its plans; Q and E change month; F on a day with plans reads them. The camp Persona menu shows one Persona at
+  read with its weekday, then its plans; Q and E change month; F opens the part-time jobs: up and down read each job with its place in the list, "unavailable" when that day does not take it, and its time, pay and place. The camp Persona menu shows one Persona at
   a time as its status page, read as lines to move through, top to bottom, in sections that Tab and Shift+Tab (RT and
   LT) jump between: the Persona with its arcana and level ("equipped" on the one you have on; Space on this line equips
   it) and the EXP to its next level; Stats, one per line ("Strength 54" to "Luck 23"); Skills, each with its cost and
