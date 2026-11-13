@@ -9,6 +9,7 @@
 // calls it again next frame with +0x22c counted up (FUN_141274cb0). Non-zero: done, its arguments are popped.
 // Dev: `/flow/run` calls any command as a script would, from a context of its own, until it finishes.
 #include "flow.h"
+#include "area.h"
 #include "devserver.h"
 #include "log.h"
 #include "seh.h"
@@ -101,6 +102,14 @@ std::string run(const std::string& name, const std::string& args) {
     i = k + 1;
   }
   if ((int)vals.size() != e.argc) return std::format("{} takes {} argument{}, got {}\n", name, e.argc, e.argc == 1 ? "" : "s", vals.size());
+  // A field change while the last one is still settling can crash the game in its follower placement (area.cpp,
+  // field_busy). A script never does that: its next command waits for the field. Refused, so the caller waits for
+  // /area/ready.
+  if (name == "CALL_FIELD") {
+    for (auto& j : jobs())
+      if (j->text.starts_with("CALL_FIELD(") && !j->done) return "refused: a CALL_FIELD is still running\n";
+    if (std::string why = area::field_busy(); !why.empty()) return "refused: " + why + "\n";
+  }
   auto j = std::make_unique<Job>();
   j->fn = (Command)e.fn;
   j->ctx.reset(new uint8_t[kContextSize]());

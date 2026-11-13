@@ -38,6 +38,7 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib.parse
 import urllib.request
 import urllib.error
 
@@ -641,18 +642,58 @@ def gwork(fn, **args):
     return http(f"/ue/call?cdo=GlobalWorkBpLib&fn={fn}" + (f"&args={a}" if a else ""))
 
 
-def field(major, minor, entry=1, secs=40):
-    """Load a field area (CALL_FIELD) and wait until /area names it."""
-    http(f"/area/goto?major={major}&minor={minor}&entry={entry}")
+def field_wait(ready, secs):
+    """Wait (server side) until /area/ready says the field has settled (ready=True: the field manager idle, no field
+    event, the hero placed) or has left that state (ready=False: a field change was taken). Returns the last answer."""
     t0 = time.time()
-    while time.time() - t0 < secs:
-        time.sleep(1.5)
-        a = http("/area", check=False)
-        here = a.startswith(f"ids {major} {minor} ") or major == 299 and f", floor {minor}'" in a  # Tartarus blocks: 'Arqa, floor 50'
-        if here and "HTTP" not in a:   # a Tartarus floor reports ids 0 0
-            time.sleep(2)   # the hero is placed and the points of interest scanned a moment after the level is up
-            return True
-    return False
+    while True:
+        left = secs - (time.time() - t0)
+        r = http(f"/wait?on=/area/ready&match=ready&not={0 if ready else 1}&timeout={max(min(left, 10), 0.1):.1f}",
+                 check=False)
+        last = r.split("\n", 1)[1].strip() if "\n" in r else r.strip()
+        if r.startswith("matched") or left <= 0:
+            return last
+
+
+def field_settle(secs):
+    """Wait until the field has settled, pressing Enter on the message pages its init script or field event waits on
+    (a Tartarus floor's arrival line). A choice list is left to the caller. Returns /area/ready's last answer."""
+    t0 = time.time()
+    while True:
+        left = secs - (time.time() - t0)
+        last = field_wait(True, min(left, 3))
+        if last == "ready" or left <= 0:
+            return last
+        m = http("/msg", check=False)
+        page = re.search(r"page=0x[0-9a-f]+ '(.*)'\s*$", m, re.M)
+        if "sel index" in m or not page or ("init script" not in last and "field event" not in last):
+            continue
+        print(f"  (advancing: {page.group(1)})")
+        http("/key?k=enter&ms=120")
+        http(f"/wait?on=/msg&match={urllib.parse.quote(page.group(1)[:40])}&not=1&timeout=5", check=False)
+
+
+def field(major, minor, entry=1, secs=40):
+    """Load a field area (CALL_FIELD) once the current one has settled, and wait until the new one has: a CALL_FIELD
+    while the last field's init script or field event still runs crashed the game (/area/ready, src/area.cpp). The
+    arrival messages that hold a field's init script are advanced."""
+    last = field_settle(secs)
+    if last != "ready":
+        print(f"  the field has not settled ({last}): finish its scene or choice first")
+        return False
+    r = http(f"/area/goto?major={major}&minor={minor}&entry={entry}")
+    if not r.startswith("CALL_FIELD("):
+        print(f"  {r.strip()}")
+        return False
+    if field_wait(False, secs) == "ready":
+        print("  the field change was not taken")
+        return False
+    last = field_settle(secs)
+    a = http("/area", check=False)
+    here = a.startswith(f"ids {major} {minor} ") or major == 299 and f", floor {minor}'" in a  # Tartarus blocks: 'Arqa, floor 50'
+    if last != "ready":
+        print(f"  the new field has not settled ({last})")
+    return last == "ready" and here and "HTTP" not in a   # a Tartarus floor reports ids 0 0
 
 
 def scenario(name):

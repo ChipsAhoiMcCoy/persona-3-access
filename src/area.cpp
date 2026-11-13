@@ -98,7 +98,40 @@ void describe() {
   speech::speak(d.empty() ? std::string(strings::kNoAreaDescription) + " " + poi::area_name() : d, true);
 }
 
+// Field change state (P3R.exe 0x69ce3439, read 2026-11-12). UFldManagerSubsystem +0x48 holds the field manager's
+// current state: an 8-byte object whose vtable's second slot is the step it runs each frame. Idle in a field is the
+// state with vtable rva 0x42b7548 (FUN_1411b52d0: waits for a field-change request bit in +0x40). A CALL_FIELD walks
+// it through the loading states to 0x42b76c8 (FUN_1411b4bf0), which waits for the floor's init script
+// (mInitScrManager_) and only then goes back to idle. Tartarus' init script (BF_FldInitScript_299_all) starts a field
+// event there on a gatekeeper floor above the highest one reached: an AFldFieldEventActor (mFieldEventActor_) whose
+// last state (vtable 0x42b7480, FUN_14a3c2880; the actor's state is its +0x288) places the followers around
+// mPlayerComp_. A CALL_FIELD in that window tore the hero down first, and the follower placement (FUN_14113cf00) read
+// +0xA0 of the null player (P3R.exe+0x113cf1b): `jump --set field=299,49` then `field=299,50`, 2026-11-12. The dev
+// routes refuse a CALL_FIELD until the field is back in idle with no field event and the hero placed.
+std::string field_busy() {
+  static const int sub_id = watch::want("FldManagerSubsystem");
+  UObject* sub = watch::get(sub_id);
+  if (!sub) return "no field manager";
+  if (auto ev = field<UObject*>(sub, "mFieldEventActor_"); ev && *ev) return "a field event is running";
+  if (auto pc = field<UObject*>(sub, "mPlayerComp_"); !pc || !*pc) return "the hero is not placed";
+  if (!ue::known_build()) return "";   // the state's vtable is this build's
+  uintptr_t vt = 0;
+  if (!guarded([&] { if (auto st = *(uint8_t**)((uint8_t*)sub + 0x48)) vt = *(uintptr_t*)st; })) return "the field state is unreadable";
+  uintptr_t rva = vt ? vt - scan::exe_base() : 0;
+  if (rva == 0x42b7548) return "";
+  // 0x42b76c8 / 0x42b7718 (FUN_1411b4bf0 / FUN_1411b4590): the area's init script runs (a floor's arrival message waits
+  // for a press there: Fuuka's on Tartarus 50, 2026-11-12).
+  if (rva == 0x42b76c8 || rva == 0x42b7718) return "its init script is running";
+  return std::format("the field is changing (state {:#x})", rva);
+}
+
 void install() {
+  dev::route("/area/ready", [](const dev::Request&, int&) {
+    return dev::on_game([] {
+      std::string why = field_busy();
+      return why.empty() ? std::string("ready\n") : "busy: " + why + "\n";
+    });
+  }, "whether the field has settled after a field change (a CALL_FIELD before then can crash the game) (dev)");
   dev::route("/area", [](const dev::Request&, int&) {
     return dev::on_game([] {
       std::vector<std::string> levels;
