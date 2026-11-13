@@ -20,12 +20,9 @@
 #include "seh.h"
 #include "social.h"
 #include "speech.h"
-#include "textcap.h"
 #include "world.h"
 #include "core/text_clean.h"
 #include "ue/scan.h"
-#include <algorithm>
-#include <cmath>
 #include <vector>
 #include <format>
 
@@ -115,34 +112,40 @@ class TownMapScreen : public MenuScreen {
     if (!others.empty()) s += (s.empty() ? "" : ". ") + std::string(strings::kTownOthers) + ": " + others;
     return s;
   }
-  // F (town info): the destination's shops and places in two columns at the bottom (y >= 700, x 123 and 533;
-  // dimmed, alpha 0x99, where it is not open now; measured 2026-10-28). The list is built and drawn natively
-  // (exe+0x14431c0 -> FUN_1411d8fc0; the arrays at +0x5C8 are emptied once drawn), so its words are the drawn ones.
-  // It is read once it has settled (2026-11-03): step 6 (+0x294), the info's own step +0x3EB4 at 0 (3 while it
-  // leaves), the transition +0x3EC0 run down to 0 (0.3 s from a move or F), and every row at its column with its
-  // final colour (the rows slide in from the left and fade for a few frames more; mid-fade an open shop read as
-  // closed).
+  // F (town info): the destination's shops and places, as the game draws them (FUN_141447000). The rows are the
+  // destination's FTownMapInfoTable rows (LocationNo) of the UDatTownMapInfo subsystem's m_aTownMapInfoList (the
+  // actor copies them per destination to +0x568, exe+0x14433b0), drawn by CategoryNo 0 to 8, in table order within
+  // one. A row's name is its TextLabel's Text in m_aNameList (the dorm's one row is "NONE", drawn as it is); it is
+  // dimmed where exe+0x120e430(subsystem, row) says it is not open now (the row's Noon or Night for the time of day,
+  // and its HideFlag). Read while the info is up (step 6). (+0x3EB4, once taken for the info's own step, is a 0-3
+  // frame counter stepped every 0.1 s.)
+  Finder dat_{"DatTownMapInfo"};
   std::string town_info() {
-    uint8_t* a = (uint8_t*)map_.get();
-    if (!a || step() != 6 || *(int32_t*)(a + 0x3EB4) != 0 || *(float*)(a + 0x3EC0) != 0.0f) return {};
-    std::vector<textcap::Item> rows;
-    for (auto& t : textcap::snapshot(6)) {
-      if (t.source != 2 || t.y < 700 || !core::has_words(t.text)) continue;
-      if (std::fabs(t.x - 123) >= 30 && std::fabs(t.x - 533) >= 30) continue;
-      uint32_t alpha = t.color & 0xff;
-      if ((std::fabs(t.x - 123) >= 0.5f && std::fabs(t.x - 533) >= 0.5f) || (alpha != 0xff && alpha != 0x99)) return {};   // still sliding or fading
-      rows.push_back(t);
-    }
-    if (rows.size() < 2) return {};
-    std::sort(rows.begin(), rows.end(), [](auto& a, auto& b) { return a.y != b.y ? a.y < b.y : a.x < b.x; });
+    int dest = read();
+    UObject* dat = dat_.get();
+    if (dest < 0 || !dat || step() != 6 || !ue::known_build()) return {};
+    TableRows rows = table_rows(dat, "m_aTownMapInfoList"), names = table_rows(dat, "m_aNameList");
+    if (!rows || !names) return {};
+    int loc = offset_of(rows.row, "LocationNo"), cat = offset_of(rows.row, "CategoryNo"),
+        label = offset_of(rows.row, "TextLabel"), name_label = offset_of(names.row, "TextLabel"),
+        text = offset_of(names.row, "Text");
+    if (loc < 0 || cat < 0 || label < 0 || name_label < 0 || text < 0) return {};
+    auto open = (bool (*)(void*, void*))(scan::exe_base() + 0x120e430);
     std::string s;
-    for (auto& r : rows) {
-      std::string n = core::clean_text(r.text);
-      if (s.find(n) != std::string::npos) continue;   // drop shadows
-      if ((r.color & 0xff) != 0xff) n += std::string(" (") + strings::kUnavailable + ")";
-      s += (s.empty() ? "" : ", ") + n;
-    }
-    return std::string(strings::kTownInfo) + ": " + s;
+    guarded([&] {
+      for (int c = 0; c < 9; ++c)
+        for (int i = 0; i < rows.num; ++i) {
+          uint8_t* r = rows.at(i);
+          if (*(int32_t*)(r + loc) != dest || *(int32_t*)(r + cat) != c) continue;
+          std::string want = to_utf8(*(FString*)(r + label)), n;
+          for (int j = 0; j < names.num && n.empty(); ++j)
+            if (to_utf8(*(FString*)(names.at(j) + name_label)) == want) n = core::clean_text(to_utf8(*(FString*)(names.at(j) + text)));
+          if (n.empty()) continue;
+          if (!open(dat, r)) n += std::string(" (") + strings::kUnavailable + ")";
+          s += (s.empty() ? "" : ", ") + n;
+        }
+    });
+    return s.empty() ? s : std::string(strings::kTownInfo) + ": " + s;
   }
   // Moves the game's cursor the way its own move does (see the top): the cursor, the town info and its camera.
   bool move_to(int to) {

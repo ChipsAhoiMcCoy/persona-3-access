@@ -43,6 +43,9 @@
 ### Lists
 - A "LIST" choice longer than its window (the Velvet Room's Talk, 16 topics) listed only the rows on screen as it opened: the topics further down could not be reached. The whole list is read now.
 
+### Town map
+- F (town info) now reads a destination's shops and places from the game's own list instead of the text on screen, in the order the panel shows them, with the ones closed now marked "unavailable". It is said as soon as the panel comes up or the cursor moves, without waiting for the panel's animation.
+
 ### Shopping
 - The TV shopping show (Sunday afternoons, the TV in your room) has now been played through with the mod: the show, the Buy / Don't buy choice and the purchase are all read.
 
