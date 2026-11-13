@@ -40,6 +40,9 @@
 - The last choice of the ending opened with no answer picked and Enter did nothing until Left or Right was pressed. The first answer is now picked as it opens, and Enter takes it.
 - On that same choice, Left or Right changed the game's answer while the mod kept reading the first one, so Enter could take an answer you never heard. The mod now follows the game's answer (not yet heard in the game).
 
+### Lists
+- A "LIST" choice longer than its window (the Velvet Room's Talk, 16 topics) listed only the rows on screen as it opened: the topics further down could not be reached. The whole list is read now.
+
 ### Shopping
 - The TV shopping show (Sunday afternoons, the TV in your room) has now been played through with the mod: the show, the Buy / Don't buy choice and the purchase are all read.
 

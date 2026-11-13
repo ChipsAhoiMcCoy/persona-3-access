@@ -15,7 +15,6 @@
 #include "core/text_clean.h"
 #include "items.h"
 #include "msg.h"
-#include "textcap.h"
 #include <format>
 #include <vector>
 
@@ -121,17 +120,12 @@ class GenericSelectScreen : public MenuScreen {
     if (!sys) return;
     heading_ = heading(sys);
     auto names = entries(sys);
-    // Locked entries stay in the array (the Velvet Room's Talk holds 15 topics and shows 7): the list is what is
-    // drawn, in array order.
-    int shown = 0;
-    auto drawn = textcap::snapshot(12);
-    for (auto& n : names) {
-      bool on = false;
-      for (auto& t : drawn) if (t.source == 2 && core::clean_text(t.text) == n) on = true;
-      if (!on) break;
-      ++shown;
-    }
-    if (shown > 0) names.resize(shown);
+    // Locked entries stay in the array (the Velvet Room's Talk holds 15 topics and shows 7): the list is its first
+    // entries, as many as the cursor counts. The actor's open (FUN_14146d7c0) sets its ListCursor up with 7 rows on
+    // screen and the system's own count of the entries shown (PSystem vtable +0x298).
+    auto* a = (uint8_t*)actor_.get();
+    int shown = a ? ListCursor(a + 0x2A4).count() : 0;
+    if (shown > 0 && shown < (int)names.size()) names.resize(shown);
     names_ = names;
     items_.clear();
     if (item_list(sys))
