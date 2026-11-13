@@ -13,9 +13,10 @@
 // the key reads at its distance. The old probe (one straight sweep per direction) read any wall that crossed the
 // line, even one you would glide past.
 // In the top-down mode (topdown.cpp) the four directions are the compass, fixed, so a room had a wall within reach in
-// three or four of them all the time and turning no longer quietened them (the user, 2026-11-12). There, as Dark
-// Vision starts its wall tones ("when moving"): they sound only while the player moves the hero (the movement input, so
-// the stick, the keys and the auto-walk alike, even into a wall), reach 3 m, and the direction behind the walk is left out.
+// three or four of them all the time and turning no longer quietened them (the user, 2026-11-12). There they reach 3 m,
+// and while the player moves the hero (the movement input, so the stick, the keys and the auto-walk alike, even into a
+// wall) the direction behind the walk is left out. They used to sound only while moving, as Dark Vision's "when moving";
+// now they play all the time, standing still too, with all four directions (the user, 2026-11-13).
 #include "walltones.h"
 #include "audio.h"
 #include "devserver.h"
@@ -182,14 +183,15 @@ void tick() {
   FVector in{}, vel{};
   g_asking = world::player_input(in) && std::hypot(in.x, in.y) > kAskingInput;
   g_moving = g_asking || (world::player_velocity(vel) && std::hypot(vel.x, vel.y) > kMovingCmS);
-  if (top && !g_moving) { silence(); return; }
   const float range = top ? kTopDownRange : g_range;
-  if (top) {
+  // Top-down: walking, the direction behind the walk is left out; standing still there is no walk, so all four play.
+  const bool leave_behind = top && g_moving;
+  if (leave_behind) {
     const FVector& d = g_asking ? in : vel;
     g_heading = std::atan2(d.y, d.x) * 180.0f / 3.14159265f - topdown::north_yaw();
   }
   for (int i = 0; i < 4; ++i) {
-    if (top && std::fabs(std::remainder(90.0f * i - g_heading, 360.0f)) > kBehindDeg) {
+    if (leave_behind && std::fabs(std::remainder(90.0f * i - g_heading, 360.0f)) > kBehindDeg) {
       g_dist[i] = range;
       audio::set_loop_volume(kToneId + i, 0.0f);
       continue;
