@@ -155,7 +155,7 @@ class MailScreen : public MenuScreen {
     auto* items = field<TArray<uint8_t>>(d, "MailListItems");
     if (!items) return;
     b.begin_stop("mail");
-    if (items->num == 0) b.add_item(ui::ControlId::structural("mail.none"), item([] { return std::string(strings::kMailEmpty()); }));
+    if (items->num == 0) b.add_item(ui::ControlId::structural("mail.none"), item([] { return std::string(strings::kMailEmpty); }));
     for (int i = 0; i < items->num; ++i)
       b.add_item(slot("mail", i), game_item(list_, i, [this, i] {
         UObject* dd = draw_.get();

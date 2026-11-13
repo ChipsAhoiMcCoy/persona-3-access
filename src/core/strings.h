@@ -81,7 +81,7 @@ inline constexpr const char* kTownMapPlaces[] = {"Gekkoukan High School", "Stude
 inline constexpr Hint kFastTravelKeys{"Up and down arrows choose, Space goes, Escape closes.", "Up and down choose, A goes, B closes."};
 inline constexpr const char* kMail = "Mail";
 inline constexpr const char* kMailNew = "new";
-inline constexpr Hint kMailEmpty{"No messages. Escape closes.", "No messages. B closes."};
+inline constexpr const char* kMailEmpty = "No messages";
 inline constexpr Hint kMailKeys{"Up and down arrows choose, Space reads, Escape closes.", "Up and down choose, A reads, B closes."};
 inline constexpr const char* kTownMapWhere = "Where should I go?";   // the game's own entrance-list title, matched
 inline constexpr const char* kAreaMap = "Area map";
