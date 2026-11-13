@@ -20,6 +20,7 @@
 #include "devserver.h"
 #include "input.h"
 #include "log.h"
+#include "nav.h"
 #include "poi.h"
 #include "settings.h"
 #include "sonar.h"
@@ -29,6 +30,7 @@
 #include <windows.h>
 #include <cmath>
 #include <format>
+#include <utility>
 #include <vector>
 
 namespace p3a::topdown {
@@ -64,6 +66,7 @@ std::string g_scan_name;             // dev: its name
 std::vector<poi::Poi> g_scan_list;   // the points around, read every kScanRefreshMs while held
 ULONGLONG g_scan_at = 0;
 bool g_dev_stick = false;
+bool g_dev_go = false;   // dev: as if RT were pressed (/topdown?go=1)
 float g_dev_x = 0, g_dev_y = 0;
 uint64_t g_relocks = 0;
 // A run of frames each needing the camera turned back (3553 in one early session, 2026-11-12, cause unknown): its
@@ -236,7 +239,7 @@ void scan_release() {
   g_scan_list.clear();
 }
 
-void scan_tick() {
+void scan_pick() {
   float x = 0, y = 0;
   if (g_dev_stick) { x = g_dev_x; y = g_dev_y; }
   else input::right_stick(x, y);
@@ -265,6 +268,16 @@ void scan_tick() {
   // What is there, not which way: the stick says that (the user, 2026-11-13).
   speech::speak(std::format("{}, {}", best->name, core::meters(best->dist / 100.0f)), true);
   sonar::stick(best);   // it alone is heard while the stick stays
+}
+
+// RT while the stick is on a point: walk there and use it (check, talk, open), as ' then Space would.
+void scan_tick() {
+  const bool go = input::take_stick_trigger() | std::exchange(g_dev_go, false);
+  scan_pick();
+  if (!go) return;
+  if (!g_scan_held || !g_scan_on.resolve()) { speech::speak(strings::kScanNothing, true); return; }
+  log::writef("topdown: RT on {}: walking there to use it", g_scan_name);
+  nav::walk_to(g_scan_on, g_scan_name, true);
 }
 
 void enter() {
@@ -310,8 +323,10 @@ void install() {
   dev::route("/topdown", [](const dev::Request& r, int&) {
     // /topdown | ?h=cm the listener's height | ?stick=x,y the scan as if the stick were there (?stick=off ends it)
     std::string h = dev::arg(r, "h"), stick = dev::arg(r, "stick");
-    return dev::on_game([h, stick] {
+    const bool go = dev::has(r, "go");
+    return dev::on_game([h, stick, go] {
       if (!h.empty()) g_listener_h = (float)atof(h.c_str());
+      if (go) g_dev_go = true;
       if (stick == "off") g_dev_stick = false;
       else if (size_t c = stick.find(','); c != std::string::npos) {
         g_dev_stick = true;
@@ -336,6 +351,6 @@ void install() {
                          o ? get<int32_t>(o, "KeyState", -1) : -1, g_listener_set, g_listener_h, sp ? *sp : -1.0f, mg ? *mg : -1.0f,
                          g_saved, g_saved_speed, g_saved_margin, g_relocks, world::camera_yaw(), g_scan_held, g_scan_name);
     });
-  }, "?h=cm ?stick=x,y|off the top-down mode: camera lock, listener override, the right stick's scan");
+  }, "?h=cm ?stick=x,y|off ?go=1 (RT: walk to the scan's point and use it) the top-down mode: camera lock, listener override, the right stick's scan");
 }
 }  // namespace p3a::topdown

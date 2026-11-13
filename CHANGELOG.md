@@ -7,10 +7,15 @@
 - Up walks north everywhere. Where the game shows a place from a fixed scene camera of its own (Fountain Square, the station, many rooms), up walked toward that camera's view instead, so sounds slid past sideways while you walked straight.
 - North is the corner map's up in every place: where the game draws a map turned (Port Island Station, your room, the Command Room and others), north turns with it.
 - The right stick scans a direction: push it toward one to hear the nearest point of interest that way, its distance and how far the wall is, and to hear that point's sound from where it is.
+- RT while the right stick is on a point walks there and uses it (checks, talks, opens) once its prompt comes up. That RT never dashes.
 - Directions in the points of interest list are given by the compass ("north-east") in this mode.
 - The wall tones in this mode play only while you move, reach 3 m and leave out the direction behind your walk: fixed to the compass, they had found a wall in three or four directions all the time.
 - In this mode the wall tones went quiet when you walked straight into a wall, just as it was nearest, because the hero had stopped moving. They now play while you push a direction, whether or not the hero gets anywhere.
 - New sound placement, from Dark Vision: left and right by level and by the moment each ear hears a sound, sounds behind darker. The Sound placement setting (Sound) chooses it, Steam Audio's 3D (as before) or a plain pan. It replaces the 3D sound setting.
+
+### Keys
+- Shift+Enter walks to the selected point of interest and uses it once its prompt comes up, after Grim Dark's walk-there-and-use key.
+- Shift+Semicolon says the selected point of interest again from where you stand, with its sound, as Grim Dark's semicolon does.
 
 ### Sonar
 - A door or exit right beside you no longer swings from ear to ear as you walk past it. Its nearest edge sits on the floor, about a metre below where you are heard from, and that height counted toward how far to the side it sounded: an edge a hand's width to your right sounded almost fully right. Left and right now follow the distance across the floor alone, in the stereo sound placement.

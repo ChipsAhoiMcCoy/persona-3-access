@@ -15,6 +15,7 @@
 #include "screens/screen.h"
 #include "screens/battle.h"
 #include "speech.h"
+#include "topdown.h"
 #include "stats.h"
 #include "social.h"
 #include "sonar.h"
@@ -60,8 +61,13 @@ static void screen_keys() {
     // Wherever the detail buffer has something to read (a battle's units, a row with a description kept off it).
     if (screens::battle_details::in_focus()) k += (k.empty() ? "" : " ") + std::string(strings::kDetailKeys());
   }
-  else if (world::player())
-    k = std::string(strings::kFieldKeys()) + " " + (poi::tartarus_floor() > 0 ? std::string(strings::kTartarusKeys()) + " " : std::string()) + strings::kModKeysHint();
+  else if (world::player()) {
+    k = std::string(strings::kFieldKeys()) + " " + (poi::tartarus_floor() > 0 ? std::string(strings::kTartarusKeys()) + " " : std::string());
+    // The mod's walk that uses its point: Shift+Enter, or on a controller RT on the top-down scan's point.
+    if (!strings::pad_hints()) k += std::string(strings::kFieldWalkUseKeys) + " ";
+    else if (topdown::active()) k += std::string(strings::kPadScanKeys) + " ";
+    k += strings::kModKeysHint();
+  }
   if (k.empty()) k = std::string(strings::kNoKeys) + " " + strings::kModKeysHint();
   speech::speak(k, true);
 }
@@ -70,6 +76,22 @@ static void screen_keys() {
 static void pad_layer() {
   audio::signal((int)core::SignalCue::Layer, 0.9f, audio::Spot{});
   if (!screens::current() && !msg::current().blocking && world::player()) poi::announce_list();
+}
+
+// Shift+Enter: the walk, then Space at the point once its prompt is up (Grim Dark's "walk there and use it").
+static void walk_and_use() {
+  if (!world::exploring()) { speech::speak(strings::kNotInField, true); return; }
+  poi::Poi p;
+  if (!poi::selected(p)) { speech::speak(strings::kNothingSelected, true); return; }
+  nav::walk_to(p.obj, p.name, true);
+}
+
+// Shift+semicolon: the selection again, from where the player is now (Grim Dark's ; re-ping of the reviewed thing).
+static void selected_again() {
+  poi::Poi p;
+  if (!poi::selected(p)) { speech::speak(strings::kNothingSelected, true); return; }
+  speech::speak(poi::describe(p), true);
+  sonar::selected(p);
 }
 
 static void walk_selected() {
@@ -99,6 +121,10 @@ void install() {
   bind(VK_OEM_7, Shift, "party", strings::kKeyHelpParty, [] { speech::speak(party::summary(), true); });         // Shift+'
   bind(VK_OEM_7, None, "nav.walk", strings::kKeyHelpWalk, walk_selected);                                        // '
   bind(VK_OEM_1, None, "area", strings::kKeyHelpArea, area::describe);                                           // ;
+  // After Grim Dark's review keys: its ; (the reviewed thing again) and Enter (walk there and use it). Shift, as the
+  // mod's other second keys: Ctrl is the game's (messages, attack).
+  bind(VK_OEM_1, Shift, "poi.again", strings::kKeyHelpPoiAgain, selected_again);                                // Shift+;
+  bind(VK_RETURN, Shift, "nav.use", strings::kKeyHelpWalkUse, walk_and_use);                                     // Shift+Enter
   // The same keys on a controller: hold both triggers, then (input.cpp keeps these buttons from the game meanwhile).
   struct PadKey { const char* name; uint16_t button; };
   const PadKey pad[] = {

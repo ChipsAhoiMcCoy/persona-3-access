@@ -16,6 +16,7 @@
 #include <map>
 #include <intrin.h>
 #include <cstdlib>
+#include <cmath>
 
 namespace p3a::input {
 struct Step { uint32_t mask; float lx, ly; unsigned hold_ms, gap_ms; float ry = 0; };
@@ -93,6 +94,11 @@ void claim_right_stick(bool on, StickClaim who) {
   if (!now) g_rflick = 0;
 }
 int take_right_flick() { return g_rflick.exchange(0); }
+static std::atomic<bool> g_stick_trigger{false};
+bool take_stick_trigger() { return g_stick_trigger.exchange(false); }
+// Past topdown.cpp's kScanDeadzone (0.55 of the travel), where the scan is on a point.
+constexpr float kStickTriggerZone = 0.55f * 32767.0f;
+constexpr uint8_t kTriggerDown = XINPUT_GAMEPAD_TRIGGER_THRESHOLD;
 void right_stick(float& x, float& y) {
   int v = g_rstick_xy;
   x = (float)(int16_t)(v & 0xFFFF) / 32767.0f;
@@ -163,6 +169,14 @@ static DWORD WINAPI get_state_hook(DWORD user, XINPUT_STATE* st) {
     static bool flicked = false;
     int y = st->Gamepad.sThumbRY, x = st->Gamepad.sThumbRX;
     if (flicked && std::abs(y) < 10000) flicked = false;
+    // RT with the top-down scan's stick held: the mod's, from its press until it is let go.
+    static bool rt_was = false, rt_mine = false;
+    const bool rt = st->Gamepad.bRightTrigger > kTriggerDown;
+    const bool scanning = (g_claim_rstick & (1 << (int)StickClaim::TopDown)) && std::hypot((float)x, (float)y) > kStickTriggerZone;
+    if (rt && !rt_was && scanning && !g_layer_open && st->Gamepad.bLeftTrigger <= kTriggerDown) { rt_mine = true; g_stick_trigger = true; }
+    if (!rt) rt_mine = false;
+    rt_was = rt;
+    if (rt_mine) st->Gamepad.bRightTrigger = 0;
     if (g_claim_rstick) {
       if (!flicked && std::abs(y) > 20000 && std::abs(y) > std::abs(x)) {
         flicked = true;

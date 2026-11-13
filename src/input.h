@@ -53,5 +53,8 @@ void claim_right_stick(bool on, StickClaim who = StickClaim::BattleDetails);
 int take_right_flick();
 // The claimed right stick where the player holds it now, each axis -1..1 (up and right positive); 0, 0 unclaimed.
 void right_stick(float& x, float& y);
+// RT pressed while the top-down scan holds the right stick past its deadzone (and LT is not down): the trigger is the
+// mod's (hidden from the game, no dash, until it is let go) and taken here once. Pressed before the stick, it stays the game's.
+bool take_stick_trigger();
 std::string status();
 }  // namespace p3a::input

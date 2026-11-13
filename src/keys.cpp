@@ -177,7 +177,7 @@ std::string help() {
   if (strings::pad_hints()) {
     s += std::string(strings::kPadLayer) + ": ";
     for (auto& b : g_bindings) if (b.pad) s += std::string(pad_name(b.pad)) + ": " + b.help + ". ";
-    return s;
+    return s + strings::kPadScanKeys;
   }
   for (auto& b : g_bindings) if (b.vk) s += key_name(b.vk, b.mods) + ": " + b.help + ". ";   // vk 0: a controller-only binding
   return s;

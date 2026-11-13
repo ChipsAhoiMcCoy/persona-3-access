@@ -291,6 +291,10 @@ inline constexpr Hint kModKeysHint{"Shift+F1 lists the mod's keys, F2 opens its 
 inline constexpr const char* kNoKeys = "No keys to tell here.";
 inline constexpr const char* kModKeys = "Mod keys";
 inline constexpr const char* kPadLayer = "Hold both triggers, then";
+// The top-down mode's right stick, after the layer's buttons in the controller's list of mod keys and in F1's field keys.
+inline constexpr const char* kPadScanKeys = "Without the triggers, in top-down mode: the right stick finds the nearest point of interest that way; RT while it is on one walks there and uses it.";
+// F1 in the field: the walk that uses its point (Shift+Enter; RT on the right stick's point in top-down mode).
+inline constexpr const char* kFieldWalkUseKeys = "Shift+Enter walks to the selected point of interest and uses it; Shift+Semicolon says it again.";
 // The mod settings menu (settings.cpp)
 inline constexpr const char* kModSettings = "Mod settings";
 inline constexpr const char* kModSettingsClosed = "Mod settings closed";
@@ -711,6 +715,8 @@ inline constexpr const char* kKeyHelpPoiCatNext = "Next category of points of in
 inline constexpr const char* kKeyHelpPoiCatPrev = "Previous category";
 inline constexpr const char* kKeyHelpParty = "Party: each member's level, HP and SP";
 inline constexpr const char* kKeyHelpWalk = "Walk to the selected point of interest, or stop walking";
+inline constexpr const char* kKeyHelpWalkUse = "Walk to the selected point of interest and use it: check, talk or open";
+inline constexpr const char* kKeyHelpPoiAgain = "The selected point of interest again: where it is now, and its sound";
 inline constexpr const char* kKeyHelpArea = "Describe the area: how the place around you looks, or while someone talks, how they look";
 // A key's name in that list: its modifiers, then the key as Windows names it (kKeyUnnamed and its code when it has
 // no name).

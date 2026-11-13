@@ -53,8 +53,10 @@ The game's own controls work as usual (keyboard or controller). The mod adds the
 - Right bracket / Left bracket: Next (farther) / previous (nearer) point of interest in the category
 - Shift+Right bracket / Shift+Left bracket: Next / previous category of points of interest, read from its nearest
 - Apostrophe: Walk to the selected point of interest (press again, or any movement key, to stop)
+- Shift+Enter: Walk to the selected point of interest and use it: once there, Space is pressed for you when its prompt comes up (check, talk, open). Nothing is pressed where no prompt comes, as at an exit
 - Shift+Apostrophe: Party: each member's level, HP and SP
 - Semicolon: Describe the area: how the place around you looks, or while someone talks, how they look (see below)
+- Shift+Semicolon: The selected point of interest again, from where you stand now, with its sound
 
 ### On a controller
 
@@ -75,7 +77,8 @@ point of interest you have selected, or the nearest of the current category when
 Without the triggers, while you walk the field in the top-down mode (on by default), the right stick no longer turns
 the camera: push it toward a direction (up is north) to hear the nearest point of interest that way, with its
 distance, and how far the wall is ("north-east: Iwatodai Station, 8 meters. wall 3 meters"). That point's sound plays
-from where it is. Each new direction is read at once.
+from where it is. Each new direction is read at once. Press RT while the stick is on a point to walk there and use
+it, as Shift+Enter does; that press does not dash.
 - Menu button: The keys of what is in front of you (like F1)
 - View button: Mod settings (like F2); its last row reads the mod's keys
 

@@ -52,6 +52,7 @@ struct Walk {
   bool body = false;
   int body_replans = 0;
   bool body_tried = false;    // a navmesh walk blocked on the way asked the body for a way once
+  bool use = false;           // press Space at the target once its prompt is up (walk_to's use)
 };
 static Walk g_w;
 static bool g_walking = false;
@@ -90,9 +91,29 @@ void stop(bool announce) {
   if (was && announce) speech::speak(strings::kStopped, true);
 }
 bool walking() { return g_walking; }
+// A walk that ends by using its target: Space is pressed once the game's prompt is up, until this time.
+constexpr ULONGLONG kUseWaitMs = 1500;
+static ULONGLONG g_use_until = 0;
 // The walk reached its target: logged only (the player will give arrival its own cue; "Arrived" was spoken until
-// 2026-10-31).
-static void arrived_at() { log::writef("nav: arrived, {}", g_w.name); }
+// 2026-10-31). A walk to use it waits for its prompt (use_tick). `can_use` false: a teleport next to it (stairs) was
+// the target, already used.
+static void arrived_at(bool can_use = true) {
+  log::writef("nav: arrived, {}", g_w.name);
+  if (g_w.use && can_use) g_use_until = GetTickCount64() + kUseWaitMs;
+}
+// The prompt came up: Space, as a sighted player presses it. The player moving, or anything over the field, ends the
+// wait; so does the time running out (an exit has no prompt: walking in is using it).
+static void use_tick(bool in_field, ULONGLONG now) {
+  if (!g_use_until) return;
+  if (!in_field || keys::movement_key_down() || input::pad_moving()) { g_use_until = 0; return; }
+  if (!poi::prompt().empty()) {
+    log::writef("nav: using {} (prompt {})", g_w.name, poi::prompt());
+    input::inject_key(VK_SPACE, 80);
+    g_use_until = 0;
+    return;
+  }
+  if (now >= g_use_until) { log::writef("nav: no prompt at {}, nothing pressed", g_w.name); g_use_until = 0; }
+}
 
 static bool refresh_path(const FVector& me) {
   ue::UObject* t = g_w.target.resolve();
@@ -256,7 +277,8 @@ static Goal goal_of(ue::UObject* t) {
   return g;
 }
 
-void walk_to(const WeakObj& target, const std::string& name) {
+void walk_to(const WeakObj& target, const std::string& name, bool use) {
+  g_use_until = 0;
   FVector me;
   static const int battle = watch::want("BtlCoreComponent");
   if (!world::player_location(me) || watch::get(battle)) { speech::speak(strings::kNotInField, true); return; }
@@ -284,6 +306,7 @@ void walk_to(const WeakObj& target, const std::string& name) {
   g_w = Walk{};   // a new walk's plan starts empty; the keys held and g_walking are not part of it
   g_w.target = target;
   g_w.name = name;
+  g_w.use = use;
   g_w.body = body;
   g_w.path = std::move(body_path);
   if (!refresh_path(me)) { speech::speak(strings::kNoPath, true); return; }
@@ -406,6 +429,7 @@ void tick() {
         o = 0;
       }
   }
+  use_tick(in_field, now);
   if (g_walking) {
     if (!located) { stop(false); return; }
     if (fighting) { log::write("nav: stopped, a battle began"); stop(false); return; }
@@ -429,7 +453,7 @@ void tick() {
     // jump decides, not where he landed: the alley's exit drops him 7 m from the Velvet Room's door, which ended the
     // walk short of it (2026-11-12).
     if (jumped) {
-      if (flat(goal, before) < 800.0f) { stop(false); arrived_at(); return; }
+      if (flat(goal, before) < 800.0f) { stop(false); arrived_at(false); return; }
       g_w.side_on = false;
       g_w.body = false;   // a plan between the furniture was for the room he left: the navmesh's from here
       refresh_path(me);
@@ -660,9 +684,10 @@ void install() {
   dev::route("/nav", [](const dev::Request& r, int&) {
     if (dev::has(r, "walk")) {
       int obj = (int)dev::arg_int(r, "walk", -1);
-      hooks::run_on_game_thread([obj] { ue::UObject* o = ue::object_at(obj); if (!o) return;
+      bool use = dev::has(r, "use");
+      hooks::run_on_game_thread([obj, use] { ue::UObject* o = ue::object_at(obj); if (!o) return;
         std::string n = poi::hit_name(o);
-        walk_to(WeakObj::of(o), n.empty() ? ue::name_of(o) : n); });
+        walk_to(WeakObj::of(o), n.empty() ? ue::name_of(o) : n, use); });
     }
     if (dev::has(r, "stop")) hooks::run_on_game_thread([] { stop(true); });
     if (dev::has(r, "map")) {
@@ -737,6 +762,6 @@ void install() {
       return *out;
     }
     return status();
-  }, "?walk=objindex | ?stop=1 the auto-walk | ?plan=objindex the ways in to a target | ?body=objindex the way between the furniture");
+  }, "?walk=objindex [&use=1: press Space there] | ?stop=1 the auto-walk | ?plan=objindex the ways in to a target | ?body=objindex the way between the furniture");
 }
 }  // namespace p3a::nav
