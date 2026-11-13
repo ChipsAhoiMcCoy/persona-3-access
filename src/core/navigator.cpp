@@ -1,20 +1,11 @@
 // Altered from Grim Dark (GD Access) by Austin Hicks, itself ported from Dark Vision (WrathAccess) by Bradley Renshaw; both zlib, see LICENSES/. This is not the original software.
 #include "navigator.h"
 #include <algorithm>
-#include "core/graph_announcer.h"
-#include "core/message_builder.h"
 #include "core/graph_builder.h"
-#include "core/strings.h"
 
 namespace p3a::ui {
 
-GraphNavigator::GraphNavigator(NavigatorHost host) : host_(std::move(host)) {
-  search_.on_no_match = [this](const std::string& text) {
-    MessageBuilder m;
-    m.fragment(strings::kNoMatch).fragment(text);
-    speak(m.build(), true);
-  };
-}
+GraphNavigator::GraphNavigator(NavigatorHost host) : host_(std::move(host)), announcer_(host_.position_text) {}
 
 void GraphNavigator::speak(std::string_view text, bool interrupt) {
   if (!text.empty() && host_.speak) host_.speak(text, interrupt);
@@ -30,7 +21,7 @@ GraphRenderPtr GraphNavigator::build_render(Screen* screen) {
 void GraphNavigator::attach(Screen* screen) {
   bool same = screen == screen_;
   screen_ = screen;
-  clear_search(false);
+  render_due_ = true;
   if (!same) {
     // Swap to this screen's own state (creating it on first attach). The differ memory resets so the
     // (possibly restored) landing announces itself on return.
@@ -72,17 +63,18 @@ void GraphNavigator::mark_spoken(const GraphNode* node) {
 // The per-frame pull: the one place a landing is seated and announced, whatever caused it.
 void GraphNavigator::ensure_focus() {
   if (!screen_ || !graph_) return;
-  // The IDLE rebuild runs every kIdleRenderEvery-th frame: every input path rerenders on its own before
-  // acting, so this per-frame pull only needs to catch content appearing, a focus the screen or the game
-  // moved, and live-state flips, and a full build each frame is costly on a long list. On the frames
+  // The IDLE rebuild runs every kIdleRenderEvery-th frame: a full build each frame is costly on a long list, and
+  // this per-frame pull only needs to catch content appearing, a focus the screen or the game moved, and
+  // live-state flips. After input, an attach or invalidate() it rebuilds at once (render_due_). On the frames
   // between, the focused node's live parts are still watched against the cached render.
   int frame = host_.frame_count ? host_.frame_count() : 0;
-  bool must_render = !state_->cur_key || pending_focus_;
+  bool must_render = render_due_ || !state_->cur_key || pending_focus_;
   if (!must_render && frame - last_idle_render_ < kIdleRenderEvery) {
     if (const GraphNode* cached = graph_->current_node()) watch_live(cached);
     return;
   }
   last_idle_render_ = frame;
+  render_due_ = false;
 
   if (!graph_->rerender()) return;  // no content yet; reconcile seats the start node once there is
   if (pending_focus_) {
@@ -155,14 +147,7 @@ std::optional<ControlId> GraphNavigator::focused_id() const {
 
 bool GraphNavigator::on_action(std::string_view key) {
   using namespace ui_actions;
-  if (search_.is_search_active()) {
-    const GraphNode* cur = graph_ ? graph_->current_node() : nullptr;
-    if (search_focus_id_ && (!cur || *search_focus_id_ != cur->id)) clear_search(false);  // focus moved under us
-    else if (key == Home && search_.result_count() > 0) { search_.jump_to_first_result(); return true; }
-    else if (key == End && search_.result_count() > 0) { search_.jump_to_last_result(); return true; }
-    else if (fired_from_search_key(key)) return true;  // reserved key: tick_typeahead owns it
-    else clear_search(false);
-  }
+  render_due_ = true;   // whatever the key did, the next pull sees the screen as it is now
   if (key == Up) return arrow(GraphDir::Up);
   if (key == Down) return arrow(GraphDir::Down);
   if (key == Left) return arrow(GraphDir::Left);
@@ -212,7 +197,7 @@ void GraphNavigator::repeat_focused() {
   const GraphNode* node = graph_ ? graph_->current_node() : nullptr;
   if (!node) return;
   play_hover();
-  if (auto t = GraphAnnouncer::leaf_text(node)) speak(*t, true);
+  if (auto t = announcer_.leaf_text(node)) speak(*t, true);
   mark_spoken(node);
 }
 
@@ -301,99 +286,12 @@ bool GraphNavigator::vtable_adjust(int sign) {
 }
 
 std::optional<std::string> GraphNavigator::compose_move(const GraphNode* from, const GraphNode* to, bool entry) {
-  if (entry) return GraphAnnouncer::compose(nullptr, to);
+  if (entry) return announcer_.compose(nullptr, to);
   // The node last spoken may have vanished (its row was removed by the action it just ran): its remembered path
   // still says which levels we were inside, so the landing reads as a sibling move, not as an entry that
   // repeats the list's title.
-  if (from == nullptr && last_spoken_key_ && !last_spoken_path_.empty()) return GraphAnnouncer::compose_from_path(last_spoken_path_, to);
-  return GraphAnnouncer::compose(from, to);
-}
-
-// ---- type-ahead search ----
-
-void GraphNavigator::tick_typeahead(const TypeaheadInput& in) {
-  bool focus_mode = !host_.focus_mode_active || host_.focus_mode_active();
-  if (!screen_ || screen_->captures_raw_input() || !screen_->allows_typeahead() || !focus_mode || !graph_ || !graph_->current_node()) {
-    if (search_.is_search_active() || search_.has_buffer()) clear_search(false);
-    last_typeahead_screen_ = screen_;
-    return;
-  }
-  if (screen_ != last_typeahead_screen_) {
-    last_typeahead_screen_ = screen_;
-    if (search_.is_search_active() || search_.has_buffer()) clear_search(false);
-    return;
-  }
-  if (in.ctrl || in.alt) return;
-  if (search_.is_search_active() && !in.shift) {
-    if (in.escape_pressed) { clear_search(true); return; }
-    if (search_.result_count() > 0 && tick_result_arrows(in)) return;
-  } else {
-    search_held_dir_ = 0;
-  }
-  // Typed text is UTF-16: a non-ASCII letter ("é", "ü", Cyrillic) is searched as itself. A surrogate pair is
-  // combined into one code point.
-  for (size_t k = 0; k < in.typed.size(); ++k) {
-    std::uint32_t cp = in.typed[k];
-    if (cp >= 0xD800 && cp <= 0xDBFF && k + 1 < in.typed.size() && in.typed[k + 1] >= 0xDC00 && in.typed[k + 1] <= 0xDFFF)
-      cp = 0x10000 + ((cp - 0xD800) << 10) + (std::uint32_t)(in.typed[++k] - 0xDC00);
-    else if (cp >= 0xD800 && cp <= 0xDFFF) continue;   // a lone surrogate: nothing to type
-    if ((cp >= u'a' && cp <= u'z') || (cp >= u'A' && cp <= u'Z') || (cp >= u'0' && cp <= u'9') || cp > 0x7f) type_char(cp);
-    else if (cp == u' ' && search_.has_buffer()) type_char(' ');  // space only with an existing buffer: alone it is the host's key
-  }
-}
-
-bool GraphNavigator::tick_result_arrows(const TypeaheadInput& in) {
-  int dir = in.up_held ? -1 : in.down_held ? 1 : 0;
-  if (dir == 0) { search_held_dir_ = 0; return false; }
-  if (dir != search_held_dir_) {
-    search_held_dir_ = dir;
-    search_repeat_in_ = in.repeat_initial_delay;
-    search_.navigate_results(dir);
-    return true;
-  }
-  search_repeat_in_ -= in.dt;
-  if (search_repeat_in_ <= 0) { search_repeat_in_ = in.repeat_interval; search_.navigate_results(dir); }
-  return true;
-}
-
-// Keys the live search owns (up/down walk its results): an action bound to one of them must not fire its
-// nav meaning while a search is active. Decided by action id here (the host binds ids to keys).
-bool GraphNavigator::fired_from_search_key(std::string_view key) const {
-  using namespace ui_actions;
-  return key == Up || key == Down;
-}
-
-void GraphNavigator::type_char(std::uint32_t cp) {
-  rebuild_search_scope();
-  if (search_nodes_.empty()) return;
-  search_.add_codepoint(cp);
-  search_.search((int)search_nodes_.size(), [this](int i) { return search_nodes_[(size_t)i].text; }, [this](int i) { search_focus_result(i); });
-}
-
-// The searchable scope is the focused node's Tab-stop; a node is searched by its label (its first part).
-void GraphNavigator::rebuild_search_scope() {
-  search_nodes_.clear();
-  const GraphNode* node = graph_ ? graph_->current_node() : nullptr;
-  if (!node || !graph_->current()) return;
-  for (GraphNode* n : graph_->current()->order())
-    if (n->stop_key == node->stop_key && n->vtable) search_nodes_.push_back({n->id, GraphAnnouncer::first_part_text(n).value_or(std::string())});
-}
-
-void GraphNavigator::search_focus_result(int index) {
-  if (index < 0 || (size_t)index >= search_nodes_.size()) return;
-  if (!graph_->focus(search_nodes_[(size_t)index].id)) return;   // resolves in the CURRENT render
-  const GraphNode* node = graph_->current_node();
-  land(node, last_spoken_node());
-  search_focus_id_ = node->id;
-}
-
-void GraphNavigator::clear_search(bool announce) {
-  bool had = search_.is_search_active() || search_.has_buffer();
-  search_.clear();
-  search_nodes_.clear();
-  search_focus_id_.reset();
-  search_held_dir_ = 0;
-  if (announce && had) speak(strings::kSearchCleared, true);
+  if (from == nullptr && last_spoken_key_ && !last_spoken_path_.empty()) return announcer_.compose_from_path(last_spoken_path_, to);
+  return announcer_.compose(from, to);
 }
 
 std::string GraphNavigator::dump() {
@@ -404,7 +302,7 @@ std::string GraphNavigator::dump() {
   Key last_stop;
   for (const GraphNode* n : graph_->current()->order()) {
     if (n->stop_key != last_stop) { out += "-- stop " + n->stop_key.to_string() + "\n"; last_stop = n->stop_key; }
-    auto t = GraphAnnouncer::leaf_text(n);
+    auto t = announcer_.leaf_text(n);
     out += std::string(n == cur ? "> " : "  ") + (t ? *t : std::string("(silent)")) + "\n";
   }
   return out;

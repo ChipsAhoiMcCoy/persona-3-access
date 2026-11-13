@@ -10,6 +10,8 @@ namespace p3a::core {
 
 // "Yes, 1 of 2": a line with its place in a list or a run of pages (`place` counts from 1).
 std::string position(std::string_view text, size_t place, size_t count);
+// "2 of 5": a menu item's place alone (the navigator's position wording).
+std::string place_of(int place, int count);
 // "Yukari: Hello." -- a line with who says it; the text alone when nobody is named.
 std::string spoken_line(std::string_view speaker, std::string_view text);
 // An entry without its own full stop ("Nice to meet you." -> "Nice to meet you": joined to a position, the stop was

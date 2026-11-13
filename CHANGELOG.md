@@ -43,6 +43,9 @@
 ### Shopping
 - The TV shopping show (Sunday afternoons, the TV in your room) has now been played through with the mod: the show, the Buy / Don't buy choice and the purchase are all read.
 
+### Mod settings
+- Letter keys no longer jump to a setting by name in the mod settings menu; they do nothing there. The arrows, Home and End, Tab and the rest are unchanged.
+
 ### Calendar
 - When the story moved to another day with only the time-of-day screen (the epilogue's jump to March), just "After School" was said. The new date is now read with it.
 

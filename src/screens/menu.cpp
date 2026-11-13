@@ -3,7 +3,7 @@
 #include "screens/menu.h"
 #include "screens/util.h"
 #include "screens/battle_details.h"
-#include "core/graph_announcer.h"
+#include "core/speech_text.h"
 #include "core/menu_step.h"
 #include "core/navigator.h"
 #include "core/said_once.h"
@@ -76,7 +76,8 @@ ui::GraphNavigator& nav() {
       [] { return (int)g_frame; },
       // Left/Right at the end of a game list that does not keep its edges go to the game, which moves on (the next
       // month, a wrap) and the focus follows it. The mod's own lines (a row's walk) have no game answer: they repeat.
-      [](ui::GraphDir d) { return (d == ui::GraphDir::Left || d == ui::GraphDir::Right) && g_active && g_active->edges_to_game(); }});
+      [](ui::GraphDir d) { return (d == ui::GraphDir::Left || d == ui::GraphDir::Right) && g_active && g_active->edges_to_game(); },
+      core::place_of});
   return n;
 }
 
@@ -108,7 +109,7 @@ bool status_blocked() { bool t = false; guarded([&] { t = g_active->blocks_statu
 void reread() {
   const ui::GraphNode* f = nav().focused_node();
   std::optional<std::string> t;
-  if (f) guarded([&] { t = ui::GraphAnnouncer::compose_full(f); });
+  if (f) guarded([&] { t = nav().compose_full(f); });
   if (t && !t->empty()) say_line(*t, true);
 }
 
@@ -631,7 +632,7 @@ std::string MenuScreen::describe() {
   const ui::GraphNode* n = nav().focused_node();
   std::string out = title();
   if (n) {
-    if (auto t = ui::GraphAnnouncer::compose_full(n)) out += (out.empty() ? "" : ". ") + *t;
+    if (auto t = nav().compose_full(n)) out += (out.empty() ? "" : ". ") + *t;
     if (n->vtable && n->vtable->details) {
       std::string d;
       guarded([&] { d = n->vtable->details(); });
@@ -658,7 +659,6 @@ std::string dump() {
 }
 
 void install() {
-  ui::GraphAnnouncer::position_text = [](int i, int n) { return std::format("{} {} {}", i, strings::kOf, n); };
   keys::set_menu(on_key);
   battle_details::install();
   dev::route("/menu", [](const dev::Request&, int&) { return dev::on_game([] { return dump(); }); }, "the bespoke menu's graph and focus");

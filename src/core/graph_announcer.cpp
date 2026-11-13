@@ -38,11 +38,11 @@ std::vector<ControlId> GraphAnnouncer::path_ids(const GraphNode* node) {
   return ids;
 }
 
-std::optional<std::string> GraphAnnouncer::compose(const GraphNode* from, const GraphNode* to) {
+std::optional<std::string> GraphAnnouncer::compose(const GraphNode* from, const GraphNode* to) const {
   return compose_from_path(path_ids(from), to);
 }
 
-std::optional<std::string> GraphAnnouncer::compose_from_path(const std::vector<ControlId>& from_path, const GraphNode* to) {
+std::optional<std::string> GraphAnnouncer::compose_from_path(const std::vector<ControlId>& from_path, const GraphNode* to) const {
   if (to == nullptr) return std::nullopt;
 
   const std::vector<const GraphNode*> to_path = path_of(to);
@@ -82,7 +82,7 @@ std::optional<std::string> GraphAnnouncer::compose_from_path(const std::vector<C
   return message.build();
 }
 
-std::optional<std::string> GraphAnnouncer::leaf_text(const GraphNode* node) {
+std::optional<std::string> GraphAnnouncer::leaf_text(const GraphNode* node) const {
   const NodeVtable* vt = node != nullptr ? node->vtable.get() : nullptr;
   if (vt == nullptr) return std::nullopt;   // a node with no vtable has nothing to speak
   const std::vector<NodeAnnouncement>& anns = vt->announcements;
@@ -101,9 +101,9 @@ std::optional<std::string> GraphAnnouncer::leaf_text(const GraphNode* node) {
 
   // The auto-stamped sibling position, unless the node carries its own (an explicit position-kind part,
   // or speaks_own_position).
-  if (node->position_count > 0 && position_text && !vt->speaks_own_position &&
+  if (node->position_count > 0 && position_text_ && !vt->speaks_own_position &&
       !has_kind(anns, std::string(announcement_kinds::kPosition))) {
-    push(position_text(node->position_index, node->position_count));
+    push(position_text_(node->position_index, node->position_count));
   }
   for (const NodeAnnouncement& a : anns)
     if (a.text && a.kind == tooltip) push(a.text());

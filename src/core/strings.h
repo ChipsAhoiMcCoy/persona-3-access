@@ -294,7 +294,7 @@ inline constexpr const char* kPadLayer = "Hold both triggers, then";
 // The mod settings menu (settings.cpp)
 inline constexpr const char* kModSettings = "Mod settings";
 inline constexpr const char* kModSettingsClosed = "Mod settings closed";
-inline constexpr Hint kModSettingsKeys{"Up and down arrows choose, Tab and Shift+Tab change category, letters jump to a setting in it, left and right arrows change, Space changes, reads or plays, Escape closes.",
+inline constexpr Hint kModSettingsKeys{"Up and down arrows choose, Tab and Shift+Tab change category, left and right arrows change, Space changes, reads or plays, Escape closes.",
                                        "Up and down choose, LB and RB change category, left and right change, A changes, reads or plays, B closes."};
 // Its categories, in order.
 inline constexpr const char* kCatExploring = "Exploring";
@@ -581,9 +581,6 @@ inline constexpr Hint kLogKeys{"Up and down arrows scroll, Space replays the voi
 inline constexpr const char* kLogEarlier = "An earlier line, from before this session";
 inline constexpr const char* kShift = "Shift. Pass the turn to";
 inline constexpr const char* kRewind = "Rewind. Choose a day to go back to";
-// The menu navigator's type-ahead (core/navigator.cpp)
-inline constexpr const char* kNoMatch = "no match for";
-inline constexpr const char* kSearchCleared = "search cleared";
 inline constexpr const char* kCard = "Card";
 // Shuffle Time's Minor Arcana suits, said with the card's number: "Wands 1".
 inline constexpr const char* kSuitSwords = "Swords";

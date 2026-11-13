@@ -57,15 +57,9 @@ class Arena {
 // Readable failure output: the announcer returns nullopt for "nothing to say".
 std::string spoken(const std::optional<std::string>& s) { return s ? *s : std::string("<nothing>"); }
 
-// The announcer's position wording is a process-wide static; these cases set the host's ("2 of 5") and
-// restore what was there however a case exits.
-struct ScopedPositions {
-  ScopedPositions() : saved(GraphAnnouncer::position_text) {
-    GraphAnnouncer::position_text = [](int i, int n) { return std::to_string(i) + " of " + std::to_string(n); };
-  }
-  ~ScopedPositions() { GraphAnnouncer::position_text = saved; }
-  decltype(GraphAnnouncer::position_text) saved;
-};
+// An announcer with no position wording (no stamped positions) and one with the host's ("2 of 5").
+const GraphAnnouncer kPlain;
+const GraphAnnouncer kPositions([](int i, int n) { return std::to_string(i) + " of " + std::to_string(n); });
 
 }  // namespace
 
@@ -75,7 +69,7 @@ TEST_CASE("entry from nothing reads the full chain") {
   GraphNode* list = a.context("Difficulty settings", "list", options);
   GraphNode* node = a.node("Normal, radio button, selected", list);
 
-  CHECK(spoken(GraphAnnouncer::compose_full(node)) ==
+  CHECK(spoken(kPlain.compose_full(node)) ==
         "Options, Difficulty settings, list, Normal, radio button, selected");
 }
 
@@ -85,7 +79,7 @@ TEST_CASE("a sibling move reads the leaf only") {
   GraphNode* from = a.node("Easy", list);
   GraphNode* to = a.node("Hard", list);
 
-  CHECK(spoken(GraphAnnouncer::compose(from, to)) == "Hard");
+  CHECK(spoken(kPlain.compose(from, to)) == "Hard");
 }
 
 TEST_CASE("entering a nested context reads the entered levels") {
@@ -95,7 +89,7 @@ TEST_CASE("entering a nested context reads the entered levels") {
   GraphNode* list = a.context("Difficulty settings", "list", outer);
   GraphNode* to = a.node("Normal", list);
 
-  CHECK(spoken(GraphAnnouncer::compose(from, to)) == "Difficulty settings, list, Normal");
+  CHECK(spoken(kPlain.compose(from, to)) == "Difficulty settings, list, Normal");
 }
 
 TEST_CASE("an ascend reads the leaf only") {
@@ -105,7 +99,7 @@ TEST_CASE("an ascend reads the leaf only") {
   GraphNode* from = a.node("Normal", list);
   GraphNode* to = a.node("Back", outer);
 
-  CHECK(spoken(GraphAnnouncer::compose(from, to)) == "Back");
+  CHECK(spoken(kPlain.compose(from, to)) == "Back");
 }
 
 TEST_CASE("a duplicate container label is skipped") {
@@ -113,12 +107,12 @@ TEST_CASE("a duplicate container label is skipped") {
   Arena a;
   GraphNode* section = a.context("Game difficulty");
   GraphNode* to = a.node("Game difficulty, menu button", section);
-  CHECK(spoken(GraphAnnouncer::compose_full(to)) == "Game difficulty, menu button");
+  CHECK(spoken(kPlain.compose_full(to)) == "Game difficulty, menu button");
 
   // But a control that merely STARTS with different text keeps its container.
   Arena b;
   GraphNode* other = b.node("Game difficulty presets, menu button", b.context("Game difficulty"));
-  CHECK(spoken(GraphAnnouncer::compose_full(other)) ==
+  CHECK(spoken(kPlain.compose_full(other)) ==
         "Game difficulty, Game difficulty presets, menu button");
 }
 
@@ -130,7 +124,7 @@ TEST_CASE("leaf text joins the announcement parts in declaration order") {
                                       NodeAnnouncement([] { return std::string("on"); }, true),
                                       NodeAnnouncement([] { return std::string(); }),  // silent
                                   });
-  CHECK(spoken(GraphAnnouncer::compose_full(node)) == "Hold position, toggle, on");
+  CHECK(spoken(kPlain.compose_full(node)) == "Hold position, toggle, on");
 }
 
 TEST_CASE("the position follows the parts and a description follows the position") {
@@ -143,27 +137,25 @@ TEST_CASE("the position follows the parts and a description follows the position
                                     });
   node->position_index = 2;
   node->position_count = 5;
-  ScopedPositions positions;
-  CHECK(spoken(GraphAnnouncer::leaf_text(node)) == "Dia, 3 SP, 2 of 5, Slightly restores 1 ally's HP.");
+  CHECK(spoken(kPositions.leaf_text(node)) == "Dia, 3 SP, 2 of 5, Slightly restores 1 ally's HP.");
 }
 
 TEST_CASE("a node that speaks its own position, or has none, gets no stamped one") {
-  ScopedPositions positions;
   Arena a;
   GraphNode* own = a.custom("own", {NodeAnnouncement::fixed("Yes")});
   own->position_index = 1;
   own->position_count = 1;
   own->vtable->speaks_own_position = true;   // one thing to answer: no "1 of 1"
-  CHECK(spoken(GraphAnnouncer::leaf_text(own)) == "Yes");
+  CHECK(spoken(kPositions.leaf_text(own)) == "Yes");
 
   GraphNode* part = a.custom("part", {NodeAnnouncement::fixed("April 30"),
                                       NodeAnnouncement([] { return std::string("day 30 of 30"); }, false, kinds::kPosition)});
   part->position_index = 3;
   part->position_count = 9;
-  CHECK(spoken(GraphAnnouncer::leaf_text(part)) == "April 30, day 30 of 30");
+  CHECK(spoken(kPositions.leaf_text(part)) == "April 30, day 30 of 30");
 
   GraphNode* raw = a.custom("raw", {NodeAnnouncement::fixed("A line")});   // position_count 0: a raw node
-  CHECK(spoken(GraphAnnouncer::leaf_text(raw)) == "A line");
+  CHECK(spoken(kPositions.leaf_text(raw)) == "A line");
 }
 
 TEST_CASE("a context change at the same depth reads the new level") {
@@ -171,7 +163,7 @@ TEST_CASE("a context change at the same depth reads the new level") {
   GraphNode* from = a.node("Fireball", a.context("Level 1 spells", "table"));
   GraphNode* to = a.node("Haste", a.context("Level 2 spells", "table"));
 
-  CHECK(spoken(GraphAnnouncer::compose(from, to)) == "Level 2 spells, table, Haste");
+  CHECK(spoken(kPlain.compose(from, to)) == "Level 2 spells, table, Haste");
 }
 
 TEST_CASE("a remembered path stands in for a node that is gone") {
@@ -186,7 +178,7 @@ TEST_CASE("a remembered path stands in for a node that is gone") {
   CHECK(path[1] == gone->id);
 
   GraphNode* next = a.node("Soma", list);
-  CHECK(spoken(GraphAnnouncer::compose_from_path(path, next)) == "Soma");
-  CHECK(spoken(GraphAnnouncer::compose_from_path({}, next)) == "Your items, list, Soma");
+  CHECK(spoken(kPlain.compose_from_path(path, next)) == "Soma");
+  CHECK(spoken(kPlain.compose_from_path({}, next)) == "Your items, list, Soma");
   CHECK(GraphAnnouncer::path_ids(nullptr).empty());
 }

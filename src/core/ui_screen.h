@@ -2,7 +2,7 @@
 #pragma once
 // The navigator's view of a screen: a screen declares a
 // graph over OUR model of what it shows (immediate mode, rebuilt per operation), and the navigator owns focus,
-// movement, type-ahead and every announcement. The game's drawn UI is never the state store: a screen reads the
+// movement and every announcement. The game's drawn UI is never the state store: a screen reads the
 // game's objects for its model and drives the game (its cursor, confirm) to match the mod's focus.
 // Engine-free: the game-side half is screens::MenuScreen (src/screens/menu.h).
 #include <functional>
@@ -28,9 +28,5 @@ class Screen {
   // Keep per-screen nav state (focus, stop memory) when the screen closes. The host reads this
   // and calls GraphNavigator::screen_closed when it is false.
   virtual bool keep_state_on_pop() const { return false; }
-  // Stand down input dispatch entirely (a text field reads raw keys itself).
-  virtual bool captures_raw_input() const { return false; }
-  // Whether typing letters runs type-ahead over the focused stop.
-  virtual bool allows_typeahead() const { return true; }
 };
 }  // namespace p3a::ui

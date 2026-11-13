@@ -76,7 +76,6 @@ class MenuScreen : public Screen, public ui::Screen {
   std::string describe() override;
   // ui::Screen: title() is spoken on entry (once per opening), before the focused item.
   std::string screen_name() const override { return const_cast<MenuScreen*>(this)->title(); }
-  bool allows_typeahead() const override { return false; }   // letters are the game's keys
   bool escape_is_back() override { return true; }
   // The player moved: a new list's pending "focus follows the game's cursor" is dropped.
   void stop_following() { for (auto& m : mirrors_) m->follow = false; }

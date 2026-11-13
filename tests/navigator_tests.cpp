@@ -62,59 +62,13 @@ TEST_CASE("row: Left/Right repeat at the ends, Up/Down say nothing") {
   Harness h;
   h.screen.row = true;
   h.nav.attach(&h.screen);   // content changed: rebuild as a row
-  h.frame += 100; h.nav.ensure_focus();
+  h.nav.ensure_focus();
   CHECK(h.act(ui_actions::Left) == "a");
   CHECK(h.act(ui_actions::Right) == "b");
   CHECK(h.act(ui_actions::Right) == "c");
   CHECK(h.act(ui_actions::Right) == "c");
   CHECK(h.act(ui_actions::Up) == "");
   CHECK(h.act(ui_actions::Down) == "");
-}
-
-// The search scope must not hold GraphNode* from the render the letter was typed in: every arrow through the
-// results rerenders (KeyGraph::focus), so by the second arrow such pointers would be freed arena memory. The scope
-// is kept by ControlId.
-namespace {
-struct WordsScreen : Screen {
-  int builds = 0;
-  std::string_view key() const override { return "words"; }
-  bool is_active() override { return true; }
-  std::string screen_name() const override { return "words"; }
-  void build(GraphBuilder& b) override {
-    ++builds;
-    b.begin_stop("items");
-    b.add_item(id("apple"), vt("apple"));
-    b.add_item(id("banana"), vt("banana"));
-    b.add_item(id("avocado"), vt("avocado"));
-    b.add_item(id("apricot"), vt("apricot"));
-  }
-};
-}  // namespace
-
-TEST_CASE("type-ahead results survive rerenders between the typing and the arrows") {
-  std::vector<std::string> spoken;
-  int frame = 0;
-  WordsScreen screen;
-  GraphNavigator nav{NavigatorHost{[&](std::string_view t, bool) { spoken.emplace_back(t); }, {}, [] { return true; }, [&] { return frame; }}};
-  nav.attach(&screen); nav.ensure_focus();
-  auto tick = [&](std::u16string_view typed, bool down) {
-    TypeaheadInput in; in.typed = typed; in.down_held = down; in.dt = 0.016; ++frame;
-    spoken.clear(); nav.tick_typeahead(in);
-    return spoken.empty() ? std::string() : spoken.back();
-  };
-  tick(u"", false);                        // the first tick only registers the screen for type-ahead
-  CHECK(tick(u"a", false) == "apple");
-  // Many rerenders before the first arrow: the render the scope was built from is long retired.
-  for (int i = 0; i < 5; ++i) nav.announce_current();
-  CHECK(tick(u"", true) == "avocado");
-  CHECK(tick(u"", false) == "");           // arrow released: no step
-  for (int i = 0; i < 5; ++i) nav.announce_current();
-  CHECK(tick(u"", true) == "apricot");
-  CHECK(tick(u"", false) == "");
-  CHECK(tick(u"", true) == "banana");      // the substring tier (the a in banana) ranks last
-  CHECK(tick(u"", false) == "");
-  CHECK(tick(u"", true) == "apple");       // and the results wrap
-  CHECK(screen.builds > 10);
 }
 
 namespace {
@@ -166,7 +120,7 @@ struct OptionHarness {
                                    [this] { ++hovers; }, [this] { return mode; }, [this] { return frame; },
                                    [this](GraphDir) { return answered; }}};
   OptionHarness() { nav.attach(&screen); nav.ensure_focus(); }
-  void pull() { frame += 100; nav.ensure_focus(); }   // a frame's pull, past the idle throttle
+  void pull() { ++frame; nav.ensure_focus(); }   // one frame's pull
 };
 }  // namespace
 
@@ -388,15 +342,15 @@ TEST_CASE("Enter that removes the focused row lands on the next row and reads it
   VanishScreen screen;
   GraphNavigator nav{NavigatorHost{[&](std::string_view t, bool) { spoken.emplace_back(t); }, {}, [] { return true; }, [&] { return frame; }}};
   nav.attach(&screen); nav.ensure_focus();
-  nav.focus_node(id("a"), false); frame += 100; nav.ensure_focus();
+  nav.focus_node(id("a"), false); nav.ensure_focus();
   spoken.clear();
   nav.on_action("ui.activate");   // removes "a"
-  frame += 100; nav.ensure_focus();      // past the idle-render throttle: the rebuild, focus must land on "b"
+  ++frame; nav.ensure_focus();          // the next frame: the press made it rebuild, focus must land on "b"
   REQUIRE(!spoken.empty());
   CHECK(spoken.back() == "b");           // not "your items, b"
   spoken.clear();
   nav.on_action("ui.activate");   // removes "b"
-  frame += 100; nav.ensure_focus();
+  ++frame; nav.ensure_focus();
   REQUIRE(!spoken.empty());
   CHECK(spoken.back() == "c");
 }

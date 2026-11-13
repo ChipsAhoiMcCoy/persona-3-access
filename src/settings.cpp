@@ -4,6 +4,7 @@
 #include "core/navigator.h"
 #include "core/settings_text.h"
 #include "core/sonar_cues.h"
+#include "core/speech_text.h"
 #include "core/strings.h"
 #include "devserver.h"
 #include "input.h"
@@ -227,7 +228,6 @@ struct Menu : ui::Screen {
   }
 };
 static Menu g_menu;
-static int g_frame = 0;
 static std::optional<ui::ControlId> g_move_from;   // the focus before the key being handled
 static ui::GraphNavigator& nav();
 // The cursor sound, unless the press moved nothing: at a list's first or last row the row is said again without it,
@@ -240,41 +240,23 @@ static void move_sound() {
 static ui::GraphNavigator& nav() {
   static ui::GraphNavigator n(ui::NavigatorHost{[](std::string_view t, bool interrupt) { speech::speak(t, interrupt); },
                                                 [] { move_sound(); },
-                                                [] { return g_open; }, [] { return g_frame; }, {}});
+                                                [] { return g_open; }, {}, {}, core::place_of});
   return n;
 }
 
 // One key through the navigator, then its pull (the navigator rebuilds and announces in ensure_focus).
 static void action(std::string_view a) {
-  g_frame += 100;
   g_move_from = nav().focused_id();
   nav().on_action(a);
   nav().ensure_focus();
   g_move_from.reset();
 }
-// Up / Down while a type-ahead search is active walk its results (the navigator reads them as held keys, once per
-// change of direction): one press, then the release. With no search they do nothing and the action moves.
-static void arrow(std::string_view a, bool up) {
-  ui::TypeaheadInput in;
-  in.up_held = up; in.down_held = !up;
-  nav().tick_typeahead(in);
-  nav().tick_typeahead(ui::TypeaheadInput{});
-  action(a);
-}
-static void typed(char16_t c) {
-  char16_t buf[1] = {c};
-  ui::TypeaheadInput in;
-  in.typed = std::u16string_view(buf, 1);
-  g_frame += 100;
-  nav().tick_typeahead(in);
-  nav().ensure_focus();
-}
 
 static void on_key(uint32_t vk, bool repeat) {
   using namespace ui::ui_actions;
   switch (vk) {
-    case VK_UP: arrow(Up, true); break;
-    case VK_DOWN: arrow(Down, false); break;
+    case VK_UP: action(Up); break;
+    case VK_DOWN: action(Down); break;
     case VK_LEFT: action(Left); break;
     case VK_RIGHT: action(Right); break;
     case VK_HOME: action(Home); break;
@@ -285,17 +267,15 @@ static void on_key(uint32_t vk, bool repeat) {
     case VK_SPACE: case VK_RETURN: if (!repeat) action(Activate); break;
     case VK_ESCAPE: case VK_BACK: case VK_F2: if (!repeat) close(); break;
     case VK_F1: if (!repeat) speech::speak(strings::kModSettingsKeys(), true); break;
-    default:
-      if ((vk >= 'A' && vk <= 'Z') || (vk >= '0' && vk <= '9')) typed((char16_t)(vk >= 'A' && vk <= 'Z' ? vk - 'A' + 'a' : vk));
-      break;
+    default: break;
   }
 }
 
 static void on_pad(uint16_t button, bool repeat) {
   using namespace ui::ui_actions;
   switch (button) {
-    case XINPUT_GAMEPAD_DPAD_UP: arrow(Up, true); break;
-    case XINPUT_GAMEPAD_DPAD_DOWN: arrow(Down, false); break;
+    case XINPUT_GAMEPAD_DPAD_UP: action(Up); break;
+    case XINPUT_GAMEPAD_DPAD_DOWN: action(Down); break;
     case XINPUT_GAMEPAD_DPAD_LEFT: action(Left); break;
     case XINPUT_GAMEPAD_DPAD_RIGHT: action(Right); break;
     case XINPUT_GAMEPAD_RIGHT_SHOULDER: action(Next); break;
@@ -315,14 +295,8 @@ void open() {
   voice::play_system_sound(voice::CueMenuOpen);
   // Every opening starts on the first option: a fresh state, the title, then the focused item (queued after it).
   nav().screen_closed(&g_menu);
-  // The type-ahead starts fresh: a search left from the last opening is dropped, and the navigator's first look at a
-  // screen (which drops a search and takes no letter) is had here, not on the player's first letter.
-  nav().attach(nullptr);
-  nav().tick_typeahead(ui::TypeaheadInput{});
   nav().attach(&g_menu);
-  g_frame += 100;
   nav().settle_silently();   // the focus is read after the title
-  nav().tick_typeahead(ui::TypeaheadInput{});
   speech::speak(strings::kModSettings, true);
   nav().announce_current();
 }

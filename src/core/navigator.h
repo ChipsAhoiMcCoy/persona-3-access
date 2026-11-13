@@ -6,17 +6,17 @@
 // reconciled by identity, and a focus change is announced exactly once no matter what caused it (input,
 // a screen moving focus, a content rebuild, the game moving its own cursor). Announcements are PULL-based:
 // screens never make per-callsite announce decisions. Engine-free: speech, hover sounds, the focus-mode
-// flag and the per-frame typed characters come from the host through NavigatorHost.
+// flag and the position wording come from the host through NavigatorHost.
 #include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include "core/graph_announcer.h"
 #include "core/graph_types.h"
 #include "core/key_graph.h"
 #include "core/ui_screen.h"
-#include "core/typeahead.h"
 
 namespace p3a::ui {
 
@@ -28,16 +28,8 @@ struct NavigatorHost {
   // An edge press the host hands on to something that answers it (a game list that moves on past the mod's ends):
   // no repeat of the focused item, the answer speaks. Empty = every edge repeats.
   std::function<bool(GraphDir)> edge_answered;
-};
-
-// What the typeahead needs from the keyboard this frame.
-struct TypeaheadInput {
-  std::u16string_view typed;  // printable characters pressed this frame
-  bool ctrl = false, alt = false, shift = false;
-  bool escape_pressed = false;
-  bool up_held = false, down_held = false;
-  double dt = 0;              // unscaled seconds since last frame
-  double repeat_initial_delay = 0.4, repeat_interval = 0.06;
+  // The "n of m" wording stamped on a list item; empty = no positions.
+  GraphAnnouncer::PositionText position_text;
 };
 
 // The UI action ids the navigator understands: the host maps its keys and buttons to these and calls on_action.
@@ -61,8 +53,13 @@ class GraphNavigator {
   // A screen closed and its focus is not to be kept for its next opening: drop its state.
   void screen_closed(Screen* screen);
   // The per-frame pull: rebuild + reconcile, establish initial focus when content appears, apply pending
-  // focus requests, announce any focus-identity change exactly once, watch live parts.
+  // focus requests, announce any focus-identity change exactly once, watch live parts. Idle frames rebuild only
+  // every kIdleRenderEvery-th frame; after invalidate() (and after any input or attach) the next pull rebuilds.
   void ensure_focus();
+  // The screen's content changed: the next ensure_focus rebuilds whatever the idle throttle says.
+  void invalidate() { render_due_ = true; }
+  // The full readout of a node, as an entry reads it (no prior focus), with this navigator's position wording.
+  std::optional<std::string> compose_full(const GraphNode* node) const { return announcer_.compose_full(node); }
   // Announce the current focus in full (a screen's entry, after its title).
   void announce_current();
   // Seat focus without a word (the landing counts as spoken): a screen whose entry something else announces.
@@ -81,8 +78,6 @@ class GraphNavigator {
 
   // Input: returns true when consumed. Called by the host with the action id of the key or button pressed.
   bool on_action(std::string_view action_key);
-  // Type-ahead feed: the letters typed and the arrows held, for a screen that allows_typeahead().
-  void tick_typeahead(const TypeaheadInput& in);
 
   // Debug inspection: one line per node as the announcer reads it, focused one prefixed '>'.
   std::string dump();
@@ -107,15 +102,8 @@ class GraphNavigator {
   void watch_live(const GraphNode* node);
   void mark_spoken(const GraphNode* node);
 
-  // typeahead glue
-  void type_char(std::uint32_t cp);   // one Unicode code point
-  void rebuild_search_scope();
-  void search_focus_result(int index);
-  void clear_search(bool announce);
-  bool tick_result_arrows(const TypeaheadInput& in);
-  bool fired_from_search_key(std::string_view action_key) const;
-
   NavigatorHost host_;
+  GraphAnnouncer announcer_;
   Screen* screen_ = nullptr;
   std::unordered_map<Screen*, GraphState> states_;
   GraphState* state_ = nullptr;
@@ -130,21 +118,11 @@ class GraphNavigator {
   bool pending_announce_ = true;
   bool pending_interrupt_ = false;
   int last_idle_render_ = -1000000;
+  bool render_due_ = true;   // input, an attach or invalidate(): the next pull rebuilds
   static constexpr int kIdleRenderEvery = 6;  // ~100 ms at 60 fps
   // live watch
   std::optional<ControlId> live_key_;
   std::vector<std::optional<std::string>> live_values_;
-  // typeahead
-  TypeAheadSearch search_;
-  // The search scope is captured by IDENTITY + text, never by node pointer: the graph is immediate-mode and a
-  // GraphNode* from the render you typed in is freed two rerenders later, while arrowing through the results
-  // rerenders on every step.
-  struct SearchEntry { ControlId id; std::string text; };
-  std::vector<SearchEntry> search_nodes_;
-  std::optional<ControlId> search_focus_id_;
-  Screen* last_typeahead_screen_ = nullptr;
-  int search_held_dir_ = 0;
-  double search_repeat_in_ = 0;
 };
 
 }  // namespace p3a::ui

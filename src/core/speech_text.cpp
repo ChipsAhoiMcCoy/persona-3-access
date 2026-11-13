@@ -7,6 +7,8 @@ std::string position(std::string_view text, size_t place, size_t count) {
   return std::format("{}, {} {} {}", text, place, strings::kOf, count);
 }
 
+std::string place_of(int place, int count) { return std::format("{} {} {}", place, strings::kOf, count); }
+
 std::string spoken_line(std::string_view speaker, std::string_view text) {
   if (speaker.empty()) return std::string(text);
   std::string out(speaker);
