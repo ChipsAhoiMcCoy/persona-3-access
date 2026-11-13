@@ -9,6 +9,7 @@
 - The right stick scans a direction: push it toward one to hear the nearest point of interest that way, its distance and how far the wall is, and to hear that point's sound from where it is.
 - Directions in the points of interest list are given by the compass ("north-east") in this mode.
 - The wall tones in this mode play only while you move, reach 3 m and leave out the direction behind your walk: fixed to the compass, they had found a wall in three or four directions all the time.
+- In this mode the wall tones went quiet when you walked straight into a wall, just as it was nearest, because the hero had stopped moving. They now play while you push a direction, whether or not the hero gets anywhere.
 - New sound placement, from Dark Vision: left and right by level and by the moment each ear hears a sound, sounds behind darker. The Sound placement setting (Sound) chooses it, Steam Audio's 3D (as before) or a plain pan. It replaces the 3D sound setting.
 
 ### Sonar

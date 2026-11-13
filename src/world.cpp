@@ -93,6 +93,15 @@ bool player_velocity(FVector& out) {
   return true;
 }
 
+bool player_input(FVector& out) {
+  UObject* p = player();
+  if (!p) return false;
+  Params v(find_function(class_of(p), "GetLastMovementInputVector"));
+  if (!call(p, v)) return false;
+  out = v.ret<FVector>();
+  return true;
+}
+
 void tick() {
   ++g_frame;
   UObject* cm = g_cam_mgr.resolve();

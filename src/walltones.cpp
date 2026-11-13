@@ -13,8 +13,8 @@
 // line, even one you would glide past.
 // In the top-down mode (topdown.cpp) the four directions are the compass, fixed, so a room had a wall within reach in
 // three or four of them all the time and turning no longer quietened them (the user, 2026-11-12). There, as Dark
-// Vision starts its wall tones ("when moving"): they sound only while the hero moves (the game's own velocity, so the
-// stick, the keys and the auto-walk alike), reach 3 m, and the direction behind the walk is left out.
+// Vision starts its wall tones ("when moving"): they sound only while the player moves the hero (the movement input, so
+// the stick, the keys and the auto-walk alike, even into a wall), reach 3 m, and the direction behind the walk is left out.
 #include "walltones.h"
 #include "audio.h"
 #include "devserver.h"
@@ -34,6 +34,8 @@ constexpr float kTopDownRange = 300.0f;   // cm, the top-down mode's reach
 constexpr float kMovingCmS = 30.0f;       // the hero moves: faster than this on the ground (a walk is ~250)
 constexpr float kBehindDeg = 100.0f;      // top-down: a direction more than this from the walk's is behind it
 static bool g_moving = false;
+static bool g_asking = false;             // the player pushes a way (the stick, the keys, the auto-walk)
+constexpr float kAskingInput = 0.2f;      // the input vector's length above which the player pushes a way
 static float g_heading = 0;               // top-down: the walk's bearing from north, degrees
 static float g_gain = 1.0f;
 static bool g_enabled = true;
@@ -155,11 +157,17 @@ void tick() {
   FVector p;
   if (!world::player_location(p)) { silence(); return; }
   const bool top = topdown::active();
-  FVector vel{};
-  g_moving = world::player_velocity(vel) && std::hypot(vel.x, vel.y) > kMovingCmS;
+  // Moving is what the player asks for, not how far the hero went: walked straight into a wall the hero's velocity is
+  // nothing, and the tones fell silent just as the wall was nearest. The velocity stands in where no input is read.
+  FVector in{}, vel{};
+  g_asking = world::player_input(in) && std::hypot(in.x, in.y) > kAskingInput;
+  g_moving = g_asking || (world::player_velocity(vel) && std::hypot(vel.x, vel.y) > kMovingCmS);
   if (top && !g_moving) { silence(); return; }
   const float range = top ? kTopDownRange : g_range;
-  if (top) g_heading = std::atan2(vel.y, vel.x) * 180.0f / 3.14159265f - topdown::north_yaw();
+  if (top) {
+    const FVector& d = g_asking ? in : vel;
+    g_heading = std::atan2(d.y, d.x) * 180.0f / 3.14159265f - topdown::north_yaw();
+  }
   for (int i = 0; i < 4; ++i) {
     if (top && std::fabs(std::remainder(90.0f * i - g_heading, 360.0f)) > kBehindDeg) {
       g_dist[i] = range;
@@ -175,8 +183,8 @@ void tick() {
 
 void set_enabled(bool on) { g_enabled = on; if (!on) silence(); }
 std::string status() {
-  return std::format("walltones enabled={} range={:.0f} gain={:.2f} h0={:.0f} deg={:.0f} ahead={:.0f} right={:.0f} behind={:.0f} left={:.0f} topdown={} moving={} heading={:.0f}\n", g_enabled, g_range, g_gain, g_h0, g_deg,
-                     g_dist[0], g_dist[1], g_dist[2], g_dist[3], topdown::active(), g_moving, g_heading);
+  return std::format("walltones enabled={} range={:.0f} gain={:.2f} h0={:.0f} deg={:.0f} ahead={:.0f} right={:.0f} behind={:.0f} left={:.0f} topdown={} moving={} asking={} heading={:.0f}\n", g_enabled, g_range, g_gain, g_h0, g_deg,
+                     g_dist[0], g_dist[1], g_dist[2], g_dist[3], topdown::active(), g_moving, g_asking, g_heading);
 }
 
 void install() {

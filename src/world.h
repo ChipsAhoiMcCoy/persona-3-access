@@ -24,6 +24,9 @@ bool scene_fast();
 bool exploring();
 bool player_location(FVector& out);
 bool player_velocity(FVector& out);   // the hero's velocity (AActor::GetVelocity), cm/s
+// Where the player is asking the hero to go (APawn::GetLastMovementInputVector, world space, length 0..1): the stick,
+// the keys and the auto-walk alike, even while a wall stops the hero dead.
+bool player_input(FVector& out);
 // Unit vectors on the ground plane for a listener-relative direction: 0 ahead, 1 right, 2 behind, 3 left (north,
 // east, south, west in the top-down mode).
 FVector dir_vector(int dir);
