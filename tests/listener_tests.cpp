@@ -57,6 +57,15 @@ TEST_CASE("listener_spot: height counts only past a metre and a half") {
   CHECK(s.up == doctest::Approx(1.0f));
 }
 
+TEST_CASE("listener_spot: a thing beside the feet is near across the ground") {
+  // A door's nearest edge 5 cm to the right and 90 cm down (the hero's place is his body's middle): wholly right by
+  // direction, but only 5 cm across the ground, which is what the stereo model's sideways offset is made from.
+  ListenerSpot s = listener_spot(Vec3{0, 0, 90}, Vec3{0, 5, 0}, 0);
+  CHECK(s.right == doctest::Approx(1.0f));
+  CHECK(s.flat_m == doctest::Approx(0.05f));
+  CHECK(s.dist_m == doctest::Approx(0.90139f));
+}
+
 TEST_CASE("listener_spot: the direction is a unit vector") {
   ListenerSpot s = listener_spot(Vec3{5, -3, 90}, Vec3{-240, 310, 520}, 37);
   CHECK(s.right * s.right + s.up * s.up + s.ahead * s.ahead == doctest::Approx(1.0f));

@@ -21,6 +21,7 @@ ListenerSpot listener_spot(const Vec3& from, const Vec3& to, float cam_yaw) {
   s.ahead = std::cos(b) * std::cos(e);
   s.up = std::sin(e);
   s.dist_m = std::sqrt(flat * flat + dz * dz) / 100.0f;
+  s.flat_m = flat / 100.0f;
   s.pan = std::sin(b);
   return s;
 }

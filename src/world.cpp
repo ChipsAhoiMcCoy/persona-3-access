@@ -337,6 +337,7 @@ audio::Spot spot(const FVector& from, const FVector& to) {
   s.ahead = l.ahead;
   s.up = l.up;
   s.dist_m = l.dist_m;
+  s.flat_m = l.flat_m;
   s.pan = l.pan;
   s.placed = true; s.wx = to.x; s.wy = to.y; s.wz = to.z;   // audio::follow keeps it there while it plays
   return s;

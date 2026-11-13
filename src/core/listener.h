@@ -9,7 +9,8 @@ namespace p3a::core {
 float bearing(const Vec3& from, const Vec3& to, float cam_yaw);
 
 // A unit direction in the listener's own frame, the distance in metres, and the stereo pan (the sine of the bearing).
-struct ListenerSpot { float right = 0, up = 0, ahead = 1, dist_m = 0, pan = 0; };
+// flat_m: how far it is across the ground alone, in metres (what the stereo model's sideways offset is made from).
+struct ListenerSpot { float right = 0, up = 0, ahead = 1, dist_m = 0, pan = 0, flat_m = 0; };
 // Height counts only past 1.5 m: the listener's place is his body's middle and most things sit near the floor, so a
 // thing on the same floor would otherwise sound below him, the more so up close.
 ListenerSpot listener_spot(const Vec3& from, const Vec3& to, float cam_yaw);

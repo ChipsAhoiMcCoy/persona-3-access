@@ -16,7 +16,8 @@ void install_routes();   // the dev server's /audio, /audiomute and /audio/rende
 // and the distance in metres. pan is the stereo fallback (the sine of the bearing).
 // `placed`: the sound has a place in the world (wx, wy, wz, the game's units); while it plays, `follow` moves it in
 // the listener's ears as the hero walks and the camera turns. Without it the sound stays where it started.
-struct Spot { float right = 0, up = 0, ahead = 1, dist_m = 0, pan = 0; bool placed = false; float wx = 0, wy = 0, wz = 0; };
+// flat_m: the distance across the ground alone (-1: not known, taken from dist_m and up).
+struct Spot { float right = 0, up = 0, ahead = 1, dist_m = 0, pan = 0; bool placed = false; float wx = 0, wy = 0, wz = 0; float flat_m = -1; };
 // Once a frame (game thread): every playing sound with a place is heard from where the listener is now. `where`
 // turns a place into a Spot (world::spot from the hero).
 void follow(const std::function<Spot(float x, float y, float z)>& where);

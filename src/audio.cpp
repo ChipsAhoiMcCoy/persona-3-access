@@ -197,7 +197,11 @@ void data_callback(ma_device*, void* out, const void*, ma_uint32 frames) {
       add_ears(o, frames);
     } else if (stereo) {
       // The listener's own frame: right is east and ahead north in the top-down mode, the camera's otherwise.
-      float flat = sh.spot.dist_m * std::sqrt(std::max(0.0f, 1.0f - sh.spot.up * sh.spot.up));
+      // The sideways offset is the ground's alone. The hero's place is his body's middle, ~90 cm over the floor a
+      // thing's nearest point sits on, and that height is left out of the direction (core::listener_spot): counted in
+      // the offset, a door's edge 5 cm to the side and 90 cm down panned 90% to that side, and walking past its corner
+      // swept it from ear to ear within a step (the user, 2026-11-13).
+      float flat = sh.spot.flat_m >= 0.0f ? sh.spot.flat_m : sh.spot.dist_m * std::sqrt(std::max(0.0f, 1.0f - sh.spot.up * sh.spot.up));
       float horiz = std::hypot(sh.spot.right, sh.spot.ahead);
       float east = horiz > 1e-4f ? sh.spot.right / horiz * flat : 0.0f, north = horiz > 1e-4f ? sh.spot.ahead / horiz * flat : 1.0f;
       if (sh.spot.dist_m <= 0.0f) { east = sh.spot.pan * kPanWidthM; north = sh.spot.ahead; }   // a Spot with no distance: by direction alone
