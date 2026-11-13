@@ -23,6 +23,7 @@
 //          buy list is held (state 7), +0x760 its Buy / Quit panel is (state 10).
 #include "screens/menu.h"
 #include "screens/util.h"
+#include "bmdfile.h"
 #include "core/battle_text.h"
 #include "core/strings.h"
 #include "items.h"
@@ -131,12 +132,16 @@ class ShopScreen : public MenuScreen {
   }
   // The row's own help line from the game's file (items::help), so a quick move never reads the last row's page.
   // A weapon's help ends "For Yukari.", the member the list is already for: dropped.
-  // Without the file, the page the game drew for this row: its dialog is the item's index, as in the file (Band-Ace,
-  // 0x4050, is dialog 0x50). The game builds it in the frame the cursor moves or reuses one built earlier, so a page
-  // is matched by its dialog, never by when it was built (that read nothing at all, 2026-11-03).
+  // Without the file's line, the page the game laid out for this row from its category's help file
+  // (BMD_Item<category>Help): its dialog is the item's index, as in the file (Band-Ace, 0x4050, is dialog 0x50). The
+  // game builds it in the frame the cursor moves or reuses one built earlier, so a page is matched by its dialog,
+  // never by when it was built (that read nothing at all, 2026-11-03).
   static std::string drawn_help(int id) {
+    items::Info in;
+    if (!items::find(items::name_of(id), in) || in.category.empty()) return {};
+    const void* buf = bmdfile::buffer(std::format("BMD_Item{}Help", in.category).c_str());
     std::string d;
-    for (auto& p : msg::visible(18)) if (p.dialog == (id & 0xFFF) && p.text.size() > d.size()) d = p.text;
+    if (buf) for (auto& p : msg::pages_of(buf)) if (p.dialog == (id & 0xFFF) && p.text.size() > d.size()) d = p.text;
     return d;
   }
   std::string description(int i) {
