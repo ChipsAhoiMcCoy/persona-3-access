@@ -29,13 +29,13 @@ To uninstall, delete those two from `Win64`. Settings and logs are in `%LOCALAPP
 
 The game takes a while to start; you will hear "Persona 3 Access loaded". The caution and photosensitivity notices each stay up until you press Space or A. Then comes the title menu: up and down arrows or the D-pad, Enter or A to choose.
 
-Learn two keys first: F1 says the keys of whatever is in front of you, and F2 opens the mod's settings. On a controller, hold both triggers and press Menu or View.
+Learn two keys first: F1 reads the controls of the screen you are on, and F2 opens the mod's settings. On a controller, hold both triggers and press Menu or View.
 
 ## Keys
 
 The game's own controls work as usual. The mod adds:
 
-- F1: Keys of what is in front of you (menu, screen, message window or field)
+- F1: The controls of the screen you are on (a menu, battle, conversation or the field)
 - Shift+F1: The mod's own keys
 - F2: Mod settings
 - F3: Sonar on or off
@@ -65,12 +65,12 @@ Hold both triggers (LT and RT) for the mod's keys. You hear a tick and, in the f
 - RB: Social Links
 - L3: Party
 - R3: Sonar on or off
-- Menu: Keys of what is in front of you (like F1)
+- Menu: The controls of the screen you are on (like F1)
 - View: Mod settings (like F2)
 
 A single trigger reaches the game 0.15 seconds late (adjustable in the settings), so pressing both does not also dash or turn; a quick tap still works.
 
-In top-down mode (on by default), the right stick no longer turns the camera while you walk. Push it toward a direction (up is north) to snap to the nearest point of interest that way: its name and distance are said ("Iwatodai Station, 8 meters"), or "nothing", and its sound repeats alone from where it is while you hold the stick, even with the sonar off. It speaks again when another point takes over. Press RT while on a point to walk there and use it, as Shift+Enter does; that press does not dash. The scan has no keyboard key yet.
+In top-down mode (on by default), the right stick no longer turns the camera while you walk. Push it toward a direction (up is north) to snap to the nearest point of interest that way: its name and distance are said ("Iwatodai Station, 8 meters"), or "nothing", and its sound repeats alone from where it is while you hold the stick, even with the sonar off. It speaks again when another point takes over. Press RT while on a point to walk there and use it, as Shift+Enter does; that press does not dash.
 
 ### In menus
 

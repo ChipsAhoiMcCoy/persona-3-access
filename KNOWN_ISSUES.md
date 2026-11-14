@@ -7,7 +7,6 @@ Persona 3 Access is an alpha. This is what is missing and what has not been test
 - The 3D story scenes have no audio description, only the animated movies. Their dialogue is read, but what happens on screen is not described.
 - English only, for both the game's text and the mod's own speech.
 - On a controller, typing a name in the contract still needs a keyboard.
-- The top-down right-stick scan has no keyboard key yet.
 
 ## Never tried in the running game
 
