@@ -541,7 +541,7 @@ inline constexpr const char* kConfig = "Config";
 inline constexpr const char* kOn = "on";
 inline constexpr const char* kOff = "off";
 inline constexpr const char* kUnavailable = "unavailable";
-inline constexpr const char* kUnsupportedBuild = "This copy of Persona 3 Reload is not the version Persona 3 Access was made for, such as the demo or an older update. To keep the game from freezing, menus are not read. Messages and the field still are.";
+inline constexpr const char* kUnsupportedBuild = "This copy of Persona 3 Reload is not the version Arcana was made for, such as the demo or an older update. To keep the game from freezing, menus are not read. Messages and the field still are.";
 inline constexpr Hint kConfigTabKeys{"Up and down arrows choose, Space opens, Escape back. F2 opens the mod's settings.", "Up and down choose, A opens, B back. Both triggers and View open the mod's settings."};
 inline constexpr Hint kBgmKeys{"Up and down arrows choose, Space sets it, F plays it, Escape back.", "Up and down choose, A sets it, X plays it, B back."};
 inline constexpr Hint kConfigKeys{"Up and down arrows choose, left and right arrows change, Space saves changes, H restores defaults, Escape back. F2 opens the mod's settings.", "Up and down choose, left and right change, A saves changes, Menu button restores defaults, B back. Both triggers and View open the mod's settings."};
@@ -741,9 +741,9 @@ inline constexpr const char* kPadX = "X";
 inline constexpr const char* kPadY = "Y";
 inline constexpr const char* kPadUnknown = "?";
 // Said once the mod is up, or when it could not start.
-inline constexpr const char* kModLoaded = "Persona 3 Access loaded";
-inline constexpr const char* kModLoadedNoSpeech = "Persona 3 Access loaded, no speech backend";
-inline constexpr const char* kNoEngine = "Persona 3 Access could not find the game engine. This game version may be unsupported.";
+inline constexpr const char* kModLoaded = "Arcana loaded";
+inline constexpr const char* kModLoadedNoSpeech = "Arcana loaded, no speech backend";
+inline constexpr const char* kNoEngine = "Arcana could not find the game engine. This game version may be unsupported.";
 // A date: "April 6, Monday", then ", holiday" on one (the game's own table abbreviates the weekday: "(Su)").
 inline constexpr const char* kWeekdays[7] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 inline constexpr const char* kMonths[13] = {"", "January", "February", "March", "April", "May", "June", "July",

@@ -1,14 +1,14 @@
 # Third-party notices
 
-Persona 3 Access uses the work of other people. This file says what each piece is, whether it ships in the player zip, its license, and where the license text is. In the player zip the license texts are in `P3RAccess\licenses`. In the repository they are in the `LICENSES` folder and beside each component in `third_party`.
+Arcana uses the work of other people. This file says what each piece is, whether it ships in the player zip, its license, and where the license text is. In the player zip the license texts are in `Arcana\licenses`. In the repository they are in the `LICENSES` folder and beside each component in `third_party`.
 
 ## Code derived from Grim Dark (GD Access)
 
 Grim Dark, also called GD Access, is a screen-reader mod for Grim Dawn by Austin Hicks: https://github.com/ahicks92/grimdark
 
 - Copyright (c) 2026 Austin Hicks. zlib license. The full text is unchanged in `LICENSES/grim-dark-zlib.txt`.
-- Ships in the player zip: yes, compiled into `p3access.dll`.
-- These are altered versions and not the original software. Persona 3 Access was changed to work with a different game. Each file below carries a comment at its top saying it is altered from Grim Dark.
+- Ships in the player zip: yes, compiled into `arcana.dll`.
+- These are altered versions and not the original software. Arcana was changed to work with a different game. Each file below carries a comment at its top saying it is altered from Grim Dark.
 - Grim Dark's navigator and related parts were ported from Dark Vision, below.
 
 Files derived from Grim Dark:
@@ -43,11 +43,11 @@ Prism is the speech library that talks to your screen reader, by Ethin Probst an
 - Ships in the player zip: yes, as `prism.dll`.
 - License: Mozilla Public License 2.0.
 - Source code for this exact version, as MPL-2.0 requires us to tell you: https://github.com/ethindp/prism/tree/v0.18.1
-- Prism's own NOTICE and license folder ship unchanged. In the zip they are in `P3RAccess\licenses\prism`. In the repository they are in `third_party/prism-bin/prism-sdk-v0.18.1`.
+- Prism's own NOTICE and license folder ship unchanged. In the zip they are in `Arcana\licenses\prism`. In the repository they are in `third_party/prism-bin/prism-sdk-v0.18.1`.
 
 That folder covers what Prism itself uses: simdutf (Apache-2.0), Moderncom (MIT), dr_wav (public domain as Prism chose it), Djinni (Apache-2.0), concurrentqueue (simplified BSD), fmt (MIT), Highway, and NVGT (zlib style).
 
-About the LGPL file in that folder: Prism includes NVDA controller client RPC definitions that were originally LGPL-2.1. Prism's NOTICE states the Prism project received permission to license those files, and what is generated from them, under MPL-2.0, and that the LGPL file remains for attribution. It is included here unchanged for the same reason. Persona 3 Access also loads `prism.dll` as a separate file that you can replace.
+About the LGPL file in that folder: Prism includes NVDA controller client RPC definitions that were originally LGPL-2.1. Prism's NOTICE states the Prism project received permission to license those files, and what is generated from them, under MPL-2.0, and that the LGPL file remains for attribution. It is included here unchanged for the same reason. Arcana also loads `prism.dll` as a separate file that you can replace.
 
 ## Steam Audio
 
@@ -56,21 +56,21 @@ Steam Audio provides the 3D sound for headphones, by Valve Corporation: https://
 - Version 4.8.1, unmodified.
 - Ships in the player zip: yes, as `phonon.dll`.
 - License: Apache License 2.0, in `third_party/steamaudio/steamaudio-4.8.1/LICENSE.md`.
-- `phonon.dll` contains other people's work under their own terms, including Intel IPP, Intel Embree, FFTS, PFFFT, MySOFA, AMD RadeonRays, AMD TrueAudio Next, the CIPIC HRTF Database and Google's Spherical Harmonics library. Those notices are in `third_party/steamaudio/steamaudio-4.8.1/THIRDPARTY.md`. They ship unchanged, and in the zip they are in `P3RAccess\licenses\steamaudio`.
+- `phonon.dll` contains other people's work under their own terms, including Intel IPP, Intel Embree, FFTS, PFFFT, MySOFA, AMD RadeonRays, AMD TrueAudio Next, the CIPIC HRTF Database and Google's Spherical Harmonics library. Those notices are in `third_party/steamaudio/steamaudio-4.8.1/THIRDPARTY.md`. They ship unchanged, and in the zip they are in `Arcana\licenses\steamaudio`.
 
 ## Microsoft Detours
 
 Detours is the function hooking library, by Microsoft: https://github.com/microsoft/Detours
 
-- Ships in the player zip: yes, compiled into `p3access.dll`.
-- MIT license. Copyright (c) Microsoft Corporation. The text is in `third_party/Detours/LICENSE`, and in the zip in `P3RAccess\licenses\detours`.
+- Ships in the player zip: yes, compiled into `arcana.dll`.
+- MIT license. Copyright (c) Microsoft Corporation. The text is in `third_party/Detours/LICENSE`, and in the zip in `Arcana\licenses\detours`.
 
 ## miniaudio
 
 miniaudio plays the mod's sounds, by David Reid: https://github.com/mackron/miniaudio
 
 - Version 0.11.25.
-- Ships in the player zip: yes, compiled into `p3access.dll`.
+- Ships in the player zip: yes, compiled into `arcana.dll`.
 - Licensed as a choice of public domain (Unlicense) or MIT No Attribution. Neither requires this credit, and we give it anyway. The statement from the header is in `LICENSES/miniaudio.txt`.
 
 ## doctest

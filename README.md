@@ -1,6 +1,6 @@
-# Persona 3 Access
+# Arcana
 
-A screen-reader accessibility mod for Persona 3 Reload on Steam. It speaks the game through your screen reader and adds sound for getting around: wall tones, a sonar of the people, doors, exits and things around you, and an auto-walk to any place of interest.
+Arcana is a screen-reader accessibility mod for Persona 3 Reload on Steam. It speaks the game through your screen reader and adds sound for getting around: wall tones, a sonar of the people, doors, exits and things around you, and an auto-walk to any place of interest.
 
 This is an unofficial fan project, not affiliated with or endorsed by Atlus or SEGA. It includes no game files; you need your own copy of the game. Persona 3 Reload and related names and characters belong to their owners.
 
@@ -20,14 +20,14 @@ The mod is made for the current Steam version of the full game. On anything else
 ## Install and uninstall
 
 1. Download the zip from the Releases page and extract it.
-2. Copy `dsound.dll` and the `P3RAccess` folder into the game's `P3R\Binaries\Win64` folder, the one with `P3R.exe` (by default `C:\Program Files (x86)\Steam\steamapps\common\P3R\P3R\Binaries\Win64`).
+2. Copy `dsound.dll` and the `Arcana` folder into the game's `P3R\Binaries\Win64` folder, the one with `P3R.exe` (by default `C:\Program Files (x86)\Steam\steamapps\common\P3R\P3R\Binaries\Win64`).
 3. Start your screen reader, then the game from Steam.
 
-To uninstall, delete those two from `Win64`. Settings and logs are in `%LOCALAPPDATA%\P3RAccess`; delete it too if you want them gone. Saves are not touched. Details and troubleshooting are in [INSTALL.md](INSTALL.md).
+To uninstall, delete those two from `Win64`. Settings and logs are in `%LOCALAPPDATA%\Arcana`; delete it too if you want them gone. Saves are not touched. Details and troubleshooting are in [INSTALL.md](INSTALL.md).
 
 ## First run
 
-The game takes a while to start; you will hear "Persona 3 Access loaded". The caution and photosensitivity notices each stay up until you press Space or A. Then comes the title menu: up and down arrows or the D-pad, Enter or A to choose.
+The game takes a while to start; you will hear "Arcana loaded". The caution and photosensitivity notices each stay up until you press Space or A. Then comes the title menu: up and down arrows or the D-pad, Enter or A to choose.
 
 Learn two keys first: F1 reads the controls of the screen you are on, and F2 opens the mod's settings. On a controller, hold both triggers and press Menu or View.
 
@@ -115,7 +115,7 @@ F1 always gives the current screen's keys. These are not described elsewhere her
 
 F2 (or triggers + View) opens the settings from anywhere; the game's Config screen lists them too. The game gets none of your keys while they are open, but keeps running: in Tartarus, open them from the camp menu's Config to be safe.
 
-They work like any other menu: up and down choose (at either end a further press repeats the row), Home and End jump, left and right change the value, Space or Enter (A) steps through values, F1 (Menu) reads these keys, and Escape, Backspace or F2 (B or View) closes. Tab and Shift+Tab (Page Down / Page Up, RB / LB) switch category, wrapping. Each row says what it does after its name, value and position. Changes are saved at once to `%LOCALAPPDATA%\P3RAccess\settings.ini`. The menu plays the game's own menu sounds.
+They work like any other menu: up and down choose (at either end a further press repeats the row), Home and End jump, left and right change the value, Space or Enter (A) steps through values, F1 (Menu) reads these keys, and Escape, Backspace or F2 (B or View) closes. Tab and Shift+Tab (Page Down / Page Up, RB / LB) switch category, wrapping. Each row says what it does after its name, value and position. Changes are saved at once to `%LOCALAPPDATA%\Arcana\settings.ini`. The menu plays the game's own menu sounds.
 
 **Exploring**
 
@@ -297,15 +297,15 @@ A game update can break the mod. The full list, including what has not been trie
 
 ## Reporting bugs
 
-Please open an issue at https://github.com/ChipsAhoiMcCoy/persona-3-access/issues with:
+Please open an issue at https://github.com/ChipsAhoiMcCoy/arcana/issues with:
 
 - What you did, what you heard, and what you expected.
 - Your screen reader, and keyboard or controller.
-- The log, `%LOCALAPPDATA%\P3RAccess\p3access.log` (after a restart, the previous session is `p3access.last-play.log`). It holds what the mod spoke, including story text, and may show your Windows user name, so look it over before sharing.
+- The log, `%LOCALAPPDATA%\Arcana\arcana.log` (after a restart, the previous session is `arcana.last-play.log`). It holds what the mod spoke, including story text, and may show your Windows user name, so look it over before sharing.
 
 ## Credits
 
-Persona 3 Access builds on Grim Dark by Austin Hicks and Dark Vision by Bradley Renshaw. It uses Prism, Steam Audio, Microsoft Detours and miniaudio. The movie narrator is the Kokoro voice model's af_heart voice. Thanks to the Persona 3 Reload modding community. See [CREDITS.md](CREDITS.md) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Arcana builds on Grim Dark by Austin Hicks and Dark Vision by Bradley Renshaw. It uses Prism, Steam Audio, Microsoft Detours and miniaudio. The movie narrator is the Kokoro voice model's af_heart voice. Thanks to the Persona 3 Reload modding community. See [CREDITS.md](CREDITS.md) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## License
 

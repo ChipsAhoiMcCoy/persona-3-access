@@ -86,7 +86,7 @@ static HANDLE g_quit = nullptr;   // set by unload: ends the init thread's wait 
 
 static DWORD WINAPI init_thread(LPVOID) {
   log::init();
-  log::write("p3access: loaded");
+  log::write("arcana: loaded");
   crash::install();
   bool mute = env_flag(L"P3A_MUTE");
   speech::set_muted(mute);
@@ -107,9 +107,9 @@ static DWORD WINAPI init_thread(LPVOID) {
 // Orderly shutdown, called by the dev injector on a remote thread BEFORE FreeLibrary (never from DllMain: joining
 // the server thread under the loader lock deadlocks).
 extern "C" __declspec(dllexport) DWORD WINAPI p3a_unload(LPVOID) {
-  log::write("p3access: unloading");
+  log::write("arcana: unloading");
   SetEvent(g_quit);
-  if (g_init && WaitForSingleObject(g_init, 5000) == WAIT_TIMEOUT) log::write("p3access: the init thread is still running");
+  if (g_init && WaitForSingleObject(g_init, 5000) == WAIT_TIMEOUT) log::write("arcana: the init thread is still running");
   if (!g_up) return 1;
   nav::unload();   // before the key filter goes: the walk's held keys are let go
   ad::unload();    // the clip decoders' worker threads end before their code goes
@@ -125,7 +125,7 @@ extern "C" __declspec(dllexport) DWORD WINAPI p3a_unload(LPVOID) {
   crash::remove();
   speech::shutdown();
   Sleep(1000);   // let a hook body another thread was already running finish before the unmap (250 ms was not always enough)
-  log::write("p3access: ready for FreeLibrary");
+  log::write("arcana: ready for FreeLibrary");
   return 1;
 }
 

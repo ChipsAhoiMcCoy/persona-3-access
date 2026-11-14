@@ -1,6 +1,6 @@
 #pragma once
 // Steam Audio's binaural renderer (HRTF) for the mixer's positional voices: a sound from a direction, as it reaches
-// each ear, plus air absorption (far sounds lose treble). phonon.dll sits beside p3access.dll; without it (or if
+// each ear, plus air absorption (far sounds lose treble). phonon.dll sits beside arcana.dll; without it (or if
 // Steam Audio fails) available() is false and the mixer pans instead. The slots are made once at init, so nothing
 // allocates in the audio callback; claim/release/process are for the audio callback only (under its lock).
 #include <vector>

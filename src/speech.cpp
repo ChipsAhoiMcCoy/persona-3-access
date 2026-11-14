@@ -23,7 +23,7 @@ static void prism_log(void*, PrismLogLevel level, const char* source, const char
 }
 
 bool init() {
-  // prism.dll sits next to p3access.dll, which is NOT on the game's DLL search path; load it by
+  // prism.dll sits next to arcana.dll, which is NOT on the game's DLL search path; load it by
   // full path first so the delay-load resolver finds the already-loaded module by name.
   std::wstring p = paths::dir_w() + L"prism.dll";
   if (!LoadLibraryW(p.c_str())) { log::writef("speech: failed to load {} (err {})", log::utf8((const char16_t*)p.c_str()), GetLastError()); return false; }

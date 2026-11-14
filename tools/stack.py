@@ -2,7 +2,7 @@
 # Prints RIP/RSP and every stack slot that points into the mod DLL or P3R.exe, mod addresses resolved via the map.
 import ctypes, ctypes.wintypes as w, sys, struct, bisect, re
 pid, tid, base = int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3], 16)
-mapf = sys.argv[4] if len(sys.argv) > 4 else "build/ninja/p3access.map"
+mapf = sys.argv[4] if len(sys.argv) > 4 else "build/ninja/arcana.map"
 k = ctypes.WinDLL("kernel32", use_last_error=True)
 syms = []
 for l in open(mapf, errors="replace"):

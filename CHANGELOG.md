@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### New name
+- The mod is now called Arcana. It says "Arcana loaded" when the game starts.
+- The mod's folder in `Win64` is now `Arcana`, holding `arcana.dll`. When updating, delete the old `Win64\P3RAccess` folder.
+- Settings and logs are now in `%LOCALAPPDATA%\Arcana`, and the log is `arcana.log`. The old `%LOCALAPPDATA%\P3RAccess` folder, with your settings, is moved there the first time the game starts.
+- The download is now `arcana-<version>.zip`, from https://github.com/ChipsAhoiMcCoy/arcana.
+
 ## 0.2.0
 
 ### Top-down exploration (new; to be tried)

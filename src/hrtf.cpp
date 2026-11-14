@@ -81,7 +81,7 @@ void run(IPLBinauralEffect bin, IPLDirectEffect direct, float* in, float* mid, f
 
 bool init(int rate, int frame) {
   if (g_ok) return true;
-  // phonon.dll sits next to p3access.dll, which is NOT on the game's DLL search path: load it by full path first so
+  // phonon.dll sits next to arcana.dll, which is NOT on the game's DLL search path: load it by full path first so
   // the delay-load resolver finds it by name (as speech::init does for prism.dll). No ipl* call before this succeeds.
   std::wstring p = paths::dir_w() + L"phonon.dll";
   if (!LoadLibraryW(p.c_str())) { log::writef("hrtf: no phonon.dll (err {}); positional cues pan in stereo", GetLastError()); return false; }

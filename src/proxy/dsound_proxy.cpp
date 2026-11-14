@@ -1,6 +1,6 @@
 // dsound.dll proxy. P3R.exe imports DSOUND.dll by ordinal, it is not a KnownDLL, so a dsound.dll next to the exe
 // is loaded at process start, before any of the game's own code runs. We forward every export to
-// the system copy and load the mod: P3A_DLL (environment, the dev loop) or P3RAccess\p3access.dll beside the exe.
+// the system copy and load the mod: P3A_DLL (environment, the dev loop) or Arcana\arcana.dll beside the exe.
 // The proxy itself stays loaded for the life of the process; the mod DLL can be ejected and reloaded (hot reload).
 #include <windows.h>
 
@@ -51,7 +51,7 @@ static DWORD WINAPI load_mod(LPVOID) {
     GetModuleFileNameW(nullptr, path, MAX_PATH);
     wchar_t* slash = wcsrchr(path, L'\\');
     if (slash) slash[1] = 0;
-    lstrcatW(path, L"P3RAccess\\p3access.dll");
+    lstrcatW(path, L"Arcana\\arcana.dll");
   }
   if (GetFileAttributesW(path) == INVALID_FILE_ATTRIBUTES) return 0;
   LoadLibraryW(path);

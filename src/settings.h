@@ -1,7 +1,7 @@
 #pragma once
 
 namespace p3a::settings {
-// The mod's options, saved to %LOCALAPPDATA%\P3RAccess\settings.ini (settings-dev.ini for dev launches), and the
+// The mod's options, saved to %LOCALAPPDATA%\Arcana\settings.ini (settings-dev.ini for dev launches), and the
 // mod settings menu that changes them: F2, or both triggers and View on a controller (the game's Config keys say so).
 // A new option: an Id here, a row in settings.cpp's table, its name in strings.h, and its README line.
 enum Id { WallTones, Sonar, SonarScope, SonarRange, SonarExits, SonarDoors, SonarPeople, SonarShops, SonarThings, SonarEvents, SonarFragments,

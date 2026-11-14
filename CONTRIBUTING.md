@@ -18,7 +18,7 @@ All other dependencies are in `third_party`. From the repository root in a Comma
 tools\build.cmd
 ```
 
-This builds `p3access.dll`, `dsound.dll` and the unit tests into `build\ninja`. The tests need no game:
+This builds `arcana.dll`, `dsound.dll` and the unit tests into `build\ninja`. The tests need no game:
 
 ```
 build\ninja\p3core_tests.exe
@@ -30,7 +30,7 @@ build\ninja\p3core_tests.exe
 python tools\package.py
 ```
 
-This makes a Release build, runs the tests, and writes `dist\persona-3-access-<version>.zip` with a `.sha256` beside it, checking the zip against what the code loads. It never touches your game folder.
+This makes a Release build, runs the tests, and writes `dist\arcana-<version>.zip` with a `.sha256` beside it, checking the zip against what the code loads. It never touches your game folder.
 
 ## Trying your build in the game
 

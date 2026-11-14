@@ -1,6 +1,6 @@
 # Known issues
 
-Persona 3 Access is an alpha. This is what is missing and what has not been tested. If you reach one of these, your report is especially useful (see "Reporting bugs" in the README).
+Arcana is an alpha. This is what is missing and what has not been tested. If you reach one of these, your report is especially useful (see "Reporting bugs" in the README).
 
 ## Not covered
 

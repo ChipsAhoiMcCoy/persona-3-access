@@ -23,7 +23,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "third_party", "kenney")
 PACKS = ["interface-sounds", "ui-audio", "impact-sounds", "digital-audio", "sci-fi-sounds", "rpg-audio",
          "casino-audio", "music-jingles"]
-UA = "Mozilla/5.0 (P3RAccess asset fetch)"
+UA = "Mozilla/5.0 (Arcana asset fetch)"
 
 
 def opener():

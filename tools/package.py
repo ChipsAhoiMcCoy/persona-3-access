@@ -2,17 +2,17 @@
 
     python tools/package.py [--version 0.2.0] [--nobuild] [--allow-no-license]
 
-Output: dist/persona-3-access-<version>.zip and a .sha256 file beside it. The script never touches a game folder.
+Output: dist/arcana-<version>.zip and a .sha256 file beside it. The script never touches a game folder.
 
-The same commit built in the same folder gives the same zip, byte for byte. Another folder changes p3access.dll
+The same commit built in the same folder gives the same zip, byte for byte. Another folder changes arcana.dll
 slightly: MSVC derives the names of anonymous namespaces from each source file's path.
 
-Zip layout (the player copies dsound.dll and P3RAccess into P3R\\Binaries\\Win64):
+Zip layout (the player copies dsound.dll and Arcana into P3R\\Binaries\\Win64):
 
     dsound.dll                       the proxy the game loads at startup (src/proxy)
     README.txt, INSTALL.txt          for reading before installing
-    P3RAccess/
-      p3access.dll, prism.dll, phonon.dll
+    Arcana/
+      arcana.dll, prism.dll, phonon.dll
       assets/ad/                     audio description cue lists and clips (src/ad.cpp)
       assets/audio/walltones/2/      the wall tones (src/walltones.cpp)
       assets/audio/sonar/, signals/  the sonar's and the Shadow's sound files (src/sonar.cpp, src/audio.cpp)
@@ -46,7 +46,7 @@ def build():
     vsdev = os.path.join(ROOT, "tools", "vsdev.cmd")
     subprocess.check_call([vsdev, "cmake", "-S", ROOT, "-B", BUILD, "-G", "Ninja", "-DCMAKE_BUILD_TYPE=Release",
                            "-DP3A_REPRODUCIBLE=ON"])
-    subprocess.check_call([vsdev, "cmake", "--build", BUILD, "--target", "p3access", "dsound_proxy", "p3core_tests"])
+    subprocess.check_call([vsdev, "cmake", "--build", BUILD, "--target", "arcana", "dsound_proxy", "p3core_tests"])
     subprocess.check_call([os.path.join(BUILD, "p3core_tests.exe")])
 
 
@@ -67,55 +67,55 @@ def repo(path):
 def collect(allow_no_license):
     """Published path -> bytes."""
     out = {"dsound.dll": open(os.path.join(BUILD, "dsound.dll"), "rb").read()}
-    for name in ("p3access.dll", "prism.dll", "phonon.dll"):
-        out["P3RAccess/" + name] = open(os.path.join(BUILD, name), "rb").read()
+    for name in ("arcana.dll", "prism.dll", "phonon.dll"):
+        out["Arcana/" + name] = open(os.path.join(BUILD, name), "rb").read()
 
     for d, _, files in os.walk(os.path.join(ROOT, "assets", "ad")):
         for f in files:
             full = os.path.join(d, f)
             rel = os.path.relpath(full, ROOT).replace(os.sep, "/")
-            out["P3RAccess/" + rel] = open(full, "rb").read()
+            out["Arcana/" + rel] = open(full, "rb").read()
     for t in TONES:
-        out[f"P3RAccess/assets/audio/walltones/2/{t}"] = repo(f"assets/audio/walltones/2/{t}")
+        out[f"Arcana/assets/audio/walltones/2/{t}"] = repo(f"assets/audio/walltones/2/{t}")
     for f in CUE_FILES:
-        out[f"P3RAccess/assets/audio/{f}"] = repo(f"assets/audio/{f}")
+        out[f"Arcana/assets/audio/{f}"] = repo(f"assets/audio/{f}")
 
     readme, install = as_text(os.path.join(ROOT, "README.md")), as_text(os.path.join(ROOT, "INSTALL.md"))
     out["README.txt"], out["INSTALL.txt"] = readme, install
-    out["P3RAccess/docs/README.txt"], out["P3RAccess/docs/INSTALL.txt"] = readme, install
+    out["Arcana/docs/README.txt"], out["Arcana/docs/INSTALL.txt"] = readme, install
     for name in ("KNOWN_ISSUES", "CHANGELOG", "CREDITS"):
-        out[f"P3RAccess/docs/{name}.txt"] = as_text(os.path.join(ROOT, name + ".md"))
+        out[f"Arcana/docs/{name}.txt"] = as_text(os.path.join(ROOT, name + ".md"))
 
-    out["P3RAccess/licenses/THIRD_PARTY_NOTICES.txt"] = as_text(os.path.join(ROOT, "THIRD_PARTY_NOTICES.md"))
+    out["Arcana/licenses/THIRD_PARTY_NOTICES.txt"] = as_text(os.path.join(ROOT, "THIRD_PARTY_NOTICES.md"))
     if os.path.exists(os.path.join(ROOT, "LICENSE")):
-        out["P3RAccess/licenses/LICENSE.txt"] = repo("LICENSE")
+        out["Arcana/licenses/LICENSE.txt"] = repo("LICENSE")
     elif not allow_no_license:
         sys.exit("no LICENSE in the repository root (--allow-no-license for a trial zip)")
     for f in sorted(os.listdir(os.path.join(ROOT, "LICENSES"))):
-        out[f"P3RAccess/licenses/{f}"] = repo(f"LICENSES/{f}")
-    out["P3RAccess/licenses/prism/NOTICE.txt"] = repo(f"{PRISM}/NOTICE")
+        out[f"Arcana/licenses/{f}"] = repo(f"LICENSES/{f}")
+    out["Arcana/licenses/prism/NOTICE.txt"] = repo(f"{PRISM}/NOTICE")
     lic = os.path.join(ROOT, *PRISM.split("/"), "LICENSES")
     for d, _, files in os.walk(lic):
         for f in files:
             full = os.path.join(d, f)
             rel = os.path.relpath(full, lic).replace(os.sep, "/")
-            out[f"P3RAccess/licenses/prism/{rel}"] = open(full, "rb").read()
-    out["P3RAccess/licenses/steamaudio/LICENSE.md"] = repo(f"{STEAMAUDIO}/LICENSE.md")
-    out["P3RAccess/licenses/steamaudio/THIRDPARTY.md"] = repo(f"{STEAMAUDIO}/THIRDPARTY.md")
-    out["P3RAccess/licenses/detours/LICENSE.txt"] = repo("third_party/Detours/LICENSE")
+            out[f"Arcana/licenses/prism/{rel}"] = open(full, "rb").read()
+    out["Arcana/licenses/steamaudio/LICENSE.md"] = repo(f"{STEAMAUDIO}/LICENSE.md")
+    out["Arcana/licenses/steamaudio/THIRDPARTY.md"] = repo(f"{STEAMAUDIO}/THIRDPARTY.md")
+    out["Arcana/licenses/detours/LICENSE.txt"] = repo("third_party/Detours/LICENSE")
     return out
 
 
 def check(files):
     """What the code loads must be there (src/proxy, src/speech.cpp, src/hrtf.cpp, src/walltones.cpp, src/ad.cpp)."""
     problems = [n for n in files if FORBIDDEN.search(n)]
-    for need in ["dsound.dll", "P3RAccess/p3access.dll", "P3RAccess/prism.dll", "P3RAccess/phonon.dll"] + \
-            [f"P3RAccess/assets/audio/walltones/2/{t}" for t in TONES] + [f"P3RAccess/assets/audio/{f}" for f in CUE_FILES]:
+    for need in ["dsound.dll", "Arcana/arcana.dll", "Arcana/prism.dll", "Arcana/phonon.dll"] + \
+            [f"Arcana/assets/audio/walltones/2/{t}" for t in TONES] + [f"Arcana/assets/audio/{f}" for f in CUE_FILES]:
         if need not in files:
             problems.append("missing " + need)
     movies = clips = 0
     for name, data in files.items():
-        m = re.fullmatch(r"P3RAccess/assets/ad/([^/]+)\.txt", name)
+        m = re.fullmatch(r"Arcana/assets/ad/([^/]+)\.txt", name)
         if not m:
             continue
         movies += 1
@@ -124,7 +124,7 @@ def check(files):
                 continue
             clip = line.split("\t")[2]
             clips += 1
-            if f"P3RAccess/assets/ad/{m.group(1)}/{clip}" not in files:
+            if f"Arcana/assets/ad/{m.group(1)}/{clip}" not in files:
                 problems.append(f"missing clip {m.group(1)}/{clip}")
     if problems:
         sys.exit("package check failed:\n  " + "\n  ".join(problems))
@@ -142,7 +142,7 @@ def main():
     files = collect(a.allow_no_license)
     check(files)
     os.makedirs(DIST, exist_ok=True)
-    zpath = os.path.join(DIST, f"persona-3-access-{a.version}.zip")
+    zpath = os.path.join(DIST, f"arcana-{a.version}.zip")
     with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for name in sorted(files):
             info = zipfile.ZipInfo(name, STAMP)

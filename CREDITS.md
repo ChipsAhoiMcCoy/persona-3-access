@@ -1,6 +1,6 @@
 # Credits
 
-Persona 3 Access is made by ChipsAhoiMcCoy, with Claude Code (Anthropic) writing most of the code and all of the audio descriptions under their direction.
+Arcana is made by ChipsAhoiMcCoy, with Claude Code (Anthropic) writing most of the code and all of the audio descriptions under their direction.
 
 ## Built on
 

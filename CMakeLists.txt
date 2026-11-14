@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.24)
-project(p3access LANGUAGES C CXX)
+project(arcana LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(NOT MSVC)
-  message(FATAL_ERROR "p3access must be built with MSVC (it shares the game's MSVC x64 ABI)")
+  message(FATAL_ERROR "arcana must be built with MSVC (it shares the game's MSVC x64 ABI)")
 endif()
 # Static CRT: a player needs no VC++ redistributable for the mod (prism.dll carries its own runtime).
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -49,18 +49,18 @@ target_link_libraries(p3core_tests PRIVATE p3core)
 
 # --- the mod DLL ---
 file(GLOB P3A_SOURCES CONFIGURE_DEPENDS src/*.cpp src/ue/*.cpp src/screens/*.cpp)
-add_library(p3access SHARED ${P3A_SOURCES})
-target_include_directories(p3access PRIVATE src ${PRISM_SDK}/include ${STEAMAUDIO_SDK}/include third_party/miniaudio)
-target_link_libraries(p3access PRIVATE p3core detours ${PRISM_LIB} ${PHONON_LIB} user32 ws2_32 ole32 delayimp gdi32)
+add_library(arcana SHARED ${P3A_SOURCES})
+target_include_directories(arcana PRIVATE src ${PRISM_SDK}/include ${STEAMAUDIO_SDK}/include third_party/miniaudio)
+target_link_libraries(arcana PRIVATE p3core detours ${PRISM_LIB} ${PHONON_LIB} user32 ws2_32 ole32 delayimp gdi32)
 # phonon.dll delay-loaded too: without it (or if it fails) the cues fall back to stereo panning.
-target_link_options(p3access PRIVATE /DELAYLOAD:${PRISM_DLL_NAME} /DELAYLOAD:phonon.dll /MAP)   # p3access.map: crash-log offsets -> functions
-add_custom_command(TARGET p3access POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PRISM_DLL} $<TARGET_FILE_DIR:p3access>
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PHONON_DLL} $<TARGET_FILE_DIR:p3access>)
+target_link_options(arcana PRIVATE /DELAYLOAD:${PRISM_DLL_NAME} /DELAYLOAD:phonon.dll /MAP)   # arcana.map: crash-log offsets -> functions
+add_custom_command(TARGET arcana POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PRISM_DLL} $<TARGET_FILE_DIR:arcana>
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PHONON_DLL} $<TARGET_FILE_DIR:arcana>)
 # assets/ (wall tones, the audio description clips) on every build, not only when the DLL relinks: a re-pack of
 # assets/ad with no code change must reach the build too
-add_custom_target(p3access_assets ALL
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:p3access>/assets)
+add_custom_target(arcana_assets ALL
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:arcana>/assets)
 
 # --- dsound.dll proxy: dropped into P3R\Binaries\Win64, loads the mod before the game's code runs ---
 add_library(dsound_proxy SHARED src/proxy/dsound_proxy.cpp src/proxy/dsound.def)

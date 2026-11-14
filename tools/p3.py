@@ -1,4 +1,4 @@
-"""P3R Access dev client (stdlib only; `shot` needs Pillow).
+"""Arcana dev client (stdlib only; `shot` needs Pillow).
 
 The dev loop after Grim Dark's: the game runs visible but never focused, muted, with the mod's loopback HTTP
 server on P3A_PORT (default 8793). Claude drives and observes it from here without touching the user's desktop.
@@ -10,7 +10,7 @@ server on P3A_PORT (default 8793). Claude drives and observes it from here witho
   (kill, up, reload, keys, advance, goto, flow and scenario refuse a player's session, mode=play, without --force)
   python tools/p3.py reload [--nobuild]        hot reload: build, then swap the loaded mod for a fresh copy
   python tools/p3.py crash                     the last session's crash lines, symbolized
-  python tools/p3.py sym 0x14d57b [...] [--map F]   mod offsets (p3access.dll+0x..) to functions via the linker map
+  python tools/p3.py sym 0x14d57b [...] [--map F]   mod offsets (arcana.dll+0x..) to functions via the linker map
   python tools/p3.py build | deploy            build only | copy dsound.dll (the proxy) into the game folder
   python tools/p3.py get /route?a=b            any dev route (prints the text)
   python tools/p3.py state | wait <on> <text> [secs] [--not] | batch "route" "sleep:500" "route"
@@ -25,7 +25,7 @@ server on P3A_PORT (default 8793). Claude drives and observes it from here witho
   python tools/p3.py flow load [slot] | newgame [--sign] | sleep   title -> save slot | fresh game | home to bed
   python tools/p3.py shot [name.png]           PrintWindow capture of the game window (bare names go to build/shots)
 
-The game never loads build/ninja/p3access.dll itself but a copy beside it (p3access.live<N>.dll + .map), so a build
+The game never loads build/ninja/arcana.dll itself but a copy beside it (arcana.live<N>.dll + .map), so a build
 always links while the game runs and a failed build leaves the running mod alone.
 """
 import ctypes
@@ -45,8 +45,8 @@ import urllib.error
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(ROOT, "build", "ninja")
 # A second dev game (its own P3A_PORT) keeps its own log.
-LOG_NAME = "p3access.log" if os.environ.get("P3A_PORT", "8793") == "8793" else f"p3access.{os.environ['P3A_PORT']}.log"
-LOG = os.path.join(os.environ.get("LOCALAPPDATA", ""), "P3RAccess", LOG_NAME)
+LOG_NAME = "arcana.log" if os.environ.get("P3A_PORT", "8793") == "8793" else f"arcana.{os.environ['P3A_PORT']}.log"
+LOG = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Arcana", LOG_NAME)
 GAME_DIR = r"C:\Program Files (x86)\Steam\steamapps\common\P3R\P3R\Binaries\Win64"
 GAME_EXE = os.path.join(GAME_DIR, "P3R.exe")
 EXE_NAME = "P3R.exe"
@@ -175,7 +175,7 @@ def player_game():
     p = pids()
     try:
         with open(LOG, encoding="utf-8", errors="replace") as f:
-            m = re.match(r"p3access log pid=(\d+) mode=(\w+)", f.readline())
+            m = re.match(r"arcana log pid=(\d+) mode=(\w+)", f.readline())
     except OSError:
         return False
     return bool(p) and bool(m) and int(m.group(1)) in p and m.group(2) == "play"
@@ -193,10 +193,10 @@ def kill_all():
 
 
 def shadow():
-    """Copy the build's p3access.dll (and .map) to p3access.live<N>.dll beside it, so assets and prism.dll resolve
+    """Copy the build's arcana.dll (and .map) to arcana.live<N>.dll beside it, so assets and prism.dll resolve
     as before, and return its path. Copies no longer loaded are removed (a loaded one is locked and stays)."""
-    src = os.path.join(BUILD, "p3access.dll")
-    for old in glob.glob(os.path.join(BUILD, "p3access.live*.dll")):
+    src = os.path.join(BUILD, "arcana.dll")
+    for old in glob.glob(os.path.join(BUILD, "arcana.live*.dll")):
         try:
             os.remove(old)
             if os.path.exists(old[:-4] + ".map"):
@@ -204,9 +204,9 @@ def shadow():
         except OSError:
             pass
     n = int(time.time())
-    while os.path.exists(os.path.join(BUILD, f"p3access.live{n}.dll")):
+    while os.path.exists(os.path.join(BUILD, f"arcana.live{n}.dll")):
         n += 1
-    dst = os.path.join(BUILD, f"p3access.live{n}.dll")
+    dst = os.path.join(BUILD, f"arcana.live{n}.dll")
     shutil.copyfile(src, dst)
     if os.path.exists(src[:-4] + ".map"):
         shutil.copyfile(src[:-4] + ".map", dst[:-4] + ".map")
@@ -214,11 +214,11 @@ def shadow():
 
 
 def loaded_mod(pid):
-    """Path of the p3access*.dll loaded in the game, or None."""
+    """Path of the arcana*.dll loaded in the game, or None."""
     h = k32.OpenProcess(PROCESS_ALL, False, pid)
     try:
         for path in modules(h):
-            if re.match(r"p3access(\.live\d+)?\.dll$", os.path.basename(path)):
+            if re.match(r"arcana(\.live\d+)?\.dll$", os.path.basename(path)):
                 return path
     finally:
         k32.CloseHandle(h)
@@ -377,7 +377,7 @@ def play(args):
         try:
             build()
         except SystemExit:
-            if not os.path.exists(os.path.join(BUILD, "p3access.dll")):
+            if not os.path.exists(os.path.join(BUILD, "arcana.dll")):
                 raise
             print("using the last good build")
     deploy()
@@ -475,7 +475,7 @@ def load_syms(mapfile):
 
 
 def crash_report(path=LOG):
-    """The crash lines of a mod log with every p3access*.dll+0x.. resolved through the matching .map."""
+    """The crash lines of a mod log with every arcana*.dll+0x.. resolved through the matching .map."""
     if not os.path.exists(path):
         return "no log at " + path
     lines = [l.rstrip("\n") for l in open(path, encoding="utf-8", errors="replace")]
@@ -488,13 +488,13 @@ def crash_report(path=LOG):
         dll, off = m.group(1), int(m.group(2), 16)
         mp = os.path.join(BUILD, dll[:-4] + ".map")
         if not os.path.exists(mp):
-            mp = os.path.join(BUILD, "p3access.map")
+            mp = os.path.join(BUILD, "arcana.map")
         if mp not in maps:
             maps[mp] = load_syms(mp) if os.path.exists(mp) else []
         syms = maps[mp]
         i = bisect.bisect_right(syms, (off, "~")) - 1
         return f"{m.group(0)} [{syms[i][1][:80]}+{off - syms[i][0]:#x}]" if i >= 0 else m.group(0)
-    return "\n".join(re.sub(r"(p3access[\w.]*\.dll)\+0x([0-9a-f]+)", sym, l) for l in hits[-60:])
+    return "\n".join(re.sub(r"(arcana[\w.]*\.dll)\+0x([0-9a-f]+)", sym, l) for l in hits[-60:])
 
 
 def up(args):
@@ -925,8 +925,8 @@ def main():
             out = os.path.join(ROOT, "build", "shots", out)
         shot(out)
     elif cmd == "sym":
-        # p3.py sym 0x14d57b ... [--map build/ninja/p3access.map], through load_syms.
-        mp = rest[rest.index("--map") + 1] if "--map" in rest else os.path.join(BUILD, "p3access.map")
+        # p3.py sym 0x14d57b ... [--map build/ninja/arcana.map], through load_syms.
+        mp = rest[rest.index("--map") + 1] if "--map" in rest else os.path.join(BUILD, "arcana.map")
         syms = load_syms(mp)
         for a in rest:
             if a.startswith("0x"):
