@@ -4,32 +4,19 @@ Persona 3 Access is an alpha. This is what is missing and what has not been test
 
 ## Not covered
 
-- The 3D story scenes have no audio description, only the animated movies. Their dialogue is read, but what happens on screen is not described.
 - English only, for both the game's text and the mod's own speech.
 - On a controller, typing a name in the contract still needs a keyboard.
 
 ## Never tried in the running game
 
 - Signing the contract with Done on a controller (the keyboard path is tested).
-- Cooking, which runs through invitation events.
 
 ## Tested less than the rest
 
-- Top-down mode: tried in Tartarus and the dorm lounge by the developer, not yet played.
 - Episode Aigis has not been played through. Its movies, area descriptions and Theurgy list have been checked.
-- The end of the game (Jin, Takaya, Nyx, the epilogue, credits, clear save, New Game Plus) was played once with test shortcuts, not at a player's pace.
+- The end of the game (the final battles, the epilogue, credits, clear save and New Game Plus) was played once with test shortcuts, not at a player's pace.
 - No full late-game playthrough: menus were tested on saves from various points. Monad and the Abyss of Time were visited only to check area descriptions.
-- In Analyze, stopping at the first and last enemy (tested on the command wheel).
-- The single "all enemies" or "all allies" prompt for a skill or item that hits a whole side.
-- The victory screen's pacing was tried in one battle with one member's level-up, not with the hero's level-up page or several at once.
-- The compendium's Persona status page after its fix (Registration's, which had the same fault, was tested).
-- Auto-walk finding its way into a walled-in target: tried on one Tartarus teleporter, from one side.
-- The Missing Persons board in the field (the camp's list is tested).
-- The "Rare Shadow" and "The Reaper" names, and the sound of a Shadow losing you.
-- Shuffle Time reading a card whose text matches the card before it, since that was changed.
 - Audio description text was checked by automated timing and transcript checks, not by a person watching every movie.
-- The Release build: development used a slightly different build type, so the packaged zip is its own test.
-- The menu animation wait in a simple shop opened by the story.
 - Screen readers other than the ones used day to day. Please say which one you use when you report.
 
 ## Known bugs

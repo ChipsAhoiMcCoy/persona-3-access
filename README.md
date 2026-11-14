@@ -164,7 +164,7 @@ They work like any other menu: up and down choose (at either end a further press
 - Choices: the highlighted answer and its position, as the list appears and on every move ("Go with this, 1 of 2"). A script that asks you to pay (the late-night TV shopping) says the price and your money first ("Price 2980 yen, you have 4800 yen").
 - The log (B, in the field or a conversation): each line as you scroll, opening on the newest; Space replays its voice. Lines from before this session are said to be earlier. Closing it in a conversation reads the line on screen again.
 - The party's voiced chatter while exploring, and the navigator's and party's remarks in battle, are not read over the voices; they stay in the log. Unvoiced lines are read.
-- Movies: "Movie paused" (Enter pauses and resumes, Tab skips). Every animated story movie (the anime scenes, both openings, both credit rolls) has audio description: a narrator describes what is on screen between lines, never over dialogue. The 3D story scenes are not described yet. During the credits, Backslash reads the names on screen.
+- Movies: "Movie paused" (Enter pauses and resumes, Tab skips). Every animated story movie (the anime scenes, both openings, both credit rolls) has audio description: a narrator describes what is on screen between lines, never over dialogue. During the credits, Backslash reads the names on screen.
 - Cut-ins: a close-up flashed to stress a line is described before it ("Close-up: Yukari, glaring.").
 - Pictures shown full screen are described as they appear (a class question's chalkboard, a sketch in the story).
 - Semicolon (triggers + B) while someone talks with their portrait up describes them as the portrait shows them now: their look, the outfit (uniform, winter coat, swimsuit, yukata, combat gear...) and how they stand. Every outfit of every character with a portrait is described.
@@ -293,7 +293,7 @@ Placed sounds stay where they are while they play, so they shift as you move. Po
 
 ## Known limits
 
-The 3D story scenes have no audio description, only the animated movies. A game update can break the mod. The full list, including what has not been tried yet, is in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+A game update can break the mod. The full list, including what has not been tried yet, is in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
 ## Reporting bugs
 
