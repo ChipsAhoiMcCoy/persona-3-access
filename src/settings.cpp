@@ -144,7 +144,7 @@ static std::string label(Id id) {
 }
 
 // ---- the menu, on core/navigator like every bespoke menu: one item per option in its category, "Mod keys" (reads
-// the mod's keys) last. The navigator owns focus, positions, edges and type-ahead (letters jump to an option by name); Left/Right
+// the mod's keys) last. The navigator owns focus, positions and edges; Left/Right
 // adjust the focused option (on_adjust), Space/Enter steps it on. It plays the game's own menu sounds (the camp menu's
 // open, close, cursor and confirm cues; Config's option cue on a change). Keys reach it through keys::set_modal. ----
 static bool g_open = false;

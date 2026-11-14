@@ -13,8 +13,8 @@ Grim Dark, also called GD Access, is a screen-reader mod for Grim Dawn by Austin
 
 Files derived from Grim Dark:
 
-- The navigator and its parts in `src/core`: `navigator`, `graph_types`, `graph_builder`, `graph_announcer`, `key_graph`, `control_id`, `message_builder`, `typeahead`, `ui_screen`.
-- Their tests in `tests`: `navigator_tests`, `graph_builder_tests`, `graph_announcer_tests`, `key_graph_tests`, `message_builder_tests`, `typeahead_tests`, `main`.
+- The navigator and its parts in `src/core`: `navigator`, `graph_types`, `graph_builder`, `graph_announcer`, `key_graph`, `control_id`, `message_builder`, `ui_screen`, and the sonar's `sonar_field`.
+- Their tests in `tests`: `navigator_tests`, `graph_builder_tests`, `graph_announcer_tests`, `key_graph_tests`, `message_builder_tests`, `main`.
 - Support code in `src`: `crash`, `log`, `ring`, `speech`, `audio`, `audio_mute`, `walltones`, `hooks`, `dllmain`, `devserver`.
 - `tools/vsdev.cmd`.
 
@@ -27,17 +27,13 @@ Dark Vision, also called WrathAccess or wotr-access in comments, is a screen-rea
 - Our versions are altered, and the marks at the top of the files say so.
 - Ported directly from Dark Vision: the stereo placement model (`src/core/spatializer`, from `Spatializer.cs`).
 
-## Type-ahead search from OniAccess
-
-The type-ahead search in `src/core/typeahead` traces back to OniAccess, also called VisionNotIncluded, a screen-reader mod for Oxygen Not Included by Rashad Naqeeb: https://github.com/rashadnaqeeb/VisionNotIncluded
-
-- Copyright (c) 2026 Rashad Naqeeb. MIT license. The text is in `LICENSES/oni-access-MIT.txt`.
-- Ships in the player zip: yes, compiled into `p3access.dll`.
-- It came to this project through Dark Vision and Grim Dark, and was changed along the way.
-
 ## Wall tones
 
 The four sounds in `assets/audio/walltones/2`, in the player zip, are byte-for-byte the same as the wall tone files in Dark Vision (assets/audio/walltones/2), by Bradley Renshaw, under its zlib license. Grim Dark copied them from there, and we copied them from Grim Dark. Dark Vision's records do not say how the sounds themselves were made.
+
+## Sonar sounds from Grim Dark
+
+The five sounds in `assets/audio/sonar` and `assets/audio/signals`, in the player zip, are Grim Dark's sonar sounds (its dungeon entrance, interactable, ruined shrine, loot and enemy sounds), by Austin Hicks, under its zlib license. The door, person and shop sounds are made by the mod itself.
 
 ## Prism
 

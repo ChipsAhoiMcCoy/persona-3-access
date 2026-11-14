@@ -333,13 +333,13 @@ inline constexpr const char* kHelpModKeys = "Reads the list of the mod's keys.";
 // The sound test: each row plays one of the mod's sounds (name, then what it means).
 struct SoundTest { const char* name; const char* help; };
 inline constexpr SoundTest kSoundTests[] = {
-    {"Sonar: exit", "A way into another area. A breath of air rising."},
-    {"Sonar: door", "A room's door. Two knocks on wood."},
-    {"Sonar: person", "Someone to talk to. A two-note whistle."},
-    {"Sonar: shop", "A shop or vendor. A small bell, struck twice."},
-    {"Sonar: object", "Something to check or open. One plucked note."},
-    {"Sonar: event", "A spot that starts a fight or a scene when you walk into it, such as a Gatekeeper. A quick trill."},
-    {"Sonar: Twilight Fragment", "A Twilight Fragment to pick up, or in Tartarus a crystal to strike for one. Three rising chimes of glass."},
+    {"Sonar: exit", "A way into another area."},
+    {"Sonar: door", "A room's door. One hollow knock."},
+    {"Sonar: person", "Someone to talk to. A whistled note that rises and falls."},
+    {"Sonar: shop", "A shop or vendor. Two small bells struck together."},
+    {"Sonar: object", "Something to check or open."},
+    {"Sonar: event", "A spot that starts a fight or a scene when you walk into it, such as a Gatekeeper."},
+    {"Sonar: Twilight Fragment", "A Twilight Fragment to pick up, or in Tartarus a crystal to strike for one."},
     {"A sound behind you", "The person whistle, from behind you. Lower in pitch when that setting is on."},
     {"Shadow growl", "A Shadow is within 30 meters. It repeats faster and louder as the Shadow closes in."},
     {"Shadow growl, hunting you", "The growl of a Shadow that has noticed you: higher, louder and faster."},
@@ -604,8 +604,8 @@ inline constexpr Hint kStatsPageKeys{"Tab and Shift Tab jump between sections, Q
 inline constexpr Hint kCampRequestKeys{"Up and down arrows choose, F info, X sorts, Q and E switch tabs, Escape closes.", "Up and down choose, X info, RT sorts, LB and RB switch tabs, B closes."};
 inline constexpr Hint kMissingPersonsKeys{"Up and down arrows choose, F reads it again, X sorts, Q and E switch tabs, Escape closes.", "Up and down choose, X reads it again, RT sorts, LB and RB switch tabs, B closes."};
 inline constexpr Hint kMissingBoardKeys{"Up and down arrows choose, F reads it again, X sorts, Escape closes.", "Up and down choose, X reads it again, RT sorts, B closes."};
-inline constexpr Hint kCalendarKeys{"Left and right arrows move a day, up and down arrows a week, Q and E change month, F reads the day's plans, Escape closes.", "Left and right move a day, up and down a week, LB and RB change month, X reads the day's plans, B closes."};
-inline constexpr Hint kCalendarPlansKeys{"Up and down arrows go through the plans, F or Escape closes them.", "Up and down go through the plans, X or B closes them."};
+inline constexpr Hint kCalendarKeys{"Left and right arrows move a day, up and down arrows a week, Q and E change month, F opens the part-time jobs, Escape closes.", "Left and right move a day, up and down a week, LB and RB change month, X opens the part-time jobs, B closes."};
+inline constexpr Hint kCalendarPlansKeys{"Up and down arrows go through the jobs, F or Escape closes them.", "Up and down go through the jobs, X or B closes them."};
 inline constexpr Hint kSocialPageKeys{"Up and down arrows choose, Q and E switch link, Escape back.", "Up and down choose, LB and RB switch link, B back."};
 inline constexpr Hint kTheurgyListKeys{"Left and right arrows choose, Q and E switch character, F personality, Escape back.", "Left and right choose, LB and RB switch character, X personality, B back."};
 inline constexpr const char* kItemCategories[] = {"Order Obtained", "Consumable Items", "Skill Cards", "Materials & Valuables", "Event & Misc."};

@@ -186,7 +186,7 @@ class GraphRender {
   bool contains(const ControlId& key) const { return nodes_.count(key) != 0; }
   bool contains(const std::optional<ControlId>& key) const { return key && contains(*key); }
 
-  /// Declaration order -- drives stop/region cycling and type-ahead scan order.
+  /// Declaration order -- drives stop/region cycling.
   const std::vector<GraphNode*>& order() const { return order_; }
   std::size_t node_count() const { return nodes_.size(); }
 
